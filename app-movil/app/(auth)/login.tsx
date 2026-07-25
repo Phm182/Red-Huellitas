@@ -18,6 +18,8 @@ import { LogoImage } from '../../src/components/LogoImage';
 import { centeredContent } from '../../src/theme/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
+const isWeb = Platform.OS === 'web';
+
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -57,71 +59,92 @@ export default function LoginScreen() {
     }
   };
 
+  const form = (
+    <ScrollView
+      contentContainerStyle={[styles.container, isWeb && styles.containerWeb]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets={!isWeb}
+    >
+      <LogoImage style={styles.logo} />
+      <Text style={[styles.title, { color: colors.text }]}>{t('auth.loginTitle')}</Text>
+
+      <TextInput
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        placeholder={t('auth.email')}
+        placeholderTextColor={colors.textMuted}
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        autoComplete="email"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordInputRef.current?.focus()}
+        blurOnSubmit={false}
+      />
+      <TextInput
+        ref={passwordInputRef}
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        placeholder={t('auth.password')}
+        placeholderTextColor={colors.textMuted}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        textContentType="password"
+        autoComplete="password"
+        returnKeyType="go"
+        onSubmitEditing={onLogin}
+      />
+
+      {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
+
+      <Pressable
+        style={[styles.button, { backgroundColor: colors.primary }]}
+        onPress={onLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.primaryText} />
+        ) : (
+          <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('auth.loginButton')}</Text>
+        )}
+      </Pressable>
+
+      <Pressable
+        style={[styles.button, styles.googleButton, { borderColor: colors.border }]}
+        onPress={onGoogleLogin}
+        disabled={!request}
+      >
+        <Text style={{ color: colors.text, fontWeight: '600' }}>{t('auth.continueWithGoogle')}</Text>
+      </Pressable>
+
+      <Pressable style={styles.link} onPress={() => router.push('/(auth)/registro')}>
+        <Text style={{ color: colors.primary }}>{t('auth.noAccount')}</Text>
+      </Pressable>
+    </ScrollView>
+  );
+
+  // KeyboardAvoidingView en mobile web pelea con el teclado virtual y deja la UI tildada.
+  if (isWeb) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }}>{form}</View>;
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <LogoImage style={styles.logo} />
-        <Text style={[styles.title, { color: colors.text }]}>{t('auth.loginTitle')}</Text>
-
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder={t('auth.email')}
-          placeholderTextColor={colors.textMuted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordInputRef.current?.focus()}
-          blurOnSubmit={false}
-        />
-        <TextInput
-          ref={passwordInputRef}
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder={t('auth.password')}
-          placeholderTextColor={colors.textMuted}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          returnKeyType="go"
-          onSubmitEditing={onLogin}
-        />
-
-        {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={onLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.primaryText} />
-          ) : (
-            <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('auth.loginButton')}</Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          style={[styles.button, styles.googleButton, { borderColor: colors.border }]}
-          onPress={onGoogleLogin}
-          disabled={!request}
-        >
-          <Text style={{ color: colors.text, fontWeight: '600' }}>{t('auth.continueWithGoogle')}</Text>
-        </Pressable>
-
-        <Pressable style={styles.link} onPress={() => router.push('/(auth)/registro')}>
-          <Text style={{ color: colors.primary }}>{t('auth.noAccount')}</Text>
-        </Pressable>
-      </ScrollView>
+      {form}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, alignItems: 'stretch', justifyContent: 'center', padding: 24, ...centeredContent },
+  // En web, justifyContent:center + teclado suele romper el foco del input.
+  containerWeb: { justifyContent: 'flex-start', paddingTop: 48, paddingBottom: 48 },
   logo: { width: 120, height: 120, alignSelf: 'center', marginBottom: 16 },
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 24 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },

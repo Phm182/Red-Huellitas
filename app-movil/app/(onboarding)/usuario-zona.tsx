@@ -101,12 +101,15 @@ export default function UsuarioZonaScreen() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
+  const isWeb = Platform.OS === 'web';
+
+  const form = (
+      <ScrollView
+        contentContainerStyle={[styles.container, isWeb && styles.containerWeb]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={!isWeb}
+      >
         <Text style={[styles.title, { color: colors.text }]}>{t('onboarding.usernameZoneTitle')}</Text>
 
         <TextInput
@@ -182,12 +185,25 @@ export default function UsuarioZonaScreen() {
           )}
         </Pressable>
       </ScrollView>
+  );
+
+  if (isWeb) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }}>{form}</View>;
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {form}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: 24, ...centeredContent },
+  containerWeb: { justifyContent: 'flex-start', paddingTop: 32, paddingBottom: 48 },
   title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 24 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 8, fontSize: 16 },
   button: { borderRadius: 10, padding: 14, alignItems: 'center' },

@@ -19,6 +19,8 @@ import { TipoUsuarioCatalogoItem } from '../../src/types';
 import { centeredContent } from '../../src/theme/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
+const isWeb = Platform.OS === 'web';
+
 export default function RegistroScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -56,107 +58,128 @@ export default function RegistroScreen() {
     }
   };
 
+  const form = (
+    <ScrollView
+      contentContainerStyle={[styles.container, isWeb && styles.containerWeb]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets={!isWeb}
+    >
+      <LogoImage style={styles.logo} />
+      <Text style={[styles.title, { color: colors.text }]}>{t('auth.registerTitle')}</Text>
+
+      <TextInput
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        placeholder={t('auth.fullName')}
+        placeholderTextColor={colors.textMuted}
+        value={nombreCompleto}
+        onChangeText={setNombreCompleto}
+        autoComplete="name"
+        textContentType="name"
+      />
+      <TextInput
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        placeholder={t('auth.email')}
+        placeholderTextColor={colors.textMuted}
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        autoComplete="email"
+        textContentType="emailAddress"
+      />
+      <TextInput
+        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        placeholder={t('auth.password')}
+        placeholderTextColor={colors.textMuted}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoComplete="new-password"
+        textContentType="newPassword"
+      />
+
+      <Text style={[styles.label, { color: colors.text }]}>{t('tipoUsuario.selectorLabel')}</Text>
+      <View style={styles.tipoRow}>
+        {tipos.map((tipo) => {
+          const activo = tipoUsuarioCodigo === tipo.codigo;
+          return (
+            <Pressable
+              key={tipo.codigo}
+              onPress={() => setTipoUsuarioCodigo(tipo.codigo)}
+              style={[
+                styles.tipoChip,
+                { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' },
+              ]}
+            >
+              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
+                {t(`tipoUsuario.${tipo.codigo}`, tipo.nombre)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Pressable
+        style={[styles.clauseBox, { borderColor: colors.border, backgroundColor: colors.surface }]}
+        onPress={() => setAceptaClausula((v) => !v)}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            { borderColor: colors.primary, backgroundColor: aceptaClausula ? colors.primary : 'transparent' },
+          ]}
+        >
+          {aceptaClausula ? <Text style={{ color: colors.primaryText }}>✓</Text> : null}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 4 }}>
+            {t('auth.acceptClause')}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 17 }}>
+            {t('auth.antiCriaderosClause')}
+          </Text>
+        </View>
+      </Pressable>
+
+      {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
+
+      <Pressable
+        style={[styles.button, { backgroundColor: puedeEnviar ? colors.primary : colors.border }]}
+        onPress={onSubmit}
+        disabled={!puedeEnviar || loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.primaryText} />
+        ) : (
+          <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('auth.registerButton')}</Text>
+        )}
+      </Pressable>
+
+      <Pressable style={styles.link} onPress={() => router.push('/(auth)/login')}>
+        <Text style={{ color: colors.primary }}>{t('auth.hasAccount')}</Text>
+      </Pressable>
+    </ScrollView>
+  );
+
+  if (isWeb) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }}>{form}</View>;
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <LogoImage style={styles.logo} />
-        <Text style={[styles.title, { color: colors.text }]}>{t('auth.registerTitle')}</Text>
-
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder={t('auth.fullName')}
-          placeholderTextColor={colors.textMuted}
-          value={nombreCompleto}
-          onChangeText={setNombreCompleto}
-        />
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder={t('auth.email')}
-          placeholderTextColor={colors.textMuted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder={t('auth.password')}
-          placeholderTextColor={colors.textMuted}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-
-        <Text style={[styles.label, { color: colors.text }]}>{t('tipoUsuario.selectorLabel')}</Text>
-        <View style={styles.tipoRow}>
-          {tipos.map((tipo) => {
-            const activo = tipoUsuarioCodigo === tipo.codigo;
-            return (
-              <Pressable
-                key={tipo.codigo}
-                onPress={() => setTipoUsuarioCodigo(tipo.codigo)}
-                style={[
-                  styles.tipoChip,
-                  { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' },
-                ]}
-              >
-                <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                  {t(`tipoUsuario.${tipo.codigo}`, tipo.nombre)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Pressable
-          style={[styles.clauseBox, { borderColor: colors.border, backgroundColor: colors.surface }]}
-          onPress={() => setAceptaClausula((v) => !v)}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              { borderColor: colors.primary, backgroundColor: aceptaClausula ? colors.primary : 'transparent' },
-            ]}
-          >
-            {aceptaClausula ? <Text style={{ color: colors.primaryText }}>✓</Text> : null}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 4 }}>
-              {t('auth.acceptClause')}
-            </Text>
-            <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 17 }}>
-              {t('auth.antiCriaderosClause')}
-            </Text>
-          </View>
-        </Pressable>
-
-        {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.button, { backgroundColor: puedeEnviar ? colors.primary : colors.border }]}
-          onPress={onSubmit}
-          disabled={!puedeEnviar || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.primaryText} />
-          ) : (
-            <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('auth.registerButton')}</Text>
-          )}
-        </Pressable>
-
-        <Pressable style={styles.link} onPress={() => router.push('/(auth)/login')}>
-          <Text style={{ color: colors.primary }}>{t('auth.hasAccount')}</Text>
-        </Pressable>
-      </ScrollView>
+      {form}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: 24, ...centeredContent },
+  containerWeb: { justifyContent: 'flex-start', paddingTop: 32, paddingBottom: 48 },
   logo: { width: 100, height: 100, alignSelf: 'center', marginBottom: 12 },
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
