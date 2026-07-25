@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/metro-runtime": "^57.0.7",
+    "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.8",
     "expo-auth-session": "~57.0.5",
     "expo-constants": "~57.0.7",
     "expo-crypto": "~57.0.1",
+    "expo-font": "~57.0.1",
     "expo-image-manipulator": "~57.0.6",
     "expo-image-picker": "~57.0.6",
+    "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.4",
     "expo-localization": "^57.0.1",
     "expo-location": "~57.0.6",
@@ -18,6 +23,7 @@
     "expo-router": "~57.0.8",
     "expo-secure-store": "~57.0.1",
     "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "^57.0.1",
     "expo-video": "~57.0.2",
     "expo-web-browser": "~57.0.2",
     "i18next": "^26.3.6",
@@ -37,11 +43,15 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "export:web": "expo export -p web --output-dir dist",
-    "export:web:patched": "npm run export:web && powershell -ExecutionPolicy Bypass -File scripts/patch-web-index.ps1"
+    "export:web:patched": "npm run export:web && powershell -ExecutionPolicy Bypass -File scripts/patch-web-index.ps1",
+    "prebuild:android": "expo prebuild -p android --clean",
+    "android:studio": "powershell -ExecutionPolicy Bypass -File scripts/open-android-studio.ps1",
+    "android:apk:debug": "cd android && .\\gradlew.bat assembleDebug",
+    "android:apk:release": "cd android && .\\gradlew.bat assembleRelease"
   },
   "private": true
 }

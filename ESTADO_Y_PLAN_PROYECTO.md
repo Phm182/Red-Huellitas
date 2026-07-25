@@ -146,6 +146,24 @@ Replicar esquema de `contapp_schema_final.md` (otro proyecto del usuario, mismo 
 
 ---
 
+### Panel de moderación (post-fase 7, 2026-07-25)
+
+Cierra el único hueco que quedaba para que la app funcione **sin tocar la base a mano**. Antes de esto, aprobar una verificación de identidad se hacía con un `UPDATE`, y las denuncias y los reportes se acumulaban sin que ningún endpoint los leyera.
+
+- **`sql/021_moderacion.sql`**: `ResueltoPorUserId` / `ResueltoEn` / `NotaAdmin` en `Denuncia` y `ReporteSolicitud` (lo que `UsuarioVerificacion` ya tenía), más índices por `EstadoRevision`.
+- **`rh_require_admin($conn)`** en `auth.php`: 401 sin sesión, 403 sin rol admin. `suscripcion/manual_confirmar.php` (que tenía el chequeo inline) pasó a usarlo.
+- **`inc/funciones/moderacion.php`** + **9 endpoints en `inc/ajax/admin/`**: `resumen`, `verificaciones_listar`, `verificacion_archivo`, `verificacion_resolver`, `denuncias_listar`, `denuncia_resolver`, `reportes_listar`, `reporte_resolver`, `usuario_suspender`. Los tres listados con el mismo cursor+limit del resto del proyecto.
+- **4 pantallas** en `app/(app)/admin/` + `adminApi.ts` + i18n en los 10 idiomas. La entrada en "Más" sólo se renderiza si `user.rol === 'admin'`; el gate real es el backend.
+- **Hacer admin a alguien sigue siendo por SQL**: `UPDATE Usuario SET Rol='admin' WHERE UserId=…`. No hay gestor de roles.
+
+Decisiones de alcance: **eliminar contenido denunciado quedó afuera** (son 10 tipos distintos); en su lugar la denuncia resuelve de qué contenido se trata y linkea a la pantalla que ya existe. **Suspender/reactivar sí entró** — y además de tocar `Usuario.Estado`, revoca las sesiones vivas, porque el login filtra por `Estado='A'` pero un token bearer ya emitido seguiría funcionando hasta vencer.
+
+Dos arreglos que salieron en el camino:
+- **Las migraciones `019` y `020` nunca se habían corrido**: `auth/password_olvidada.php` tiraba un fatal error (`Table 'huellitas.passwordreset' doesn't exist`) y la verificación automática usaba columnas inexistentes. Ya corridas.
+- **`verificacion_auto.php` escribía el error técnico de Gemini en `MotivoRechazo`**, que es el campo que el usuario lee como "por qué te rechazaron" — aunque el estado hubiera quedado en `pendiente`. Ahora el error va a `AutoDetalle` (que sólo ve el moderador) y el usuario lee "queda pendiente de revisión manual".
+
+---
+
 ## 4. Cómo seguir mañana
 
 1. Confirmar que XAMPP (MySQL + Apache) está corriendo: `/c/xampp/mysql_start.bat` y `/c/xampp/apache_start.bat` en background si no lo están.

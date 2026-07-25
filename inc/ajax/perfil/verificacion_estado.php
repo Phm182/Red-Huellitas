@@ -18,6 +18,10 @@ if (!$verificacion) {
         'tieneDniFrente' => false,
         'tieneDniDorso' => false,
         'tieneSelfie' => false,
+        'autoScore' => null,
+        'faceMatchScore' => null,
+        'autoMetodo' => null,
+        'kycEstado' => null,
     ]);
 }
 
@@ -28,4 +32,12 @@ json_success([
     'tieneDniFrente' => !empty($verificacion['DniFrentePath']),
     'tieneDniDorso' => !empty($verificacion['DniDorsoPath']),
     'tieneSelfie' => !empty($verificacion['SelfiePath']),
+    'autoScore' => isset($verificacion['AutoScore']) && $verificacion['AutoScore'] !== null
+        ? (float) $verificacion['AutoScore']
+        : null,
+    'faceMatchScore' => isset($verificacion['FaceMatchScore']) && $verificacion['FaceMatchScore'] !== null
+        ? (float) $verificacion['FaceMatchScore']
+        : null,
+    'autoMetodo' => $verificacion['AutoMetodo'] ?? null,
+    'kycEstado' => $verificacion['KycEstado'] ?? null,
 ]);

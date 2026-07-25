@@ -3,9 +3,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { FloatingReportButton } from '../../src/components/FloatingReportButton';
 import { usePushNotifications } from '../../src/hooks/usePushNotifications';
 import { MAX_CONTENT_WIDTH } from '../../src/theme/layout';
+import { fonts } from '../../src/theme/typography';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function AppLayout() {
@@ -38,6 +38,8 @@ export default function AppLayout() {
             headerShown: false,
             headerStyle: { backgroundColor: colors.surface },
             headerTintColor: colors.text,
+            headerTitleStyle: { fontFamily: fonts.displaySemi, fontSize: 17 },
+            headerShadowVisible: false,
             contentStyle: { backgroundColor: colors.background },
           }}
         >
@@ -116,8 +118,14 @@ export default function AppLayout() {
           <Stack.Screen name="pedidos/[id]" options={{ headerShown: true, title: t('pedidos.detalleTitulo') }} />
           <Stack.Screen name="juego/index" options={{ headerShown: true, title: t('juego.titulo') }} />
           <Stack.Screen name="juego/[mascotaId]" options={{ headerShown: true, title: t('juego.titulo') }} />
+          <Stack.Screen name="admin/index" options={{ headerShown: true, title: t('admin.titulo') }} />
+          <Stack.Screen
+            name="admin/verificaciones"
+            options={{ headerShown: true, title: t('admin.verificacionesTitulo') }}
+          />
+          <Stack.Screen name="admin/denuncias" options={{ headerShown: true, title: t('admin.denunciasTitulo') }} />
+          <Stack.Screen name="admin/reportes" options={{ headerShown: true, title: t('admin.reportesTitulo') }} />
         </Stack>
-        <FloatingReportButton />
       </View>
     </View>
   );

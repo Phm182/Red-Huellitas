@@ -3,10 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { publicacionesApi } from '../../../src/api/publicacionesApi';
+import { Atmosphere } from '../../../src/components/Atmosphere';
 import { HistoriasBar } from '../../../src/components/HistoriasBar';
 import { PostCard } from '../../../src/components/PostCard';
 import { Post } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
+import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 
 export default function FeedScreen() {
@@ -53,31 +55,41 @@ export default function FeedScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <Atmosphere style={styles.centered}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </Atmosphere>
     );
   }
 
   return (
-    <FlatList
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
-      data={posts}
-      keyExtractor={(p) => String(p.postId)}
-      renderItem={({ item }) => <PostCard post={item} onEliminado={onEliminado} />}
-      ListHeaderComponent={<HistoriasBar />}
-      ListEmptyComponent={<Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('feed.emptyFeed')}</Text>}
-      onEndReached={cargarMas}
-      onEndReachedThreshold={0.4}
-      ListFooterComponent={
-        cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
-      }
-    />
+    <Atmosphere>
+      <FlatList
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={[styles.list, centeredContent]}
+        data={posts}
+        keyExtractor={(p) => String(p.postId)}
+        renderItem={({ item, index }) => (
+          <PostCard post={item} onEliminado={onEliminado} index={index} />
+        )}
+        ListHeaderComponent={<HistoriasBar />}
+          ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('feed.emptyFeed')}</Text>
+          </View>
+        }
+        onEndReached={cargarMas}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
+        }
+      />
+    </Atmosphere>
   );
 }
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: 16 },
+  list: { padding: 14, paddingBottom: 28 },
+  empty: { marginTop: 40, alignItems: 'center', paddingHorizontal: 24, gap: 8 },
+  emptyTitle: { fontFamily: fonts.displaySemi, fontSize: 20, textAlign: 'center' },
 });

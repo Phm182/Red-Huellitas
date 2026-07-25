@@ -33,6 +33,10 @@ if (!function_exists('json_encode_rh')) {
 if (!function_exists('json_response')) {
     function json_response(array $data, int $httpCode = 200): void
     {
+        // Descarta BOM/warnings accidentalmente bufferizados por includes previos.
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         if (!headers_sent()) {
             header('Content-Type: application/json; charset=utf-8');
         }

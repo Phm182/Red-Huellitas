@@ -4,17 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/suscripcion.php';
 
-$userId = rh_require_auth($conn);
-
-$stmt = $conn->prepare('SELECT Rol FROM Usuario WHERE UserId = ?');
-$stmt->bind_param('i', $userId);
-$stmt->execute();
-$caller = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$caller || $caller['Rol'] !== 'admin') {
-    json_error('No tenés permiso para confirmar pagos', 403);
-}
+$userId = rh_require_admin($conn);
 
 $solicitudId = (int) ($_POST['solicitudId'] ?? 0);
 if ($solicitudId <= 0) {

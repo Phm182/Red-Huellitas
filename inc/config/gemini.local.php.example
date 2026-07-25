@@ -18,6 +18,13 @@ return [
     'GEMINI_ENDPOINT' => 'https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent',
     'GEMINI_MODELO'   => 'gemini-2.5-flash-image',
 
+    // Modelo multimodal de texto (OCR DNI + face match). No uses el de imagen.
+    'GEMINI_MODELO_TEXTO' => 'gemini-2.5-flash',
+
+    // Umbrales 0–1 para auto-aprobar / auto-rechazar verificación de cuenta.
+    'VERIF_UMBRAL_APROBAR'  => 0.78,
+    'VERIF_UMBRAL_RECHAZAR' => 0.40,
+
     // Topes propios, por debajo de la cuota gratuita real (~500/día), para que
     // un solo usuario no se coma el cupo de todos.
     'LIMITE_DIARIO_USUARIO' => 3,

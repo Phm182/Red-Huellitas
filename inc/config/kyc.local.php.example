@@ -1,0 +1,33 @@
+<?php
+/**
+ * Copiar a kyc.local.php (gitignored) cuando tengas convenio Renaper/SID
+ * o un proveedor intermediario (Didit, Incode, etc.).
+ *
+ * Sin este archivo, la verificación usa solo Gemini (docs + face match
+ * selfie vs foto del DNI). Renaper suma el match contra la foto oficial
+ * del registro nacional.
+ *
+ * Renaper SID: "Validación por medio de fotografía de rostro" (API REST).
+ * Requiere Convenio Único de Confronte de Datos vía TAD:
+ * https://www.argentina.gob.ar/sid/modalidades-y-productos
+ */
+return [
+    // true = intentar Renaper/SID después del análisis Gemini
+    'KYC_HABILITADO' => false,
+
+    // 'renaper_sid' = API propia del Estado | 'http_generico' = intermediario
+    'KYC_PROVEEDOR' => 'renaper_sid',
+
+    'KYC_BASE_URL' => 'https://ejemplo-sid.renaper.gob.ar',
+    'KYC_API_KEY'  => '',
+    'KYC_CLIENT_ID' => '',
+    'KYC_CLIENT_SECRET' => '',
+
+    // Endpoint relativo para confronto facial (ajustá al contrato real)
+    'KYC_ENDPOINT_FACIAL' => '/api/v1/validacion/facial',
+
+    // Umbral 0–1 para aprobar con Renaper (suele venir 0–100 en la API)
+    'KYC_UMBRAL_FACE' => 0.85,
+
+    'KYC_TIMEOUT_SEGUNDOS' => 45,
+];

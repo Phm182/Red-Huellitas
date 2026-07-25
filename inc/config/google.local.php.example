@@ -2,6 +2,8 @@
 /**
  * Copiar este archivo a google.local.php (gitignored) y completar con los
  * Client IDs creados en Google Cloud Console (OAuth consent screen).
+ *
+ * El Client Secret NO va acá: el flujo usa id_token (openid).
  */
 return [
     'GOOGLE_CLIENT_ID_WEB' => '',

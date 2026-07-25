@@ -40,6 +40,10 @@ export interface VerificacionEstado {
   tieneDniFrente: boolean;
   tieneDniDorso: boolean;
   tieneSelfie: boolean;
+  autoScore?: number | null;
+  faceMatchScore?: number | null;
+  autoMetodo?: string | null;
+  kycEstado?: string | null;
 }
 
 export type ReporteTipo = 'mejora' | 'falla';
@@ -578,6 +582,98 @@ export interface MascotaJuegoResumen {
   nivel: number;
   rachaDias: number;
   empezado: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Panel de moderación (solo para usuarios con rol 'admin')
+// ---------------------------------------------------------------------------
+
+export interface AdminResumen {
+  verificacionesPendientes: number;
+  denunciasPendientes: number;
+  reportesPendientes: number;
+}
+
+/** Datos del usuario tal como los ve un moderador (incluye email y estado). */
+export interface AdminUsuario {
+  userId: number;
+  username: string | null;
+  nombreCompleto: string;
+  email: string;
+  avatarPath: string | null;
+  estado: 'A' | 'I';
+  rol: string;
+}
+
+export type VerificacionRevisionEstado = 'pendiente' | 'aprobado' | 'rechazado';
+export type VerificacionArchivoTipo = 'dniFrente' | 'dniDorso' | 'selfie';
+
+export interface VerificacionPendiente {
+  verificacionId: number;
+  userId: number;
+  usuario: AdminUsuario | null;
+  estadoRevision: VerificacionRevisionEstado;
+  motivoRechazo: string | null;
+  tieneDniFrente: boolean;
+  tieneDniDorso: boolean;
+  tieneSelfie: boolean;
+  /** Resultado del análisis automático; null si no llegó a correr. */
+  autoScore: number | null;
+  faceMatchScore: number | null;
+  autoMetodo: string | null;
+  autoDetalle: string | null;
+  dniNumeroExtraido: string | null;
+  nombreExtraido: string | null;
+  kycEstado: string | null;
+  revisadoPor: number | null;
+  revisadoEn: string | null;
+  createdAt: string | null;
+}
+
+export type DenunciaEstado = 'pendiente' | 'revisada' | 'desestimada';
+
+/** Qué contenido se denunció; null si la denuncia es contra el usuario. */
+export type DenunciaContenidoTipo =
+  | 'publicacion'
+  | 'historia'
+  | 'adopcion'
+  | 'campania'
+  | 'perdido'
+  | 'transito'
+  | 'donacion'
+  | 'veterinaria'
+  | 'producto';
+
+export interface DenunciaContenido {
+  tipo: DenunciaContenidoTipo;
+  id: number;
+}
+
+export interface DenunciaPendiente {
+  denunciaId: number;
+  motivo: string;
+  detalle: string | null;
+  estadoRevision: DenunciaEstado;
+  contenido: DenunciaContenido | null;
+  denunciante: AdminUsuario | null;
+  denunciado: AdminUsuario | null;
+  notaAdmin: string | null;
+  resueltoEn: string | null;
+  createdAt: string;
+}
+
+export type ReporteEstado = 'pendiente' | 'resuelto' | 'descartado';
+
+export interface ReportePendiente {
+  reporteId: number;
+  tipo: ReporteTipo;
+  detalle: string;
+  pantallaOrigen: string | null;
+  estadoRevision: ReporteEstado;
+  usuario: AdminUsuario | null;
+  notaAdmin: string | null;
+  resueltoEn: string | null;
+  createdAt: string;
 }
 
 export interface ApiResponse<T> {

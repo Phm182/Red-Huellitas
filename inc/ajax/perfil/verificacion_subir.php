@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/verificacion_auto.php';
 
 $userId = rh_require_auth($conn);
 
@@ -72,9 +73,47 @@ $stmt->execute();
 $verificacion = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+$mensaje = 'Documentos recibidos, en revisión';
+$auto = null;
+
+// Con las 3 fotos, corre análisis automático (Gemini ± Renaper).
+$tieneTodo = !empty($verificacion['DniFrentePath'])
+    && !empty($verificacion['DniDorsoPath'])
+    && !empty($verificacion['SelfiePath']);
+
+if ($tieneTodo) {
+    @set_time_limit(120);
+    $dir = rh_dir_verificacion_usuario($userId);
+    $rutaFrente = $dir . '/' . basename((string) $verificacion['DniFrentePath']);
+    $rutaDorso = $dir . '/' . basename((string) $verificacion['DniDorsoPath']);
+    $rutaSelfie = $dir . '/' . basename((string) $verificacion['SelfiePath']);
+
+    $auto = rh_verificacion_auto_evaluar($conn, $userId, $rutaFrente, $rutaDorso, $rutaSelfie);
+    rh_verificacion_auto_aplicar($conn, $userId, $auto);
+
+    $stmt = $conn->prepare('SELECT * FROM UsuarioVerificacion WHERE UserId = ?');
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $verificacion = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($auto['estado'] === 'aprobado') {
+        $mensaje = 'Identidad verificada automáticamente';
+    } elseif ($auto['estado'] === 'rechazado') {
+        $mensaje = $auto['motivo'] ?? 'Verificación rechazada';
+    } else {
+        $mensaje = 'Documentos recibidos; quedaron en revisión';
+    }
+}
+
 json_success([
     'estadoRevision' => $verificacion['EstadoRevision'],
+    'motivoRechazo' => $verificacion['MotivoRechazo'] ?? null,
     'tieneDniFrente' => !empty($verificacion['DniFrentePath']),
     'tieneDniDorso' => !empty($verificacion['DniDorsoPath']),
     'tieneSelfie' => !empty($verificacion['SelfiePath']),
-], 'Documentos recibidos, en revisión');
+    'autoScore' => isset($verificacion['AutoScore']) ? (float) $verificacion['AutoScore'] : ($auto['autoScore'] ?? null),
+    'faceMatchScore' => isset($verificacion['FaceMatchScore']) ? (float) $verificacion['FaceMatchScore'] : ($auto['faceMatchScore'] ?? null),
+    'autoMetodo' => $verificacion['AutoMetodo'] ?? ($auto['metodo'] ?? null),
+    'kycEstado' => $verificacion['KycEstado'] ?? ($auto['kycEstado'] ?? null),
+], $mensaje);

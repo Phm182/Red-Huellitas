@@ -85,6 +85,31 @@ function rh_require_auth(mysqli $conn): int
     return (int) $row['UserId'];
 }
 
+/**
+ * Igual que rh_require_auth, pero además exige que el usuario sea admin.
+ * Corta con 401 si no hay sesión, o con 403 si la hay pero no es admin.
+ *
+ * Todo el panel de moderación pasa por acá: las bandejas exponen DNI y
+ * selfies de terceros, así que el chequeo no puede quedar sólo en el
+ * frontend ni repetirse a mano en cada endpoint.
+ */
+function rh_require_admin(mysqli $conn): int
+{
+    $userId = rh_require_auth($conn);
+
+    $stmt = $conn->prepare('SELECT Rol FROM Usuario WHERE UserId = ?');
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$row || $row['Rol'] !== 'admin') {
+        json_error('No tenés permiso para esta acción', 403);
+    }
+
+    return $userId;
+}
+
 function rh_revocar_sesion_actual(mysqli $conn): void
 {
     $token = rh_obtener_bearer_token();

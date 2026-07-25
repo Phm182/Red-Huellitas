@@ -26,6 +26,12 @@ export const authApi = {
 
   googleLogin: (idToken: string) => apiPost<AuthResult>('ajax/auth/google_login.php', { idToken }),
 
+  passwordOlvidada: (email: string) =>
+    apiPost<{ emailEnviado: boolean; debugCodigo?: string | null }>('ajax/auth/password_olvidada.php', { email }),
+
+  passwordRestablecer: (email: string, codigo: string, password: string) =>
+    apiPost<null>('ajax/auth/password_restablecer.php', { email, codigo, password }),
+
   logout: () => apiPost<null>('ajax/auth/logout.php', undefined, true),
 
   checkUsername: (username: string) =>

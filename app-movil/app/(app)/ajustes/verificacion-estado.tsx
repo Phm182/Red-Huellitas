@@ -60,7 +60,24 @@ export default function VerificacionEstadoScreen() {
       </Text>
 
       {estado.motivoRechazo ? (
-        <Text style={{ color: colors.danger, marginBottom: 16 }}>{estado.motivoRechazo}</Text>
+        <Text style={{ color: estado.estadoRevision === 'rechazado' ? colors.danger : colors.textMuted, marginBottom: 16 }}>
+          {estado.motivoRechazo}
+        </Text>
+      ) : null}
+
+      {estado.autoMetodo ? (
+        <Text style={{ color: colors.textMuted, marginBottom: 8, fontSize: 13 }}>
+          {t('onboarding.verificationMethod')}: {estado.autoMetodo}
+          {estado.faceMatchScore != null
+            ? ` · ${t('onboarding.verificationFaceScore')}: ${Math.round(estado.faceMatchScore * 100)}%`
+            : ''}
+        </Text>
+      ) : null}
+
+      {estado.kycEstado ? (
+        <Text style={{ color: colors.textMuted, marginBottom: 12, fontSize: 13 }}>
+          Renaper/SID: {estado.kycEstado}
+        </Text>
       ) : null}
 
       <View style={styles.checklist}>

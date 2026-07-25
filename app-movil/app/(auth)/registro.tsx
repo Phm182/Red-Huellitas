@@ -14,9 +14,12 @@ import {
 } from 'react-native';
 import { noticiasApi } from '../../src/api/noticiasApi';
 import { useAuth } from '../../src/auth/AuthProvider';
+import { Atmosphere } from '../../src/components/Atmosphere';
 import { LogoImage } from '../../src/components/LogoImage';
 import { TipoUsuarioCatalogoItem } from '../../src/types';
+import { radii } from '../../src/theme/elevation';
 import { centeredContent } from '../../src/theme/layout';
+import { fonts, type } from '../../src/theme/typography';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 const isWeb = Platform.OS === 'web';
@@ -67,6 +70,7 @@ export default function RegistroScreen() {
     >
       <LogoImage style={styles.logo} />
       <Text style={[styles.title, { color: colors.text }]}>{t('auth.registerTitle')}</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Red Huellitas</Text>
 
       <TextInput
         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
@@ -164,15 +168,12 @@ export default function RegistroScreen() {
   );
 
   if (isWeb) {
-    return <View style={{ flex: 1, backgroundColor: colors.background }}>{form}</View>;
+    return <Atmosphere intensity="auth">{form}</Atmosphere>;
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {form}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Atmosphere intensity="auth">{form}</Atmosphere>
     </KeyboardAvoidingView>
   );
 }
@@ -181,12 +182,20 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: 24, ...centeredContent },
   containerWeb: { justifyContent: 'flex-start', paddingTop: 32, paddingBottom: 48 },
   logo: { width: 100, height: 100, alignSelf: 'center', marginBottom: 12 },
-  title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
-  input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  title: { ...type.title, textAlign: 'center', marginBottom: 4 },
+  subtitle: { ...type.bodySm, textAlign: 'center', marginBottom: 20, fontFamily: fonts.bodySemi },
+  input: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    padding: 14,
+    marginBottom: 12,
+    fontSize: 16,
+    fontFamily: fonts.body,
+  },
+  label: { ...type.label, marginBottom: 8 },
   tipoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  tipoChip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 },
-  clauseBox: { flexDirection: 'row', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 16, gap: 10 },
+  tipoChip: { borderWidth: 1, borderRadius: radii.pill, paddingVertical: 8, paddingHorizontal: 16 },
+  clauseBox: { flexDirection: 'row', borderWidth: 1, borderRadius: radii.md, padding: 12, marginBottom: 16, gap: 10 },
   checkbox: {
     width: 24,
     height: 24,
@@ -196,6 +205,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  button: { borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 8 },
+  button: { borderRadius: radii.md, padding: 14, alignItems: 'center', marginTop: 8 },
   link: { marginTop: 20, alignItems: 'center' },
 });

@@ -19,12 +19,6 @@ export interface IdiomaDisponible {
   nombreNativo: string;
 }
 
-/**
- * Top 10 idiomas más hablados globalmente (según la decisión del usuario:
- * es/en de base + los 8 más usados adicionales, todos de escritura
- * izquierda-a-derecha — RTL como árabe/hebreo/urdu queda pendiente de una
- * decisión aparte ya que requiere adaptar los layouts existentes).
- */
 export const IDIOMAS_DISPONIBLES: IdiomaDisponible[] = [
   { codigo: 'es', nombreNativo: 'Español' },
   { codigo: 'en', nombreNativo: 'English' },
@@ -68,25 +62,17 @@ i18n.use(initReactI18next).init({
   compatibilityJSON: 'v4',
 });
 
-// El init() de arriba corre sincrónicamente con detección por dispositivo
-// (AsyncStorage es async, no se puede esperar antes de iniciar i18next).
-// Si el usuario ya había elegido un idioma manualmente, lo restauramos acá
-// apenas esté disponible — mismo patrón que ThemeProvider con el tema.
-// Guard: durante export estático Node no tiene window/localStorage.
-if (typeof window !== 'undefined') {
-  AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
+AsyncStorage.getItem(STORAGE_KEY)
+  .then((saved) => {
     if (saved && CODIGOS_SOPORTADOS.includes(saved) && saved !== i18n.language) {
       i18n.changeLanguage(saved);
     }
-  });
-}
+  })
+  .catch(() => undefined);
 
-/** Cambia el idioma y persiste la elección para futuras sesiones. */
 export function cambiarIdioma(codigo: string): void {
   i18n.changeLanguage(codigo);
-  if (typeof window !== 'undefined') {
-    AsyncStorage.setItem(STORAGE_KEY, codigo);
-  }
+  AsyncStorage.setItem(STORAGE_KEY, codigo).catch(() => undefined);
 }
 
 export default i18n;

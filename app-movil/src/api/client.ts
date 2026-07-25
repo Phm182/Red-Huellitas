@@ -63,7 +63,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
 
   let json: ApiResponse<T>;
   try {
-    json = await response.json();
+    // Hostinger/Windows a veces manda UTF-8 BOM (EF BB BF) delante del JSON.
+    const raw = await response.text();
+    const cleaned = raw.replace(/^\uFEFF/, '').trim();
+    json = JSON.parse(cleaned) as ApiResponse<T>;
   } catch (e) {
     return { success: false, message: 'Respuesta inválida del servidor', data: null };
   }

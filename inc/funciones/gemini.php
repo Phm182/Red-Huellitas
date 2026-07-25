@@ -146,11 +146,21 @@ function rh_gemini_generar_avatar(string $rutaFoto): array
     if ($httpCode >= 400) {
         $detalle = $respuesta['error']['message'] ?? ('HTTP ' . $httpCode);
         error_log('rh_gemini: ' . $detalle);
-        // 429 del lado de Google = cuota agotada; se distingue para poder
-        // avisarlo bien al usuario.
-        return $fallo($httpCode === 429
-            ? 'Se agotó la cuota diaria del servicio de imágenes, probá mañana'
-            : 'El servicio de imágenes rechazó el pedido');
+
+        if ($httpCode === 429) {
+            // Google devuelve 429 en dos situaciones muy distintas, y decirle
+            // "probá mañana" a la segunda es mentirle al usuario:
+            //  - "limit: 0"  → la API key NO tiene cuota asignada para este
+            //                  modelo (falta habilitar facturación en el
+            //                  proyecto). Mañana va a fallar igual.
+            //  - sin limit:0 → cuota real agotada por uso; mañana se renueva.
+            $sinCuotaAsignada = str_contains($detalle, 'limit: 0');
+            return $fallo($sinCuotaAsignada
+                ? 'La cuenta de IA no tiene cuota habilitada para generar imágenes'
+                : 'Se agotó la cuota diaria del servicio de imágenes, probá mañana');
+        }
+
+        return $fallo('El servicio de imágenes rechazó el pedido');
     }
 
     $base64 = rh_gemini_extraer_imagen($respuesta);
@@ -165,4 +175,236 @@ function rh_gemini_generar_avatar(string $rutaFoto): array
     }
 
     return ['ok' => true, 'imagen' => $bytes, 'error' => null];
+}
+
+/**
+ * Extrae texto de una respuesta generateContent (candidates[].content.parts[].text).
+ */
+function rh_gemini_extraer_texto(array $respuesta): ?string
+{
+    foreach ($respuesta['candidates'] ?? [] as $candidato) {
+        $chunks = [];
+        foreach ($candidato['content']['parts'] ?? [] as $part) {
+            if (!empty($part['text']) && is_string($part['text'])) {
+                $chunks[] = $part['text'];
+            }
+        }
+        if ($chunks) {
+            return implode("\n", $chunks);
+        }
+    }
+    return null;
+}
+
+/**
+ * Modelo multimodal de texto (OCR / clasificación). Separado del de imagen.
+ */
+function rh_gemini_modelo_texto(): string
+{
+    $config = rh_gemini_config();
+    return (string) ($config['GEMINI_MODELO_TEXTO'] ?? 'gemini-2.5-flash');
+}
+
+/**
+ * Llamada genérica generateContent con partes ya armadas (texto + imágenes).
+ *
+ * @param list<array<string,mixed>> $parts
+ * @return array{ok: bool, texto: ?string, error: ?string, raw: ?array}
+ */
+function rh_gemini_generate_content(array $parts): array
+{
+    $fallo = fn (string $msg): array => ['ok' => false, 'texto' => null, 'error' => $msg, 'raw' => null];
+
+    if (!rh_gemini_configurado()) {
+        return $fallo('Gemini no está configurado');
+    }
+
+    $config = rh_gemini_config();
+    $url = str_replace('{modelo}', rh_gemini_modelo_texto(), $config['GEMINI_ENDPOINT'] ?? '');
+    if ($url === '') {
+        return $fallo('Falta configurar el endpoint de Gemini');
+    }
+
+    $body = [
+        'contents' => [['parts' => $parts]],
+        'generationConfig' => [
+            'temperature' => 0.1,
+            'responseMimeType' => 'application/json',
+        ],
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'x-goog-api-key: ' . $config['GEMINI_API_KEY'],
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, RH_GEMINI_TIMEOUT_SEGUNDOS);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+    $raw = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $errCurl = curl_error($ch);
+    curl_close($ch);
+
+    if ($raw === false) {
+        error_log('rh_gemini_text: cURL — ' . $errCurl);
+        return $fallo('No se pudo conectar con Gemini');
+    }
+
+    $respuesta = json_decode($raw, true);
+    if (!is_array($respuesta)) {
+        return $fallo('Gemini devolvió una respuesta inesperada');
+    }
+
+    if ($httpCode >= 400) {
+        $detalle = $respuesta['error']['message'] ?? ('HTTP ' . $httpCode);
+        error_log('rh_gemini_text: ' . $detalle);
+        return $fallo($httpCode === 429
+            ? 'Se agotó la cuota de Gemini, probá más tarde'
+            : 'Gemini rechazó el pedido');
+    }
+
+    $texto = rh_gemini_extraer_texto($respuesta);
+    if ($texto === null || $texto === '') {
+        return $fallo('Gemini no devolvió texto');
+    }
+
+    return ['ok' => true, 'texto' => $texto, 'error' => null, 'raw' => $respuesta];
+}
+
+function rh_gemini_part_imagen(string $ruta): ?array
+{
+    if (!is_file($ruta) || !is_readable($ruta)) {
+        return null;
+    }
+    $contenido = @file_get_contents($ruta);
+    if ($contenido === false || $contenido === '') {
+        return null;
+    }
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $ruta) ?: 'image/jpeg';
+    finfo_close($finfo);
+
+    return [
+        'inline_data' => [
+            'mime_type' => $mime,
+            'data' => base64_encode($contenido),
+        ],
+    ];
+}
+
+const RH_GEMINI_PROMPT_VERIFICACION = <<<'PROMPT'
+Analizá estas 3 imágenes de verificación de identidad en Argentina, en este orden:
+1) frente del DNI
+2) dorso del DNI
+3) selfie de la persona
+
+Respondé SOLO un JSON válido (sin markdown) con esta forma exacta:
+{
+  "es_dni_frente": true,
+  "es_dni_dorso": true,
+  "selfie_tiene_rostro": true,
+  "selfie_parece_viva": true,
+  "face_match_score": 0.0,
+  "dni_numero": null,
+  "nombre_completo": null,
+  "sexo": null,
+  "documento_legible": true,
+  "nombre_coincide_perfil": null,
+  "problemas": [],
+  "resumen": ""
+}
+
+Reglas:
+- face_match_score es 0.0 a 1.0: similitud entre el rostro de la foto del DNI (frente) y la selfie.
+- dni_numero: solo dígitos del DNI argentino si se lee; si no, null.
+- nombre_completo: tal cual en el documento si se lee.
+- sexo: "M", "F" o null.
+- nombre_coincide_perfil: true/false/null según el nombre de perfil que te pasamos; null si no aplica.
+- problemas: lista corta de strings en español (ej. "no es un DNI", "selfie borrosa", "rostros distintos").
+- resumen: una frase corta en español para el usuario.
+- Sé estricto: si la imagen 1 no es claramente un DNI argentino frente, es_dni_frente=false.
+PROMPT;
+
+/**
+ * Analiza DNI frente/dorso + selfie con Gemini (OCR + face match aproximado).
+ *
+ * @return array{ok: bool, data: ?array, error: ?string}
+ */
+function rh_gemini_analizar_verificacion(
+    string $rutaFrente,
+    string $rutaDorso,
+    string $rutaSelfie,
+    ?string $nombrePerfil = null
+): array {
+    $fallo = fn (string $msg): array => ['ok' => false, 'data' => null, 'error' => $msg];
+
+    $img1 = rh_gemini_part_imagen($rutaFrente);
+    $img2 = rh_gemini_part_imagen($rutaDorso);
+    $img3 = rh_gemini_part_imagen($rutaSelfie);
+    if (!$img1 || !$img2 || !$img3) {
+        return $fallo('Faltan imágenes legibles para el análisis');
+    }
+
+    $prompt = RH_GEMINI_PROMPT_VERIFICACION;
+    if ($nombrePerfil !== null && trim($nombrePerfil) !== '') {
+        $prompt .= "\nNombre declarado en el perfil de la app: " . trim($nombrePerfil);
+    }
+
+    $res = rh_gemini_generate_content([
+        ['text' => $prompt],
+        $img1,
+        $img2,
+        $img3,
+    ]);
+    if (!$res['ok']) {
+        return $fallo($res['error'] ?? 'Error de Gemini');
+    }
+
+    $texto = trim((string) $res['texto']);
+    if (preg_match('/```(?:json)?\s*([\s\S]*?)```/', $texto, $m)) {
+        $texto = trim($m[1]);
+    }
+
+    $data = json_decode($texto, true);
+    if (!is_array($data)) {
+        error_log('rh_gemini_verif: JSON inválido — ' . substr($texto, 0, 400));
+        return $fallo('No se pudo interpretar el análisis automático');
+    }
+
+    $score = isset($data['face_match_score']) && is_numeric($data['face_match_score'])
+        ? max(0.0, min(1.0, (float) $data['face_match_score']))
+        : 0.0;
+
+    $normalizado = [
+        'es_dni_frente' => !empty($data['es_dni_frente']),
+        'es_dni_dorso' => !empty($data['es_dni_dorso']),
+        'selfie_tiene_rostro' => !empty($data['selfie_tiene_rostro']),
+        'selfie_parece_viva' => array_key_exists('selfie_parece_viva', $data)
+            ? (bool) $data['selfie_parece_viva']
+            : true,
+        'face_match_score' => $score,
+        'dni_numero' => isset($data['dni_numero']) && $data['dni_numero'] !== null
+            ? preg_replace('/\D+/', '', (string) $data['dni_numero'])
+            : null,
+        'nombre_completo' => isset($data['nombre_completo']) ? (string) $data['nombre_completo'] : null,
+        'sexo' => isset($data['sexo']) ? strtoupper(substr((string) $data['sexo'], 0, 1)) : null,
+        'documento_legible' => !empty($data['documento_legible']),
+        'nombre_coincide_perfil' => array_key_exists('nombre_coincide_perfil', $data)
+            ? ($data['nombre_coincide_perfil'] === null ? null : (bool) $data['nombre_coincide_perfil'])
+            : null,
+        'problemas' => is_array($data['problemas'] ?? null)
+            ? array_values(array_map('strval', $data['problemas']))
+            : [],
+        'resumen' => isset($data['resumen']) ? (string) $data['resumen'] : '',
+    ];
+
+    if ($normalizado['dni_numero'] === '') {
+        $normalizado['dni_numero'] = null;
+    }
+
+    return ['ok' => true, 'data' => $normalizado, 'error' => null];
 }
