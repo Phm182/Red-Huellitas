@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Red Huellitas",
+    "slug": "red-huellitas",
+    "version": "1.0.0",
+    "scheme": "redhuellitas",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Red Huellitas usa tu ubicación para mostrar tu zona a otros usuarios y encontrar mascotas/servicios cercanos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Red Huellitas necesita acceso a tus fotos para subir imágenes de perfil y verificación.",
+          "cameraPermission": "Red Huellitas necesita acceso a tu cámara para tomar fotos de verificación y perfil."
+        }
+      ],
+      "expo-video"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

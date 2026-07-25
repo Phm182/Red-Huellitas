@@ -1,0 +1,10 @@
+<?php
+/**
+ * Copiar este archivo a google.local.php (gitignored) y completar con los
+ * Client IDs creados en Google Cloud Console (OAuth consent screen).
+ */
+return [
+    'GOOGLE_CLIENT_ID_WEB' => '',
+    'GOOGLE_CLIENT_ID_ANDROID' => '',
+    'GOOGLE_CLIENT_ID_IOS' => '',
+];

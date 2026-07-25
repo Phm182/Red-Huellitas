@@ -1,0 +1,29 @@
+<?php
+/**
+ * Copiar este archivo a email.local.php (gitignored) y completar.
+ *
+ * Sin este archivo — o con MAIL_FROM vacío — el envío de emails queda
+ * DESACTIVADO de forma silenciosa: los comprobantes se siguen pudiendo ver y
+ * descargar desde la app, simplemente no se mandan por mail. Ningún flujo se
+ * rompe por esto (mismo criterio que Mercado Pago).
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ *  PARA CAMBIAR LA CASILLA DESDE LA QUE SALEN LOS MAILS:
+ *  editar inc/config/email.local.php y cambiar MAIL_FROM y MAIL_NAME (lo que
+ *  ve el destinatario), y las 5 claves SMTP_* (el servidor que los envía).
+ *  Es el único lugar del proyecto donde vive esa configuración.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+return [
+    // Servidor SMTP que efectivamente manda los mails
+    'SMTP_HOST'   => '',
+    'SMTP_USER'   => '',
+    'SMTP_PASS'   => '',
+    'SMTP_PORT'   => 587,
+    'SMTP_SECURE' => 'tls', // 'tls' | 'ssl' | '' (sin cifrado)
+
+    // Remitente que ve el destinatario. En la mayoría de los hostings
+    // MAIL_FROM tiene que ser la misma casilla autenticada en SMTP_USER.
+    'MAIL_FROM'   => '',
+    'MAIL_NAME'   => 'Red Huellitas',
+];

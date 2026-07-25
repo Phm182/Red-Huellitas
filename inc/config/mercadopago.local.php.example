@@ -1,0 +1,21 @@
+<?php
+/**
+ * Copiar este archivo a mercadopago.local.php (gitignored) y completar con
+ * las credenciales de la cuenta de Mercado Pago (TEST-... en sandbox,
+ * APP_USR-... en producción — no mezclar prefijos entre ACCESS_TOKEN y
+ * PUBLIC_KEY).
+ */
+return [
+    'MP_ACCESS_TOKEN' => '',
+    'MP_PUBLIC_KEY' => '',
+    'MP_BACK_URL' => '',
+    'SOPORTE_WHATSAPP' => '',
+
+    // App "Marketplace" registrada en el panel de desarrolladores de Mercado
+    // Pago (distinta del access token simple de arriba) — necesaria para que
+    // cada vendedor vincule su propia cuenta vía OAuth y el checkout pueda
+    // retener marketplace_fee al cobrar a nombre del vendedor.
+    'MP_CLIENT_ID' => '',
+    'MP_CLIENT_SECRET' => '',
+    'MP_MARKETPLACE_REDIRECT_URI' => '', // URL pública HTTPS del callback OAuth (MP no acepta localhost)
+];

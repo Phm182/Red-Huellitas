@@ -1,0 +1,24 @@
+﻿<?php
+    $host = 'localhost';
+    $user = 'root';
+    $password = '';
+    $dbname = 'huellitas';
+    $port = '3306';
+    
+$admin_setup_key = 'CAMBIAR_ESTA_CLAVE';
+
+// Crear conexión
+$conn = new mysqli($host, $user, $password, $dbname, (int) $port);
+
+// Verificar conexión
+if ($conn->connect_error) {
+    die("Error de conexión: " . $conn->connect_error);
+}
+
+if (!$conn->set_charset('utf8mb4')) {
+    error_log("Error seteando charset utf8mb4: " . $conn->error);
+}
+
+$conn->query("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+$conn->query("SET collation_connection = 'utf8mb4_unicode_ci'");
+@$conn->query("SET time_zone = '-03:00'");

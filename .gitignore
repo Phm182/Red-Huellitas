@@ -1,0 +1,33 @@
+# Dependencias PHP (composer install las regenera)
+/vendor/
+composer.lock
+
+# Configuración con credenciales reales — nunca versionar.
+# Cada uno tiene su .example al lado con las claves vacías.
+inc/config/*.local.php
+
+# Archivos privados servidos con control de acceso (carnets, verificación DNI/selfie)
+inc/storage/
+
+# Archivos subidos por usuarios (avatares, fotos de mascotas, publicaciones, productos)
+uploads/
+
+# Node / Expo
+node_modules/
+app-movil/node_modules/
+app-movil/.expo/
+app-movil/dist/
+.env
+.env.local
+
+# Sistema
+Thumbs.db
+.DS_Store
+
+# Cursor / Claude local
+.claude/
+
+
+# Credenciales DB (mismo criterio que BitFlow)
+inc/funciones/bd.php
+

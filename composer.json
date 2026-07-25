@@ -1,0 +1,13 @@
+{
+    "name": "red-huellitas/backend",
+    "description": "Dependencias del backend PHP de Red Huellitas. El resto del proyecto (Google Auth, Mercado Pago) usa cURL crudo sin SDK a propósito — estas dos librerías se sumaron en Fase 6d porque generar un PDF y hablar SMTP a mano no tiene sentido.",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "dompdf/dompdf": "^3.1",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
