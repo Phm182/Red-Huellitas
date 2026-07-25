@@ -31,6 +31,28 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
   - Se registraría con `schtasks` igual que la ingesta de noticias (ej. una vez por día).
 - **Estado**: no implementado.
 
+### 5. Tarea programada — Recordatorios del minijuego (Fase 7a)
+- **Qué**: corre `inc/cli/juego_recordatorios.php`, que avisa por push a los usuarios cuya mascota del juego tiene los stats bajos ("tu mascota te extraña"). Manda un push por usuario, no uno por mascota, y saltea a quien haya jugado en las últimas 20hs.
+- **Por qué pendiente**: registrar una tarea programada modifica la máquina del usuario — es una decisión suya, no algo que deba hacer por mi cuenta.
+- **Comando** (una vez por día a las 19:00, que es cuando la gente está en el teléfono):
+  ```bash
+  schtasks /create /tn "RH_Juego_Recordatorios" /tr "C:\xampp\php\php.exe \"C:\xampp\htdocs\Red Huellitas\inc\cli\juego_recordatorios.php\"" /sc daily /st 19:00
+  ```
+- **Para ver a quién notificaría sin mandar nada** (útil para probar el balance del juego):
+  ```bash
+  C:\xampp\php\php.exe "C:\xampp\htdocs\Red Huellitas\inc\cli\juego_recordatorios.php" --dry-run
+  ```
+- **Estado**: no ejecutado todavía. Ojo: sin el item 6 de acá abajo, el script corre bien pero no hay tokens a los que mandar.
+
+### 6. Expo — `eas.projectId` para que funcione el push (arrastra desde Fase 4b)
+- **Qué**: `src/hooks/usePushNotifications.ts` corta temprano (`if (!projectId) return`) porque `app.json` no tiene `extra.eas.projectId`. Sin eso **ningún dispositivo registra su token**, así que `Usuario.ExpoPushToken` siempre queda en NULL y **todo el push del proyecto está inactivo** (campañas, perdidos, match y ahora el minijuego).
+- **Por qué pendiente**: el projectId lo genera EAS contra una cuenta de Expo del usuario. No es un valor que se pueda inventar — poner uno falso es peor que no tenerlo, porque saltea el guard del hook y hace fallar `getExpoPushTokenAsync`.
+- **Pasos**:
+  1. Crear cuenta en [expo.dev](https://expo.dev) si no hay.
+  2. Desde `app-movil/`: `npx eas init` — escribe `extra.eas.projectId` en `app.json` automáticamente.
+  3. Para probar de verdad hace falta un build de EAS en un dispositivo físico: el push **no funciona en web ni en Expo Go**.
+- **Estado**: no ejecutado. Es la razón por la que el push nunca se pudo verificar end-to-end en ninguna fase.
+
 ## Antes de ir a producción (no urgente en desarrollo local)
 
 ### 4. Revisar límites de `php.ini` para producción

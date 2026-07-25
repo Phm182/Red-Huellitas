@@ -490,5 +490,46 @@
     "conectadoComo": "Connesso come {{email}}",
     "cambiarCuentaButton": "Cambia account",
     "noConfigurado": "Il collegamento con Mercado Pago non è ancora configurato"
+  },
+  "juego": {
+    "titulo": "Prenditi cura del tuo animale",
+    "sinMascotas": "Aggiungi prima un animale per poterne prendere cura qui.",
+    "sinEmpezar": "Non te ne sei ancora occupato",
+    "nivel": "Livello {{nivel}}",
+    "subioNivel": "Hai raggiunto il livello {{nivel}}!",
+    "stats": {
+      "hambre": "Cibo",
+      "felicidad": "Umore",
+      "energia": "Energia",
+      "higiene": "Igiene"
+    },
+    "acciones": {
+      "alimentar": "Dai da mangiare",
+      "jugar": "Gioca",
+      "banar": "Lava",
+      "dormir": "Riposa"
+    },
+    "animo": {
+      "feliz": "È felice e pieno di energia!",
+      "bien": "È tranquillo e a suo agio.",
+      "aburrido": "È un po' annoiato, un momento con te gli farebbe bene.",
+      "decaido": "Gli manchi. Passa un attimo a coccolarlo."
+    },
+    "racha_one": "{{count}} giorno di fila",
+    "racha_other": "{{count}} giorni di fila",
+    "avatar": {
+      "crear": "Crea avatar con IA",
+      "generando": "Sto creando l'avatar del tuo animale…\nPuò richiedere qualche secondo.",
+      "regenerar": "Generane un altro",
+      "volverFoto": "Torna alla foto",
+      "restantes_one": "Ti resta {{count}} avatar oggi",
+      "restantes_other": "Ti restano {{count}} avatar oggi",
+      "motivo": {
+        "no_configurado": "La creazione di avatar con IA non è ancora disponibile.",
+        "sin_foto": "Aggiungi una foto del tuo animale per creare il suo avatar.",
+        "limite_usuario": "Hai già usato tutti i tuoi avatar di oggi. Torna domani.",
+        "limite_global": "È stato raggiunto il limite giornaliero di avatar. Torna domani."
+      }
+    }
   }
 }

@@ -490,5 +490,46 @@
     "conectadoComo": "Connected as {{email}}",
     "cambiarCuentaButton": "Switch account",
     "noConfigurado": "Mercado Pago linking isn't set up yet"
+  },
+  "juego": {
+    "titulo": "Care for my pet",
+    "sinMascotas": "Add a pet first so you can care for it here.",
+    "sinEmpezar": "You haven't cared for them yet",
+    "nivel": "Level {{nivel}}",
+    "subioNivel": "You reached level {{nivel}}!",
+    "stats": {
+      "hambre": "Food",
+      "felicidad": "Mood",
+      "energia": "Energy",
+      "higiene": "Hygiene"
+    },
+    "acciones": {
+      "alimentar": "Feed",
+      "jugar": "Play",
+      "banar": "Bathe",
+      "dormir": "Rest"
+    },
+    "animo": {
+      "feliz": "Happy and full of energy!",
+      "bien": "Calm and content.",
+      "aburrido": "A little bored — some time with you would help.",
+      "decaido": "They miss you. Drop by for some cuddles."
+    },
+    "racha_one": "{{count}} day in a row",
+    "racha_other": "{{count}} days in a row",
+    "avatar": {
+      "crear": "Create AI avatar",
+      "generando": "Creating your pet's avatar…\nThis can take a few seconds.",
+      "regenerar": "Generate another",
+      "volverFoto": "Back to photo",
+      "restantes_one": "{{count}} avatar left today",
+      "restantes_other": "{{count}} avatars left today",
+      "motivo": {
+        "no_configurado": "AI avatar creation isn't available yet.",
+        "sin_foto": "Add a photo of your pet to create their avatar.",
+        "limite_usuario": "You've used all your avatars for today. Come back tomorrow.",
+        "limite_global": "The daily avatar limit was reached. Come back tomorrow."
+      }
+    }
   }
 }

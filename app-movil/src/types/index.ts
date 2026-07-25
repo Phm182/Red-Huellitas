@@ -527,6 +527,59 @@ export interface MpVendedorEstado {
   mpEmail: string | null;
 }
 
+export type JuegoAnimo = 'feliz' | 'bien' | 'aburrido' | 'decaido';
+export type JuegoAccion = 'alimentar' | 'jugar' | 'banar' | 'dormir';
+
+export interface JuegoStats {
+  hambre: number;
+  felicidad: number;
+  energia: number;
+  higiene: number;
+}
+
+/** Segundos que faltan para poder repetir cada acción (0 = disponible). */
+export type JuegoCooldowns = Record<JuegoAccion, number>;
+
+export interface MascotaJuego {
+  mascotaId: number;
+  nombre: string;
+  especie: Especie;
+  avatarPath: string | null;
+  avatarEsGenerado: boolean;
+  stats: JuegoStats;
+  animo: JuegoAnimo;
+  cooldowns: JuegoCooldowns;
+  nivel: number;
+  experiencia: number;
+  experienciaNivel: number;
+  experienciaPorNivel: number;
+  rachaDias: number;
+}
+
+/** Por qué no se puede generar el avatar IA, si es que no se puede. */
+export type JuegoAvatarMotivo = 'no_configurado' | 'sin_foto' | 'limite_usuario' | 'limite_global';
+
+export interface JuegoAvatarEstado {
+  disponible: boolean;
+  restantesHoy: number;
+  tieneFotoOrigen: boolean;
+  tieneAvatarGenerado: boolean;
+  motivo: JuegoAvatarMotivo | null;
+}
+
+/** Fila del selector: no incluye cooldowns porque todavía no se entró a jugar. */
+export interface MascotaJuegoResumen {
+  mascotaId: number;
+  nombre: string;
+  especie: Especie;
+  avatarPath: string | null;
+  stats: JuegoStats;
+  animo: JuegoAnimo;
+  nivel: number;
+  rachaDias: number;
+  empezado: boolean;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;

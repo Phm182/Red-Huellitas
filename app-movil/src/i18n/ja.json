@@ -490,5 +490,44 @@
     "conectadoComo": "{{email}} として連携中",
     "cambiarCuentaButton": "アカウントを変更",
     "noConfigurado": "Mercado Pago連携はまだ設定されていません"
+  },
+  "juego": {
+    "titulo": "うちの子のお世話",
+    "sinMascotas": "まずペットを登録すると、ここでお世話ができます。",
+    "sinEmpezar": "まだお世話をしていません",
+    "nivel": "レベル {{nivel}}",
+    "subioNivel": "レベル {{nivel}} になりました！",
+    "stats": {
+      "hambre": "ごはん",
+      "felicidad": "きげん",
+      "energia": "げんき",
+      "higiene": "せいけつ"
+    },
+    "acciones": {
+      "alimentar": "ごはん",
+      "jugar": "あそぶ",
+      "banar": "おふろ",
+      "dormir": "やすむ"
+    },
+    "animo": {
+      "feliz": "元気いっぱいで嬉しそうです！",
+      "bien": "落ち着いていて心地よさそうです。",
+      "aburrido": "少し退屈そう。少しかまってあげましょう。",
+      "decaido": "さみしがっています。少しだけなでてあげてください。"
+    },
+    "racha_other": "{{count}}日連続",
+    "avatar": {
+      "crear": "AIでアバターを作る",
+      "generando": "アバターを作成中です…\n数秒かかることがあります。",
+      "regenerar": "作り直す",
+      "volverFoto": "写真に戻す",
+      "restantes_other": "今日はあと {{count}} 回",
+      "motivo": {
+        "no_configurado": "AIアバターの作成はまだ利用できません。",
+        "sin_foto": "アバターを作るには、ペットの写真を追加してください。",
+        "limite_usuario": "今日の作成回数を使い切りました。また明日どうぞ。",
+        "limite_global": "本日の作成上限に達しました。また明日どうぞ。"
+      }
+    }
   }
 }

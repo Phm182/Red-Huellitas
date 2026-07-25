@@ -114,6 +114,8 @@ export default function AppLayout() {
           <Stack.Screen name="pedidos/mis-compras" options={{ headerShown: true, title: t('pedidos.misCompras') }} />
           <Stack.Screen name="pedidos/mis-ventas" options={{ headerShown: true, title: t('pedidos.misVentas') }} />
           <Stack.Screen name="pedidos/[id]" options={{ headerShown: true, title: t('pedidos.detalleTitulo') }} />
+          <Stack.Screen name="juego/index" options={{ headerShown: true, title: t('juego.titulo') }} />
+          <Stack.Screen name="juego/[mascotaId]" options={{ headerShown: true, title: t('juego.titulo') }} />
         </Stack>
         <FloatingReportButton />
       </View>

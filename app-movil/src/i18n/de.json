@@ -490,5 +490,46 @@
     "conectadoComo": "Verbunden als {{email}}",
     "cambiarCuentaButton": "Konto wechseln",
     "noConfigurado": "Die Mercado-Pago-Verknüpfung ist noch nicht eingerichtet"
+  },
+  "juego": {
+    "titulo": "Mein Tier versorgen",
+    "sinMascotas": "Lege zuerst ein Tier an, um dich hier darum kümmern zu können.",
+    "sinEmpezar": "Du hast dich noch nicht gekümmert",
+    "nivel": "Level {{nivel}}",
+    "subioNivel": "Du hast Level {{nivel}} erreicht!",
+    "stats": {
+      "hambre": "Futter",
+      "felicidad": "Laune",
+      "energia": "Energie",
+      "higiene": "Hygiene"
+    },
+    "acciones": {
+      "alimentar": "Füttern",
+      "jugar": "Spielen",
+      "banar": "Baden",
+      "dormir": "Ausruhen"
+    },
+    "animo": {
+      "feliz": "Glücklich und voller Energie!",
+      "bien": "Ruhig und zufrieden.",
+      "aburrido": "Etwas gelangweilt — Zeit mit dir würde guttun.",
+      "decaido": "Du wirst vermisst. Komm kurz vorbei zum Kuscheln."
+    },
+    "racha_one": "{{count}} Tag in Folge",
+    "racha_other": "{{count}} Tage in Folge",
+    "avatar": {
+      "crear": "KI-Avatar erstellen",
+      "generando": "Avatar deines Tieres wird erstellt…\nDas kann ein paar Sekunden dauern.",
+      "regenerar": "Neu generieren",
+      "volverFoto": "Zurück zum Foto",
+      "restantes_one": "Noch {{count}} Avatar heute",
+      "restantes_other": "Noch {{count}} Avatare heute",
+      "motivo": {
+        "no_configurado": "Die KI-Avatar-Erstellung ist noch nicht verfügbar.",
+        "sin_foto": "Lade ein Foto deines Tieres hoch, um den Avatar zu erstellen.",
+        "limite_usuario": "Du hast heute alle Avatare aufgebraucht. Komm morgen wieder.",
+        "limite_global": "Das Tageslimit für Avatare ist erreicht. Komm morgen wieder."
+      }
+    }
   }
 }

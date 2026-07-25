@@ -2,9 +2,18 @@
 
 > Este archivo es el punto de partida para retomar el desarrollo en cualquier máquina. Resume qué se construyó, cómo se trabajó, y qué queda por hacer. Pegalo como primer mensaje de la conversación nueva (o decile a Claude "leé ESTADO_Y_PLAN_PROYECTO.md") para que tenga contexto completo sin tener que releer todo el historial.
 
-**Última actualización**: 2026-07-24. **Fases 1 a 6 completas y verificadas** (6a Suscripción, 6b Catálogo, 6c Carrito+Pedido+comisión MP, 6d Comprobantes PDF+email+historial). **Solo queda la Fase 7** (minijuego Pet Society 2D), sin arrancar.
+**Última actualización**: 2026-07-25. 🎉 **Las 7 fases están completas y verificadas.** El desarrollo de la spec original terminó.
 
-> ⚠️ **En una máquina nueva ahora hace falta `composer install`** en la raíz del proyecto — desde Fase 6d el backend usa dompdf y PHPMailer. Sin `vendor/` la app funciona igual, pero los comprobantes y los emails responden 503.
+Lo que queda son **3 pasos de activación que dependen de vos**, ninguno bloquea el uso local (todo degrada solo si falta):
+1. **API key de Gemini** → habilita el avatar IA del minijuego. [Google AI Studio](https://aistudio.google.com), gratis y sin tarjeta. Se pega en `inc/config/gemini.local.php`.
+2. **`npx eas init`** → habilita el push en todo el proyecto (campañas, perdidos, match, minijuego). Hoy está inactivo desde Fase 4b.
+3. **Registrar los 2 `schtasks`** (ingesta de noticias y recordatorios del juego). Ver `AUTOMATIZACIONES_PENDIENTES.md`.
+
+Además, cuando tengas casilla propia de email, cambiar el remitente en `inc/config/email.local.php` (hoy sale desde la de Contapp).
+
+> ⚠️ **En una máquina nueva hace falta `composer install`** en la raíz — desde Fase 6d el backend usa dompdf y PHPMailer. Sin `vendor/` la app funciona igual, pero los comprobantes y los emails responden 503.
+>
+> ⚠️ **`inc/funciones/bd.php` está gitignoreado** (tiene las credenciales de la DB), así que en una máquina nueva hay que crearlo a mano. Importante: además de la conexión, ese archivo fija **la zona horaria de MySQL y de PHP** (`-03:00` / `America/Argentina/Buenos_Aires`) — si falta la línea de PHP, vuelve el bug de desfasaje descrito en Fase 7a.
 
 ---
 
@@ -110,10 +119,30 @@ Replicar esquema de `contapp_schema_final.md` (otro proyecto del usuario, mismo 
 
 **Conexión con Fase 4.6**: las veterinarias que quieran ofrecer catálogo de servicios pago necesitan esta misma suscripción — ese enganche se resuelve reusando `rh_usuario_tiene_suscripcion_activa()`, no hace falta nada nuevo del lado de Suscripción.
 
-### ⬜ Fase 7 — Minijuego "Pet Society" 2D (SIN ARRANCAR)
-Avatar 2D generado por AI Vision a partir de la foto real de la mascota; canvas 2D interactivo (caminar/alimentar/jugar) con otras mascotas de la red.
+### ✅ Fase 7 — Minijuego "Pet Society" (COMPLETA — 7a el juego, 7b el avatar IA)
 
-**Lo que falta decidir**: qué servicio de AI Vision generará el avatar (no definido), motor/librería para el canvas 2D en Expo Router (no evaluado todavía), si es features server-authoritative (estado del juego en el backend) o todo cliente con sync ocasional.
+**El concepto cambió respecto de la spec original.** La spec hablaba de "avatar 2D por AI Vision + canvas 2D con otras mascotas de la red"; el usuario lo redefinió como **un Tamagotchi donde cuidás a tu propia mascota** ya registrada en la app. Eso es lo que se construyó.
+
+**✅ 7a — El juego (completa, 2026-07-25)**
+- **Cuidás a tu propia mascota**, con su foto real (`fotos[0]`) animada con Reanimated. Si no tiene foto, cae a un emoji según la especie.
+- **Nunca muere ni se enferma** — decisión de producto explícita. Los stats tienen piso en 0 y de ahí sale un ánimo `decaido` con un mensaje cálido ("Te extraña. Pasá un ratito a hacerle mimos"). El avatar es la foto de una mascota real en una app de bienestar animal; un "tu mascota murió" ahí sería inaceptable.
+- **El decay no usa cron**: se guarda el stat + `StatsActualizadoEn` y el valor real se deriva al leer. La fila sólo se escribe cuando el usuario hace una acción — mismo criterio que Historias. 4 stats (comida/ánimo/energía/higiene) con ritmos distintos; el hambre es el más rápido (100→0 en ~25h), así que entrar una vez por día alcanza.
+- 4 acciones con cooldown propio y efectos cruzados (jugar sube el ánimo pero gasta energía y da hambre), XP/nivel y racha de días consecutivos.
+- **Todo el cálculo temporal se hace en MySQL** (`TIMESTAMPDIFF`/`DATEDIFF`/`CURDATE`), no en PHP — ver el bug de zonas horarias más abajo.
+- Push de recordatorio: `rh_enviar_push()` se extendió con payload `data` (deep-link) y **chunking de 100 tokens**, que no tenía y es el límite de Expo (una campaña grande no le llegaba a nadie). El script `inc/cli/juego_recordatorios.php` manda un push por usuario, saltea a quien jugó hace menos de 20hs, y tiene `--dry-run` para probar el balance sin enviar nada. **Falta registrarlo en el Programador de Tareas** (item 5 de `AUTOMATIZACIONES_PENDIENTES.md`).
+- **Primeras dependencias declaradas del frontend**: `react-native-reanimated` y `react-native-gesture-handler` ya estaban en `node_modules` como peers de `expo-router` (y el plugin de Babel se auto-inyecta), pero no en `package.json`. Se fijaron con `npx expo install` para que un update no las mueva. También se sumó `warning` a `ThemeColors` (hacían falta 4 colores de stat y había 3).
+- **🐛 Bug sistémico encontrado y corregido**: **PHP corría en `Europe/Berlin` y MySQL en `-03:00`** — 5 horas de desfasaje en cualquier comparación entre `time()`/`date()` de PHP y un `DATETIME` de MySQL. Se detectó porque el juego descontaba 5hs de decay apenas se creaba la mascota, pero **afectaba a más cosas**: `suscripcion.php` podía dar una suscripción por vencida 5hs antes en la madrugada, las sesiones duraban 30 días + 5hs, y el `ExpiresAt` del token de MP quedaba corrido. Se arregló en la raíz con `date_default_timezone_set('America/Argentina/Buenos_Aires')` en `bd.php`, al lado del `SET time_zone` que ya estaba.
+
+**✅ 7b — Avatar generado por IA (completa, 2026-07-25)**. Con esto **el proyecto queda terminado**.
+- **Proveedor: Gemini 2.5 Flash Image ("Nano Banana")** — hace **img2img real** (mantiene la identidad de la mascota, no dibuja "un perro genérico") y da **500 imágenes/día gratis por API sin tarjeta**. `inc/funciones/gemini.php`, cURL crudo sin SDK, coherente con Google Auth y Mercado Pago.
+- **El prompt es lo que define la calidad** y vive en una sola constante comentada (`RH_GEMINI_PROMPT_AVATAR`): está en inglés y pide explícitamente conservar color de pelaje, forma de orejas y manchas, porque sin eso el modelo devuelve un animal genérico y se pierde la gracia. Para cambiar el estilo del avatar se toca ahí y en ningún otro lado.
+- **Endpoint y modelo son configurables**, no están hardcodeados: Google está migrando a `/v1beta/interactions` con otro formato, así que si cambia se ajusta en el `.local.php`. El parser de la respuesta además **recorre las `parts` en vez de asumir un índice** y contempla los dos formatos.
+- **Doble cuota** (`MascotaAvatarGeneracion` como log y contador): 3 por usuario/día y 400 globales/día, por debajo de las 500 reales. Los intentos **fallidos no consumen cuota**, y el corte por día usa `CURDATE()` de MySQL (ver el bug de zonas horarias de 7a).
+- **Degradación completa**: sin `gemini.local.php` la feature se apaga sola y el juego sigue mostrando la foto real; en la UI aparece un texto explicativo en vez de un botón muerto. Si la llamada falla, el avatar anterior **no se toca** (el borrado del viejo pasa recién cuando el nuevo ya está guardado en disco).
+- **Verificado sin API key** (que es el estado real hoy): 503 con mensaje claro, el juego intacto, y **toda la lógica de cuota probada** insertando filas a mano — límite personal, límite global, que las de ayer no cuenten, que las fallidas no cuenten, mascota sin foto (400) y mascota ajena (403). También se probó la llamada real con una key inválida: falla con gracia, queda registrada como fallida y no consume cuota.
+- **Lo único sin verificar es la generación real** — necesita una API key. Cuando la tengas: copiá `inc/config/gemini.local.php.example` a `gemini.local.php` y pegá la key de [Google AI Studio](https://aistudio.google.com) (gratis, sin tarjeta). No hace falta tocar nada más.
+
+**Idea descartada, documentada para no volver a evaluarla**: "que cada usuario conecte su cuenta de Google y gaste sus propios tokens". La API de Gemini **no expone un OAuth que facture al usuario final** (sólo vía Vertex AI, y eso autentica contra el proyecto GCP del desarrollador). El único BYOK posible sería que cada usuario pegue una API key a mano — mucha fricción y nos obligaría a guardar claves ajenas cifradas. Con 500/día gratis, además, no hace falta.
 
 ---
 
@@ -121,8 +150,8 @@ Avatar 2D generado por AI Vision a partir de la foto real de la mascota; canvas 
 
 1. Confirmar que XAMPP (MySQL + Apache) está corriendo: `/c/xampp/mysql_start.bat` y `/c/xampp/apache_start.bat` en background si no lo están.
 2. **Si es una máquina nueva o `vendor/` no existe: `composer install` en la raíz** (ver el aviso del encabezado).
-3. Decirle a Claude algo como: *"leé ESTADO_Y_PLAN_PROYECTO.md, arranquemos la Fase 7 (minijuego Pet Society 2D)"*.
-4. Claude debería arrancar en **plan mode** (explorar, escribir el plan, pedir aprobación) antes de tocar código, igual que en cada fase anterior. **Puntos a definir con el usuario antes de Fase 7**: qué servicio de AI Vision genera el avatar 2D a partir de la foto de la mascota, qué motor/librería de canvas 2D usar en Expo Router, y si el estado del juego vive en el backend o es todo cliente con sync ocasional. Ninguna de esas tres cosas está decidida.
+3. Decirle a Claude algo como: *"leé ESTADO_Y_PLAN_PROYECTO.md, hagamos la Fase 7b (avatar de la mascota generado por IA)"*.
+4. Claude debería arrancar en **plan mode** (explorar, escribir el plan, pedir aprobación) antes de tocar código, igual que en cada fase anterior. Para 7b lo principal ya está investigado y anotado arriba (Gemini Flash Image, 500 img/día gratis, img2img real; el BYOK con cuenta de Google no es viable). **Lo que falta de tu lado**: crear una API key en [Google AI Studio](https://aistudio.google.com) — es gratis y no pide tarjeta.
 
 **Pendiente operativo (no bloquea nada)**: los emails salen desde la casilla de Contapp (`soporte@cont-app.com`). Cuando exista la casilla propia de Red Huellitas, cambiar `MAIL_FROM`/`MAIL_NAME` y las claves `SMTP_*` en `inc/config/email.local.php`.
 4. Si en la máquina nueva no hay memoria persistente (`~/.claude/projects/.../memory/`), este archivo cubre lo esencial; los gotchas de la sección 6 son los que más tiempo ahorran repetir.

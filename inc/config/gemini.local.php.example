@@ -1,0 +1,25 @@
+<?php
+/**
+ * Copiar este archivo a gemini.local.php (gitignored) y completar la API key.
+ *
+ * La key se saca de Google AI Studio (https://aistudio.google.com): es gratis,
+ * no pide tarjeta, y el modelo de imagen da ~500 generaciones por día.
+ *
+ * Sin este archivo — o con la key vacía — la generación de avatares queda
+ * DESACTIVADA en silencio: el minijuego sigue funcionando y mostrando la foto
+ * real de la mascota. Mismo criterio que Mercado Pago y el email.
+ */
+return [
+    'GEMINI_API_KEY' => '',
+
+    // Endpoint y modelo configurables a propósito: Google está migrando a un
+    // endpoint nuevo (/v1beta/interactions) con otro formato de request. Si
+    // cambia, se ajusta acá sin tocar código. El {modelo} se reemplaza solo.
+    'GEMINI_ENDPOINT' => 'https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent',
+    'GEMINI_MODELO'   => 'gemini-2.5-flash-image',
+
+    // Topes propios, por debajo de la cuota gratuita real (~500/día), para que
+    // un solo usuario no se coma el cupo de todos.
+    'LIMITE_DIARIO_USUARIO' => 3,
+    'LIMITE_DIARIO_GLOBAL'  => 400,
+];

@@ -490,5 +490,46 @@
     "conectadoComo": "Connecté en tant que {{email}}",
     "cambiarCuentaButton": "Changer de compte",
     "noConfigurado": "La connexion avec Mercado Pago n'est pas encore configurée"
+  },
+  "juego": {
+    "titulo": "Prendre soin de mon animal",
+    "sinMascotas": "Ajoutez d'abord un animal pour pouvoir en prendre soin ici.",
+    "sinEmpezar": "Vous ne vous en êtes pas encore occupé",
+    "nivel": "Niveau {{nivel}}",
+    "subioNivel": "Vous avez atteint le niveau {{nivel}} !",
+    "stats": {
+      "hambre": "Nourriture",
+      "felicidad": "Humeur",
+      "energia": "Énergie",
+      "higiene": "Hygiène"
+    },
+    "acciones": {
+      "alimentar": "Nourrir",
+      "jugar": "Jouer",
+      "banar": "Laver",
+      "dormir": "Repos"
+    },
+    "animo": {
+      "feliz": "Heureux et plein d'énergie !",
+      "bien": "Calme et à l'aise.",
+      "aburrido": "Un peu de temps avec vous lui ferait du bien.",
+      "decaido": "Vous lui manquez. Passez un moment lui faire des câlins."
+    },
+    "racha_one": "{{count}} jour d'affilée",
+    "racha_other": "{{count}} jours d'affilée",
+    "avatar": {
+      "crear": "Créer un avatar IA",
+      "generando": "Création de l'avatar de votre animal…\nCela peut prendre quelques secondes.",
+      "regenerar": "En générer un autre",
+      "volverFoto": "Revenir à la photo",
+      "restantes_one": "Il vous reste {{count}} avatar aujourd'hui",
+      "restantes_other": "Il vous reste {{count}} avatars aujourd'hui",
+      "motivo": {
+        "no_configurado": "La création d'avatars par IA n'est pas encore disponible.",
+        "sin_foto": "Ajoutez une photo de votre animal pour créer son avatar.",
+        "limite_usuario": "Vous avez utilisé tous vos avatars du jour. Revenez demain.",
+        "limite_global": "La limite quotidienne d'avatars est atteinte. Revenez demain."
+      }
+    }
   }
 }

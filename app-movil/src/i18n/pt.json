@@ -490,5 +490,46 @@
     "conectadoComo": "Conectado como {{email}}",
     "cambiarCuentaButton": "Trocar de conta",
     "noConfigurado": "A vinculação com o Mercado Pago ainda não está configurada"
+  },
+  "juego": {
+    "titulo": "Cuidar do meu pet",
+    "sinMascotas": "Cadastre um pet primeiro para poder cuidar dele aqui.",
+    "sinEmpezar": "Você ainda não cuidou dele",
+    "nivel": "Nível {{nivel}}",
+    "subioNivel": "Você chegou ao nível {{nivel}}!",
+    "stats": {
+      "hambre": "Comida",
+      "felicidad": "Humor",
+      "energia": "Energia",
+      "higiene": "Higiene"
+    },
+    "acciones": {
+      "alimentar": "Alimentar",
+      "jugar": "Brincar",
+      "banar": "Banho",
+      "dormir": "Descansar"
+    },
+    "animo": {
+      "feliz": "Está feliz e cheio de energia!",
+      "bien": "Está tranquilo e à vontade.",
+      "aburrido": "Está um pouco entediado, um tempinho com você cairia bem.",
+      "decaido": "Está com saudades. Passe um pouquinho para fazer carinho."
+    },
+    "racha_one": "{{count}} dia seguido",
+    "racha_other": "{{count}} dias seguidos",
+    "avatar": {
+      "crear": "Criar avatar com IA",
+      "generando": "Criando o avatar do seu pet…\nPode levar alguns segundos.",
+      "regenerar": "Gerar outro",
+      "volverFoto": "Voltar à foto",
+      "restantes_one": "Resta {{count}} avatar hoje",
+      "restantes_other": "Restam {{count}} avatares hoje",
+      "motivo": {
+        "no_configurado": "A criação de avatares com IA ainda não está disponível.",
+        "sin_foto": "Adicione uma foto do seu pet para criar o avatar.",
+        "limite_usuario": "Você já usou todos os seus avatares de hoje. Volte amanhã.",
+        "limite_global": "O limite diário de avatares foi atingido. Volte amanhã."
+      }
+    }
   }
 }

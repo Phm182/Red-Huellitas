@@ -92,6 +92,10 @@ export default function MasScreen() {
         <Text style={{ color: colors.text }}>{t('pedidos.misVentas')}</Text>
       </Pressable>
 
+      <Pressable style={[styles.row, { borderColor: colors.border }]} onPress={() => router.push('/(app)/juego')}>
+        <Text style={{ color: colors.text }}>🐾 {t('juego.titulo')}</Text>
+      </Pressable>
+
       <View style={[styles.row, { borderColor: colors.border }]}>
         <Text style={{ color: colors.text }}>{t('settings.notificarProximidadLabel')}</Text>
         <Switch value={user?.notificarProximidad ?? true} onValueChange={onToggleNotificarProximidad} disabled={notifBusy} />

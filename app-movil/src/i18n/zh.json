@@ -490,5 +490,44 @@
     "conectadoComo": "已绑定账户：{{email}}",
     "cambiarCuentaButton": "更换账户",
     "noConfigurado": "Mercado Pago绑定功能尚未配置"
+  },
+  "juego": {
+    "titulo": "照顾我的宠物",
+    "sinMascotas": "请先添加一只宠物，才能在这里照顾它。",
+    "sinEmpezar": "你还没有照顾过它",
+    "nivel": "等级 {{nivel}}",
+    "subioNivel": "你升到了 {{nivel}} 级！",
+    "stats": {
+      "hambre": "食物",
+      "felicidad": "心情",
+      "energia": "体力",
+      "higiene": "清洁"
+    },
+    "acciones": {
+      "alimentar": "喂食",
+      "jugar": "玩耍",
+      "banar": "洗澡",
+      "dormir": "休息"
+    },
+    "animo": {
+      "feliz": "它开心又有活力！",
+      "bien": "它很平静，感觉不错。",
+      "aburrido": "它有点无聊，陪它一会儿会更好。",
+      "decaido": "它很想你。抽空来摸摸它吧。"
+    },
+    "racha_other": "连续 {{count}} 天",
+    "avatar": {
+      "crear": "用 AI 生成头像",
+      "generando": "正在生成宠物头像…\n可能需要几秒钟。",
+      "regenerar": "重新生成",
+      "volverFoto": "返回照片",
+      "restantes_other": "今天还剩 {{count}} 次",
+      "motivo": {
+        "no_configurado": "AI 头像生成功能尚未开放。",
+        "sin_foto": "请先上传宠物照片，才能生成头像。",
+        "limite_usuario": "今天的头像次数已用完，请明天再来。",
+        "limite_global": "今日头像生成已达上限，请明天再来。"
+      }
+    }
   }
 }

@@ -10,6 +10,8 @@ export interface ThemeColors {
   border: string;
   danger: string;
   success: string;
+  /** Estados intermedios (ej. barras de stat del minijuego a media máquina). */
+  warning: string;
 }
 
 export const lightColors: ThemeColors = {
@@ -22,6 +24,7 @@ export const lightColors: ThemeColors = {
   border: '#E5DFD6',
   danger: '#D64545',
   success: '#3C9A5F',
+  warning: '#D99A2B',
 };
 
 export const darkColors: ThemeColors = {
@@ -34,6 +37,7 @@ export const darkColors: ThemeColors = {
   border: '#3A332C',
   danger: '#E57373',
   success: '#66BB8A',
+  warning: '#E8B75A',
 };
 
 export const palette: Record<ThemeName, ThemeColors> = {

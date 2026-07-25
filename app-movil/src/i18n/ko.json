@@ -490,5 +490,44 @@
     "conectadoComo": "{{email}} 계정으로 연결됨",
     "cambiarCuentaButton": "계정 변경",
     "noConfigurado": "Mercado Pago 연결이 아직 설정되지 않았습니다"
+  },
+  "juego": {
+    "titulo": "우리 아이 돌보기",
+    "sinMascotas": "먼저 반려동물을 등록하면 여기서 돌볼 수 있어요.",
+    "sinEmpezar": "아직 돌보지 않았어요",
+    "nivel": "레벨 {{nivel}}",
+    "subioNivel": "레벨 {{nivel}}이 되었어요!",
+    "stats": {
+      "hambre": "먹이",
+      "felicidad": "기분",
+      "energia": "기운",
+      "higiene": "청결"
+    },
+    "acciones": {
+      "alimentar": "먹이 주기",
+      "jugar": "놀아주기",
+      "banar": "목욕",
+      "dormir": "휴식"
+    },
+    "animo": {
+      "feliz": "행복하고 기운이 넘쳐요!",
+      "bien": "편안하고 기분이 좋아요.",
+      "aburrido": "조금 심심해해요. 잠깐 함께 있어 주세요.",
+      "decaido": "당신을 그리워해요. 잠깐 들러서 쓰다듬어 주세요."
+    },
+    "racha_other": "{{count}}일 연속",
+    "avatar": {
+      "crear": "AI 아바타 만들기",
+      "generando": "아바타를 만들고 있어요…\n몇 초 걸릴 수 있어요.",
+      "regenerar": "다시 만들기",
+      "volverFoto": "사진으로 돌아가기",
+      "restantes_other": "오늘 {{count}}번 남았어요",
+      "motivo": {
+        "no_configurado": "AI 아바타 만들기는 아직 이용할 수 없어요.",
+        "sin_foto": "아바타를 만들려면 반려동물 사진을 올려주세요.",
+        "limite_usuario": "오늘 사용할 수 있는 횟수를 모두 썼어요. 내일 다시 오세요.",
+        "limite_global": "오늘의 생성 한도에 도달했어요. 내일 다시 오세요."
+      }
+    }
   }
 }
