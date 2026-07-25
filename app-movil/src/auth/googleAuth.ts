@@ -1,5 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import { useMemo, useRef } from 'react';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -9,9 +10,14 @@ const discovery = {
 };
 
 /**
- * Config para expo-auth-session con Google. Requiere que el usuario haya
- * creado Client IDs OAuth en Google Cloud Console y los haya puesto en
- * el .env (EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB/ANDROID/IOS).
+ * Config para expo-auth-session con Google. Requiere Client IDs OAuth en
+ * EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB/ANDROID/IOS.
+ *
+ * IMPORTANTE: el `nonce` y el objeto de config deben ser estables entre
+ * renders. Si `extraParams.nonce` cambia en cada render (p.ej. Math.random()
+ * inline), `useAuthRequest` re-dispara su efecto → setState → re-render →
+ * loop infinito que cuelga la pestaña entera (muy visible en mobile web
+ * cuando el teclado fuerza un re-layout al enfocar un input).
  */
 export function useGoogleAuthRequest() {
   const clientId =
@@ -21,15 +27,18 @@ export function useGoogleAuthRequest() {
     '';
 
   const redirectUri = AuthSession.makeRedirectUri();
+  const nonceRef = useRef(Math.random().toString(36).slice(2));
 
-  return AuthSession.useAuthRequest(
-    {
+  const config = useMemo(
+    () => ({
       clientId,
-      scopes: ['openid', 'profile', 'email'],
+      scopes: ['openid', 'profile', 'email'] as string[],
       redirectUri,
       responseType: AuthSession.ResponseType.IdToken,
-      extraParams: { nonce: Math.random().toString(36).slice(2) },
-    },
-    discovery
+      extraParams: { nonce: nonceRef.current },
+    }),
+    [clientId, redirectUri]
   );
+
+  return AuthSession.useAuthRequest(config, discovery);
 }
