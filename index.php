@@ -139,7 +139,7 @@
       <button id="submitBtn" type="submit">Entrar</button>
     </form>
 
-    <p class="hint">¿No tenés cuenta? Registrate desde la app móvil.</p>
+    <p class="hint"><a href="registro.php" style="color:var(--primary);font-weight:600;text-decoration:none">¿No tenés cuenta? Registrate</a></p>
   </main>
 
   <script>
