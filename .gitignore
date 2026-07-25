@@ -31,3 +31,9 @@ Thumbs.db
 # Credenciales DB (mismo criterio que BitFlow)
 inc/funciones/bd.php
 
+
+# Assets del export web de Expo (rutas bajo assets/node_modules)
+!assets/
+!assets/node_modules/
+!assets/node_modules/**
+
