@@ -1,6 +1,19 @@
+import { Platform } from 'react-native';
 import { ApiResponse } from '../types';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost/Red%20Huellitas/inc';
+/**
+ * En web del mismo subdominio: `/inc` (o EXPO_PUBLIC_API_URL al buildear).
+ * En nativo / Expo Go: env o localhost XAMPP.
+ */
+function getApiUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/inc`;
+  }
+  return 'http://localhost/Red%20Huellitas/inc';
+}
 
 let currentToken: string | null = null;
 
@@ -16,6 +29,7 @@ interface RequestOptions {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
   const { method = 'GET', body, auth = false } = options;
+  const API_URL = getApiUrl();
 
   const headers: Record<string, string> = {};
   if (auth && currentToken) {
@@ -64,5 +78,5 @@ export const apiPost = <T>(path: string, body?: Record<string, unknown> | FormDa
   request<T>(path, { method: 'POST', body, auth });
 
 export function apiBaseUrl() {
-  return API_URL;
+  return getApiUrl();
 }

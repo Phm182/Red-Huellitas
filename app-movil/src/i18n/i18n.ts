@@ -72,16 +72,21 @@ i18n.use(initReactI18next).init({
 // (AsyncStorage es async, no se puede esperar antes de iniciar i18next).
 // Si el usuario ya había elegido un idioma manualmente, lo restauramos acá
 // apenas esté disponible — mismo patrón que ThemeProvider con el tema.
-AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
-  if (saved && CODIGOS_SOPORTADOS.includes(saved) && saved !== i18n.language) {
-    i18n.changeLanguage(saved);
-  }
-});
+// Guard: durante export estático Node no tiene window/localStorage.
+if (typeof window !== 'undefined') {
+  AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
+    if (saved && CODIGOS_SOPORTADOS.includes(saved) && saved !== i18n.language) {
+      i18n.changeLanguage(saved);
+    }
+  });
+}
 
 /** Cambia el idioma y persiste la elección para futuras sesiones. */
 export function cambiarIdioma(codigo: string): void {
   i18n.changeLanguage(codigo);
-  AsyncStorage.setItem(STORAGE_KEY, codigo);
+  if (typeof window !== 'undefined') {
+    AsyncStorage.setItem(STORAGE_KEY, codigo);
+  }
 }
 
 export default i18n;

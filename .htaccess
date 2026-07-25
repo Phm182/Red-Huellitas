@@ -1,5 +1,18 @@
 Options -Indexes
-DirectoryIndex index.php
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # No reescribir API PHP, uploads, logos ni assets del build
+    RewriteRule ^(inc|uploads|imgLogo|vendor|sql|_expo|assets)/ - [L]
+    RewriteRule ^(favicon\.ico|metadata\.json)$ - [L]
+
+    # SPA: rutas de Expo Router → index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.html [L]
+</IfModule>
 
 <IfModule mod_authz_core.c>
     <FilesMatch "(^\.|\.env|\.ini|\.log|\.sql|\.bak|\.dist)$">
