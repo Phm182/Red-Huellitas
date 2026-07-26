@@ -10,6 +10,7 @@ import { RazaPicker } from '../../../src/components/RazaPicker';
 import { Especie, PreguntaBorrador, Sexo, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function NuevaAdopcionScreen() {
   const { t } = useTranslation();
@@ -85,11 +86,7 @@ export default function NuevaAdopcionScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

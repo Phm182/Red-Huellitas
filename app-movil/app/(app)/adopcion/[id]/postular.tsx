@@ -8,6 +8,7 @@ import { PreguntaRespuestaField } from '../../../../src/components/PreguntaRespu
 import { Adopcion, RespuestaBorrador, VerificacionEstado } from '../../../../src/types';
 import { centeredContent } from '../../../../src/theme/layout';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 
 export default function PostularAdopcionScreen() {
   const { t } = useTranslation();
@@ -66,11 +67,7 @@ export default function PostularAdopcionScreen() {
   };
 
   if (loading || !adopcion) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

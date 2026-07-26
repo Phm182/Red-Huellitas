@@ -11,6 +11,7 @@ import { RazaPicker } from '../../../src/components/RazaPicker';
 import { Especie, Mascota, Sexo, TipoPerdido, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const TIPOS: TipoPerdido[] = ['perdido', 'encontrado'];
 
@@ -133,11 +134,7 @@ export default function NuevoPerdidoScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

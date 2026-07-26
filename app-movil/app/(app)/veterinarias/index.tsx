@@ -7,6 +7,7 @@ import { Veterinaria } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
+import { Fab } from '../../../src/components/ui/Fab';
 
 const RADIOS: Array<20 | 50 | 100> = [20, 50, 100];
 
@@ -114,12 +115,7 @@ export default function VeterinariasListaScreen() {
         />
       )}
 
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(app)/veterinarias/nueva')}
-      >
-        <Text style={{ color: colors.primaryText, fontSize: 24, fontWeight: '700' }}>+</Text>
-      </Pressable>
+      <Fab onPress={() => router.push('/(app)/veterinarias/nueva')} />
     </View>
   );
 }
@@ -140,16 +136,4 @@ const styles = StyleSheet.create({
   },
   foto: { width: 64, height: 64, borderRadius: 10 },
   fotoPlaceholder: {},
-  fab: {
-    // left (no right) para no superponerse con el FloatingReportButton global,
-    // que siempre ocupa el bottom-right en cualquier pantalla.
-    position: 'absolute',
-    bottom: 24,
-    left: 20,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

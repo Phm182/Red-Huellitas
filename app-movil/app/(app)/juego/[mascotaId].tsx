@@ -8,6 +8,7 @@ import { StatBar } from '../../../src/components/StatBar';
 import { JuegoAccion, JuegoAvatarEstado, MascotaJuego } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const ACCIONES: { tipo: JuegoAccion; icono: string }[] = [
   { tipo: 'alimentar', icono: '🍖' },
@@ -128,11 +129,7 @@ export default function JuegoScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.centrado, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (!juego) {

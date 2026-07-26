@@ -7,6 +7,7 @@ import { MascotaAvatar } from '../../../src/components/MascotaAvatar';
 import { MascotaJuegoResumen } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function JuegoSelectorScreen() {
   const { t } = useTranslation();
@@ -42,11 +43,7 @@ export default function JuegoSelectorScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.centrado, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   return (

@@ -8,6 +8,7 @@ import { shortsApi } from '../../../src/api/shortsApi';
 import { VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function NuevoShortScreen() {
   const { t } = useTranslation();
@@ -69,11 +70,7 @@ export default function NuevoShortScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

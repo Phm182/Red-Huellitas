@@ -9,6 +9,7 @@ import { mpVendedorApi } from '../../../src/api/mpVendedorApi';
 import { MpVendedorEstado, SuscripcionEstado, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function SuscripcionScreen() {
   const { t } = useTranslation();
@@ -139,11 +140,7 @@ export default function SuscripcionScreen() {
   };
 
   if (loadingGate || loading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

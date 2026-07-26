@@ -10,6 +10,7 @@ import { Especie, Mascota, MatchCandidato, Sexo, VerificacionEstado } from '../.
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
 const SEXOS: Sexo[] = ['macho', 'hembra'];
@@ -125,11 +126,7 @@ export default function MatchScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

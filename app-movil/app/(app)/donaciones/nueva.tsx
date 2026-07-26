@@ -9,6 +9,7 @@ import { MultiImagePickerField } from '../../../src/components/MultiImagePickerF
 import { CategoriaDonacion, Especie, TipoDonacion, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const TIPOS: TipoDonacion[] = ['necesito', 'ofrezco'];
 const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo'];
@@ -91,11 +92,7 @@ export default function NuevaDonacionScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

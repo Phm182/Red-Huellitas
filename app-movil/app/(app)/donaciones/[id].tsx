@@ -9,6 +9,7 @@ import { Donacion } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function DonacionDetalleScreen() {
   const { t } = useTranslation();
@@ -52,11 +53,7 @@ export default function DonacionDetalleScreen() {
   };
 
   if (loading || !donacion) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   const especieLabel = donacion.especie

@@ -9,6 +9,7 @@ import { Campania } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { compartirPost } from '../../../src/utils/compartir';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function CampaniaDetalleScreen() {
   const { t } = useTranslation();
@@ -82,11 +83,7 @@ export default function CampaniaDetalleScreen() {
   };
 
   if (loading || !campania) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   return (

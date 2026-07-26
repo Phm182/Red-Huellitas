@@ -9,6 +9,7 @@ import { MultiImagePickerField } from '../../../src/components/MultiImagePickerF
 import { Especie, ProductoCategoriaItem, TipoListado, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const TIPOS: TipoListado[] = ['producto', 'servicio'];
 const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
@@ -114,11 +115,7 @@ export default function NuevoProductoScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {

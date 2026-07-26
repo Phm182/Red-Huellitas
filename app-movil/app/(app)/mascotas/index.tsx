@@ -8,6 +8,8 @@ import { Mascota, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
+import { Fab } from '../../../src/components/ui/Fab';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisMascotasScreen() {
   const { t } = useTranslation();
@@ -45,11 +47,7 @@ export default function MisMascotasScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {
@@ -97,12 +95,7 @@ export default function MisMascotasScreen() {
           </Pressable>
         )}
       />
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(app)/mascotas/nueva')}
-      >
-        <Text style={{ color: colors.primaryText, fontSize: 28, lineHeight: 30 }}>+</Text>
-      </Pressable>
+      <Fab onPress={() => router.push('/(app)/mascotas/nueva')} />
     </View>
   );
 }
@@ -114,15 +107,4 @@ const styles = StyleSheet.create({
   list: { padding: 24, paddingTop: 24, gap: 12 },
   card: { flex: 1, borderRadius: 12, padding: 10 },
   cardPhoto: { width: '100%', height: 110, borderRadius: 8 },
-  fab: {
-    position: 'absolute',
-    right: 90,
-    bottom: 30,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
 });

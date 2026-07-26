@@ -6,6 +6,7 @@ import { adminApi } from '../../../src/api/adminApi';
 import { AdminResumen } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /**
  * Hub del panel de moderación: las tres bandejas con su contador de
@@ -60,11 +61,7 @@ export default function AdminHubScreen() {
   ];
 
   if (loading) {
-    return (
-      <View style={[styles.centrado, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (error) {

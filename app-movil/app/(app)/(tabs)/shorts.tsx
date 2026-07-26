@@ -6,6 +6,8 @@ import { shortsApi } from '../../../src/api/shortsApi';
 import { ShortCard } from '../../../src/components/ShortCard';
 import { Post } from '../../../src/types';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { Fab } from '../../../src/components/ui/Fab';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const { height: ALTURA_PANTALLA } = Dimensions.get('window');
 
@@ -61,11 +63,7 @@ export default function ShortsScreen() {
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   if (loading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: '#000' }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   return (
@@ -90,12 +88,7 @@ export default function ShortsScreen() {
           </View>
         }
       />
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(app)/publicaciones/nueva_video')}
-      >
-        <Text style={{ color: colors.primaryText, fontSize: 24, fontWeight: '700' }}>+</Text>
-      </Pressable>
+      <Fab onPress={() => router.push('/(app)/publicaciones/nueva_video')} />
     </View>
   );
 }
@@ -103,14 +96,4 @@ export default function ShortsScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { flex: 1, backgroundColor: '#000' },
-  fab: {
-    position: 'absolute',
-    top: 48,
-    right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

@@ -6,6 +6,7 @@ import { campaniaApi } from '../../../src/api/campaniaApi';
 import { Campania, TipoCampania } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { Fab } from '../../../src/components/ui/Fab';
 
 const TIPOS: TipoCampania[] = ['castracion', 'vacunacion'];
 
@@ -117,12 +118,7 @@ export default function CampaniasListaScreen() {
         />
       )}
 
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(app)/campanias/nueva')}
-      >
-        <Text style={{ color: colors.primaryText, fontSize: 24, fontWeight: '700' }}>+</Text>
-      </Pressable>
+      <Fab onPress={() => router.push('/(app)/campanias/nueva')} />
     </View>
   );
 }
@@ -134,15 +130,4 @@ const styles = StyleSheet.create({
   chip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginRight: 8 },
   list: { padding: 16 },
   card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
-  fab: {
-    // left (no right) para no superponerse con el FloatingReportButton global.
-    position: 'absolute',
-    bottom: 24,
-    left: 20,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

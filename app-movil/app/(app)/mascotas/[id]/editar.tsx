@@ -22,6 +22,7 @@ import { centeredContent } from '../../../../src/theme/layout';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { comprimirImagen } from '../../../../src/utils/imagen';
 import { rhMediaUrl } from '../../../../src/utils/media';
+import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 
 export default function EditarMascotaScreen() {
   const { t } = useTranslation();
@@ -183,11 +184,7 @@ export default function EditarMascotaScreen() {
   };
 
   if (loading || !mascota) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   return (

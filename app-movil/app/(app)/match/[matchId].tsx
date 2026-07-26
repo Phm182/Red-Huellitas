@@ -18,6 +18,7 @@ import { matchApi } from '../../../src/api/matchApi';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { MascotaMatch, MatchMensaje } from '../../../src/types';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -120,11 +121,7 @@ export default function MatchChatScreen() {
   };
 
   if (loading || !match) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   const otroUserId = match.mascota?.userId ?? null;

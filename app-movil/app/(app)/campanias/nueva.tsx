@@ -8,6 +8,7 @@ import { perfilApi } from '../../../src/api/perfilApi';
 import { TipoCampania, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const TIPOS: TipoCampania[] = ['castracion', 'vacunacion'];
 
@@ -92,11 +93,7 @@ export default function NuevaCampaniaScreen() {
   };
 
   if (loadingGate) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList />;
   }
 
   if (verificacion?.estadoRevision !== 'aprobado') {
