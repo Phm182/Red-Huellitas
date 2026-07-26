@@ -196,6 +196,28 @@ El plan completo está en `C:\Users\Pab\.claude\plans\c-xampp-htdocs-red-huellit
 
 ---
 
+### Historias: Cadenas + editor y visor completos (2026-07-26)
+
+**Cadenas es el feature propio del proyecto**, no una copia de Instagram: alguien propone un tema ("Chapuzón"), sube su historia, y el resto la continúa con la suya. En Instagram cada historia es una isla; acá se enganchan en un hilo que la comunidad sigue.
+
+**La decisión de diseño que hace que funcione: la cadena no expira aunque sus historias sí.** Las historias vencen a las 24hs como siempre, pero la cadena queda viva mostrando las vigentes. Si muriera con su primera historia nadie llegaría a sumarse. Por eso `cadenas_listar` ordena por la última historia vigente y no por fecha de creación, y la posición ("3º de Chapuzón") se calcula al leer: si una historia anterior vence, las siguientes se recorren solas.
+
+- `sql/023_historias_cadenas.sql` (corrida): recorte, `SinAudio`, `Cadena`, `CadenaParticipante`, `CadenaInvitacion`, `Historia.CadenaId`, encuestas, preguntas y respuestas.
+- `inc/funciones/cadenas.php` + 7 endpoints nuevos en `inc/ajax/historias/`.
+- Editor: `StoryTrimBar` (recorte + silenciar), stickers, encuesta y caja de preguntas.
+- Visor: audio, mantener para pausar, respeta el recorte, "visto por N", responder, compartir y banner de cadena.
+- 3 pantallas de Cadenas + píldora en `HistoriasBar`. i18n ×10.
+
+**Recorte de video: es no destructivo y eso fue una decisión, no una limitación olvidada.** Recortar de verdad exige re-encodear, y hoy no se puede en Expo managed: `ffmpeg-kit-react-native` fue retirado y las alternativas necesitan prebuild nativo, que rompería la verificación en browser. Se guarda el tramo y el reproductor arranca y corta ahí. El archivo pesa igual, cosa que no importa en algo que vence a las 24hs.
+
+**Bug de arrastre corregido**: el video del visor estaba forzado a `muted`, así que **toda historia con sonido se veía muda**.
+
+**Gotcha de Expo Router que costó caro**: no admite dos parámetros dinámicos distintos en el mismo nivel. Tener `historias/[userId].tsx` y `historias/[historiaId]/vistas.tsx` **rompía el router entero** — cualquier ruta caía en `/buscar` con la pantalla en blanco, sin un solo error en consola. El visor quedó en `historias/ver/[userId].tsx` y las vistas en `historia-vistas/[historiaId].tsx`.
+
+**Falta**: temporizador y velocidad de grabación (TikTok) en la cámara, y el swipe entre usuarios en el visor.
+
+---
+
 ## 4. Cómo seguir mañana
 
 1. Confirmar que XAMPP (MySQL + Apache) está corriendo: `/c/xampp/mysql_start.bat` y `/c/xampp/apache_start.bat` en background si no lo están.
