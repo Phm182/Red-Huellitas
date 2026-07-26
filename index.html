@@ -1,21 +1,37 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Red Huellitas</title>
-    <style id="rh-web-reset">
-      html, body { height: 100%; margin: 0; }
-      #root { display: flex; flex: 1; min-height: 100%; height: 100%; }
-      body { overflow: auto; overscroll-behavior-y: none; }
-      input, textarea, select { font-size: 16px; }
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
     </style>
-    <link rel="icon" href="/favicon.ico" />
-  </head>
+  <link rel="icon" href="/favicon.ico"/></head>
+
   <body>
-    <noscript>NecesitÃ¡s JavaScript para usar Red Huellitas.</noscript>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
     <div id="root"></div>
-    <script src="/_expo/static/js/web/entry-d5e7c88e2028d62b38151a3cf60143b7.js" defer></script>
-  </body>
+  <script src="/_expo/static/js/web/entry-ea4216480eff711bde6d240c3ea17ece.js" defer></script>
+</body>
 </html>
