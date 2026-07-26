@@ -51,7 +51,12 @@ export type StoryPublicacion = {
   overlay: StoryOverlay;
   recorte: StoryRecorte | null;
   sinAudio: boolean;
+  /** 0.5 / 1 / 2 — no destructiva, la aplica el reproductor (ver sql/024). */
+  velocidad: number;
 };
+
+/** Las mismas que ofrece la cámara; el backend rechaza cualquier otra. */
+const VELOCIDADES = [0.5, 1, 2] as const;
 
 type Props = {
   media: CapturedStoryMedia;
@@ -76,6 +81,9 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   const [recorteInicio, setRecorteInicio] = useState(0);
   const [recorteFin, setRecorteFin] = useState(duracion);
   const [sinAudio, setSinAudio] = useState(false);
+  // La velocidad viene elegida desde la cámara, pero se puede cambiar acá: como
+  // no se re-encodea nada, arrepentirse no cuesta volver a grabar.
+  const [velocidad, setVelocidad] = useState(media.velocidad ?? 1);
   const [mutedPreview, setMutedPreview] = useState(false);
   const [volumen, setVolumen] = useState(0.85);
   const [mostrarVolumen, setMostrarVolumen] = useState(false);
@@ -192,6 +200,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
       overlay,
       recorte: recorteTocado ? { inicioSeg: recorteInicio, finSeg: recorteFin } : null,
       sinAudio,
+      velocidad: media.tipo === 'video' ? velocidad : 1,
     });
   };
 
@@ -240,6 +249,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
       setScrubSeg(null);
       setPosicionBuscada(null);
       setPosicionSeg(0);
+      setVelocidad(1);
     } finally {
       setCambiandoMedia(false);
     }
@@ -276,6 +286,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
           posicionBuscada={posicionBuscada}
           onPosicion={setPosicionSeg}
           pausado={scrubSeg !== null}
+          velocidad={velocidad}
         />
 
         {tool === 'none' ? (
@@ -440,6 +451,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
             inicioSeg={recorteInicio}
             finSeg={recorteFin}
             sinAudio={sinAudio}
+            velocidad={velocidad}
             posicionSeg={posicionSeg}
             onChange={(ini, fin) => {
               setRecorteInicio(ini);
@@ -452,6 +464,12 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
               if (seg !== null) setPosicionBuscada(seg);
             }}
             onToggleAudio={() => setSinAudio((v) => !v)}
+            onToggleVelocidad={() =>
+              setVelocidad((v) => {
+                const i = VELOCIDADES.indexOf(v as (typeof VELOCIDADES)[number]);
+                return VELOCIDADES[(i + 1) % VELOCIDADES.length];
+              })
+            }
           />
         </View>
       ) : null}

@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { historiasApi } from '../../../../src/api/historiasApi';
 import { StoryInteractivoCard } from '../../../../src/stories/StoryInteractivoCard';
 import { StoryMediaFill } from '../../../../src/stories/StoryMediaFill';
+import { StoryVolumeSlider } from '../../../../src/stories/StoryVolumeSlider';
 import { compartirPost } from '../../../../src/utils/compartir';
 import { StoryOverlayLayer, storyFilterCss } from '../../../../src/stories/StoryOverlayLayer';
 import { emptyOverlay, StoryOverlay } from '../../../../src/stories/storyEditorTypes';
@@ -24,6 +26,11 @@ import { rhMediaUrl } from '../../../../src/utils/media';
 
 const DURACION_FOTO_MS = 5000;
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+/** Cuánto hay que arrastrar para que cuente como swipe y no como toque. */
+const UMBRAL_SWIPE = 60;
+/** Movimiento mínimo para que el gesto le gane al tap/mantener apretado. */
+const UMBRAL_GESTO = 12;
 
 function safeGoBack() {
   if (router.canGoBack()) router.back();
@@ -44,12 +51,39 @@ export default function VisorHistoriasScreen() {
   // veía muda. Ahora el silencio es decisión del que mira (y se recuerda
   // mientras dure la sesión de visor) o del autor vía `sinAudio`.
   const [silenciado, setSilenciado] = useState(false);
+  const [volumen, setVolumen] = useState(0.85);
+  const [mostrarVolumen, setMostrarVolumen] = useState(false);
+  const [contentFit, setContentFit] = useState<'cover' | 'contain'>('cover');
   const [pausado, setPausado] = useState(false);
   const [respuesta, setRespuesta] = useState('');
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [votando, setVotando] = useState(false);
   const animacionRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  // El orden de usuarios sale del mismo feed que dibuja el carrusel, así que
+  // el swipe recorre las historias en el orden que el usuario ya vio arriba.
+  const [ordenUsuarios, setOrdenUsuarios] = useState<number[]>([]);
+  const vecinos = useRef({ anterior: null as number | null, siguiente: null as number | null });
+
+  useEffect(() => {
+    let activo = true;
+    historiasApi.feed().then((res) => {
+      if (!activo || !res.success || !res.data) return;
+      setOrdenUsuarios(res.data.usuarios.map((u) => u.autor.userId));
+    });
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const i = ordenUsuarios.indexOf(Number(userId));
+    vecinos.current = {
+      anterior: i > 0 ? ordenUsuarios[i - 1] : null,
+      siguiente: i >= 0 && i < ordenUsuarios.length - 1 ? ordenUsuarios[i + 1] : null,
+    };
+  }, [ordenUsuarios, userId]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
@@ -121,22 +155,30 @@ export default function VisorHistoriasScreen() {
   const duracionEfectiva = useMemo(() => {
     if (!actual || actual.tipoMedia !== 'video') return null;
     const total = actual.duracionSegundos ?? 15;
-    if (actual.recorteInicioSeg !== null && actual.recorteFinSeg !== null) {
-      return Math.max(1, actual.recorteFinSeg - actual.recorteInicioSeg);
-    }
-    return Math.max(1, total);
+    const tramo =
+      actual.recorteInicioSeg !== null && actual.recorteFinSeg !== null
+        ? actual.recorteFinSeg - actual.recorteInicioSeg
+        : total;
+    // A 2x el mismo tramo se ve en la mitad de tiempo, así que la barra de
+    // progreso tiene que correr más rápido o quedaría desfasada del video.
+    const factor = actual.velocidad && actual.velocidad > 0 ? actual.velocidad : 1;
+    return Math.max(1, tramo / factor);
   }, [actual]);
 
   const avanzar = useCallback(() => {
     if (index >= historias.length - 1) {
       safeGoBack();
     } else {
+      setContentFit('cover');
       setIndex((i) => i + 1);
     }
   }, [index, historias.length]);
 
   const retroceder = () => {
-    if (index > 0) setIndex((i) => i - 1);
+    if (index > 0) {
+      setContentFit('cover');
+      setIndex((i) => i - 1);
+    }
   };
 
   useEffect(() => {
@@ -187,6 +229,48 @@ export default function VisorHistoriasScreen() {
     if (!pausado) return;
     animacionRef.current?.stop();
   }, [pausado]);
+
+  /**
+   * Swipe: horizontal salta de usuario, vertical hacia abajo cierra.
+   *
+   * Va sobre las zonas de tap y no en lugar de ellas: el responder recién se
+   * queda con el gesto cuando hay movimiento real (`UMBRAL_GESTO`), así el
+   * toque para avanzar y el mantener apretado para pausar siguen funcionando.
+   */
+  const swipe = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_e, g) =>
+          Math.abs(g.dx) > UMBRAL_GESTO || g.dy > UMBRAL_GESTO,
+        onPanResponderRelease: (_e, g) => {
+          setPausado(false);
+          const horizontal = Math.abs(g.dx) > Math.abs(g.dy);
+
+          if (!horizontal && g.dy > UMBRAL_SWIPE) {
+            safeGoBack();
+            return;
+          }
+          if (!horizontal) return;
+
+          const destino = g.dx < -UMBRAL_SWIPE ? vecinos.current.siguiente : null;
+          const previo = g.dx > UMBRAL_SWIPE ? vecinos.current.anterior : null;
+          const userIdDestino = destino ?? previo;
+          if (userIdDestino === null) {
+            // Sin vecino en esa dirección: al final del carrusel se cierra,
+            // que es lo que hace Instagram y evita el gesto muerto.
+            if (g.dx < -UMBRAL_SWIPE) safeGoBack();
+            return;
+          }
+          router.replace({
+            pathname: '/(app)/historias/ver/[userId]',
+            params: { userId: String(userIdDestino) },
+          });
+        },
+        onPanResponderTerminate: () => setPausado(false),
+      }),
+    []
+  );
 
   const onVotar = async (opcion: 'A' | 'B') => {
     if (!actual?.encuesta || votando) return;
@@ -266,9 +350,12 @@ export default function VisorHistoriasScreen() {
         // `sinAudio` es decisión del autor y no se puede desactivar; el
         // silencio del que mira sí es reversible con el botón.
         muted={actual.sinAudio || silenciado}
+        volume={volumen}
+        contentFit={contentFit}
         pausado={pausado}
         inicioSeg={actual.recorteInicioSeg}
         finSeg={actual.recorteFinSeg}
+        velocidad={actual.velocidad}
         onEnded={avanzar}
       />
 
@@ -292,10 +379,32 @@ export default function VisorHistoriasScreen() {
       </View>
 
       <View style={[styles.topActions, { top: insets.top + 16 }]} pointerEvents="box-none">
-        {actual.tipoMedia === 'video' && !actual.sinAudio ? (
-          <Pressable style={styles.iconBtn} onPress={() => setSilenciado((v) => !v)}>
-            <Ionicons name={silenciado ? 'volume-mute' : 'volume-high'} size={20} color="#fff" />
+        {actual.tipoMedia === 'video' || actual.tipoMedia === 'foto' ? (
+          <Pressable
+            style={[styles.iconBtn, contentFit === 'contain' && styles.iconBtnOn]}
+            onPress={() => setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'))}
+          >
+            <Ionicons name={contentFit === 'contain' ? 'expand' : 'scan'} size={18} color="#fff" />
           </Pressable>
+        ) : null}
+        {actual.tipoMedia === 'video' && !actual.sinAudio ? (
+          <>
+            <Pressable
+              style={styles.iconBtn}
+              onPress={() => {
+                setSilenciado((v) => {
+                  const next = !v;
+                  if (!next) setMostrarVolumen(true);
+                  return next;
+                });
+              }}
+            >
+              <Ionicons name={silenciado ? 'volume-mute' : 'volume-high'} size={20} color="#fff" />
+            </Pressable>
+            <Pressable style={styles.iconBtn} onPress={() => setMostrarVolumen((v) => !v)}>
+              <Ionicons name="options-outline" size={18} color="#fff" />
+            </Pressable>
+          </>
         ) : null}
         <Pressable style={styles.iconBtn} onPress={onCompartirHistoria}>
           <Ionicons name="paper-plane-outline" size={20} color="#fff" />
@@ -304,6 +413,20 @@ export default function VisorHistoriasScreen() {
           <Ionicons name="close" size={22} color="#fff" />
         </Pressable>
       </View>
+
+      {mostrarVolumen && actual.tipoMedia === 'video' && !actual.sinAudio ? (
+        <View style={[styles.volumePanel, { top: insets.top + 56 }]}>
+          <Ionicons name="volume-low" size={16} color="#fff" />
+          <StoryVolumeSlider
+            value={volumen}
+            onChange={(v) => {
+              setVolumen(v);
+              if (v > 0) setSilenciado(false);
+            }}
+          />
+          <Ionicons name="volume-high" size={16} color="#fff" />
+        </View>
+      ) : null}
 
       {/* Banner de cadena: el "3º de Chapuzón" es lo que da ganas de sumarse. */}
       {actual.cadena ? (
@@ -357,7 +480,7 @@ export default function VisorHistoriasScreen() {
 
       {/* Las zonas de tap van DEBAJO de los controles en z-order, si no
           taparían la encuesta y los botones. */}
-      <View style={styles.tapZones}>
+      <View style={styles.tapZones} {...swipe.panHandlers}>
         <Pressable
           style={styles.tapZone}
           onPress={retroceder}
@@ -448,6 +571,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 19,
     backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  iconBtnOn: { backgroundColor: 'rgba(226,59,74,0.85)' },
+  volumePanel: {
+    position: 'absolute',
+    left: 12,
+    right: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    zIndex: 7,
   },
   cadenaBanner: {
     position: 'absolute',

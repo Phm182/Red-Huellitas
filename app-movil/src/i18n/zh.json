@@ -1,4 +1,4 @@
-{
+﻿{
     "common": {
         "continue": "ç»§ç»­",
         "cancel": "å–æ¶ˆ",
@@ -62,6 +62,12 @@
         "verificationApproved": "å·²éªŒè¯",
         "verificationRejected": "å·²æ‹’ç»",
         "verificationNotSent": "æœªæäº¤",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "skipForNow": "ç¨åŽå®Œæˆ"
     },
     "settings": {
@@ -153,7 +159,9 @@
     },
     "home": {
         "welcome": "æ¬¢è¿Žä½¿ç”¨ Red Huellitas",
-        "masTabTitle": "æ›´å¤š"
+        "masTabTitle": "æ›´å¤š",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "é¦–é¡µ",
@@ -218,7 +226,9 @@
         "agregarPreguntas": "添加提问框",
         "yaHayInteractivo": "这条快拍已有投票或提问框，移除后才能再加。",
         "preguntame": "问我",
-        "escribiRespuesta": "写下你的回答…"
+        "escribiRespuesta": "写下你的回答…",
+        "timerOff": "无定时",
+        "timerCancelHint": "点击取消"
     },
     "adopcion": {
         "tituloLista": "é¢†å…»",

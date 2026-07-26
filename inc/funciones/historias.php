@@ -157,6 +157,11 @@ function rh_historia_publico(mysqli $conn, array $h, int $viewerUserId): array
             ? (float) $h['RecorteFinSeg']
             : null,
         'sinAudio' => (bool) ($h['SinAudio'] ?? 0),
+        // Velocidad: mismo criterio que el recorte, el archivo no se toca y la
+        // aplica el reproductor (ver sql/024).
+        'velocidad' => isset($h['VelocidadReproduccion']) && $h['VelocidadReproduccion'] !== null
+            ? (float) $h['VelocidadReproduccion']
+            : 1.0,
         'overlay' => $overlay,
         'cadena' => rh_historia_cadena($conn, $h),
         'encuesta' => rh_historia_encuesta($conn, $historiaId, $viewerUserId),

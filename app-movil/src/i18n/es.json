@@ -9,7 +9,8 @@
         "send": "Enviar",
         "changesSaved": "Cambios guardados",
         "yes": "Sí",
-        "no": "No"
+        "no": "No",
+        "close": "Cerrar"
     },
     "auth": {
         "loginTitle": "Iniciar sesión",
@@ -72,8 +73,18 @@
         "verificationAutoOk": "Tu identidad fue verificada automáticamente. Ya podés usar las funciones que lo requieren.",
         "verificationAutoFail": "No pudimos verificar las imágenes. Revisá que se vea bien el DNI y que la selfie sea clara, de frente.",
         "verificationAutoPending": "Recibimos tus documentos. Quedaron en revisión porque la confianza automática no fue suficiente.",
-        "verificationMethod": "Método",
+        "verificationMethod": "Revisión",
+        "verificationMethodAuto": "Automática",
+        "verificationMethodRenaper": "Automática + padrón",
+        "verificationMethodManual": "Manual (moderación)",
         "verificationFaceScore": "Coincidencia facial",
+        "ok": "Entendido",
+        "verificationReplaceHint": "Si ya subiste fotos, las ves abajo. Podés reemplazar cualquiera y al Enviar se reinicia la verificación con lo nuevo.",
+        "verificationProblemsTitle": "Qué no pasó el filtro",
+        "verificationCheckFrontFail": "El frente no pasó la verificación automática.",
+        "verificationCheckBackFail": "El dorso no pasó la verificación automática.",
+        "verificationCheckSelfieFail": "La selfie no pasó la verificación automática.",
+        "verificationResubmit": "Volver a enviar documentos",
         "dniFront": "DNI (frente)",
         "dniBack": "DNI (dorso)",
         "selfie": "Selfie",
@@ -159,7 +170,13 @@
         "myPetsSection": "Mis Mascotas",
         "petsSection": "Mascotas",
         "emptyFollowers": "Todavía no tiene seguidores",
-        "emptyFollowing": "Todavía no sigue a nadie"
+        "emptyFollowing": "Todavía no sigue a nadie",
+        "changePhoto": "Cambiar foto",
+        "addPhoto": "Agregar foto",
+        "takePhoto": "Tomar foto",
+        "chooseFromGallery": "Elegir de la galería",
+        "photoUpdated": "Foto de perfil actualizada",
+        "photoUpdateError": "No se pudo actualizar la foto"
     },
     "report": {
         "buttonLabel": "Reportar / Solicitar",
@@ -174,7 +191,9 @@
     },
     "home": {
         "welcome": "Bienvenido a Red Huellitas",
-        "masTabTitle": "Más"
+        "masTabTitle": "Más",
+        "switchAccountTitle": "Cambiar de cuenta",
+        "addAccount": "Agregar cuenta"
     },
     "feed": {
         "tabTitle": "Inicio",
@@ -243,8 +262,13 @@
         "textPlaceholder": "Escribí algo…",
         "addText": "Agregar",
         "textDragHint": "Arrastrá, pellizcá y girá el texto con dos dedos",
+        "textLiveHint": "Se ve arriba mientras escribís. Tocá Agregar para fijarlo.",
         "drawHint": "Deslizá el dedo para dibujar",
         "publish": "Tu historia",
+        "changeMedia": "Cambiar media",
+        "retake": "Cámara",
+        "tapToFit": "Tocá la pantalla para ver el video completo",
+        "fitContainHint": "Ajuste: video completo. Tocá de nuevo para llenar",
         "vistasTitulo": "Vistas",
         "vistasVacio": "Todavía no la vio nadie",
         "vistasVacioDesc": "Cuando alguien mire tu historia, va a aparecer acá.",
@@ -262,7 +286,9 @@
         "agregarPreguntas": "Agregar caja de preguntas",
         "yaHayInteractivo": "Ya hay una encuesta o pregunta en esta historia. Sacala para poner otra.",
         "preguntame": "PREGUNTAME",
-        "escribiRespuesta": "Escribí tu respuesta…"
+        "escribiRespuesta": "Escribí tu respuesta…",
+        "timerOff": "Sin temp.",
+        "timerCancelHint": "Tocá para cancelar"
     },
     "adopcion": {
         "tituloLista": "Adopción",

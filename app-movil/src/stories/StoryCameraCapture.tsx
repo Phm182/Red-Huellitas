@@ -17,13 +17,26 @@ import {
   normalizarDuracionSegundos,
   probeVideoDurationSeconds,
 } from '../utils/mediaDuration';
+import { hapticLeve, hapticMedio } from '../utils/haptics';
 
 export type CapturedStoryMedia = {
   uri: string;
   tipo: 'foto' | 'video';
   mimeType: string;
   duracionSegundos: number;
+  /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. */
+  velocidad?: number;
 };
+
+/** Segundos de cuenta regresiva antes de disparar. 0 = sin temporizador. */
+const TEMPORIZADORES = [0, 3, 10] as const;
+
+/**
+ * Velocidades ofrecidas. Se elige antes de grabar como en TikTok, pero se
+ * aplica al reproducir en vez de re-encodear: para el que mira es lo mismo
+ * (grabar 10s a 2x se ve en 5s) y no hace falta build nativo.
+ */
+const VELOCIDADES = [0.5, 1, 2] as const;
 
 type Props = {
   onCaptured: (media: CapturedStoryMedia) => void;
@@ -130,6 +143,15 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
   const [cameraReady, setCameraReady] = useState(false);
   const [mountError, setMountError] = useState<string | null>(null);
   const [cameraKey, setCameraKey] = useState(0);
+  const [temporizador, setTemporizador] = useState<number>(0);
+  const [velocidad, setVelocidad] = useState<number>(1);
+  /** Segundos que faltan; null cuando no hay cuenta regresiva corriendo. */
+  const [cuenta, setCuenta] = useState<number | null>(null);
+  const cuentaRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => {
+    if (cuentaRef.current) clearInterval(cuentaRef.current);
+  }, []);
 
   const onWebReady = useCallback(() => {
     setCameraReady(true);
@@ -169,6 +191,7 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
       tipo: esVideo ? 'video' : 'foto',
       mimeType: asset.mimeType || (esVideo ? 'video/mp4' : 'image/jpeg'),
       duracionSegundos: esVideo ? Math.min(duracion, 60) : 0,
+      velocidad: esVideo ? velocidad : 1,
     });
   };
 
@@ -237,6 +260,7 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
         tipo: 'video',
         mimeType: 'video/webm',
         duracionSegundos: Math.min(duracion, 60),
+        velocidad,
       });
     };
     mediaRecorderRef.current = recorder;
@@ -258,11 +282,7 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
     setRecording(false);
   };
 
-  const onShutter = async () => {
-    if (busy) return;
-    const ok = await ensurePerms();
-    if (!ok) return;
-
+  const disparar = async () => {
     if (mode === 'foto') {
       setBusy(true);
       try {
@@ -329,6 +349,7 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
           tipo: 'video',
           mimeType: Platform.OS === 'ios' ? 'video/quicktime' : 'video/mp4',
           duracionSegundos: Math.min(duracion, 60),
+          velocidad,
         });
       }
     } catch {
@@ -336,6 +357,53 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
     } finally {
       setRecording(false);
     }
+  };
+
+  const cancelarCuenta = () => {
+    if (cuentaRef.current) clearInterval(cuentaRef.current);
+    cuentaRef.current = null;
+    setCuenta(null);
+  };
+
+  const onShutter = async () => {
+    if (busy) return;
+
+    // Durante la cuenta regresiva el botón cancela: si no, quedarías mirando
+    // el número sin forma de arrepentirte.
+    if (cuenta !== null) {
+      cancelarCuenta();
+      return;
+    }
+
+    const ok = await ensurePerms();
+    if (!ok) return;
+
+    // Cortar una grabación en curso es inmediato: el temporizador es para
+    // empezar, no para terminar.
+    if (mode === 'video' && recording) {
+      void disparar();
+      return;
+    }
+
+    if (temporizador <= 0) {
+      void disparar();
+      return;
+    }
+
+    setCuenta(temporizador);
+    cuentaRef.current = setInterval(() => {
+      setCuenta((prev) => {
+        if (prev === null) return null;
+        if (prev > 1) {
+          void hapticLeve();
+          return prev - 1;
+        }
+        cancelarCuenta();
+        void hapticMedio();
+        void disparar();
+        return null;
+      });
+    }, 1000);
   };
 
   // Nativo: pedir permiso antes de montar CameraView
@@ -446,6 +514,51 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
         </Pressable>
       </View>
 
+      {/* Temporizador y velocidad: se eligen antes de disparar, como en TikTok.
+          La velocidad sólo tiene sentido en video. */}
+      <View style={[styles.opcionesCol, { top: insets.top + 64 }]} pointerEvents="box-none">
+        <Pressable
+          style={[styles.opcionChip, temporizador > 0 && styles.opcionChipOn]}
+          onPress={() => {
+            void hapticLeve();
+            setTemporizador((v) => {
+              const i = TEMPORIZADORES.indexOf(v as (typeof TEMPORIZADORES)[number]);
+              return TEMPORIZADORES[(i + 1) % TEMPORIZADORES.length];
+            });
+          }}
+          disabled={recording}
+        >
+          <Ionicons name="timer-outline" size={17} color="#fff" />
+          <Text style={styles.opcionLabel}>
+            {temporizador > 0 ? `${temporizador}s` : t('historias.timerOff')}
+          </Text>
+        </Pressable>
+
+        {mode === 'video' ? (
+          <Pressable
+            style={[styles.opcionChip, velocidad !== 1 && styles.opcionChipOn]}
+            onPress={() => {
+              void hapticLeve();
+              setVelocidad((v) => {
+                const i = VELOCIDADES.indexOf(v as (typeof VELOCIDADES)[number]);
+                return VELOCIDADES[(i + 1) % VELOCIDADES.length];
+              });
+            }}
+            disabled={recording}
+          >
+            <Ionicons name="speedometer-outline" size={17} color="#fff" />
+            <Text style={styles.opcionLabel}>{velocidad}x</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {cuenta !== null ? (
+        <View style={styles.cuentaOverlay} pointerEvents="none">
+          <Text style={styles.cuentaNumero}>{cuenta}</Text>
+          <Text style={styles.cuentaHint}>{t('historias.timerCancelHint')}</Text>
+        </View>
+      ) : null}
+
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <Pressable onPress={onGallery} style={styles.sideBtn} disabled={busy || recording}>
           <Ionicons name="images-outline" size={28} color="#fff" />
@@ -524,6 +637,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     zIndex: 5,
   },
+  opcionesCol: { position: 'absolute', right: 12, gap: 8, alignItems: 'flex-end', zIndex: 5 },
+  opcionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  opcionChipOn: { backgroundColor: 'rgba(226,59,74,0.9)' },
+  opcionLabel: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  cuentaOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 6,
+  },
+  cuentaNumero: { color: '#fff', fontSize: 110, fontWeight: '800' },
+  cuentaHint: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 8 },
   sideBtn: { width: 72, alignItems: 'center', gap: 4 },
   sideLabel: { color: '#fff', fontSize: 11, fontWeight: '600' },
   hint: { color: 'rgba(255,255,255,0.7)', fontSize: 11, textAlign: 'center' },

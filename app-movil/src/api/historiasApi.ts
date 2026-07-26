@@ -16,6 +16,8 @@ export interface CrearHistoriaExtras {
   /** Recorte no destructivo: el reproductor arranca y corta en este tramo. */
   recorte?: StoryRecorte | null;
   sinAudio?: boolean;
+  /** 0.5 / 1 / 2. El backend rechaza cualquier otro valor. */
+  velocidad?: number;
   /** Si se publica dentro de una cadena. */
   cadenaId?: number | null;
 }
@@ -52,6 +54,9 @@ export const historiasApi = {
     }
     if (extras?.sinAudio) {
       form.append('sinAudio', '1');
+    }
+    if (extras?.velocidad && extras.velocidad !== 1) {
+      form.append('velocidad', String(extras.velocidad));
     }
     if (extras?.cadenaId) {
       form.append('cadenaId', String(extras.cadenaId));

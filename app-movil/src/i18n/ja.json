@@ -1,4 +1,4 @@
-{
+﻿{
     "common": {
         "continue": "ç¶šã‘ã‚‹",
         "cancel": "ã‚­ãƒ£ãƒ³ã‚»ãƒ«",
@@ -62,6 +62,12 @@
         "verificationApproved": "èªè¨¼æ¸ˆã¿",
         "verificationRejected": "å´ä¸‹ã•ã‚Œã¾ã—ãŸ",
         "verificationNotSent": "æœªé€ä¿¡",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "skipForNow": "å¾Œã§å®Œäº†ã™ã‚‹"
     },
     "settings": {
@@ -153,7 +159,9 @@
     },
     "home": {
         "welcome": "Red Huellitasã¸ã‚ˆã†ã“ã",
-        "masTabTitle": "ãã®ä»–"
+        "masTabTitle": "ãã®ä»–",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "ãƒ›ãƒ¼ãƒ ",
@@ -218,7 +226,9 @@
         "agregarPreguntas": "質問ボックスを追加",
         "yaHayInteractivo": "このストーリーにはすでにアンケートか質問があります。別のものを追加するには削除してください。",
         "preguntame": "質問して",
-        "escribiRespuesta": "回答を書く…"
+        "escribiRespuesta": "回答を書く…",
+        "timerOff": "タイマーなし",
+        "timerCancelHint": "タップでキャンセル"
     },
     "adopcion": {
         "tituloLista": "é‡Œè¦ªå‹Ÿé›†",

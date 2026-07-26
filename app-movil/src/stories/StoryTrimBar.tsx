@@ -23,6 +23,8 @@ type Props = {
   inicioSeg: number;
   finSeg: number;
   sinAudio: boolean;
+  /** 0.5 / 1 / 2. Se aplica al reproducir, no re-encodea (ver sql/024). */
+  velocidad: number;
   /** Segundo que se está reproduciendo, para dibujar el cabezal. */
   posicionSeg: number;
   onChange: (inicioSeg: number, finSeg: number) => void;
@@ -33,6 +35,7 @@ type Props = {
    */
   onScrub: (seg: number | null) => void;
   onToggleAudio: () => void;
+  onToggleVelocidad: () => void;
 };
 
 const acotar = (v: number, min: number, max: number) => Math.max(min, Math.min(v, max));
@@ -59,10 +62,12 @@ export function StoryTrimBar({
   inicioSeg,
   finSeg,
   sinAudio,
+  velocidad,
   posicionSeg,
   onChange,
   onScrub,
   onToggleAudio,
+  onToggleVelocidad,
 }: Props) {
   const [ancho, setAncho] = useState(0);
   const pistaRef = useRef<View | null>(null);
@@ -278,17 +283,30 @@ export function StoryTrimBar({
         <Text style={[type.caption, styles.duracion]}>
           {seleccionado.toFixed(1)}s de {duracionSegundos.toFixed(1)}s
         </Text>
-        <Pressable
-          onPress={() => {
-            hapticLeve();
-            onToggleAudio();
-          }}
-          style={[styles.audioBtn, sinAudio && styles.audioBtnActivo]}
-          hitSlop={8}
-        >
-          <Ionicons name={sinAudio ? 'volume-mute' : 'volume-high'} size={15} color="#fff" />
-          <Text style={[type.caption, styles.audioLabel]}>{sinAudio ? 'Sin audio' : 'Con audio'}</Text>
-        </Pressable>
+        <View style={styles.botonera}>
+          <Pressable
+            onPress={() => {
+              hapticLeve();
+              onToggleVelocidad();
+            }}
+            style={[styles.audioBtn, velocidad !== 1 && styles.audioBtnActivo]}
+            hitSlop={8}
+          >
+            <Ionicons name="speedometer-outline" size={15} color="#fff" />
+            <Text style={[type.caption, styles.audioLabel]}>{velocidad}x</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              hapticLeve();
+              onToggleAudio();
+            }}
+            style={[styles.audioBtn, sinAudio && styles.audioBtnActivo]}
+            hitSlop={8}
+          >
+            <Ionicons name={sinAudio ? 'volume-mute' : 'volume-high'} size={15} color="#fff" />
+            <Text style={[type.caption, styles.audioLabel]}>{sinAudio ? 'Sin audio' : 'Con audio'}</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Frame y segundo exactos de lo que se está tocando. Sin esto el recorte
@@ -366,6 +384,7 @@ const styles = StyleSheet.create({
   contenedor: { paddingHorizontal: 16, paddingVertical: 10 },
   encabezado: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   duracion: { color: '#fff' },
+  botonera: { flexDirection: 'row', gap: 6 },
   audioBtn: {
     flexDirection: 'row',
     alignItems: 'center',

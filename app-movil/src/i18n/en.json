@@ -9,7 +9,8 @@
         "send": "Send",
         "changesSaved": "Changes saved",
         "yes": "Yes",
-        "no": "No"
+        "no": "No",
+        "close": "Close"
     },
     "auth": {
         "loginTitle": "Log in",
@@ -72,8 +73,18 @@
         "verificationAutoOk": "Your identity was verified automatically. You can use features that require it.",
         "verificationAutoFail": "We could not verify the images. Make sure the ID is readable and the selfie is clear and front-facing.",
         "verificationAutoPending": "We received your documents. They need review because automatic confidence was not high enough.",
-        "verificationMethod": "Method",
+        "verificationMethod": "Review",
+        "verificationMethodAuto": "Automatic",
+        "verificationMethodRenaper": "Automatic + registry",
+        "verificationMethodManual": "Manual (moderation)",
         "verificationFaceScore": "Face match",
+        "ok": "Got it",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "dniFront": "ID (front)",
         "dniBack": "ID (back)",
         "selfie": "Selfie",
@@ -159,7 +170,13 @@
         "myPetsSection": "My Pets",
         "petsSection": "Pets",
         "emptyFollowers": "No followers yet",
-        "emptyFollowing": "Not following anyone yet"
+        "emptyFollowing": "Not following anyone yet",
+        "changePhoto": "Change photo",
+        "addPhoto": "Add photo",
+        "takePhoto": "Take photo",
+        "chooseFromGallery": "Choose from gallery",
+        "photoUpdated": "Profile photo updated",
+        "photoUpdateError": "Could not update the photo"
     },
     "report": {
         "buttonLabel": "Report / Request",
@@ -174,7 +191,9 @@
     },
     "home": {
         "welcome": "Welcome to Red Huellitas",
-        "masTabTitle": "More"
+        "masTabTitle": "More",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "Home",
@@ -243,8 +262,13 @@
         "textPlaceholder": "Say something…",
         "addText": "Add",
         "textDragHint": "Drag, pinch and rotate text with two fingers",
+        "textLiveHint": "You see it on the story as you type. Tap Add to place it.",
         "drawHint": "Drag to draw",
         "publish": "Your story",
+        "changeMedia": "Change media",
+        "retake": "Camera",
+        "tapToFit": "Tap the screen to see the full video",
+        "fitContainHint": "Fit: full video. Tap again to fill",
         "vistasTitulo": "Views",
         "vistasVacio": "No one has seen it yet",
         "vistasVacioDesc": "When someone views your story, they will show up here.",
@@ -262,7 +286,9 @@
         "agregarPreguntas": "Add question box",
         "yaHayInteractivo": "This story already has a poll or question box. Remove it to add another.",
         "preguntame": "ASK ME",
-        "escribiRespuesta": "Type your answer…"
+        "escribiRespuesta": "Type your answer…",
+        "timerOff": "No timer",
+        "timerCancelHint": "Tap to cancel"
     },
     "adopcion": {
         "tituloLista": "Adoption",

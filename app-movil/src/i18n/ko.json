@@ -1,4 +1,4 @@
-{
+﻿{
     "common": {
         "continue": "ê³„ì†",
         "cancel": "ì·¨ì†Œ",
@@ -62,6 +62,12 @@
         "verificationApproved": "ì¸ì¦ë¨",
         "verificationRejected": "ê±°ë¶€ë¨",
         "verificationNotSent": "ì œì¶œë˜ì§€ ì•ŠìŒ",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "skipForNow": "ë‚˜ì¤‘ì— ì™„ë£Œí•˜ê¸°"
     },
     "settings": {
@@ -153,7 +159,9 @@
     },
     "home": {
         "welcome": "Red Huellitasì— ì˜¤ì‹  ê²ƒì„ í™˜ì˜í•©ë‹ˆë‹¤",
-        "masTabTitle": "ë”ë³´ê¸°"
+        "masTabTitle": "ë”ë³´ê¸°",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "í™ˆ",
@@ -218,7 +226,9 @@
         "agregarPreguntas": "질문 상자 추가",
         "yaHayInteractivo": "이 스토리에는 이미 투표나 질문이 있어요. 지우고 다시 추가하세요.",
         "preguntame": "질문해 주세요",
-        "escribiRespuesta": "답변을 적어 주세요…"
+        "escribiRespuesta": "답변을 적어 주세요…",
+        "timerOff": "타이머 없음",
+        "timerCancelHint": "탭하여 취소"
     },
     "adopcion": {
         "tituloLista": "ìž…ì–‘",

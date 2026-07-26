@@ -214,7 +214,17 @@ El plan completo está en `C:\Users\Pab\.claude\plans\c-xampp-htdocs-red-huellit
 
 **Gotcha de Expo Router que costó caro**: no admite dos parámetros dinámicos distintos en el mismo nivel. Tener `historias/[userId].tsx` y `historias/[historiaId]/vistas.tsx` **rompía el router entero** — cualquier ruta caía en `/buscar` con la pantalla en blanco, sin un solo error en consola. El visor quedó en `historias/ver/[userId].tsx` y las vistas en `historia-vistas/[historiaId].tsx`.
 
-**Falta**: temporizador y velocidad de grabación (TikTok) en la cámara, y el swipe entre usuarios en el visor.
+### Temporizador, velocidad y swipe (2026-07-26)
+
+Cierra lo que faltaba de Historias.
+
+**Cámara**: chip de temporizador (sin / 3s / 10s) con cuenta regresiva a pantalla completa —tocar de nuevo cancela— y chip de velocidad (0.5x / 1x / 2x), que sólo aparece en modo video.
+
+**La velocidad es no destructiva, igual que el recorte** (`sql/024`). En TikTok se hornea en el archivo al grabar; acá se guarda el factor en `Historia.VelocidadReproduccion` y lo aplica el reproductor con `playbackRate`. Para el que mira es lo mismo —grabar 10s a 2x se ve en 5s— pero no hace falta re-encodear (o sea, no hace falta build nativo, ver 023) y el autor puede cambiar de idea en el editor sin volver a grabar. El backend acepta sólo 0.5/1/2 y rechaza el resto: si aceptara cualquier número, publicaría algo distinto de lo elegido sin avisar. La barra de progreso del visor divide por el factor, si no se desfasa del video.
+
+**Visor**: swipe horizontal para saltar de usuario —en el orden del carrusel, que sale del mismo `feed.php`— y vertical hacia abajo para cerrar. Al final del carrusel el swipe a la izquierda cierra en vez de quedar muerto, como Instagram.
+
+El gesto va **sobre** las zonas de tap, no en lugar de ellas: el `PanResponder` recién reclama el gesto cuando hay 12px de movimiento real, así el toque para avanzar y el mantener apretado para pausar siguen funcionando (verificado: tap avanza de historia, long-press pausa).
 
 ### Recorte: los 3 bugs por los que "andaba raro" (2026-07-26)
 

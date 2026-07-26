@@ -32,6 +32,8 @@ type Props = {
   posicionBuscada?: number | null;
   /** Posición de reproducción, para dibujar el cabezal en la barra de recorte. */
   onPosicion?: (seg: number) => void;
+  /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. */
+  velocidad?: number;
   onEnded?: () => void;
 };
 
@@ -53,6 +55,7 @@ export function StoryMediaFill({
   finSeg = null,
   posicionBuscada = null,
   onPosicion,
+  velocidad = 1,
   onEnded,
 }: Props) {
   const webVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -209,6 +212,24 @@ export function StoryMediaFill({
       // ignore
     }
   }, [uri, tipo, loop, muted, vol, nativePlayer]);
+
+  // Velocidad. Igual que el recorte, no se re-encodea: grabar 10s a 2x se ve
+  // en 5s porque el reproductor va al doble, no porque el archivo cambie.
+  useEffect(() => {
+    if (tipo !== 'video') return;
+    const factor = velocidad > 0 ? velocidad : 1;
+
+    if (Platform.OS === 'web') {
+      const el = webVideoRef.current;
+      if (el) el.playbackRate = factor;
+      return;
+    }
+    try {
+      nativePlayer.playbackRate = factor;
+    } catch {
+      // ignore
+    }
+  }, [velocidad, tipo, nativePlayer, uri]);
 
   // Volumen en caliente (sin recargar el media).
   useEffect(() => {

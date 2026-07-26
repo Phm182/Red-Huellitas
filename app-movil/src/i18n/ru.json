@@ -1,4 +1,4 @@
-{
+﻿{
     "common": {
         "continue": "ÐŸÑ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸Ñ‚ÑŒ",
         "cancel": "ÐžÑ‚Ð¼ÐµÐ½Ð°",
@@ -62,6 +62,12 @@
         "verificationApproved": "ÐŸÐ¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¾",
         "verificationRejected": "ÐžÑ‚ÐºÐ»Ð¾Ð½ÐµÐ½Ð¾",
         "verificationNotSent": "ÐÐµ Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¾",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "skipForNow": "Ð—Ð°Ð²ÐµÑ€ÑˆÐ¸Ñ‚ÑŒ Ð¿Ð¾Ð·Ð¶Ðµ"
     },
     "settings": {
@@ -153,7 +159,9 @@
     },
     "home": {
         "welcome": "Ð”Ð¾Ð±Ñ€Ð¾ Ð¿Ð¾Ð¶Ð°Ð»Ð¾Ð²Ð°Ñ‚ÑŒ Ð² Red Huellitas",
-        "masTabTitle": "Ð•Ñ‰Ñ‘"
+        "masTabTitle": "Ð•Ñ‰Ñ‘",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "Ð“Ð»Ð°Ð²Ð½Ð°Ñ",
@@ -218,7 +226,9 @@
         "agregarPreguntas": "Добавить блок вопросов",
         "yaHayInteractivo": "В этой истории уже есть опрос или вопросы. Уберите их, чтобы добавить другие.",
         "preguntame": "СПРОСИ МЕНЯ",
-        "escribiRespuesta": "Напишите ответ…"
+        "escribiRespuesta": "Напишите ответ…",
+        "timerOff": "Без таймера",
+        "timerCancelHint": "Нажмите для отмены"
     },
     "adopcion": {
         "tituloLista": "Ð£ÑÑ‹Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ðµ",

@@ -11,6 +11,8 @@ export interface Usuario {
   whatsappNumero: string | null;
   whatsappVisibilidad: Visibilidad;
   avatarPath: string | null;
+  /** mtime del archivo; para cache-bust al servir por media/avatar.php */
+  avatarBust?: number | null;
   onboardingCompleto: boolean;
   aceptoClausulaAntiCriaderos: boolean;
   rol: string;
@@ -44,6 +46,14 @@ export interface VerificacionEstado {
   faceMatchScore?: number | null;
   autoMetodo?: string | null;
   kycEstado?: string | null;
+  problemas?: string[];
+  checks?: {
+    esDniFrente: boolean;
+    esDniDorso: boolean;
+    documentoLegible: boolean;
+    selfieTieneRostro: boolean;
+    faceMatchScore: number | null;
+  } | null;
 }
 
 export type ReporteTipo = 'mejora' | 'falla';
@@ -97,6 +107,7 @@ export interface PerfilPublico {
   nombreCompleto: string;
   zonaDescripcion: string | null;
   avatarPath: string | null;
+  avatarBust?: number | null;
   whatsappNumero: string | null;
   whatsappVisibilidad: Visibilidad;
   totalSeguidores: number;
@@ -170,6 +181,8 @@ export interface Historia {
   recorteInicioSeg: number | null;
   recorteFinSeg: number | null;
   sinAudio: boolean;
+  /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. También no destructivo. */
+  velocidad: number;
   cadena: HistoriaCadena | null;
   encuesta: HistoriaEncuesta | null;
   pregunta: HistoriaPreguntaBox | null;

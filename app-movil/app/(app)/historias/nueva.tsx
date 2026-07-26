@@ -55,6 +55,7 @@ export default function NuevaHistoriaScreen() {
         // significan nada y ensuciarían la fila.
         recorte: media.tipo === 'video' ? publicacion.recorte : null,
         sinAudio: media.tipo === 'video' ? publicacion.sinAudio : false,
+        velocidad: media.tipo === 'video' ? publicacion.velocidad : 1,
         cadenaId: cadenaIdNum,
       };
 
@@ -85,6 +86,7 @@ export default function NuevaHistoriaScreen() {
         <StoryEditor
           media={media}
           onBack={() => setMedia(null)}
+          onMediaChange={(next) => setMedia(next)}
           onPublish={onPublish}
           publishing={publishing}
         />

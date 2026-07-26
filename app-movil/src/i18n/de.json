@@ -1,4 +1,4 @@
-{
+﻿{
     "common": {
         "continue": "Weiter",
         "cancel": "Abbrechen",
@@ -62,6 +62,12 @@
         "verificationApproved": "Verifiziert",
         "verificationRejected": "Abgelehnt",
         "verificationNotSent": "Nicht gesendet",
+        "verificationReplaceHint": "If you already uploaded photos, they appear below. You can replace any of them; Send restarts verification with the new set.",
+        "verificationProblemsTitle": "What failed the check",
+        "verificationCheckFrontFail": "The front ID photo did not pass automatic verification.",
+        "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
+        "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
+        "verificationResubmit": "Resubmit documents",
         "skipForNow": "SpÃ¤ter abschlieÃŸen"
     },
     "settings": {
@@ -153,7 +159,9 @@
     },
     "home": {
         "welcome": "Willkommen bei Red Huellitas",
-        "masTabTitle": "Mehr"
+        "masTabTitle": "Mehr",
+        "switchAccountTitle": "Switch account",
+        "addAccount": "Add account"
     },
     "feed": {
         "tabTitle": "Start",
@@ -218,7 +226,9 @@
         "agregarPreguntas": "Fragebox hinzufügen",
         "yaHayInteractivo": "Diese Story hat bereits eine Umfrage oder Fragebox. Entferne sie, um eine andere hinzuzufügen.",
         "preguntame": "FRAG MICH",
-        "escribiRespuesta": "Schreib deine Antwort…"
+        "escribiRespuesta": "Schreib deine Antwort…",
+        "timerOff": "Kein Timer",
+        "timerCancelHint": "Zum Abbrechen tippen"
     },
     "adopcion": {
         "tituloLista": "Adoption",

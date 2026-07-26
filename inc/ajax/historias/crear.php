@@ -43,6 +43,17 @@ try {
     }
     $sinAudio = filter_var($_POST['sinAudio'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
+    // Velocidad de reproducción (cámara lenta / rápida). Se acepta sólo la
+    // lista cerrada que ofrece la app: cualquier otro valor volvería a 1x sin
+    // avisar, y es mejor rechazarlo que publicar algo distinto de lo elegido.
+    $velocidad = 1.0;
+    if (isset($_POST['velocidad']) && $_POST['velocidad'] !== '') {
+        $velocidad = (float) $_POST['velocidad'];
+        if (!in_array($velocidad, [0.5, 1.0, 2.0], true)) {
+            json_error('Velocidad de reproducción inválida');
+        }
+    }
+
     $cadenaId = isset($_POST['cadenaId']) && $_POST['cadenaId'] !== '' ? (int) $_POST['cadenaId'] : null;
     if ($cadenaId !== null) {
         $stmt = $conn->prepare("SELECT CadenaId FROM Cadena WHERE CadenaId = ? AND Estado = 'A'");
@@ -131,6 +142,11 @@ try {
     }
     if ($sinAudio === 1) {
         $sets[] = 'SinAudio = 1';
+    }
+    if ($velocidad !== 1.0) {
+        $sets[] = 'VelocidadReproduccion = ?';
+        $tipos .= 'd';
+        $params[] = $velocidad;
     }
     if ($cadenaId !== null) {
         $sets[] = 'CadenaId = ?';
