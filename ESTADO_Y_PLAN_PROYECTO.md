@@ -216,6 +216,18 @@ El plan completo está en `C:\Users\Pab\.claude\plans\c-xampp-htdocs-red-huellit
 
 **Falta**: temporizador y velocidad de grabación (TikTok) en la cámara, y el swipe entre usuarios en el visor.
 
+### Recorte: los 3 bugs por los que "andaba raro" (2026-07-26)
+
+El usuario reportó que el recorte se trababa a veces sí y a veces no. Eran tres cosas distintas, ninguna de ellas del gesto en sí:
+
+1. **La pista medía 0 de ancho.** `onLayout` no vuelve a dispararse si el primer layout del panel llega con ancho 0, y el panel de recorte aparece de golpe sobre una pantalla ya montada. Con ancho 0, `segundosPorPx` da 0 y `onPanResponderMove` **descarta el gesto entero en silencio**: la manija no se movía ni un píxel. Que dependiera del timing del montaje explica el "a veces sí, a veces no". Ahora además se mide a mano con `measure()` hasta tener un ancho real.
+2. **El `PanResponder` se recreaba en pleno arrastre**, porque su `useMemo` dependía de `inicioSeg`/`finSeg`, que cambian con cada `onChange`. React Native re-registraba los handlers a mitad del gesto.
+3. **El delta se aplicaba en cascada**: `gesture.dx` es acumulado desde que arrancó el gesto, pero se lo sumaba a un valor que ya se había movido, así que la manija se disparaba sola hasta el tope. Ahora el valor de arranque se captura en `onPanResponderGrant`.
+
+**Y un cuarto, aparte**: `StoryCameraCapture` mandaba `duracionSegundos: 15` fijo para todo video grabado en web. Grabar 4 segundos daba una barra de 15: las manijas caían en cualquier lado. Ahora se mide el archivo (con el truco de saltar a `1e101` para los WebM de `MediaRecorder`, que no traen duración en el header) y el reloj de grabación queda de respaldo.
+
+**Lo que se sumó**: mientras se arrastra, el video salta al frame exacto que se está cortando y aparece una burbuja con la miniatura y el segundo. Y la pista entera es un cabezal: tocarla o arrastrarla reproduce desde ahí, para revisar un momento puntual sin volver a mirar el video entero. El tramo recortado ahora también se respeta en nativo — antes sólo andaba en web.
+
 ---
 
 ## 4. Cómo seguir mañana

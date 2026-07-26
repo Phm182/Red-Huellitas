@@ -220,14 +220,23 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
     recorder.ondataavailable = (e) => {
       if (e.data.size) chunksRef.current.push(e.data);
     };
-    recorder.onstop = () => {
+    // Cuánto duró de verdad la grabación. Antes acá había un 15 fijo, así que
+    // grabar 4 segundos daba una barra de recorte de 15: las manijas caían en
+    // cualquier lado y el tramo elegido no tenía nada que ver con el video.
+    const arrancoEn = Date.now();
+
+    recorder.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
       const uri = URL.createObjectURL(blob);
+      const transcurrido = (Date.now() - arrancoEn) / 1000;
+      // El archivo manda si se lo puede leer; el reloj es el respaldo.
+      const medido = await probeVideoDurationSeconds(uri);
+      const duracion = medido > 0 ? medido : Math.max(1, Math.round(transcurrido * 10) / 10);
       onCaptured({
         uri,
         tipo: 'video',
         mimeType: 'video/webm',
-        duracionSegundos: 15,
+        duracionSegundos: Math.min(duracion, 60),
       });
     };
     mediaRecorderRef.current = recorder;

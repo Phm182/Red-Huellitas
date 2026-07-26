@@ -2,6 +2,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useEffect, useRef } from 'react';
 import { Image, Platform, StyleSheet, View, ViewStyle } from 'react-native';
 
+export type StoryContentFit = 'cover' | 'contain';
+
 type Props = {
   uri: string;
   tipo: 'foto' | 'video';
@@ -10,6 +12,10 @@ type Props = {
   style?: ViewStyle;
   loop?: boolean;
   muted?: boolean;
+  /** 0–1. Solo aplica si no está muted. */
+  volume?: number;
+  /** cover = recorta (Instagram default); contain = entra entero (puede verse con bandas). */
+  contentFit?: StoryContentFit;
   /** Congela el video sin descargarlo (mantener el dedo apretado). */
   pausado?: boolean;
   /**
@@ -19,11 +25,18 @@ type Props = {
    */
   inicioSeg?: number | null;
   finSeg?: number | null;
+  /**
+   * Saltar a este segundo. Cambiar el valor fuerza el salto, así el que edita
+   * ve el frame exacto mientras arrastra el recorte o el cabezal.
+   */
+  posicionBuscada?: number | null;
+  /** Posición de reproducción, para dibujar el cabezal en la barra de recorte. */
+  onPosicion?: (seg: number) => void;
   onEnded?: () => void;
 };
 
 /**
- * Media a pantalla fija: object-fit/cover, sin agrandar el viewport.
+ * Media a pantalla fija: object-fit cover/contain, sin agrandar el viewport.
  * En web el video usa <video> nativo (expo-video a veces queda en un frame).
  */
 export function StoryMediaFill({
@@ -33,16 +46,27 @@ export function StoryMediaFill({
   style,
   loop = true,
   muted = true,
+  volume = 1,
+  contentFit = 'cover',
   pausado = false,
   inicioSeg = null,
   finSeg = null,
+  posicionBuscada = null,
+  onPosicion,
   onEnded,
 }: Props) {
   const webVideoRef = useRef<HTMLVideoElement | null>(null);
+  const vol = Math.min(1, Math.max(0, volume));
+
+  // El padre suele pasar una lambda nueva en cada render; guardarla en un ref
+  // evita que los efectos de abajo se re-registren en cada frame de un gesto.
+  const onPosicionRef = useRef(onPosicion);
+  onPosicionRef.current = onPosicion;
 
   const nativePlayer = useVideoPlayer(Platform.OS !== 'web' && tipo === 'video' ? uri : null, (p) => {
     p.loop = loop;
     p.muted = muted;
+    p.volume = vol;
     p.play();
   });
 
@@ -52,26 +76,23 @@ export function StoryMediaFill({
     if (!el) return;
     el.loop = loop;
     el.muted = muted;
+    el.volume = muted ? 0 : vol;
     el.playsInline = true;
     el.setAttribute('playsinline', 'true');
     el.setAttribute('webkit-playsinline', 'true');
     const onEnd = () => onEnded?.();
     el.addEventListener('ended', onEnd);
     void el.play().catch(() => {
-      // autoplay bloqueado: silenciar e intentar de nuevo
       el.muted = true;
       void el.play().catch(() => undefined);
     });
     return () => el.removeEventListener('ended', onEnd);
-  }, [uri, tipo, loop, muted, onEnded]);
+  }, [uri, tipo, loop, muted, vol, onEnded]);
 
-  // Recorte en web: se salta al inicio elegido y se vigila el tiempo para
-  // cortar en el final. `timeupdate` dispara ~4 veces por segundo, que alcanza
-  // para un corte que el ojo percibe como exacto.
   useEffect(() => {
     if (Platform.OS !== 'web' || tipo !== 'video') return;
     const el = webVideoRef.current;
-    if (!el || (inicioSeg === null && finSeg === null)) return;
+    if (!el) return;
 
     const irAlInicio = () => {
       if (inicioSeg !== null && Math.abs(el.currentTime - inicioSeg) > 0.3) {
@@ -79,7 +100,8 @@ export function StoryMediaFill({
       }
     };
 
-    const vigilarFin = () => {
+    const vigilarTramo = () => {
+      onPosicionRef.current?.(el.currentTime);
       if (finSeg !== null && el.currentTime >= finSeg) {
         if (loop) {
           el.currentTime = inicioSeg ?? 0;
@@ -87,21 +109,72 @@ export function StoryMediaFill({
           el.pause();
           onEnded?.();
         }
+        return;
+      }
+      // Si el recorte se movió por delante del cabezal, arrastrarlo adentro del
+      // tramo: si no, quedaría reproduciendo un pedazo ya descartado.
+      if (inicioSeg !== null && el.currentTime < inicioSeg - 0.3) {
+        el.currentTime = inicioSeg;
       }
     };
 
     el.addEventListener('loadedmetadata', irAlInicio);
-    el.addEventListener('timeupdate', vigilarFin);
-    // Si el metadata ya cargó, el evento no vuelve a disparar.
-    if (el.readyState >= 1) irAlInicio();
+    el.addEventListener('timeupdate', vigilarTramo);
+    if (el.readyState >= 1 && el.currentTime === 0) irAlInicio();
 
     return () => {
       el.removeEventListener('loadedmetadata', irAlInicio);
-      el.removeEventListener('timeupdate', vigilarFin);
+      el.removeEventListener('timeupdate', vigilarTramo);
     };
   }, [uri, tipo, inicioSeg, finSeg, loop, onEnded]);
 
-  // Pausa/reanuda sin recargar el video.
+  // Salto explícito (arrastrar una manija o el cabezal). Va aparte del efecto
+  // de arriba porque tiene que poder pisar la posición actual sin condiciones.
+  useEffect(() => {
+    if (tipo !== 'video' || posicionBuscada === null) return;
+
+    if (Platform.OS === 'web') {
+      const el = webVideoRef.current;
+      if (el && Number.isFinite(posicionBuscada)) el.currentTime = posicionBuscada;
+      return;
+    }
+    try {
+      nativePlayer.currentTime = posicionBuscada;
+    } catch {
+      // ignore
+    }
+  }, [posicionBuscada, tipo, nativePlayer]);
+
+  // El tramo recortado también tiene que respetarse en nativo: sin esto el
+  // video se veía entero en el celular y recortado sólo en web.
+  useEffect(() => {
+    if (Platform.OS === 'web' || tipo !== 'video') return;
+
+    try {
+      nativePlayer.timeUpdateEventInterval = 0.2;
+    } catch {
+      return;
+    }
+
+    const sub = nativePlayer.addListener('timeUpdate', ({ currentTime }) => {
+      onPosicionRef.current?.(currentTime);
+      if (finSeg !== null && currentTime >= finSeg) {
+        if (loop) {
+          nativePlayer.currentTime = inicioSeg ?? 0;
+        } else {
+          nativePlayer.pause();
+          onEnded?.();
+        }
+        return;
+      }
+      if (inicioSeg !== null && currentTime < inicioSeg - 0.3) {
+        nativePlayer.currentTime = inicioSeg;
+      }
+    });
+
+    return () => sub.remove();
+  }, [tipo, inicioSeg, finSeg, loop, onEnded, nativePlayer]);
+
   useEffect(() => {
     if (tipo !== 'video') return;
 
@@ -129,20 +202,41 @@ export function StoryMediaFill({
     try {
       nativePlayer.loop = loop;
       nativePlayer.muted = muted;
+      nativePlayer.volume = vol;
       nativePlayer.replace(uri);
       nativePlayer.play();
     } catch {
       // ignore
     }
-  }, [uri, tipo, loop, muted, nativePlayer]);
+  }, [uri, tipo, loop, muted, vol, nativePlayer]);
+
+  // Volumen en caliente (sin recargar el media).
+  useEffect(() => {
+    if (tipo !== 'video') return;
+    if (Platform.OS === 'web') {
+      const el = webVideoRef.current;
+      if (el) {
+        el.muted = muted;
+        el.volume = muted ? 0 : vol;
+      }
+      return;
+    }
+    try {
+      nativePlayer.muted = muted;
+      nativePlayer.volume = vol;
+    } catch {
+      // ignore
+    }
+  }, [muted, vol, tipo, nativePlayer]);
 
   const filterStyle =
     Platform.OS === 'web' && cssFilter ? ({ filter: cssFilter } as object) : null;
+  const fit = contentFit === 'contain' ? 'contain' : 'cover';
 
   return (
     <View style={[styles.frame, style]} pointerEvents="none">
       {tipo === 'foto' ? (
-        <Image source={{ uri }} style={[styles.media, filterStyle]} resizeMode="cover" />
+        <Image source={{ uri }} style={[styles.media, filterStyle]} resizeMode={fit} />
       ) : Platform.OS === 'web' ? (
         <video
           key={uri}
@@ -160,7 +254,8 @@ export function StoryMediaFill({
             left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            objectFit: fit,
+            backgroundColor: '#000',
             ...(cssFilter ? { filter: cssFilter } : null),
           }}
         />
@@ -168,7 +263,7 @@ export function StoryMediaFill({
         <VideoView
           player={nativePlayer}
           style={[styles.media, filterStyle]}
-          contentFit="cover"
+          contentFit={fit}
           nativeControls={false}
         />
       )}

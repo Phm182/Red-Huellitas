@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,13 +15,19 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  esAssetVideo,
+  normalizarDuracionSegundos,
+  probeVideoDurationSeconds,
+} from '../utils/mediaDuration';
 import { CapturedStoryMedia } from './StoryCameraCapture';
 import { StoryDraggableText } from './StoryDraggableText';
 import { StoryInteractivoCard } from './StoryInteractivoCard';
-import { StoryMediaFill } from './StoryMediaFill';
+import { StoryContentFit, StoryMediaFill } from './StoryMediaFill';
 import { StoryOverlayLayer, storyFilterCss } from './StoryOverlayLayer';
 import { StoryStickerPanel } from './StoryStickerPanel';
 import { StoryTrimBar } from './StoryTrimBar';
+import { StoryVolumeSlider } from './StoryVolumeSlider';
 import {
   emptyOverlay,
   STORY_DRAW_COLORS,
@@ -34,6 +41,7 @@ import {
   StoryPathItem,
   StoryRecorte,
   StoryTextItem,
+  storyFontFamily,
 } from './storyEditorTypes';
 
 type Tool = 'none' | 'text' | 'draw' | 'stickers';
@@ -48,13 +56,15 @@ export type StoryPublicacion = {
 type Props = {
   media: CapturedStoryMedia;
   onBack: () => void;
+  /** Reemplaza foto/video sin salir del flujo. */
+  onMediaChange: (media: CapturedStoryMedia) => void;
   onPublish: (publicacion: StoryPublicacion) => void;
   publishing: boolean;
 };
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
+export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishing }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [overlay, setOverlay] = useState<StoryOverlay>(emptyOverlay());
@@ -66,13 +76,24 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
   const [recorteInicio, setRecorteInicio] = useState(0);
   const [recorteFin, setRecorteFin] = useState(duracion);
   const [sinAudio, setSinAudio] = useState(false);
+  const [mutedPreview, setMutedPreview] = useState(false);
+  const [volumen, setVolumen] = useState(0.85);
+  const [mostrarVolumen, setMostrarVolumen] = useState(false);
+  const [contentFit, setContentFit] = useState<StoryContentFit>('cover');
   const [mostrarTrim, setMostrarTrim] = useState(false);
+  // Cabezal de reproducción: `scrub` es el segundo que se está tocando ahora
+  // (null si nadie arrastra) y `posicionBuscada` el último salto pedido. Van
+  // separados porque al soltar hay que despausar sin volver al principio.
+  const [scrubSeg, setScrubSeg] = useState<number | null>(null);
+  const [posicionBuscada, setPosicionBuscada] = useState<number | null>(null);
+  const [posicionSeg, setPosicionSeg] = useState(0);
   const [drawColor, setDrawColor] = useState(STORY_DRAW_COLORS[0]);
   const [textColor, setTextColor] = useState(STORY_TEXT_COLORS[0]);
   const [fontId, setFontId] = useState<StoryFontId>('classic');
   const [draftText, setDraftText] = useState('');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [layout, setLayout] = useState({ w: SCREEN_W, h: SCREEN_H });
+  const [cambiandoMedia, setCambiandoMedia] = useState(false);
   const currentPath = useRef<StoryPathItem | null>(null);
 
   const pan = useMemo(
@@ -186,7 +207,46 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
     });
   };
 
+  const pickFromGallery = async () => {
+    if (cambiandoMedia) return;
+    if (Platform.OS !== 'web') {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+    }
+    setCambiandoMedia(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        videoMaxDuration: 60,
+        quality: 0.9,
+        allowsEditing: false,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      const esVideo = esAssetVideo(asset);
+      let dur = normalizarDuracionSegundos(asset.duration);
+      if (esVideo && dur <= 0) dur = await probeVideoDurationSeconds(asset.uri);
+      if (esVideo && dur <= 0) dur = 15;
+      const capped = esVideo ? Math.min(dur, 60) : 0;
+      onMediaChange({
+        uri: asset.uri,
+        tipo: esVideo ? 'video' : 'foto',
+        mimeType: asset.mimeType || (esVideo ? 'video/mp4' : 'image/jpeg'),
+        duracionSegundos: capped,
+      });
+      setRecorteInicio(0);
+      setRecorteFin(capped);
+      setMostrarTrim(false);
+      setScrubSeg(null);
+      setPosicionBuscada(null);
+      setPosicionSeg(0);
+    } finally {
+      setCambiandoMedia(false);
+    }
+  };
+
   const cssFilter = storyFilterCss(overlay.filter);
+  const previewMuted = media.tipo !== 'video' || sinAudio || mutedPreview;
 
   const overlayForDraw: StoryOverlay = {
     ...overlay,
@@ -203,7 +263,27 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
         }}
         {...(tool === 'draw' ? pan.panHandlers : {})}
       >
-        <StoryMediaFill uri={media.uri} tipo={media.tipo} cssFilter={cssFilter} loop muted />
+        <StoryMediaFill
+          uri={media.uri}
+          tipo={media.tipo}
+          cssFilter={cssFilter}
+          loop
+          muted={previewMuted}
+          volume={volumen}
+          contentFit={contentFit}
+          inicioSeg={media.tipo === 'video' && duracion > 0 ? recorteInicio : null}
+          finSeg={media.tipo === 'video' && duracion > 0 ? recorteFin : null}
+          posicionBuscada={posicionBuscada}
+          onPosicion={setPosicionSeg}
+          pausado={scrubSeg !== null}
+        />
+
+        {tool === 'none' ? (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'))}
+          />
+        ) : null}
 
         <StoryOverlayLayer overlay={overlayForDraw} width={layout.w} height={layout.h} />
 
@@ -219,6 +299,19 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
             onChange={updateText}
           />
         ))}
+
+        {tool === 'text' && draftText.trim().length > 0 ? (
+          <View pointerEvents="none" style={styles.liveTextWrap}>
+            <Text
+              style={[
+                styles.liveText,
+                { color: textColor, fontFamily: storyFontFamily(fontId) },
+              ]}
+            >
+              {draftText}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Preview del sticker interactivo tal cual lo va a ver el otro. Sin
             handlers: acá no se vota, sólo se ubica. */}
@@ -245,6 +338,46 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
           <Ionicons name="chevron-back" size={28} color="#fff" />
         </Pressable>
         <View style={styles.topActions}>
+          <Pressable onPress={pickFromGallery} disabled={cambiandoMedia} style={styles.iconBtn}>
+            {cambiandoMedia ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Ionicons name="images-outline" size={22} color="#fff" />
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'))}
+            style={[styles.iconBtn, contentFit === 'contain' && styles.toolOn]}
+          >
+            <Ionicons name={contentFit === 'contain' ? 'expand' : 'scan'} size={20} color="#fff" />
+          </Pressable>
+          {media.tipo === 'video' ? (
+            <>
+              <Pressable
+                onPress={() => {
+                  if (sinAudio) return;
+                  setMutedPreview((v) => {
+                    const next = !v;
+                    if (!next) setMostrarVolumen(true);
+                    return next;
+                  });
+                }}
+                style={[styles.iconBtn, (sinAudio || mutedPreview) && styles.toolOn]}
+              >
+                <Ionicons
+                  name={sinAudio || mutedPreview ? 'volume-mute' : 'volume-high'}
+                  size={22}
+                  color="#fff"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => setMostrarVolumen((v) => !v)}
+                style={[styles.iconBtn, mostrarVolumen && styles.toolOn]}
+              >
+                <Ionicons name="options-outline" size={20} color="#fff" />
+              </Pressable>
+            </>
+          ) : null}
           <Pressable onPress={undo} style={styles.iconBtn}>
             <Ionicons name="arrow-undo" size={22} color="#fff" />
           </Pressable>
@@ -279,6 +412,26 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
         </View>
       </View>
 
+      {mostrarVolumen && media.tipo === 'video' && !sinAudio ? (
+        <View style={[styles.volumePanel, { top: insets.top + 56 }]}>
+          <Ionicons name="volume-low" size={16} color="#fff" />
+          <StoryVolumeSlider
+            value={volumen}
+            onChange={(v) => {
+              setVolumen(v);
+              if (v > 0) setMutedPreview(false);
+            }}
+          />
+          <Ionicons name="volume-high" size={16} color="#fff" />
+        </View>
+      ) : null}
+
+      {contentFit === 'contain' && !mostrarVolumen ? (
+        <View style={[styles.fitBanner, { top: insets.top + 56 }]} pointerEvents="none">
+          <Text style={styles.fitHint}>{t('historias.fitContainHint')}</Text>
+        </View>
+      ) : null}
+
       {mostrarTrim && media.tipo === 'video' && duracion > 0 ? (
         <View style={[styles.trimPanel, { bottom: insets.bottom + 120 }]}>
           <StoryTrimBar
@@ -287,9 +440,16 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
             inicioSeg={recorteInicio}
             finSeg={recorteFin}
             sinAudio={sinAudio}
+            posicionSeg={posicionSeg}
             onChange={(ini, fin) => {
               setRecorteInicio(ini);
               setRecorteFin(fin);
+            }}
+            onScrub={(seg) => {
+              setScrubSeg(seg);
+              // El salto se mantiene al soltar: la idea es poder revisar un
+              // momento puntual sin volver a mirar el video desde el principio.
+              if (seg !== null) setPosicionBuscada(seg);
             }}
             onToggleAudio={() => setSinAudio((v) => !v)}
           />
@@ -338,12 +498,12 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
             onChangeText={setDraftText}
             placeholder={t('historias.textPlaceholder')}
             placeholderTextColor="rgba(255,255,255,0.5)"
-            style={styles.textInput}
+            style={[styles.textInput, { fontFamily: storyFontFamily(fontId), color: textColor }]}
             autoFocus
             onSubmitEditing={addText}
           />
           <View style={styles.textActions}>
-            <Text style={styles.dragHint}>{t('historias.textDragHint')}</Text>
+            <Text style={styles.dragHint}>{t('historias.textLiveHint')}</Text>
             <Pressable onPress={addText} style={styles.addTextBtn}>
               <Text style={styles.addTextLabel}>{t('historias.addText')}</Text>
             </Pressable>
@@ -440,20 +600,26 @@ export function StoryEditor({ media, onBack, onPublish, publishing }: Props) {
           ))}
         </ScrollView>
 
-        <Pressable
-          style={[styles.publish, publishing && { opacity: 0.6 }]}
-          disabled={publishing}
-          onPress={publicar}
-        >
-          {publishing ? (
-            <ActivityIndicator color="#111" />
-          ) : (
-            <>
-              <Text style={styles.publishText}>{t('historias.publish')}</Text>
-              <Ionicons name="arrow-forward" size={18} color="#111" />
-            </>
-          )}
-        </Pressable>
+        <View style={styles.bottomActions}>
+          <Pressable style={styles.changeMediaBtn} onPress={onBack}>
+            <Ionicons name="camera-outline" size={18} color="#fff" />
+            <Text style={styles.changeMediaLabel}>{t('historias.retake')}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.publish, publishing && { opacity: 0.6 }, { flex: 1 }]}
+            disabled={publishing}
+            onPress={publicar}
+          >
+            {publishing ? (
+              <ActivityIndicator color="#111" />
+            ) : (
+              <>
+                <Text style={styles.publishText}>{t('historias.publish')}</Text>
+                <Ionicons name="arrow-forward" size={18} color="#111" />
+              </>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -471,6 +637,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  liveTextWrap: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    zIndex: 3,
+  },
+  liveText: {
+    fontSize: 34,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+    maxWidth: '90%',
+  },
   topBar: {
     position: 'absolute',
     top: 0,
@@ -481,7 +662,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     zIndex: 20,
   },
-  topActions: { flexDirection: 'row', gap: 4 },
+  topActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, maxWidth: '78%', justifyContent: 'flex-end' },
   iconBtn: {
     width: 42,
     height: 42,
@@ -491,6 +672,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   toolOn: { backgroundColor: 'rgba(226,59,74,0.85)' },
+  volumePanel: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    zIndex: 22,
+  },
+  fitBanner: {
+    position: 'absolute',
+    alignSelf: 'center',
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+    zIndex: 18,
+  },
+  fitHint: { color: 'rgba(255,255,255,0.85)', fontSize: 11, textAlign: 'center' },
   trimPanel: {
     position: 'absolute',
     left: 0,
@@ -553,9 +756,10 @@ const styles = StyleSheet.create({
   fontChipText: { color: '#fff', fontSize: 13 },
   textInput: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    paddingVertical: 8,
+    paddingVertical: 10,
+    textAlign: 'center',
   },
   textActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dragHint: { color: 'rgba(255,255,255,0.65)', fontSize: 11, flex: 1, marginRight: 8 },
@@ -574,8 +778,23 @@ const styles = StyleSheet.create({
   filterPreview: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: 'transparent' },
   filterOn: { borderColor: '#FFE566' },
   filterLabel: { color: '#fff', fontSize: 10, fontWeight: '600', maxWidth: 62, textAlign: 'center' },
+  bottomActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+  },
+  changeMediaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  changeMediaLabel: { color: '#fff', fontWeight: '700', fontSize: 13 },
   publish: {
-    marginHorizontal: 16,
     backgroundColor: '#fff',
     borderRadius: 24,
     paddingVertical: 14,
