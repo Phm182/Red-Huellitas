@@ -1,12 +1,80 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { adminApi } from '../../../src/api/adminApi';
 import { AdminResumen } from '../../../src/types';
+import { elevation, radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
+import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { hapticLeve } from '../../../src/utils/haptics';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+interface TarjetaProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  titulo: string;
+  descripcion: string;
+  pendientes: number;
+  onPress: () => void;
+  index: number;
+}
+
+function TarjetaBandeja({ icon, titulo, descripcion, pendientes, onPress, index }: TarjetaProps) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
+      <AnimatedPressable
+        onPress={() => {
+          hapticLeve();
+          onPress();
+        }}
+        onPressIn={() => {
+          scale.value = withSpring(0.98, { damping: 18, stiffness: 340 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 240 });
+        }}
+        style={[
+          styles.tarjeta,
+          elevation.sm,
+          { borderColor: colors.border, backgroundColor: colors.surface },
+          animStyle,
+        ]}
+      >
+        <View
+          style={[
+            styles.icono,
+            { backgroundColor: pendientes > 0 ? colors.primarySoft : colors.accentSoft },
+          ]}
+        >
+          <Ionicons name={icon} size={22} color={pendientes > 0 ? colors.primary : colors.accent} />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={[type.section, { color: colors.text }]}>{titulo}</Text>
+          <Text style={[type.caption, { color: colors.textMuted, marginTop: 2 }]}>{descripcion}</Text>
+        </View>
+
+        {pendientes > 0 ? (
+          <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+            <Text style={[type.label, { color: colors.primaryText }]}>{pendientes}</Text>
+          </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        )}
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
 
 /**
  * Hub del panel de moderación: las tres bandejas con su contador de
@@ -36,79 +104,68 @@ export default function AdminHubScreen() {
     }, [])
   );
 
-  const tarjetas = [
+  const tarjetas: Omit<TarjetaProps, 'index'>[] = [
     {
-      key: 'verificaciones',
+      icon: 'shield-checkmark-outline',
       titulo: t('admin.verificacionesTitulo'),
       descripcion: t('admin.verificacionesDescripcion'),
       pendientes: resumen?.verificacionesPendientes ?? 0,
-      ruta: '/(app)/admin/verificaciones' as const,
+      onPress: () => router.push('/(app)/admin/verificaciones'),
     },
     {
-      key: 'denuncias',
+      icon: 'flag-outline',
       titulo: t('admin.denunciasTitulo'),
       descripcion: t('admin.denunciasDescripcion'),
       pendientes: resumen?.denunciasPendientes ?? 0,
-      ruta: '/(app)/admin/denuncias' as const,
+      onPress: () => router.push('/(app)/admin/denuncias'),
     },
     {
-      key: 'reportes',
+      icon: 'chatbox-ellipses-outline',
       titulo: t('admin.reportesTitulo'),
       descripcion: t('admin.reportesDescripcion'),
       pendientes: resumen?.reportesPendientes ?? 0,
-      ruta: '/(app)/admin/reportes' as const,
+      onPress: () => router.push('/(app)/admin/reportes'),
     },
   ];
 
   if (loading) {
-    return <SkeletonList />;
+    return <SkeletonList cantidad={3} />;
   }
 
   if (error) {
     return (
-      <View style={[styles.centrado, { backgroundColor: colors.background, padding: 32 }]}>
-        <Text style={{ color: colors.danger, textAlign: 'center' }}>{error}</Text>
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <EmptyState icon="lock-closed-outline" titulo={error} />
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }]}>
-      {tarjetas.map((tarjeta) => (
-        <Pressable
-          key={tarjeta.key}
-          style={[styles.tarjeta, { borderColor: colors.border, backgroundColor: colors.surface }]}
-          onPress={() => router.push(tarjeta.ruta)}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.tarjetaTitulo, { color: colors.text }]}>{tarjeta.titulo}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>{tarjeta.descripcion}</Text>
-          </View>
-          {tarjeta.pendientes > 0 ? (
-            <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-              <Text style={{ color: colors.primaryText, fontWeight: '700' }}>{tarjeta.pendientes}</Text>
-            </View>
-          ) : (
-            <Text style={{ color: colors.textMuted, fontSize: 20 }}>›</Text>
-          )}
-        </Pressable>
+    <ScrollView contentContainerStyle={[styles.contenedor, centeredContent, { backgroundColor: colors.background }]}>
+      {tarjetas.map((tarjeta, i) => (
+        <TarjetaBandeja key={tarjeta.titulo} {...tarjeta} index={i} />
       ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  contenedor: { padding: 16, ...centeredContent },
+  contenedor: { padding: 16, flexGrow: 1 },
   tarjeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: 16,
     marginBottom: 12,
   },
-  tarjetaTitulo: { fontSize: 16, fontWeight: '700' },
-  badge: { minWidth: 32, borderRadius: 16, paddingVertical: 4, paddingHorizontal: 10, alignItems: 'center' },
+  icono: {
+    width: 46,
+    height: 46,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: { minWidth: 30, borderRadius: radii.pill, paddingVertical: 5, paddingHorizontal: 10, alignItems: 'center' },
 });

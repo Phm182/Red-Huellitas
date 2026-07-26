@@ -1,16 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { usePostActions } from '../hooks/usePostActions';
 import { Post } from '../types';
 import { elevation, radii } from '../theme/elevation';
 import { fonts, type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
 import { rhMediaUrl } from '../utils/media';
+import { hapticMedio } from '../utils/haptics';
 import { DenunciaButtonStub } from './DenunciaButtonStub';
 import { LogoSiluetaNegra } from './LogoImage';
 
@@ -21,6 +30,9 @@ interface PostCardProps {
 }
 
 const MEDIA_W = Math.min(Dimensions.get('window').width - 32, 448);
+
+/** Ventana para que dos toques cuenten como doble-tap. */
+const DOBLE_TAP_MS = 280;
 
 export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
   const { t } = useTranslation();
@@ -38,6 +50,44 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
     onCompartir,
     onEliminar,
   } = usePostActions(post, onEliminado);
+
+  // Corazón grande que aparece sobre la foto al hacer doble tap.
+  const corazonEscala = useSharedValue(0);
+  const corazonOpacidad = useSharedValue(0);
+  const ultimoTap = useRef(0);
+
+  const corazonStyle = useAnimatedStyle(() => ({
+    opacity: corazonOpacidad.value,
+    transform: [{ scale: corazonEscala.value }],
+  }));
+
+  const onTapFoto = () => {
+    const ahora = Date.now();
+    if (ahora - ultimoTap.current < DOBLE_TAP_MS) {
+      ultimoTap.current = 0;
+
+      // El corazón se muestra siempre que el gesto se reconoce, aunque el
+      // post ya tuviera "me gusta": si no, un doble tap sobre algo ya
+      // likeado parecería que la app no registró nada.
+      corazonOpacidad.value = withSequence(
+        withTiming(1, { duration: 90 }),
+        withTiming(1, { duration: 380 }),
+        withTiming(0, { duration: 220 })
+      );
+      corazonEscala.value = withSequence(
+        withSpring(1.15, { damping: 9, stiffness: 220 }),
+        withSpring(0.95, { damping: 12 }),
+        withTiming(0, { duration: 220 })
+      );
+
+      hapticMedio();
+      if (miReaccion !== 'like' && !reaccionBusy) {
+        onReaccionar('like');
+      }
+      return;
+    }
+    ultimoTap.current = ahora;
+  };
 
   return (
     <Animated.View
@@ -114,14 +164,22 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
           data={post.fotos}
           keyExtractor={(f) => String(f.postFotoId)}
           renderItem={({ item }) => (
-            <View style={styles.fotoWrap}>
-              <Image source={{ uri: rhMediaUrl(item.path) }} style={styles.foto} />
+            <Pressable style={styles.fotoWrap} onPress={onTapFoto}>
+              <Image
+                source={{ uri: rhMediaUrl(item.path) }}
+                style={styles.foto}
+                contentFit="cover"
+                transition={240}
+              />
               <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.18)']}
                 style={StyleSheet.absoluteFill}
                 pointerEvents="none"
               />
-            </View>
+              <Animated.View style={[styles.corazon, corazonStyle]} pointerEvents="none">
+                <Ionicons name="heart" size={86} color="#fff" />
+              </Animated.View>
+            </Pressable>
           )}
           showsHorizontalScrollIndicator={false}
           style={{ marginTop: 8 }}
@@ -216,6 +274,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   foto: { width: '100%', height: '100%' },
+  corazon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',

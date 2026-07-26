@@ -1,14 +1,29 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { campaniaApi } from '../../../src/api/campaniaApi';
 import { Campania, TipoCampania } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
+import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { Badge } from '../../../src/components/ui/Badge';
+import { ChipOption, ChipRow } from '../../../src/components/ui/ChipRow';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { Fab } from '../../../src/components/ui/Fab';
+import { ListCard } from '../../../src/components/ui/ListCard';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
+
+/** El nombre de icono que acepta ChipOption (Ionicons). */
+type IconoChip = ChipOption<never>['icon'];
 
 const TIPOS: TipoCampania[] = ['castracion', 'vacunacion'];
+
+const ICONO_TIPO: Record<TipoCampania, IconoChip> = {
+  castracion: 'medkit-outline',
+  vacunacion: 'bandage-outline',
+};
 
 export default function CampaniasListaScreen() {
   const { t } = useTranslation();
@@ -18,6 +33,7 @@ export default function CampaniasListaScreen() {
   const [campanias, setCampanias] = useState<Campania[]>([]);
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
+  const [refrescando, setRefrescando] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
 
   const cargar = useCallback((filtro: TipoCampania | null) => {
@@ -48,68 +64,72 @@ export default function CampaniasListaScreen() {
     setCargandoMas(false);
   };
 
+  const onRefrescar = async () => {
+    setRefrescando(true);
+    const res = await campaniaApi.listar(tipo ?? undefined);
+    if (res.success && res.data) {
+      setCampanias(res.data.campanias);
+      setNextCursor(res.data.nextCursor);
+    }
+    setRefrescando(false);
+  };
+
+  const opciones: ChipOption<TipoCampania | null>[] = [
+    { valor: null, label: t('campanias.todas') },
+    ...TIPOS.map((tp) => ({
+      valor: tp,
+      label: t(`campanias.tipo.${tp}`),
+      icon: ICONO_TIPO[tp],
+    })),
+  ];
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={styles.atajos}>
-        <Pressable onPress={() => router.push('/(app)/campanias/mis-inscripciones')}>
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('campanias.misInscripciones')}</Text>
+        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/campanias/mis-inscripciones')}>
+          <Ionicons name="calendar-outline" size={15} color={colors.primary} />
+          <Text style={[type.label, { color: colors.primary }]}>{t('campanias.misInscripciones')}</Text>
         </Pressable>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-        <Pressable
-          onPress={() => setTipo(null)}
-          style={[styles.chip, { borderColor: colors.primary, backgroundColor: tipo === null ? colors.primary : 'transparent' }]}
-        >
-          <Text style={{ color: tipo === null ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('campanias.todas')}
-          </Text>
-        </Pressable>
-        {TIPOS.map((tp) => {
-          const activo = tipo === tp;
-          return (
-            <Pressable
-              key={tp}
-              onPress={() => setTipo(tp)}
-              style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-            >
-              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                {t(`campanias.tipo.${tp}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filtros}>
+        <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
+      </View>
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
           data={campanias}
           keyExtractor={(c) => String(c.campaniaId)}
-          renderItem={({ item }) => (
-            <Pressable
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => router.push({ pathname: '/(app)/campanias/[id]', params: { id: item.campaniaId } })}
-            >
-              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>
-                {t(`campanias.tipo.${item.tipo}`).toUpperCase()}
-              </Text>
-              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }}>{item.titulo}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                {item.fechaDesde}{item.fechaHasta ? ` – ${item.fechaHasta}` : ''} · {item.zonaDescripcion}
-              </Text>
-              {item.requiereInscripcion ? (
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 4 }}>
-                  {t('campanias.cupoDisponibleLabel', { cupo: item.cupoDisponible ?? '∞' })}
-                </Text>
-              ) : null}
-            </Pressable>
+          refreshing={refrescando}
+          onRefresh={onRefrescar}
+          renderItem={({ item, index }) => (
+            <ListCard
+              index={index}
+              titulo={item.titulo}
+              subtitulo={`${item.fechaDesde}${item.fechaHasta ? ` – ${item.fechaHasta}` : ''} · ${item.zonaDescripcion}`}
+              meta={
+                item.requiereInscripcion
+                  ? t('campanias.cupoDisponibleLabel', { cupo: item.cupoDisponible ?? '∞' })
+                  : null
+              }
+              iconoFallback={ICONO_TIPO[item.tipo]}
+              badge={<Badge label={t(`campanias.tipo.${item.tipo}`)} tono="accent" />}
+              onPress={() =>
+                router.push({ pathname: '/(app)/campanias/[id]', params: { id: item.campaniaId } })
+              }
+            />
           )}
-          ListEmptyComponent={<Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('campanias.emptyLista')}</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              icon="megaphone-outline"
+              titulo={t('campanias.emptyLista')}
+              accionLabel={t('campanias.tituloNueva')}
+              onAccion={() => router.push('/(app)/campanias/nueva')}
+            />
+          }
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
@@ -124,10 +144,8 @@ export default function CampaniasListaScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   atajos: { paddingHorizontal: 16, paddingTop: 12 },
-  filtros: { flexGrow: 0, paddingHorizontal: 12, paddingVertical: 10 },
-  chip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginRight: 8 },
-  list: { padding: 16 },
-  card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
+  atajo: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  filtros: { paddingVertical: 8 },
+  list: { padding: 16, paddingTop: 4, flexGrow: 1 },
 });
