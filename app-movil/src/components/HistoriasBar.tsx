@@ -83,7 +83,7 @@ export function HistoriasBar() {
             key={grupo.autor.userId}
             style={styles.bubbleWrap}
             onPress={() =>
-              router.push({ pathname: '/(app)/historias/[userId]', params: { userId: grupo.autor.userId } })
+              router.push({ pathname: '/(app)/historias/ver/[userId]', params: { userId: grupo.autor.userId } })
             }
           >
             {visto ? (

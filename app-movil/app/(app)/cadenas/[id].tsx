@@ -118,7 +118,7 @@ export default function CadenaDetalleScreen() {
             <Pressable
               key={h.historiaId}
               style={styles.miniatura}
-              onPress={() => router.push(`/(app)/historias/${h.userId}`)}
+              onPress={() => router.push(`/(app)/historias/ver/${h.userId}`)}
             >
               <Image
                 source={{ uri: rhMediaUrl(h.mediaPath) }}

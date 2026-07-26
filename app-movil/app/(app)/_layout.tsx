@@ -67,8 +67,8 @@ export default function AppLayout() {
           <Stack.Screen name="publicaciones/nueva" options={{ headerShown: true, title: t('feed.createTitle') }} />
           <Stack.Screen name="publicaciones/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="publicaciones/nueva_video" options={{ headerShown: true, title: t('shorts.createTitle') }} />
-          <Stack.Screen name="historias/nueva" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="historias/[userId]" options={{ headerShown: false }} />
+          <Stack.Screen name="historias/nueva" options={{ headerShown: false }} />
+          <Stack.Screen name="historias/ver/[userId]" options={{ headerShown: false }} />
           <Stack.Screen
             name="historia-vistas/[historiaId]"
             options={{ headerShown: true, title: t('historias.vistasTitulo') }}

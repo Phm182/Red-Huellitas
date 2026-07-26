@@ -13,14 +13,14 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { historiasApi } from '../../../src/api/historiasApi';
-import { StoryInteractivoCard } from '../../../src/stories/StoryInteractivoCard';
-import { StoryMediaFill } from '../../../src/stories/StoryMediaFill';
-import { compartirPost } from '../../../src/utils/compartir';
-import { StoryOverlayLayer, storyFilterCss } from '../../../src/stories/StoryOverlayLayer';
-import { emptyOverlay, StoryOverlay } from '../../../src/stories/storyEditorTypes';
-import { Historia } from '../../../src/types';
-import { rhMediaUrl } from '../../../src/utils/media';
+import { historiasApi } from '../../../../src/api/historiasApi';
+import { StoryInteractivoCard } from '../../../../src/stories/StoryInteractivoCard';
+import { StoryMediaFill } from '../../../../src/stories/StoryMediaFill';
+import { compartirPost } from '../../../../src/utils/compartir';
+import { StoryOverlayLayer, storyFilterCss } from '../../../../src/stories/StoryOverlayLayer';
+import { emptyOverlay, StoryOverlay } from '../../../../src/stories/storyEditorTypes';
+import { Historia } from '../../../../src/types';
+import { rhMediaUrl } from '../../../../src/utils/media';
 
 const DURACION_FOTO_MS = 5000;
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');

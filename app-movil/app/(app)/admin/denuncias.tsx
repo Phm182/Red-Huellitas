@@ -24,7 +24,7 @@ function rutaDelContenido(denuncia: DenunciaPendiente): string | null {
     case 'publicacion':
       return `/(app)/publicaciones/${contenido.id}`;
     case 'historia':
-      return denuncia.denunciado ? `/(app)/historias/${denuncia.denunciado.userId}` : null;
+      return denuncia.denunciado ? `/(app)/historias/ver/${denuncia.denunciado.userId}` : null;
     case 'adopcion':
       return `/(app)/adopcion/${contenido.id}`;
     case 'campania':
@@ -188,7 +188,7 @@ export default function AdminDenunciasScreen() {
               <AppInput
                 value={notas[item.denunciaId] ?? ''}
                 onChangeText={(texto) => setNotas((previos) => ({ ...previos, [item.denunciaId]: texto }))}
-                placeholder={t('admin.notaPlaceholder')}
+                placeholder={t('admin.notaPlaceholder')}
                 style={styles.input}
                 multiline
               />
