@@ -164,6 +164,29 @@ Dos arreglos que salieron en el camino:
 
 ---
 
+### Rediseño visual (arrancado 2026-07-26, EN CURSO)
+
+El objetivo que puso el usuario: que alguien que viene de Instagram abra la app y diga "qué bueno que hicieron esto". Ambición máxima, todo en una tanda.
+
+**El hallazgo que ordenó todo el trabajo**: el sistema de diseño ya existía y era bueno (`src/theme/`: paleta coral `#E23B4A` + teal `#0F766E` con variantes `soft`, Outfit+Nunito cargadas por `FontBootstrap`, `elevation`/`radii`, más `Atmosphere`, `AppButton` y `AppInput`), **pero sólo lo usaba el 11% de la app**. El problema no era estético sino estructural: los mismos patrones estaban copiados a mano en decenas de archivos con medidas distintas — los chips en 19, la tarjeta de listado en 17, el spinner centrado en 42, el FAB en 9 — así que dos listados que mostraban lo mismo no se veían iguales.
+
+**Por eso el orden es: componentes primero, pantallas después.** Rediseñar 5 componentes compartidos mueve ~20 pantallas sin tocarlas.
+
+**Hecho** (commits `2e3205e` y `4a83292`):
+- `expo-haptics` (con wrapper no-op en web: sus promesas rechazan ahí) y `expo-image`.
+- Favicon regenerado: era el icono de Android y a 32px quedaba irreconocible.
+- **`src/components/ui/`**: `Skeleton`/`SkeletonList`/`SkeletonPost`, `ChipRow`/`FilterChip`/`RadioChips`, `ListCard`, `EmptyState`, `Fab`, `Screen`, `AppCard`, `Badge`, `SectionHeader`.
+- 16 componentes compartidos migrados. `PerfilBody` ahora tiene grilla de 3 columnas con pestañas y stats. `LanguagePicker` y `DenunciaButtonStub` eran los que rompían visualmente pantallas ya rediseñadas; `NoticiaExternaCard` convivía con `PostCard` en la misma lista con dos estilos.
+- Los 9 FAB al componente compartido (esquina derecha, con icono) y 36 pantallas con skeletons en vez de spinner.
+
+**Falta**:
+- El grueso de la **capa D**: migrar el resto de las ~63 pantallas a `ListCard`/`ChipRow`/`EmptyState`, y `TextInput`→`AppInput` / `Pressable`→`AppButton` en los 22 formularios.
+- Toda la **capa E+F**: doble-tap con corazón animado en el feed, headers colapsables en los detalles, match con cards a foto completa, historias con barras segmentadas, y haptics en las acciones clave.
+
+El plan completo está en `C:\Users\Pab\.claude\plans\c-xampp-htdocs-red-huellitas-master-encapsulated-sloth.md`.
+
+---
+
 ## 4. Cómo seguir mañana
 
 1. Confirmar que XAMPP (MySQL + Apache) está corriendo: `/c/xampp/mysql_start.bat` y `/c/xampp/apache_start.bat` en background si no lo están.
