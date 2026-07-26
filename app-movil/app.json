@@ -69,6 +69,14 @@
           "cameraPermission": "Red Huellitas necesita acceso a tu cámara para tomar fotos de verificación y perfil."
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Red Huellitas usa la cámara para crear historias.",
+          "microphonePermission": "Red Huellitas usa el micrófono para grabar videos en historias.",
+          "recordAudioAndroid": true
+        }
+      ],
       "expo-video",
       "expo-system-ui",
       [

@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "Deine Story",
-        "you": "Du"
+        "you": "Du",
+        "vistasTitulo": "Aufrufe",
+        "vistasVacio": "Noch niemand hat sie gesehen",
+        "vistasVacioDesc": "Wenn jemand deine Story ansieht, erscheint er hier.",
+        "responder": "Nachricht senden…",
+        "responderPregunta": "Beantworte die Frage…",
+        "recortar": "Zuschneiden",
+        "conAudio": "Mit Ton",
+        "sinAudio": "Stumm",
+        "stickers": "Sticker",
+        "encuesta": "Umfrage",
+        "preguntas": "Fragen",
+        "quitarEncuesta": "Umfrage entfernen",
+        "quitarPreguntas": "Fragen entfernen",
+        "agregarEncuesta": "Umfrage hinzufügen",
+        "agregarPreguntas": "Fragebox hinzufügen",
+        "yaHayInteractivo": "Diese Story hat bereits eine Umfrage oder Fragebox. Entferne sie, um eine andere hinzuzufügen.",
+        "preguntame": "FRAG MICH",
+        "escribiRespuesta": "Schreib deine Antwort…"
     },
     "adopcion": {
         "tituloLista": "Adoption",
@@ -619,5 +637,28 @@
         "tipoReporteTodos": "Alle",
         "marcarResuelto": "Als gelöst markieren",
         "descartar": "Verwerfen"
+    },
+    "cadenas": {
+        "titulo": "Ketten",
+        "tituloNueva": "Neue Kette",
+        "continuar": "Kette fortsetzen",
+        "sumarOtra": "Weitere Story hinzufügen",
+        "participantes": "Teilnehmende",
+        "historiasActivas": "aktive Storys",
+        "elHilo": "Der Verlauf",
+        "quienesSeSumaron": "Wer mitmacht",
+        "laEmpezo": "Gestartet von",
+        "vacio": "Noch keine Ketten",
+        "vacioDesc": "Eine Kette ist ein Thema, das jemand vorschlägt und alle anderen mit ihrer eigenen Story fortsetzen. Erstelle die erste.",
+        "crear": "Kette erstellen",
+        "crearYSubir": "Erstellen und Story posten",
+        "tema": "Thema",
+        "descripcion": "Beschreibung (optional)",
+        "ideas": "Ideen:",
+        "explicacion": "Du schlägst ein Thema vor und andere setzen es mit ihrer Story fort. Die Kette bleibt bestehen, auch wenn die Storys nach 24 Stunden ablaufen.",
+        "vencieron": "Die Storys sind abgelaufen",
+        "vencieronDesc": "Die Kette lebt weiter: poste deine und starte sie neu.",
+        "invitar": "Einladen",
+        "invitados": "Einladungen gesendet"
     }
 }

@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "La tua storia",
-        "you": "Tu"
+        "you": "Tu",
+        "vistasTitulo": "Visualizzazioni",
+        "vistasVacio": "Non l'ha ancora vista nessuno",
+        "vistasVacioDesc": "Quando qualcuno guarderà la tua storia, apparirà qui.",
+        "responder": "Invia messaggio…",
+        "responderPregunta": "Rispondi alla domanda…",
+        "recortar": "Ritaglia",
+        "conAudio": "Con audio",
+        "sinAudio": "Senza audio",
+        "stickers": "Sticker",
+        "encuesta": "Sondaggio",
+        "preguntas": "Domande",
+        "quitarEncuesta": "Rimuovi sondaggio",
+        "quitarPreguntas": "Rimuovi domande",
+        "agregarEncuesta": "Aggiungi sondaggio",
+        "agregarPreguntas": "Aggiungi casella domande",
+        "yaHayInteractivo": "Questa storia ha già un sondaggio o una casella domande. Rimuovila per aggiungerne un'altra.",
+        "preguntame": "CHIEDIMI",
+        "escribiRespuesta": "Scrivi la tua risposta…"
     },
     "adopcion": {
         "tituloLista": "Adozione",
@@ -619,5 +637,28 @@
         "tipoReporteTodos": "Tutti",
         "marcarResuelto": "Segna risolto",
         "descartar": "Scarta"
+    },
+    "cadenas": {
+        "titulo": "Catene",
+        "tituloNueva": "Nuova catena",
+        "continuar": "Continua la catena",
+        "sumarOtra": "Aggiungi una storia",
+        "participantes": "partecipanti",
+        "historiasActivas": "storie attive",
+        "elHilo": "Il filo",
+        "quienesSeSumaron": "Chi si è unito",
+        "laEmpezo": "Iniziata da",
+        "vacio": "Ancora nessuna catena",
+        "vacioDesc": "Una catena è un tema che qualcuno propone e gli altri continuano con la propria storia. Crea la prima.",
+        "crear": "Crea una catena",
+        "crearYSubir": "Crea e pubblica la mia storia",
+        "tema": "Tema",
+        "descripcion": "Descrizione (facoltativa)",
+        "ideas": "Idee:",
+        "explicacion": "Proponi un tema e gli altri lo continuano con la propria storia. La catena resta viva anche quando le storie scadono dopo 24 ore.",
+        "vencieron": "Le storie sono scadute",
+        "vencieronDesc": "La catena è ancora viva: pubblica la tua e ricomincia.",
+        "invitar": "Invita",
+        "invitados": "Inviti inviati"
     }
 }

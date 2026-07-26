@@ -67,7 +67,15 @@ export default function AppLayout() {
           <Stack.Screen name="publicaciones/nueva" options={{ headerShown: true, title: t('feed.createTitle') }} />
           <Stack.Screen name="publicaciones/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="publicaciones/nueva_video" options={{ headerShown: true, title: t('shorts.createTitle') }} />
+          <Stack.Screen name="historias/nueva" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
           <Stack.Screen name="historias/[userId]" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="historia-vistas/[historiaId]"
+            options={{ headerShown: true, title: t('historias.vistasTitulo') }}
+          />
+          <Stack.Screen name="cadenas/index" options={{ headerShown: true, title: t('cadenas.titulo') }} />
+          <Stack.Screen name="cadenas/nueva" options={{ headerShown: true, title: t('cadenas.tituloNueva') }} />
+          <Stack.Screen name="cadenas/[id]" options={{ headerShown: true, title: '' }} />
           <Stack.Screen name="adopcion/index" options={{ headerShown: true, title: t('adopcion.tituloLista') }} />
           <Stack.Screen name="adopcion/nueva" options={{ headerShown: true, title: t('adopcion.tituloNueva') }} />
           <Stack.Screen name="adopcion/[id]" options={{ headerShown: true, title: '' }} />

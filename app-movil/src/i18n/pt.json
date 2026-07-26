@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "Seu story",
-        "you": "VocÃª"
+        "you": "VocÃª",
+        "vistasTitulo": "Visualizações",
+        "vistasVacio": "Ninguém viu ainda",
+        "vistasVacioDesc": "Quando alguém vir seu story, vai aparecer aqui.",
+        "responder": "Enviar mensagem…",
+        "responderPregunta": "Responda a pergunta…",
+        "recortar": "Cortar",
+        "conAudio": "Com áudio",
+        "sinAudio": "Sem áudio",
+        "stickers": "Figurinhas",
+        "encuesta": "Enquete",
+        "preguntas": "Perguntas",
+        "quitarEncuesta": "Remover enquete",
+        "quitarPreguntas": "Remover perguntas",
+        "agregarEncuesta": "Adicionar enquete",
+        "agregarPreguntas": "Adicionar caixa de perguntas",
+        "yaHayInteractivo": "Este story já tem uma enquete ou caixa de perguntas. Remova para colocar outra.",
+        "preguntame": "PERGUNTE",
+        "escribiRespuesta": "Escreva sua resposta…"
     },
     "adopcion": {
         "tituloLista": "AdoÃ§Ã£o",
@@ -619,5 +637,28 @@
         "tipoReporteTodos": "Todos",
         "marcarResuelto": "Marcar resolvido",
         "descartar": "Descartar"
+    },
+    "cadenas": {
+        "titulo": "Correntes",
+        "tituloNueva": "Nova corrente",
+        "continuar": "Continuar corrente",
+        "sumarOtra": "Adicionar outro story",
+        "participantes": "participantes",
+        "historiasActivas": "stories ativos",
+        "elHilo": "A sequência",
+        "quienesSeSumaron": "Quem entrou",
+        "laEmpezo": "Começada por",
+        "vacio": "Ainda não há correntes",
+        "vacioDesc": "Uma corrente é um tema que alguém propõe e o resto continua com o próprio story. Crie a primeira.",
+        "crear": "Criar uma corrente",
+        "crearYSubir": "Criar e publicar meu story",
+        "tema": "Tema",
+        "descripcion": "Descrição (opcional)",
+        "ideas": "Ideias:",
+        "explicacion": "Você propõe um tema e os outros continuam com o próprio story. A corrente continua viva mesmo que os stories expirem em 24h.",
+        "vencieron": "Os stories expiraram",
+        "vencieronDesc": "A corrente continua viva: publique o seu e recomece.",
+        "invitar": "Convidar",
+        "invitados": "Convites enviados"
     }
 }

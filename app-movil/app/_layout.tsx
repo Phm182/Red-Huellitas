@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-gesture-handler';
 import '../src/i18n/i18n';
 import { AuthProvider } from '../src/auth/AuthProvider';
 import { FontBootstrap } from '../src/theme/FontBootstrap';
@@ -35,12 +37,14 @@ function StackWithTheme() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <FontBootstrap>
-        <AuthProvider>
-          <StackWithTheme />
-        </AuthProvider>
-      </FontBootstrap>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <FontBootstrap>
+          <AuthProvider>
+            <StackWithTheme />
+          </AuthProvider>
+        </FontBootstrap>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

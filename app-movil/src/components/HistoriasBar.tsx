@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { historiasApi } from '../api/historiasApi';
 import { useAuth } from '../auth/AuthProvider';
 import { HistoriaUsuarioResumen } from '../types';
@@ -20,7 +19,6 @@ export function HistoriasBar() {
 
   const [grupos, setGrupos] = useState<HistoriaUsuarioResumen[]>([]);
   const [loading, setLoading] = useState(true);
-  const [subiendo, setSubiendo] = useState(false);
 
   const cargar = useCallback(() => {
     historiasApi.feed().then((res) => {
@@ -37,25 +35,6 @@ export function HistoriasBar() {
     }, [cargar])
   );
 
-  const onAgregar = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      videoMaxDuration: 60,
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    setSubiendo(true);
-    const esVideo = (asset.mimeType ?? '').startsWith('video');
-    const res = esVideo
-      ? await historiasApi.crear('video', asset.uri, Math.round((asset.duration ?? 0) / 1000), asset.mimeType)
-      : await historiasApi.crear('foto', asset.uri);
-    setSubiendo(false);
-    if (res.success) {
-      cargar();
-    }
-  };
-
   if (loading) {
     return null;
   }
@@ -67,18 +46,33 @@ export function HistoriasBar() {
       style={styles.bar}
       contentContainerStyle={styles.content}
     >
-      <Pressable style={styles.bubbleWrap} onPress={onAgregar} disabled={subiendo}>
+      <Pressable style={styles.bubbleWrap} onPress={() => router.push('/(app)/historias/nueva')}>
         <View style={[styles.ring, { borderColor: colors.border, borderStyle: 'dashed' }]}>
           <View style={[styles.avatarInner, { backgroundColor: colors.primarySoft }]}>
-            {subiendo ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <Ionicons name="add" size={26} color={colors.primary} />
-            )}
+            <Ionicons name="add" size={26} color={colors.primary} />
           </View>
         </View>
         <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>
           {t('historias.addLabel')}
+        </Text>
+      </Pressable>
+
+      {/* Cadenas va segundo, apenas después de "tu historia": es contenido de
+          la comunidad y tiene que competir con las historias por la atención,
+          no quedar escondido al final del carrusel. */}
+      <Pressable style={styles.bubbleWrap} onPress={() => router.push('/(app)/cadenas' as never)}>
+        <LinearGradient
+          colors={[colors.primary, colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.ring}
+        >
+          <View style={[styles.avatarInner, { backgroundColor: colors.surface }]}>
+            <Ionicons name="link" size={24} color={colors.primary} />
+          </View>
+        </LinearGradient>
+        <Text style={[styles.label, { color: colors.textMuted }]} numberOfLines={1}>
+          {t('cadenas.titulo')}
         </Text>
       </Pressable>
 

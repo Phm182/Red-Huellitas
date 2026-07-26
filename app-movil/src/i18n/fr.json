@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "Votre story",
-        "you": "Vous"
+        "you": "Vous",
+        "vistasTitulo": "Vues",
+        "vistasVacio": "Personne ne l'a vue",
+        "vistasVacioDesc": "Quand quelqu'un verra votre story, il apparaîtra ici.",
+        "responder": "Envoyer un message…",
+        "responderPregunta": "Répondez à la question…",
+        "recortar": "Rogner",
+        "conAudio": "Avec son",
+        "sinAudio": "Sans son",
+        "stickers": "Stickers",
+        "encuesta": "Sondage",
+        "preguntas": "Questions",
+        "quitarEncuesta": "Retirer le sondage",
+        "quitarPreguntas": "Retirer les questions",
+        "agregarEncuesta": "Ajouter un sondage",
+        "agregarPreguntas": "Ajouter une boîte à questions",
+        "yaHayInteractivo": "Cette story a déjà un sondage ou une boîte à questions. Retirez-le pour en ajouter un autre.",
+        "preguntame": "DEMANDEZ-MOI",
+        "escribiRespuesta": "Écrivez votre réponse…"
     },
     "adopcion": {
         "tituloLista": "Adoption",
@@ -619,5 +637,28 @@
         "tipoReporteTodos": "Tous",
         "marcarResuelto": "Marquer résolu",
         "descartar": "Écarter"
+    },
+    "cadenas": {
+        "titulo": "Chaînes",
+        "tituloNueva": "Nouvelle chaîne",
+        "continuar": "Continuer la chaîne",
+        "sumarOtra": "Ajouter une story",
+        "participantes": "participants",
+        "historiasActivas": "stories actives",
+        "elHilo": "Le fil",
+        "quienesSeSumaron": "Qui a participé",
+        "laEmpezo": "Lancée par",
+        "vacio": "Pas encore de chaînes",
+        "vacioDesc": "Une chaîne est un thème lancé par quelqu'un que les autres continuent avec leur propre story. Créez la première.",
+        "crear": "Créer une chaîne",
+        "crearYSubir": "Créer et publier ma story",
+        "tema": "Thème",
+        "descripcion": "Description (facultatif)",
+        "ideas": "Idées :",
+        "explicacion": "Vous proposez un thème et les autres le continuent avec leur story. La chaîne reste vivante même quand les stories expirent au bout de 24h.",
+        "vencieron": "Les stories ont expiré",
+        "vencieronDesc": "La chaîne est toujours vivante : publiez la vôtre et relancez-la.",
+        "invitar": "Inviter",
+        "invitados": "Invitations envoyées"
     }
 }

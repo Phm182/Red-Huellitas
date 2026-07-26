@@ -66,9 +66,22 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
     // Hostinger/Windows a veces manda UTF-8 BOM (EF BB BF) delante del JSON.
     const raw = await response.text();
     const cleaned = raw.replace(/^\uFEFF/, '').trim();
+    if (!cleaned) {
+      return {
+        success: false,
+        message: `Servidor sin respuesta (HTTP ${response.status}). Revisá límites de subida o el endpoint.`,
+        data: null,
+      };
+    }
     json = JSON.parse(cleaned) as ApiResponse<T>;
   } catch (e) {
-    return { success: false, message: 'Respuesta inválida del servidor', data: null };
+    const hint =
+      response.status === 413
+        ? 'El archivo es demasiado grande para el servidor.'
+        : response.status >= 500
+          ? 'Error interno del servidor al subir.'
+          : 'Respuesta inválida del servidor (¿SQL 022 OverlayJson o PHP desactualizado?).';
+    return { success: false, message: hint, data: null };
   }
 
   return json;

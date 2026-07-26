@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "ã‚ãªãŸã®ã‚¹ãƒˆãƒ¼ãƒªãƒ¼",
-        "you": "ã‚ãªãŸ"
+        "you": "ã‚ãªãŸ",
+        "vistasTitulo": "閲覧",
+        "vistasVacio": "まだ誰も見ていません",
+        "vistasVacioDesc": "誰かがストーリーを見ると、ここに表示されます。",
+        "responder": "メッセージを送信…",
+        "responderPregunta": "質問に答える…",
+        "recortar": "トリミング",
+        "conAudio": "音あり",
+        "sinAudio": "ミュート",
+        "stickers": "スタンプ",
+        "encuesta": "アンケート",
+        "preguntas": "質問",
+        "quitarEncuesta": "アンケートを削除",
+        "quitarPreguntas": "質問を削除",
+        "agregarEncuesta": "アンケートを追加",
+        "agregarPreguntas": "質問ボックスを追加",
+        "yaHayInteractivo": "このストーリーにはすでにアンケートか質問があります。別のものを追加するには削除してください。",
+        "preguntame": "質問して",
+        "escribiRespuesta": "回答を書く…"
     },
     "adopcion": {
         "tituloLista": "é‡Œè¦ªå‹Ÿé›†",
@@ -617,5 +635,28 @@
         "tipoReporteTodos": "すべて",
         "marcarResuelto": "解決済みにする",
         "descartar": "見送る"
+    },
+    "cadenas": {
+        "titulo": "チェーン",
+        "tituloNueva": "新しいチェーン",
+        "continuar": "チェーンを続ける",
+        "sumarOtra": "もう一つ投稿",
+        "participantes": "参加者",
+        "historiasActivas": "件が進行中",
+        "elHilo": "つながり",
+        "quienesSeSumaron": "参加した人",
+        "laEmpezo": "開始者",
+        "vacio": "まだチェーンがありません",
+        "vacioDesc": "チェーンは、誰かが決めたテーマをみんなが自分のストーリーで続けていくものです。最初の一つを作りましょう。",
+        "crear": "チェーンを作る",
+        "crearYSubir": "作成してストーリーを投稿",
+        "tema": "テーマ",
+        "descripcion": "説明（任意）",
+        "ideas": "アイデア：",
+        "explicacion": "テーマを決めると、みんなが自分のストーリーで続けてくれます。ストーリーが24時間で消えてもチェーンは残ります。",
+        "vencieron": "ストーリーの期限が切れました",
+        "vencieronDesc": "チェーンはまだ生きています。あなたの投稿でまた始めましょう。",
+        "invitar": "招待する",
+        "invitados": "招待を送りました"
     }
 }

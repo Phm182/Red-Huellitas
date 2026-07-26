@@ -147,14 +147,99 @@ export interface Historia {
   tipoMedia: TipoMediaHistoria;
   mediaPath: string;
   duracionSegundos: number | null;
+  overlay?: {
+    filter?: string;
+    texts?: Array<{
+      id: string;
+      text: string;
+      x: number;
+      y: number;
+      color: string;
+      scale: number;
+      rotation?: number;
+      fontId?: string;
+    }>;
+    paths?: Array<{ id: string; color: string; width: number; points: { x: number; y: number }[] }>;
+    stickers?: Array<{ id: string; emoji: string; x: number; y: number; scale: number; rotation?: number }>;
+    interactivo?:
+      | { kind: 'encuesta'; x: number; y: number; pregunta: string; opcionA: string; opcionB: string }
+      | { kind: 'pregunta'; x: number; y: number; texto: string }
+      | null;
+  } | null;
+  /** Recorte no destructivo: el reproductor arranca y corta acá. */
+  recorteInicioSeg: number | null;
+  recorteFinSeg: number | null;
+  sinAudio: boolean;
+  cadena: HistoriaCadena | null;
+  encuesta: HistoriaEncuesta | null;
+  pregunta: HistoriaPreguntaBox | null;
+  esAutor: boolean;
+  /** Sólo llega si sos el autor. */
+  totalVistas: number | null;
   createdAt: string;
   expiraEn: string;
   vista: boolean;
+  /** Sólo en el detalle de una cadena, donde las historias son de varios. */
+  autor?: UsuarioResumen;
+}
+
+/** Datos de la cadena vistos desde una historia, con su posición en el hilo. */
+export interface HistoriaCadena {
+  cadenaId: number;
+  tema: string;
+  descripcion: string | null;
+  /** "3º de 7" — se calcula al leer, así que se recorre solo al vencer una. */
+  posicion: number;
+  total: number;
+}
+
+export interface HistoriaEncuesta {
+  encuestaId: number;
+  pregunta: string;
+  opcionA: string;
+  opcionB: string;
+  votosA: number;
+  votosB: number;
+  miVoto: 'A' | 'B' | null;
+}
+
+export interface HistoriaPreguntaBox {
+  preguntaId: number;
+  texto: string;
+  totalRespuestas: number;
+}
+
+export interface HistoriaVistaItem extends UsuarioResumen {
+  vistaEn: string;
 }
 
 export interface HistoriaUsuarioResumen {
   autor: UsuarioResumen;
   todasVistas: boolean;
+  historias: Historia[];
+}
+
+/**
+ * Cadena de historias: alguien propone un tema y el resto lo continúa.
+ * La cadena no expira aunque sus historias sí — por eso `totalHistorias`
+ * cuenta sólo las vigentes y puede bajar con el tiempo.
+ */
+export interface Cadena {
+  cadenaId: number;
+  tema: string;
+  descripcion: string | null;
+  creador: UsuarioResumen | null;
+  totalParticipantes: number;
+  totalHistorias: number;
+  participantesPreview: UsuarioResumen[];
+  yaParticipa: boolean;
+  ultimaActividad: string | null;
+  createdAt: string;
+}
+
+export interface CadenaDetalle {
+  cadena: Cadena;
+  participantes: UsuarioResumen[];
   historias: Historia[];
 }
 

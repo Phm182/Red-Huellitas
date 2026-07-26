@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "ë‚´ ìŠ¤í† ë¦¬",
-        "you": "ë‚˜"
+        "you": "ë‚˜",
+        "vistasTitulo": "조회",
+        "vistasVacio": "아직 아무도 보지 않았어요",
+        "vistasVacioDesc": "누군가 스토리를 보면 여기에 표시됩니다.",
+        "responder": "메시지 보내기…",
+        "responderPregunta": "질문에 답하기…",
+        "recortar": "자르기",
+        "conAudio": "소리 켬",
+        "sinAudio": "음소거",
+        "stickers": "스티커",
+        "encuesta": "투표",
+        "preguntas": "질문",
+        "quitarEncuesta": "투표 삭제",
+        "quitarPreguntas": "질문 삭제",
+        "agregarEncuesta": "투표 추가",
+        "agregarPreguntas": "질문 상자 추가",
+        "yaHayInteractivo": "이 스토리에는 이미 투표나 질문이 있어요. 지우고 다시 추가하세요.",
+        "preguntame": "질문해 주세요",
+        "escribiRespuesta": "답변을 적어 주세요…"
     },
     "adopcion": {
         "tituloLista": "ìž…ì–‘",
@@ -617,5 +635,28 @@
         "tipoReporteTodos": "전체",
         "marcarResuelto": "해결됨으로 표시",
         "descartar": "보류"
+    },
+    "cadenas": {
+        "titulo": "체인",
+        "tituloNueva": "새 체인",
+        "continuar": "체인 이어가기",
+        "sumarOtra": "스토리 추가",
+        "participantes": "참여자",
+        "historiasActivas": "개 진행 중",
+        "elHilo": "이어진 스토리",
+        "quienesSeSumaron": "참여한 사람",
+        "laEmpezo": "시작한 사람",
+        "vacio": "아직 체인이 없어요",
+        "vacioDesc": "체인은 누군가 주제를 제안하면 다른 사람들이 각자의 스토리로 이어가는 기능이에요. 첫 체인을 만들어 보세요.",
+        "crear": "체인 만들기",
+        "crearYSubir": "만들고 스토리 올리기",
+        "tema": "주제",
+        "descripcion": "설명 (선택)",
+        "ideas": "아이디어:",
+        "explicacion": "주제를 제안하면 다른 사람들이 각자의 스토리로 이어갑니다. 스토리가 24시간 뒤 사라져도 체인은 남아요.",
+        "vencieron": "스토리가 만료됐어요",
+        "vencieronDesc": "체인은 살아 있어요. 스토리를 올려 다시 시작하세요.",
+        "invitar": "초대",
+        "invitados": "초대를 보냈어요"
     }
 }

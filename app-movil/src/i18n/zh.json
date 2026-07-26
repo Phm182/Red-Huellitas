@@ -200,7 +200,25 @@
     },
     "historias": {
         "addLabel": "ä½ çš„åŠ¨æ€",
-        "you": "ä½ "
+        "you": "ä½ ",
+        "vistasTitulo": "浏览",
+        "vistasVacio": "还没有人看过",
+        "vistasVacioDesc": "有人看你的快拍时会显示在这里。",
+        "responder": "发送消息…",
+        "responderPregunta": "回答问题…",
+        "recortar": "裁剪",
+        "conAudio": "有声音",
+        "sinAudio": "静音",
+        "stickers": "贴纸",
+        "encuesta": "投票",
+        "preguntas": "提问",
+        "quitarEncuesta": "移除投票",
+        "quitarPreguntas": "移除提问",
+        "agregarEncuesta": "添加投票",
+        "agregarPreguntas": "添加提问框",
+        "yaHayInteractivo": "这条快拍已有投票或提问框，移除后才能再加。",
+        "preguntame": "问我",
+        "escribiRespuesta": "写下你的回答…"
     },
     "adopcion": {
         "tituloLista": "é¢†å…»",
@@ -617,5 +635,28 @@
         "tipoReporteTodos": "全部",
         "marcarResuelto": "标记已解决",
         "descartar": "忽略"
+    },
+    "cadenas": {
+        "titulo": "接龙",
+        "tituloNueva": "新建接龙",
+        "continuar": "继续接龙",
+        "sumarOtra": "再发一条",
+        "participantes": "参与者",
+        "historiasActivas": "条进行中",
+        "elHilo": "接龙内容",
+        "quienesSeSumaron": "谁参与了",
+        "laEmpezo": "发起人",
+        "vacio": "还没有接龙",
+        "vacioDesc": "接龙是有人提出一个主题，其他人用自己的快拍接下去。来创建第一个吧。",
+        "crear": "创建接龙",
+        "crearYSubir": "创建并发布我的快拍",
+        "tema": "主题",
+        "descripcion": "描述（选填）",
+        "ideas": "灵感：",
+        "explicacion": "你提出一个主题，其他人用自己的快拍接下去。即使快拍24小时后过期，接龙依然存在。",
+        "vencieron": "快拍已过期",
+        "vencieronDesc": "接龙还在：发布你的快拍重新开始。",
+        "invitar": "邀请",
+        "invitados": "邀请已发送"
     }
 }

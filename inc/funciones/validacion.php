@@ -59,7 +59,7 @@ function rh_extension_para_mime(string $mime): string
     return $mime === 'image/png' ? 'png' : 'jpg';
 }
 
-const RH_MIME_VIDEOS_PERMITIDOS = ['video/mp4', 'video/quicktime'];
+const RH_MIME_VIDEOS_PERMITIDOS = ['video/mp4', 'video/quicktime', 'video/webm'];
 const RH_MAX_VIDEO_BYTES = 60 * 1024 * 1024; // 60MB
 const RH_MAX_VIDEO_DURACION_SEGUNDOS = 60;
 
@@ -85,14 +85,12 @@ function rh_validar_video_subido(array $file, ?int $duracionSegundos): ?string
     finfo_close($finfo);
 
     if (!in_array($mime, RH_MIME_VIDEOS_PERMITIDOS, true)) {
-        return 'Formato de video no permitido (solo MP4/MOV)';
+        return 'Formato de video no permitido (solo MP4/MOV/WebM)';
     }
 
-    if ($duracionSegundos === null || $duracionSegundos <= 0) {
-        return 'Falta la duración del video';
-    }
-
-    if ($duracionSegundos > RH_MAX_VIDEO_DURACION_SEGUNDOS) {
+    // Duración: en web el cliente a veces no la manda; no bloqueamos el upload.
+    // Si viene, tiene que ser positiva y dentro del tope.
+    if ($duracionSegundos !== null && $duracionSegundos > 0 && $duracionSegundos > RH_MAX_VIDEO_DURACION_SEGUNDOS) {
         return 'El video supera la duración máxima permitida (60 segundos)';
     }
 
@@ -101,5 +99,11 @@ function rh_validar_video_subido(array $file, ?int $duracionSegundos): ?string
 
 function rh_extension_para_mime_video(string $mime): string
 {
-    return $mime === 'video/quicktime' ? 'mov' : 'mp4';
+    if ($mime === 'video/quicktime') {
+        return 'mov';
+    }
+    if ($mime === 'video/webm') {
+        return 'webm';
+    }
+    return 'mp4';
 }
