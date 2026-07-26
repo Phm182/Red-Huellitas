@@ -179,9 +179,18 @@ El objetivo que puso el usuario: que alguien que viene de Instagram abra la app 
 - 16 componentes compartidos migrados. `PerfilBody` ahora tiene grilla de 3 columnas con pestañas y stats. `LanguagePicker` y `DenunciaButtonStub` eran los que rompían visualmente pantallas ya rediseñadas; `NoticiaExternaCard` convivía con `PostCard` en la misma lista con dos estilos.
 - Los 9 FAB al componente compartido (esquina derecha, con icono) y 36 pantallas con skeletons en vez de spinner.
 
+- **Los 8 listados** (Tránsito, Donaciones, Veterinarias, Adopción, Perdidos, Campañas, Productos, Mis Mascotas) y el hub de admin a `ListCard` + `ChipRow` + `EmptyState` + `SkeletonList`, con pull-to-refresh parejo en todos.
+- **54 campos de formulario en 18 pantallas** a `AppInput`. Quedan 3 `TextInput` a propósito (búsqueda, chat del match, y el password del login que necesita su ref).
+- **Doble-tap con corazón animado + haptic** en `PostCard`.
+
 **Falta**:
-- El grueso de la **capa D**: migrar el resto de las ~63 pantallas a `ListCard`/`ChipRow`/`EmptyState`, y `TextInput`→`AppInput` / `Pressable`→`AppButton` en los 22 formularios.
-- Toda la **capa E+F**: doble-tap con corazón animado en el feed, headers colapsables en los detalles, match con cards a foto completa, historias con barras segmentadas, y haptics en las acciones clave.
+- Las pantallas de **detalle** (`[id].tsx` de cada módulo) y las secundarias (favoritos, postulaciones, inscripciones, carrito, pedidos, suscripción, buscar, onboarding): tienen skeletons y `AppInput`, pero el cuerpo sigue con `StyleSheet` plano.
+- Headers colapsables en los detalles y cards a foto completa en Match.
+- Extender los haptics al resto de las acciones (hoy están en chips, FAB, pickers, denuncia, reporte y doble-tap).
+
+**Dos cosas del plan original que resultaron innecesarias**: las historias **ya tenían** barras de progreso segmentadas, y el perfil ya quedó con la grilla de 3 columnas en la capa C.
+
+**Al automatizar con regex sobre TSX**: anclar siempre al tag (`<TextInput ... />`), nunca a un patrón de estilo suelto — un regex de `style={[styles.X, {…}]}` sin anclar dejó las tarjetas del panel admin sin fondo. Y usar `\r?$` en los `^…$` multilínea, porque los archivos están en CRLF y si no el `$` no matchea.
 
 El plan completo está en `C:\Users\Pab\.claude\plans\c-xampp-htdocs-red-huellitas-master-encapsulated-sloth.md`.
 
