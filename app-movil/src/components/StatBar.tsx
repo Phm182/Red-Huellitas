@@ -1,13 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { radii } from '../theme/elevation';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface Props {
   etiqueta: string;
   /** 0-100 */
   valor: number;
-  icono: string;
+  /** Icono de Ionicons que representa el stat (comida, juego, higiene…). */
+  icono: keyof typeof Ionicons.glyphMap;
 }
 
 /**
@@ -20,7 +24,9 @@ export function StatBar({ etiqueta, valor, icono }: Props) {
   const progreso = useSharedValue(valor);
 
   useEffect(() => {
-    progreso.value = withTiming(valor, { duration: 400 });
+    // Spring en vez de timing: al alimentar a la mascota la barra "rebota" un
+    // poco al llenarse, que es lo que hace que la acción se sienta.
+    progreso.value = withSpring(valor, { damping: 15, stiffness: 120 });
   }, [valor, progreso]);
 
   const estiloFill = useAnimatedStyle(() => ({
@@ -33,10 +39,11 @@ export function StatBar({ etiqueta, valor, icono }: Props) {
   return (
     <View style={styles.contenedor}>
       <View style={styles.fila}>
-        <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-          {icono} {etiqueta}
-        </Text>
-        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{Math.round(valor)}</Text>
+        <View style={styles.etiquetaFila}>
+          <Ionicons name={icono} size={14} color={color} />
+          <Text style={[type.label, { color: colors.text }]}>{etiqueta}</Text>
+        </View>
+        <Text style={[type.caption, { color: colors.textMuted }]}>{Math.round(valor)}</Text>
       </View>
       <View style={[styles.track, { backgroundColor: colors.border }]}>
         <Animated.View style={[styles.fill, { backgroundColor: color }, estiloFill]} />
@@ -46,8 +53,9 @@ export function StatBar({ etiqueta, valor, icono }: Props) {
 }
 
 const styles = StyleSheet.create({
-  contenedor: { marginBottom: 10 },
-  fila: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  track: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 4 },
+  contenedor: { marginBottom: 12 },
+  fila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  etiquetaFila: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  track: { height: 10, borderRadius: radii.pill, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: radii.pill },
 });

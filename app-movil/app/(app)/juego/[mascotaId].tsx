@@ -220,10 +220,10 @@ export default function JuegoScreen() {
       </View>
 
       <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <StatBar etiqueta={t('juego.stats.hambre')} valor={juego.stats.hambre} icono="🍖" />
-        <StatBar etiqueta={t('juego.stats.felicidad')} valor={juego.stats.felicidad} icono="💛" />
-        <StatBar etiqueta={t('juego.stats.energia')} valor={juego.stats.energia} icono="⚡" />
-        <StatBar etiqueta={t('juego.stats.higiene')} valor={juego.stats.higiene} icono="🫧" />
+        <StatBar etiqueta={t('juego.stats.hambre')} valor={juego.stats.hambre} icono="restaurant" />
+        <StatBar etiqueta={t('juego.stats.felicidad')} valor={juego.stats.felicidad} icono="heart" />
+        <StatBar etiqueta={t('juego.stats.energia')} valor={juego.stats.energia} icono="flash" />
+        <StatBar etiqueta={t('juego.stats.higiene')} valor={juego.stats.higiene} icono="water" />
       </View>
 
       <View style={styles.acciones}>

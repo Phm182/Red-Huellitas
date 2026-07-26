@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { mascotasApi } from '../api/mascotasApi';
 import { Especie, RazaCatalogoItem } from '../types';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { AppInput } from './AppInput';
+import { ChipRow, ChipOption } from './ui/ChipRow';
+import { Skeleton } from './ui/Skeleton';
 
-const OTRA_SENTINEL = '__otra__';
+const OTRA_SENTINEL = -1;
 
 interface RazaPickerProps {
   especie: Especie;
@@ -32,7 +36,7 @@ export function RazaPicker({ especie, razaId, razaTexto, onChange }: RazaPickerP
     });
   }, [especie]);
 
-  const seleccionar = (id: number | typeof OTRA_SENTINEL) => {
+  const seleccionar = (id: number) => {
     if (id === OTRA_SENTINEL) {
       setModoTextoLibre(true);
       onChange(null, razaTexto ?? '');
@@ -42,48 +46,36 @@ export function RazaPicker({ especie, razaId, razaTexto, onChange }: RazaPickerP
     }
   };
 
+  const opciones: ChipOption<number>[] = [
+    ...razas.map((r) => ({ valor: r.razaId, label: r.nombre })),
+    { valor: OTRA_SENTINEL, label: t('mascotas.razaOtra'), icon: 'create-outline' as const },
+  ];
+
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.raza')}</Text>
+      <Text style={[type.label, { color: colors.textMuted, marginBottom: 8 }]}>{t('mascotas.raza')}</Text>
 
-      {loading ? null : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-          {razas.map((r) => {
-            const activo = !modoTextoLibre && razaId === r.razaId;
-            return (
-              <Pressable
-                key={r.razaId}
-                onPress={() => seleccionar(r.razaId)}
-                style={[
-                  styles.chip,
-                  { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' },
-                ]}
-              >
-                <Text style={{ color: activo ? colors.primaryText : colors.primary, fontSize: 13 }}>{r.nombre}</Text>
-              </Pressable>
-            );
-          })}
-          <Pressable
-            onPress={() => seleccionar(OTRA_SENTINEL)}
-            style={[
-              styles.chip,
-              { borderColor: colors.primary, backgroundColor: modoTextoLibre ? colors.primary : 'transparent' },
-            ]}
-          >
-            <Text style={{ color: modoTextoLibre ? colors.primaryText : colors.primary, fontSize: 13 }}>
-              {t('mascotas.razaOtra')}
-            </Text>
-          </Pressable>
-        </ScrollView>
+      {loading ? (
+        <View style={styles.skeletons}>
+          <Skeleton width={90} height={36} radius={999} />
+          <Skeleton width={110} height={36} radius={999} />
+          <Skeleton width={80} height={36} radius={999} />
+        </View>
+      ) : (
+        <ChipRow
+          opciones={opciones}
+          seleccionado={modoTextoLibre ? OTRA_SENTINEL : (razaId ?? -999)}
+          onSelect={seleccionar}
+          style={{ paddingHorizontal: 0 }}
+        />
       )}
 
       {modoTextoLibre ? (
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        <AppInput
           placeholder={t('mascotas.razaOtraPlaceholder')}
-          placeholderTextColor={colors.textMuted}
           value={razaTexto ?? ''}
           onChangeText={(texto) => onChange(null, texto)}
+          style={{ marginTop: 8 }}
         />
       ) : null}
     </View>
@@ -92,8 +84,5 @@ export function RazaPicker({ especie, razaId, razaTexto, onChange }: RazaPickerP
 
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  chips: { marginBottom: 8 },
-  chip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8 },
-  input: { borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 16 },
+  skeletons: { flexDirection: 'row', gap: 8 },
 });

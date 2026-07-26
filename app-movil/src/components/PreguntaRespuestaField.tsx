@@ -1,8 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AdopcionPregunta, RespuestaBorrador } from '../types';
+import { radii } from '../theme/elevation';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { hapticLeve } from '../utils/haptics';
+import { AppInput } from './AppInput';
+import { FilterChip } from './ui/ChipRow';
 
 interface PreguntaRespuestaFieldProps {
   pregunta: AdopcionPregunta;
@@ -16,36 +22,28 @@ export function PreguntaRespuestaField({ pregunta, respuesta, onChange }: Pregun
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.pregunta, { color: colors.text }]}>{pregunta.texto}</Text>
+      <Text style={[type.section, { color: colors.text, marginBottom: 10 }]}>{pregunta.texto}</Text>
 
       {pregunta.tipo === 'texto' ? (
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        <AppInput
           value={respuesta.texto ?? ''}
           onChangeText={(texto) => onChange({ preguntaId: pregunta.adopcionPreguntaId, texto })}
           multiline
+          style={styles.input}
         />
       ) : null}
 
       {pregunta.tipo === 'si_no' ? (
         <View style={styles.opcionesRow}>
-          {(['si', 'no'] as const).map((valor) => {
-            const activo = respuesta.texto === valor;
-            return (
-              <Pressable
-                key={valor}
-                onPress={() => onChange({ preguntaId: pregunta.adopcionPreguntaId, texto: valor })}
-                style={[
-                  styles.opcionChip,
-                  { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' },
-                ]}
-              >
-                <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                  {t(valor === 'si' ? 'common.yes' : 'common.no')}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {(['si', 'no'] as const).map((valor) => (
+            <FilterChip
+              key={valor}
+              label={t(valor === 'si' ? 'common.yes' : 'common.no')}
+              icon={valor === 'si' ? 'checkmark-circle-outline' : 'close-circle-outline'}
+              activo={respuesta.texto === valor}
+              onPress={() => onChange({ preguntaId: pregunta.adopcionPreguntaId, texto: valor })}
+            />
+          ))}
         </View>
       ) : null}
 
@@ -56,15 +54,30 @@ export function PreguntaRespuestaField({ pregunta, respuesta, onChange }: Pregun
             return (
               <Pressable
                 key={opcion.adopcionPreguntaOpcionId}
-                onPress={() => onChange({ preguntaId: pregunta.adopcionPreguntaId, opcionId: opcion.adopcionPreguntaOpcionId })}
+                onPress={() => {
+                  hapticLeve();
+                  onChange({
+                    preguntaId: pregunta.adopcionPreguntaId,
+                    opcionId: opcion.adopcionPreguntaOpcionId,
+                  });
+                }}
                 style={[
                   styles.opcionRow,
-                  { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' },
+                  {
+                    borderColor: activo ? colors.primary : colors.border,
+                    backgroundColor: activo ? colors.primarySoft : colors.surface,
+                  },
                 ]}
               >
-                <Text style={{ color: activo ? colors.primaryText : colors.text, fontWeight: activo ? '700' : '400' }}>
+                {/* Radio dibujado a mano: no hay librería de forms en el
+                    proyecto y un check suelto no comunica "elegí una". */}
+                <View style={[styles.radio, { borderColor: activo ? colors.primary : colors.border }]}>
+                  {activo ? <View style={[styles.radioPunto, { backgroundColor: colors.primary }]} /> : null}
+                </View>
+                <Text style={[type.body, { color: activo ? colors.primary : colors.text, flex: 1 }]}>
                   {opcion.texto}
                 </Text>
+                {activo ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
               </Pressable>
             );
           })}
@@ -76,10 +89,24 @@ export function PreguntaRespuestaField({ pregunta, respuesta, onChange }: Pregun
 
 const styles = StyleSheet.create({
   container: { marginBottom: 20 },
-  pregunta: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
+  input: { minHeight: 80, textAlignVertical: 'top' },
   opcionesRow: { flexDirection: 'row', gap: 10 },
-  opcionChip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 20 },
   opcionesColumn: { gap: 8 },
-  opcionRow: { borderWidth: 1, borderRadius: 8, padding: 12 },
+  opcionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    padding: 14,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: radii.pill,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioPunto: { width: 10, height: 10, borderRadius: radii.pill },
 });

@@ -1,12 +1,16 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { ApiResponse, Pedido, PedidoEstado, PedidoListaResultado } from '../types';
 import { centeredContent } from '../theme/layout';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
 import { pedidoEstadoColor } from '../utils/pedidoEstadoColor';
+import { ChipOption, ChipRow } from './ui/ChipRow';
+import { EmptyState } from './ui/EmptyState';
+import { ListCard } from './ui/ListCard';
+import { SkeletonList } from './ui/Skeleton';
 
 const ESTADOS: PedidoEstado[] = ['pendiente', 'pagado', 'coordinando', 'entregado', 'cancelado'];
 
@@ -26,6 +30,7 @@ export function PedidosLista({ cargar, esVenta }: Props) {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
+  const [refrescando, setRefrescando] = useState(false);
 
   const cargarPrimeraPagina = useCallback(
     (filtro: PedidoEstado | null) => {
@@ -58,6 +63,16 @@ export function PedidosLista({ cargar, esVenta }: Props) {
     }
   };
 
+  const onRefrescar = async () => {
+    setRefrescando(true);
+    const res = await cargar({ estado });
+    if (res.success && res.data) {
+      setPedidos(res.data.pedidos);
+      setNextCursor(res.data.nextCursor);
+    }
+    setRefrescando(false);
+  };
+
   const onFiltrar = (nuevo: PedidoEstado | null) => {
     if (nuevo === estado) return;
     setEstado(nuevo);
@@ -65,38 +80,19 @@ export function PedidosLista({ cargar, esVenta }: Props) {
     cargarPrimeraPagina(nuevo);
   };
 
-  const chip = (valor: PedidoEstado | null, label: string) => {
-    const activo = estado === valor;
-    return (
-      <Pressable
-        key={valor ?? 'todos'}
-        onPress={() => onFiltrar(valor)}
-        style={[
-          styles.chip,
-          { borderColor: activo ? colors.primary : colors.border, backgroundColor: activo ? colors.primary : 'transparent' },
-        ]}
-      >
-        <Text style={{ color: activo ? colors.primaryText : colors.textMuted, fontSize: 12 }}>{label}</Text>
-      </Pressable>
-    );
-  };
+  const opciones: ChipOption<PedidoEstado | null>[] = [
+    { valor: null, label: t('pedidos.filtroTodos') },
+    ...ESTADOS.map((e) => ({ valor: e, label: t(`pedidos.estado.${e}`) })),
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chips}
-        style={{ flexGrow: 0 }}
-      >
-        {chip(null, t('pedidos.filtroTodos'))}
-        {ESTADOS.map((e) => chip(e, t(`pedidos.estado.${e}`)))}
-      </ScrollView>
+      <View style={styles.filtros}>
+        <ChipRow opciones={opciones} seleccionado={estado} onSelect={onFiltrar} />
+      </View>
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
@@ -104,40 +100,38 @@ export function PedidosLista({ cargar, esVenta }: Props) {
           keyExtractor={(p) => String(p.pedidoId)}
           onEndReached={onCargarMas}
           onEndReachedThreshold={0.4}
-          ListEmptyComponent={<Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('pedidos.empty')}</Text>}
+          refreshing={refrescando}
+          onRefresh={onRefrescar}
+          ListEmptyComponent={
+            <EmptyState icon="receipt-outline" titulo={t('pedidos.empty')} />
+          }
           ListFooterComponent={
             cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const estadoColor = pedidoEstadoColor(item.estado, colors);
             const contraparte = esVenta ? item.comprador : item.vendedor;
+            const detalle = item.items.map((i) => `${i.cantidad}× ${i.nombreProducto}`).join(', ');
+            const monto = esVenta
+              ? `${t('pedidos.montoVendedor')}: $${item.montoVendedor.toLocaleString()}`
+              : `${t('carrito.total')}: $${item.montoProductos.toLocaleString()}`;
+
             return (
-              <Pressable
-                style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              <ListCard
+                index={index}
+                titulo={contraparte.nombreCompleto}
+                subtitulo={detalle}
+                meta={item.numeroComprobante}
+                iconoFallback="receipt-outline"
                 onPress={() => router.push({ pathname: '/(app)/pedidos/[id]', params: { id: item.pedidoId } })}
-              >
-                <View style={styles.rowBetween}>
-                  <Text style={{ color: colors.text, fontWeight: '700' }}>{contraparte.nombreCompleto}</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>{item.numeroComprobante}</Text>
-                </View>
-
-                {item.items.map((i) => (
-                  <Text key={i.pedidoItemId} style={{ color: colors.textMuted, fontSize: 12 }} numberOfLines={1}>
-                    {i.cantidad}x {i.nombreProducto}
-                  </Text>
-                ))}
-
-                <View style={[styles.rowBetween, { marginTop: 6 }]}>
-                  <Text style={{ color: colors.text, fontWeight: '600' }}>
-                    {esVenta
-                      ? `${t('pedidos.montoVendedor')}: $${item.montoVendedor.toLocaleString()}`
-                      : `${t('carrito.total')}: $${item.montoProductos.toLocaleString()}`}
-                  </Text>
-                  <Text style={{ color: estadoColor, fontWeight: '600', fontSize: 12 }}>
+                badge={
+                  <Text style={[type.caption, { color: estadoColor }]}>
                     {t(`pedidos.estado.${item.estado}`)}
                   </Text>
-                </View>
-              </Pressable>
+                }
+              >
+                <Text style={[type.section, { color: colors.text, marginTop: 8 }]}>{monto}</Text>
+              </ListCard>
             );
           }}
         />
@@ -147,10 +141,6 @@ export function PedidosLista({ cargar, esVenta }: Props) {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  chips: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginRight: 8 },
-  list: { padding: 16, paddingTop: 4 },
-  card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  filtros: { paddingVertical: 8 },
+  list: { padding: 16, paddingTop: 4, flexGrow: 1 },
 });

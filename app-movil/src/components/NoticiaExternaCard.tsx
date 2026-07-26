@@ -1,46 +1,88 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { NoticiaExterna } from '../types';
+import { elevation, radii } from '../theme/elevation';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { Badge } from './ui/Badge';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface NoticiaExternaCardProps {
   noticia: NoticiaExterna;
+  index?: number;
 }
 
-export function NoticiaExternaCard({ noticia }: NoticiaExternaCardProps) {
+/**
+ * Card de noticia externa.
+ *
+ * Vive en la misma lista que `PostCard`, así que tiene que compartir su
+ * lenguaje: mismo radio, misma elevación, misma tipografía. Antes eran dos
+ * estilos distintos alternándose en la tab de Noticias.
+ */
+export function NoticiaExternaCard({ noticia, index = 0 }: NoticiaExternaCardProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Pressable
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onPress={() => Linking.openURL(noticia.urlOriginal)}
-    >
-      {noticia.imagenUrl ? <Image source={{ uri: noticia.imagenUrl }} style={styles.imagen} /> : null}
-      <View style={styles.body}>
-        <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 4 }}>
-          {noticia.fuente.toUpperCase()}
-        </Text>
-        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15, marginBottom: 4 }}>
-          {noticia.titulo}
-        </Text>
-        {noticia.resumen ? (
-          <Text style={{ color: colors.textMuted, fontSize: 13 }} numberOfLines={3}>
-            {noticia.resumen}
-          </Text>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).springify()}>
+      <AnimatedPressable
+        onPress={() => Linking.openURL(noticia.urlOriginal)}
+        onPressIn={() => {
+          scale.value = withSpring(0.985, { damping: 18, stiffness: 340 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 240 });
+        }}
+        style={[
+          styles.card,
+          elevation.sm,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          animStyle,
+        ]}
+      >
+        {noticia.imagenUrl ? (
+          <Image
+            source={{ uri: noticia.imagenUrl }}
+            style={styles.imagen}
+            contentFit="cover"
+            transition={260}
+          />
         ) : null}
-        <Text style={{ color: colors.primary, fontSize: 12, marginTop: 8, fontWeight: '600' }}>
-          {t('noticias.readMore')} ↗
-        </Text>
-      </View>
-    </Pressable>
+
+        <View style={styles.body}>
+          <Badge label={noticia.fuente.toUpperCase()} tono="accent" style={{ marginBottom: 8 }} />
+
+          <Text style={[type.section, { color: colors.text, fontSize: 16, lineHeight: 22 }]}>
+            {noticia.titulo}
+          </Text>
+
+          {noticia.resumen ? (
+            <Text style={[type.bodySm, { color: colors.textMuted, marginTop: 6 }]} numberOfLines={3}>
+              {noticia.resumen}
+            </Text>
+          ) : null}
+
+          <View style={styles.leerMas}>
+            <Text style={[type.label, { color: colors.primary }]}>{t('noticias.readMore')}</Text>
+            <Ionicons name="open-outline" size={14} color={colors.primary} />
+          </View>
+        </View>
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
-  imagen: { width: '100%', height: 160 },
-  body: { padding: 12 },
+  card: { borderWidth: 1, borderRadius: radii.lg, marginBottom: 16, overflow: 'hidden' },
+  imagen: { width: '100%', height: 180 },
+  body: { padding: 14 },
+  leerMas: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
 });

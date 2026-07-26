@@ -1,11 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { reportesApi } from '../api/reportesApi';
 import { ReporteTipo } from '../types';
+import { radii } from '../theme/elevation';
 import { centeredContent } from '../theme/layout';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { hapticError, hapticExito } from '../utils/haptics';
+import { AppButton } from './AppButton';
+import { AppInput } from './AppInput';
+import { ChipRow, ChipOption } from './ui/ChipRow';
 
 export function ReportModal() {
   const { t } = useTranslation();
@@ -25,87 +33,81 @@ export function ReportModal() {
     const res = await reportesApi.crearReporte(tipo, detalle.trim(), pantallaOrigen);
     setSubmitting(false);
     if (res.success) {
+      hapticExito();
       setEnviado(true);
-      setTimeout(() => router.back(), 900);
+      setTimeout(() => router.back(), 1100);
     } else {
+      hapticError();
       setError(res.message);
     }
   };
 
   if (enviado) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>{t('report.submitted')}</Text>
+      <View style={[styles.container, styles.centrado, { backgroundColor: colors.background }]}>
+        <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.exito}>
+          <View style={[styles.exitoIcono, { backgroundColor: colors.accentSoft }]}>
+            <Ionicons name="checkmark" size={34} color={colors.success} />
+          </View>
+          <Text style={[type.titleSm, { color: colors.text, textAlign: 'center' }]}>
+            {t('report.submitted')}
+          </Text>
+        </Animated.View>
       </View>
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.segmented}>
-        <Pressable
-          style={[
-            styles.segment,
-            { borderColor: colors.primary, backgroundColor: tipo === 'mejora' ? colors.primary : 'transparent' },
-          ]}
-          onPress={() => setTipo('mejora')}
-        >
-          <Text style={{ color: tipo === 'mejora' ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('report.typeImprovement')}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.segment,
-            { borderColor: colors.primary, backgroundColor: tipo === 'falla' ? colors.primary : 'transparent' },
-          ]}
-          onPress={() => setTipo('falla')}
-        >
-          <Text style={{ color: tipo === 'falla' ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('report.typeBug')}
-          </Text>
-        </Pressable>
-      </View>
+  const opciones: ChipOption<ReporteTipo>[] = [
+    { valor: 'mejora', label: t('report.typeImprovement'), icon: 'bulb-outline' },
+    { valor: 'falla', label: t('report.typeBug'), icon: 'bug-outline' },
+  ];
 
-      <TextInput
-        style={[styles.textarea, { borderColor: colors.border, color: colors.text }]}
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(280)}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <ChipRow
+        opciones={opciones}
+        seleccionado={tipo}
+        onSelect={setTipo}
+        scrollable={false}
+        style={{ marginBottom: 16 }}
+      />
+
+      <AppInput
         placeholder={t('report.detailPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         value={detalle}
         onChangeText={setDetalle}
         multiline
         numberOfLines={5}
+        style={styles.textarea}
       />
 
-      {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
+      {error ? (
+        <Text style={[type.bodySm, { color: colors.danger, marginBottom: 12 }]}>{error}</Text>
+      ) : null}
 
-      <Pressable
-        style={[styles.button, { backgroundColor: detalle.trim() ? colors.primary : colors.border }]}
+      <AppButton
+        label={t('common.send')}
         onPress={onEnviar}
-        disabled={!detalle.trim() || submitting}
-      >
-        {submitting ? (
-          <ActivityIndicator color={colors.primaryText} />
-        ) : (
-          <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('common.send')}</Text>
-        )}
-      </Pressable>
-    </View>
+        loading={submitting}
+        disabled={!detalle.trim()}
+      />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, ...centeredContent },
-  segmented: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
-  textarea: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 15,
-    minHeight: 120,
-    textAlignVertical: 'top',
-    marginBottom: 16,
+  centrado: { alignItems: 'center', justifyContent: 'center' },
+  textarea: { minHeight: 130, textAlignVertical: 'top' },
+  exito: { alignItems: 'center', gap: 16 },
+  exitoIcono: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  button: { borderRadius: 10, padding: 14, alignItems: 'center' },
 });

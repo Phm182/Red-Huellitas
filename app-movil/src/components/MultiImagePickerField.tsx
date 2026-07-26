@@ -1,8 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { radii } from '../theme/elevation';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
 import { comprimirImagen } from '../utils/imagen';
+import { hapticLeve } from '../utils/haptics';
 
 const MAX_FOTOS = 6;
 
@@ -19,6 +25,7 @@ export function MultiImagePickerField({ label, uris, onChange, addLabel }: Multi
 
   const agregar = async () => {
     if (uris.length >= MAX_FOTOS) return;
+    hapticLeve();
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
@@ -32,56 +39,92 @@ export function MultiImagePickerField({ label, uris, onChange, addLabel }: Multi
   };
 
   const quitar = (index: number) => {
+    hapticLeve();
     onChange(uris.filter((_, i) => i !== index));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text }]}>
-        {label} ({uris.length}/{MAX_FOTOS})
-      </Text>
+      <View style={styles.encabezado}>
+        <Text style={[type.label, { color: colors.textMuted }]}>{label}</Text>
+        <Text style={[type.caption, { color: colors.textMuted }]}>
+          {uris.length}/{MAX_FOTOS}
+        </Text>
+      </View>
+
       <View style={styles.grid}>
         {uris.map((uri, index) => (
-          <View key={uri} style={styles.slot}>
-            <Image source={{ uri }} style={styles.thumb} />
+          <Animated.View key={uri} entering={ZoomIn.springify().damping(16)} style={styles.slot}>
+            <Image source={{ uri }} style={styles.thumb} contentFit="cover" transition={180} />
+            {/* La primera foto es la portada en todos los listados; conviene
+                que se note cuál es antes de publicar. */}
+            {index === 0 ? (
+              <View style={[styles.portada, { backgroundColor: colors.overlay }]}>
+                <Text style={[type.caption, { color: '#fff' }]}>Portada</Text>
+              </View>
+            ) : null}
             <Pressable
               onPress={() => quitar(index)}
+              hitSlop={6}
               style={[styles.removeBadge, { backgroundColor: colors.danger }]}
             >
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>×</Text>
+              <Ionicons name="close" size={13} color="#fff" />
             </Pressable>
-          </View>
+          </Animated.View>
         ))}
+
         {uris.length < MAX_FOTOS ? (
-          <Pressable
-            onPress={agregar}
-            style={[styles.slot, styles.addSlot, { borderColor: colors.border, backgroundColor: colors.surface }]}
-          >
-            <Text style={{ color: colors.primary, fontSize: 24 }}>+</Text>
-            <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>{addLabel}</Text>
-          </Pressable>
+          <Animated.View entering={FadeIn}>
+            <Pressable
+              onPress={agregar}
+              style={[
+                styles.slot,
+                styles.addSlot,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+              ]}
+            >
+              <Ionicons name="add" size={24} color={colors.primary} />
+              <Text style={[type.caption, { color: colors.primary, marginTop: 2 }]} numberOfLines={1}>
+                {addLabel}
+              </Text>
+            </Pressable>
+          </Animated.View>
         ) : null}
       </View>
     </View>
   );
 }
 
-const SLOT_SIZE = 90;
+const SLOT_SIZE = 96;
 
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  encabezado: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slot: { width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: 10, overflow: 'hidden' },
+  slot: { width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: radii.sm, overflow: 'hidden' },
   thumb: { width: '100%', height: '100%' },
-  addSlot: { borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  addSlot: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  portada: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    paddingVertical: 3,
+  },
   removeBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 5,
+    right: 5,
+    width: 22,
+    height: 22,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -77,7 +77,8 @@
           "color": "#E8873A"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

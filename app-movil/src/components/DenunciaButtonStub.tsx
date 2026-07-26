@@ -1,8 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { reportesApi } from '../api/reportesApi';
+import { elevation, radii } from '../theme/elevation';
+import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { hapticError, hapticExito } from '../utils/haptics';
+import { AppButton } from './AppButton';
+import { AppInput } from './AppInput';
 
 interface DenunciaButtonStubProps {
   userId: number;
@@ -74,62 +81,114 @@ export function DenunciaButtonStub({
     );
     setSubmitting(false);
     if (res.success) {
+      hapticExito();
       setEnviado(true);
-      setTimeout(cerrar, 900);
+      setTimeout(cerrar, 1100);
     } else {
+      hapticError();
       setError(res.message);
     }
   };
 
   return (
     <>
-      <Pressable onPress={() => setVisible(true)}>
-        <Text style={{ color: colors.danger, fontSize: 13 }}>{t('report.denounceUser')}</Text>
+      <Pressable onPress={() => setVisible(true)} style={styles.trigger} hitSlop={8}>
+        <Ionicons name="flag-outline" size={15} color={colors.danger} />
+        <Text style={[type.label, { color: colors.danger }]}>{t('report.denounceUser')}</Text>
       </Pressable>
 
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={cerrar}>
-        <View style={styles.overlay}>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            {enviado ? (
-              <Text style={{ color: colors.success, fontWeight: '600' }}>{t('report.denounceSubmitted')}</Text>
-            ) : (
-              <>
-                <Text style={{ color: colors.text, fontWeight: '700', marginBottom: 10 }}>
-                  {t('report.denounceUser')}
-                </Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-                  placeholder={t('report.denounceReasonPlaceholder')}
-                  placeholderTextColor={colors.textMuted}
-                  value={motivo}
-                  onChangeText={setMotivo}
-                />
-                {error ? <Text style={{ color: colors.danger, marginBottom: 8 }}>{error}</Text> : null}
-                <View style={styles.actions}>
-                  <Pressable onPress={cerrar} style={styles.actionButton}>
-                    <Text style={{ color: colors.textMuted }}>{t('common.cancel')}</Text>
-                  </Pressable>
-                  <Pressable onPress={onEnviar} style={styles.actionButton} disabled={!motivo.trim() || submitting}>
-                    {submitting ? (
-                      <ActivityIndicator color={colors.danger} />
-                    ) : (
-                      <Text style={{ color: colors.danger, fontWeight: '600' }}>{t('common.send')}</Text>
-                    )}
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
+      <Modal visible={visible} transparent animationType="none" onRequestClose={cerrar}>
+        <Animated.View entering={FadeIn.duration(160)} style={styles.overlayWrap}>
+          <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={cerrar}>
+            <Pressable onPress={() => {}} style={styles.cardWrap}>
+              <Animated.View
+                entering={FadeInDown.springify().damping(18)}
+                style={[
+                  styles.card,
+                  elevation.lg,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                {enviado ? (
+                  <View style={styles.exito}>
+                    <View style={[styles.exitoIcono, { backgroundColor: colors.accentSoft }]}>
+                      <Ionicons name="checkmark" size={28} color={colors.success} />
+                    </View>
+                    <Text style={[type.titleSm, { color: colors.text, textAlign: 'center' }]}>
+                      {t('report.denounceSubmitted')}
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.encabezado}>
+                      <View style={[styles.encabezadoIcono, { backgroundColor: colors.primarySoft }]}>
+                        <Ionicons name="flag" size={18} color={colors.danger} />
+                      </View>
+                      <Text style={[type.titleSm, { color: colors.text, flex: 1 }]}>
+                        {t('report.denounceUser')}
+                      </Text>
+                    </View>
+
+                    <AppInput
+                      placeholder={t('report.denounceReasonPlaceholder')}
+                      value={motivo}
+                      onChangeText={setMotivo}
+                      multiline
+                      style={{ minHeight: 88, textAlignVertical: 'top' }}
+                    />
+
+                    {error ? (
+                      <Text style={[type.bodySm, { color: colors.danger, marginBottom: 8 }]}>{error}</Text>
+                    ) : null}
+
+                    <View style={styles.acciones}>
+                      <AppButton
+                        label={t('common.cancel')}
+                        variant="secondary"
+                        onPress={cerrar}
+                        style={{ flex: 1 }}
+                      />
+                      <AppButton
+                        label={t('common.send')}
+                        variant="danger"
+                        onPress={onEnviar}
+                        loading={submitting}
+                        disabled={!motivo.trim()}
+                        style={{ flex: 1 }}
+                      />
+                    </View>
+                  </>
+                )}
+              </Animated.View>
+            </Pressable>
+          </Pressable>
+        </Animated.View>
       </Modal>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
-  card: { width: '85%', maxWidth: 360, borderRadius: 12, padding: 20 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 10 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 },
-  actionButton: { padding: 8 },
+  trigger: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  overlayWrap: { flex: 1 },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  cardWrap: { width: '100%', maxWidth: 380 },
+  card: { borderRadius: radii.lg, borderWidth: 1, padding: 20 },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  encabezadoIcono: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acciones: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  exito: { alignItems: 'center', paddingVertical: 12, gap: 12 },
+  exitoIcono: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

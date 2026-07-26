@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -86,6 +87,8 @@ export function MascotaAvatar({ avatarPath, animo, especie, tamano = 160, celebr
           <Image
             source={{ uri: rhMediaUrl(avatarPath) }}
             style={{ width: tamano - 8, height: tamano - 8, borderRadius: (tamano - 8) / 2 }}
+            contentFit="cover"
+            transition={260}
           />
         ) : (
           // Sin foto cargada: emoji según la especie, para que el juego se
