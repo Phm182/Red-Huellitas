@@ -10,7 +10,8 @@
         "changesSaved": "Changes saved",
         "yes": "Yes",
         "no": "No",
-        "close": "Close"
+        "close": "Close",
+        "seeAll": "See all"
     },
     "auth": {
         "loginTitle": "Log in",
@@ -191,12 +192,12 @@
     },
     "home": {
         "welcome": "Welcome to Red Huellitas",
-        "masTabTitle": "More",
+        "masTabTitle": "Settings",
         "switchAccountTitle": "Switch account",
         "addAccount": "Add account"
     },
     "feed": {
-        "tabTitle": "Home",
+        "tabTitle": "Huelligram",
         "createTitle": "New post",
         "captionPlaceholder": "What's your pet up to?",
         "fotos": "Photos",
@@ -232,19 +233,19 @@
         "readMore": "Read more"
     },
     "shorts": {
-        "tabTitle": "Shorts",
-        "createTitle": "New short",
-        "empty": "No shorts yet",
+        "tabTitle": "Huetube",
+        "createTitle": "New Huetube",
+        "empty": "No Huetube yet",
         "pickVideo": "Pick video",
         "retakeVideo": "Change video"
     },
     "historias": {
-        "addLabel": "Your story",
+        "addLabel": "Your Huellita",
         "you": "You",
         "permissionDenied": "We need permission to access your photos and videos.",
         "videoTooLong": "Videos can be at most 60 seconds long.",
-        "uploadFailed": "Could not upload the story. Try a shorter MP4 video.",
-        "cameraPermission": "Camera access is required to create stories.",
+        "uploadFailed": "Could not upload the Huellita. Try a shorter MP4 video.",
+        "cameraPermission": "Camera access is required to create Huellitas.",
         "allowCamera": "Allow camera",
         "openSystemCamera": "Open system camera",
         "systemCam": "Camera",
@@ -262,16 +263,16 @@
         "textPlaceholder": "Say something…",
         "addText": "Add",
         "textDragHint": "Drag, pinch and rotate text with two fingers",
-        "textLiveHint": "You see it on the story as you type. Tap Add to place it.",
+        "textLiveHint": "You see it on the Huellita as you type. Tap Add to place it.",
         "drawHint": "Drag to draw",
-        "publish": "Your story",
+        "publish": "Your Huellita",
         "changeMedia": "Change media",
         "retake": "Camera",
         "tapToFit": "Tap the screen to see the full video",
         "fitContainHint": "Fit: full video. Tap again to fill",
         "vistasTitulo": "Views",
         "vistasVacio": "No one has seen it yet",
-        "vistasVacioDesc": "When someone views your story, they will show up here.",
+        "vistasVacioDesc": "When someone views your Huellita, they will show up here.",
         "responder": "Send message…",
         "responderPregunta": "Answer the question…",
         "recortar": "Trim",
@@ -284,7 +285,7 @@
         "quitarPreguntas": "Remove questions",
         "agregarEncuesta": "Add poll",
         "agregarPreguntas": "Add question box",
-        "yaHayInteractivo": "This story already has a poll or question box. Remove it to add another.",
+        "yaHayInteractivo": "This Huellita already has a poll or question box. Remove it to add another.",
         "preguntame": "ASK ME",
         "escribiRespuesta": "Type your answer…",
         "timerOff": "No timer",
@@ -595,7 +596,7 @@
         "noConfigurado": "Mercado Pago linking isn't set up yet"
     },
     "juego": {
-        "titulo": "Care for my pet",
+        "titulo": "HuePlay",
         "sinMascotas": "Add a pet first so you can care for it here.",
         "sinEmpezar": "You haven't cared for them yet",
         "nivel": "Level {{nivel}}",
@@ -698,23 +699,65 @@
         "titulo": "Chains",
         "tituloNueva": "New chain",
         "continuar": "Continue chain",
-        "sumarOtra": "Add another story",
+        "sumarOtra": "Add another Huellita",
         "participantes": "participants",
-        "historiasActivas": "active stories",
+        "historiasActivas": "active Huellitas",
         "elHilo": "The thread",
         "quienesSeSumaron": "Who joined",
         "laEmpezo": "Started by",
         "vacio": "No chains yet",
-        "vacioDesc": "A chain is a theme someone starts and everyone else continues with their own story. Create the first one.",
+        "vacioDesc": "A chain is a theme someone starts and everyone else continues with their own Huellita. Create the first one.",
         "crear": "Create a chain",
-        "crearYSubir": "Create and post my story",
+        "crearYSubir": "Create and post my Huellita",
         "tema": "Theme",
         "descripcion": "Description (optional)",
         "ideas": "Ideas:",
-        "explicacion": "You propose a theme and others continue it with their own story. The chain stays alive even after the stories expire in 24h.",
-        "vencieron": "The stories expired",
+        "explicacion": "You propose a theme and others continue it with their own Huellita. The chain stays alive even after the Huellitas expire in 24h.",
+        "vencieron": "The Huellitas expired",
         "vencieronDesc": "The chain is still alive: post yours and start it again.",
         "invitar": "Invite",
         "invitados": "Invitations sent"
+    },
+    "nav": {
+        "huelligram": "Huelligram",
+        "buscar": "Search",
+        "rescate": "Rescue",
+        "tienda": "Shop",
+        "salud": "Health",
+        "hueplay": "HuePlay",
+        "configuracion": "Settings",
+        "atajosHint": "Press and hold to see the shortcuts",
+        "rescateDesc": "Find, foster and rehome",
+        "tiendaDesc": "Buy, sell and your orders",
+        "saludDesc": "Care, vets and shelters"
+    },
+    "huelligram": {
+        "publicaciones": "Posts",
+        "noticias": "News",
+        "huetube": "Huetube"
+    },
+    "refugios": {
+        "tituloLista": "Shelters",
+        "emptyLista": "No shelters yet",
+        "emptyDesc": "When a rescue signs up, you will see it here.",
+        "cercanos": "Near you",
+        "verPerfil": "View profile"
+    },
+    "cuidados": {
+        "tituloLista": "Care",
+        "subtitulo": "Short guides to take better care of your companion",
+        "emptyLista": "No guides for this species yet",
+        "especie": {
+            "perro": "Dog",
+            "gato": "Cat",
+            "otro": "Other"
+        },
+        "categoria": {
+            "alimentacion": "Feeding",
+            "higiene": "Grooming",
+            "salud": "Health",
+            "ejercicio": "Exercise",
+            "convivencia": "Living together"
+        }
     }
 }

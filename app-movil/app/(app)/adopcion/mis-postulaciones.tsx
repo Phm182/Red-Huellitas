@@ -3,11 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { adopcionApi } from '../../../src/api/adopcionApi';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { AdopcionPostulacionPropia } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisPostulacionesScreen() {
   const { t } = useTranslation();
@@ -39,11 +40,11 @@ export default function MisPostulacionesScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, postulaciones.length === 0 && styles.listEmpty]}
       data={postulaciones}
       keyExtractor={(p) => String(p.adopcionPostulacionId)}
       ListEmptyComponent={
-        <Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('adopcion.emptyMisPostulaciones')}</Text>
+        <EmptyState icon="document-text-outline" titulo={t('adopcion.emptyMisPostulaciones')} />
       }
       renderItem={({ item }) => (
         <Pressable
@@ -70,6 +71,7 @@ export default function MisPostulacionesScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
   foto: { width: 56, height: 56, borderRadius: 10 },
 });

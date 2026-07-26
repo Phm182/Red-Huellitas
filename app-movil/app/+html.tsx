@@ -23,6 +23,9 @@ html, body { height: 100%; margin: 0; }
 #root { display: flex; flex: 1; min-height: 100%; height: 100%; }
 /* overflow:auto (no hidden): permite scroll/teclado en mobile web */
 body { overflow: auto; overscroll-behavior-y: none; }
+/* App-like: scroll sin barra visible (webkit + Firefox) */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
 /* iOS no hace zoom al enfocar si el input tiene >= 16px */
 input, textarea, select { font-size: 16px; }
 `,

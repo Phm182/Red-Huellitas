@@ -3,11 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { matchApi } from '../../../src/api/matchApi';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { MascotaMatch } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisMatchesScreen() {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export default function MisMatchesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        contentContainerStyle={[styles.list, centeredContent]}
+        contentContainerStyle={[styles.list, centeredContent, matches.length === 0 && styles.listEmpty]}
         data={matches}
         keyExtractor={(item) => String(item.matchId)}
         renderItem={({ item }) => (
@@ -60,7 +61,7 @@ export default function MisMatchesScreen() {
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={<Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('match.emptyMatches')}</Text>}
+        ListEmptyComponent={<EmptyState icon="heart-outline" titulo={t('match.emptyMatches')} />}
       />
     </View>
   );
@@ -69,6 +70,7 @@ export default function MisMatchesScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

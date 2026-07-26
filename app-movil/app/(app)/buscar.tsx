@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { usuariosApi } from '../../src/api/usuariosApi';
 import { LogoSiluetaNegra } from '../../src/components/LogoImage';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import { BusquedaResultado, Mascota, UsuarioResumen } from '../../src/types';
 import { centeredContent } from '../../src/theme/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -58,10 +59,10 @@ export default function BuscarScreen() {
       {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} /> : null}
 
       {!loading && q.trim().length >= 2 && filas.length === 0 ? (
-        <Text style={{ color: colors.textMuted, marginTop: 16 }}>{t('busqueda.emptyResults')}</Text>
+        <EmptyState icon="search-outline" titulo={t('busqueda.emptyResults')} />
       ) : null}
       {q.trim().length < 2 ? (
-        <Text style={{ color: colors.textMuted, marginTop: 16 }}>{t('busqueda.minChars')}</Text>
+        <EmptyState icon="search-outline" titulo={t('busqueda.minChars')} fillScreen={false} />
       ) : null}
 
       <FlatList

@@ -5,16 +5,16 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { perfilApi } from '../../../src/api/perfilApi';
-import { useAuth } from '../../../src/auth/AuthProvider';
-import { Atmosphere } from '../../../src/components/Atmosphere';
-import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
-import { LanguagePicker } from '../../../src/components/LanguagePicker';
-import { LogoImage } from '../../../src/components/LogoImage';
-import { elevation, radii } from '../../../src/theme/elevation';
-import { centeredContent } from '../../../src/theme/layout';
-import { fonts, type } from '../../../src/theme/typography';
-import { ThemePreference, useTheme } from '../../../src/theme/ThemeProvider';
+import { perfilApi } from '../../src/api/perfilApi';
+import { useAuth } from '../../src/auth/AuthProvider';
+import { Atmosphere } from '../../src/components/Atmosphere';
+import { DenunciaButtonStub } from '../../src/components/DenunciaButtonStub';
+import { LanguagePicker } from '../../src/components/LanguagePicker';
+import { LogoImage } from '../../src/components/LogoImage';
+import { elevation, radii } from '../../src/theme/elevation';
+import { centeredContent } from '../../src/theme/layout';
+import { fonts, type } from '../../src/theme/typography';
+import { ThemePreference, useTheme } from '../../src/theme/ThemeProvider';
 
 const TEMAS: { id: ThemePreference; labelKey: string }[] = [
   { id: 'system', labelKey: 'setup.themeSystem' },
@@ -55,7 +55,7 @@ const LINKS: { labelKey: string; route: string; icon: keyof typeof Ionicons.glyp
 export default function MasScreen() {
   const { t } = useTranslation();
   const { colors, preference, setPreference } = useTheme();
-  const { user, logout, actualizarUsuario } = useAuth();
+  const { user, logout, actualizarUsuario, accounts } = useAuth();
   const [notifBusy, setNotifBusy] = useState(false);
 
   const onToggleNotificarProximidad = async (valor: boolean) => {
@@ -68,12 +68,23 @@ export default function MasScreen() {
     }
   };
 
+  const afterLogout = async () => {
+    const quedanOtras = accounts.length > 1;
+    await logout();
+    // logout() ya activa otra cuenta si hay; si no quedaba ninguna, ir al login.
+    if (quedanOtras) {
+      router.replace('/(app)/(tabs)');
+    } else {
+      router.replace('/(auth)/login');
+    }
+  };
+
   const onLogout = () => {
     const title = t('auth.logoutConfirmTitle');
     const message = t('auth.logoutConfirmMessage');
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) {
-        logout().then(() => router.replace('/(auth)/login'));
+        afterLogout();
       }
       return;
     }
@@ -82,9 +93,8 @@ export default function MasScreen() {
       {
         text: t('auth.logout'),
         style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/login');
+        onPress: () => {
+          afterLogout();
         },
       },
     ]);

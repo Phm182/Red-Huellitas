@@ -1,15 +1,12 @@
 import { Stack } from 'expo-router';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../src/auth/AuthProvider';
+import { AppChrome } from '../../src/components/navigation/AppChrome';
 import { usePushNotifications } from '../../src/hooks/usePushNotifications';
-import { MAX_CONTENT_WIDTH } from '../../src/theme/layout';
-import { fonts } from '../../src/theme/typography';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function AppLayout() {
-  const { t } = useTranslation();
   const { isLoading } = useAuth();
   const { colors } = useTheme();
 
@@ -30,111 +27,83 @@ export default function AppLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* maxWidth+alignSelf: en desktop ancla el FAB a la columna centrada, no al borde de la ventana */}
-      <View style={{ flex: 1, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' }}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.text,
-            headerTitleStyle: { fontFamily: fonts.displaySemi, fontSize: 17 },
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="ajustes/whatsapp" options={{ headerShown: true, title: 'WhatsApp' }} />
-          <Stack.Screen name="ajustes/verificacion-estado" options={{ headerShown: true, title: 'Verificación' }} />
-          <Stack.Screen name="buscar" options={{ headerShown: true, title: t('busqueda.navLabel') }} />
-          <Stack.Screen name="perfil" />
-          <Stack.Screen name="usuario/[username]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen
-            name="usuario/[username]/seguidores"
-            options={{ headerShown: true, title: t('perfil.followers') }}
-          />
-          <Stack.Screen
-            name="usuario/[username]/seguidos"
-            options={{ headerShown: true, title: t('perfil.following') }}
-          />
-          <Stack.Screen name="mascotas/index" options={{ headerShown: true, title: t('mascotas.title') }} />
-          <Stack.Screen name="mascotas/nueva" options={{ headerShown: true, title: t('mascotas.addPet') }} />
-          <Stack.Screen
-            name="mascotas/[id]/editar"
-            options={{ headerShown: true, title: t('mascotas.editButton') }}
-          />
-          <Stack.Screen name="mascota/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="publicaciones/nueva" options={{ headerShown: true, title: t('feed.createTitle') }} />
-          <Stack.Screen name="publicaciones/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="publicaciones/nueva_video" options={{ headerShown: true, title: t('shorts.createTitle') }} />
-          <Stack.Screen name="historias/nueva" options={{ headerShown: false }} />
-          <Stack.Screen name="historias/ver/[userId]" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="historia-vistas/[historiaId]"
-            options={{ headerShown: true, title: t('historias.vistasTitulo') }}
-          />
-          <Stack.Screen name="cadenas/index" options={{ headerShown: true, title: t('cadenas.titulo') }} />
-          <Stack.Screen name="cadenas/nueva" options={{ headerShown: true, title: t('cadenas.tituloNueva') }} />
-          <Stack.Screen name="cadenas/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="adopcion/index" options={{ headerShown: true, title: t('adopcion.tituloLista') }} />
-          <Stack.Screen name="adopcion/nueva" options={{ headerShown: true, title: t('adopcion.tituloNueva') }} />
-          <Stack.Screen name="adopcion/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="adopcion/[id]/postular" options={{ headerShown: true, title: t('adopcion.tituloPostular') }} />
-          <Stack.Screen
-            name="adopcion/[id]/postulaciones"
-            options={{ headerShown: true, title: t('adopcion.verPostulaciones') }}
-          />
-          <Stack.Screen
-            name="adopcion/mis-postulaciones"
-            options={{ headerShown: true, title: t('adopcion.misPostulaciones') }}
-          />
-          <Stack.Screen name="adopcion/favoritos" options={{ headerShown: true, title: t('adopcion.misFavoritos') }} />
-          <Stack.Screen name="campanias/index" options={{ headerShown: true, title: t('campanias.tituloLista') }} />
-          <Stack.Screen name="campanias/nueva" options={{ headerShown: true, title: t('campanias.tituloNueva') }} />
-          <Stack.Screen name="campanias/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen
-            name="campanias/[id]/inscripciones"
-            options={{ headerShown: true, title: t('campanias.verInscriptos') }}
-          />
-          <Stack.Screen
-            name="campanias/mis-inscripciones"
-            options={{ headerShown: true, title: t('campanias.misInscripciones') }}
-          />
-          <Stack.Screen name="perdidos/index" options={{ headerShown: true, title: t('perdidos.tituloLista') }} />
-          <Stack.Screen name="perdidos/nueva" options={{ headerShown: true, title: t('perdidos.tituloNueva') }} />
-          <Stack.Screen name="perdidos/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="transito/index" options={{ headerShown: true, title: t('transito.tituloLista') }} />
-          <Stack.Screen name="transito/nueva" options={{ headerShown: true, title: t('transito.tituloNueva') }} />
-          <Stack.Screen name="transito/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="donaciones/index" options={{ headerShown: true, title: t('donaciones.tituloLista') }} />
-          <Stack.Screen name="donaciones/nueva" options={{ headerShown: true, title: t('donaciones.tituloNueva') }} />
-          <Stack.Screen name="donaciones/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="veterinarias/index" options={{ headerShown: true, title: t('veterinarias.tituloLista') }} />
-          <Stack.Screen name="veterinarias/nueva" options={{ headerShown: true, title: t('veterinarias.tituloNueva') }} />
-          <Stack.Screen name="veterinarias/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="match/index" options={{ headerShown: true, title: t('match.tituloLista') }} />
-          <Stack.Screen name="match/matches" options={{ headerShown: true, title: t('match.tituloMatches') }} />
-          <Stack.Screen name="match/[matchId]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="suscripcion/index" options={{ headerShown: true, title: t('suscripcion.tituloLista') }} />
-          <Stack.Screen name="productos/index" options={{ headerShown: true, title: t('productos.tituloLista') }} />
-          <Stack.Screen name="productos/nueva" options={{ headerShown: true, title: t('productos.tituloNueva') }} />
-          <Stack.Screen name="productos/[id]" options={{ headerShown: true, title: '' }} />
-          <Stack.Screen name="productos/favoritos" options={{ headerShown: true, title: t('productos.misFavoritos') }} />
-          <Stack.Screen name="carrito/index" options={{ headerShown: true, title: t('carrito.tituloLista') }} />
-          <Stack.Screen name="pedidos/mis-compras" options={{ headerShown: true, title: t('pedidos.misCompras') }} />
-          <Stack.Screen name="pedidos/mis-ventas" options={{ headerShown: true, title: t('pedidos.misVentas') }} />
-          <Stack.Screen name="pedidos/[id]" options={{ headerShown: true, title: t('pedidos.detalleTitulo') }} />
-          <Stack.Screen name="juego/index" options={{ headerShown: true, title: t('juego.titulo') }} />
-          <Stack.Screen name="juego/[mascotaId]" options={{ headerShown: true, title: t('juego.titulo') }} />
-          <Stack.Screen name="admin/index" options={{ headerShown: true, title: t('admin.titulo') }} />
-          <Stack.Screen
-            name="admin/verificaciones"
-            options={{ headerShown: true, title: t('admin.verificacionesTitulo') }}
-          />
-          <Stack.Screen name="admin/denuncias" options={{ headerShown: true, title: t('admin.denunciasTitulo') }} />
-          <Stack.Screen name="admin/reportes" options={{ headerShown: true, title: t('admin.reportesTitulo') }} />
-        </Stack>
-      </View>
-    </View>
+    <AppChrome>
+      <Stack
+        screenOptions={{
+          // Header y tabs los dibuja AppChrome (fijos en todas las pantallas).
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="configuracion" />
+        <Stack.Screen name="rescate/index" />
+        <Stack.Screen name="tienda/index" />
+        <Stack.Screen name="salud/index" />
+        <Stack.Screen name="ajustes/whatsapp" />
+        <Stack.Screen name="ajustes/verificacion-estado" />
+        <Stack.Screen name="buscar" />
+        <Stack.Screen name="perfil" />
+        <Stack.Screen name="usuario/[username]" />
+        <Stack.Screen name="usuario/[username]/seguidores" />
+        <Stack.Screen name="usuario/[username]/seguidos" />
+        <Stack.Screen name="mascotas/index" />
+        <Stack.Screen name="mascotas/nueva" />
+        <Stack.Screen name="mascotas/[id]/editar" />
+        <Stack.Screen name="mascota/[id]" />
+        <Stack.Screen name="publicaciones/nueva" />
+        <Stack.Screen name="publicaciones/[id]" />
+        <Stack.Screen name="publicaciones/nueva_video" />
+        <Stack.Screen name="historias/nueva" />
+        <Stack.Screen name="historias/ver/[userId]" />
+        <Stack.Screen name="historia-vistas/[historiaId]" />
+        <Stack.Screen name="cadenas/index" />
+        <Stack.Screen name="cadenas/nueva" />
+        <Stack.Screen name="cadenas/[id]" />
+        <Stack.Screen name="adopcion/index" />
+        <Stack.Screen name="adopcion/nueva" />
+        <Stack.Screen name="adopcion/[id]" />
+        <Stack.Screen name="adopcion/[id]/postular" />
+        <Stack.Screen name="adopcion/[id]/postulaciones" />
+        <Stack.Screen name="adopcion/mis-postulaciones" />
+        <Stack.Screen name="adopcion/favoritos" />
+        <Stack.Screen name="campanias/index" />
+        <Stack.Screen name="campanias/nueva" />
+        <Stack.Screen name="campanias/[id]" />
+        <Stack.Screen name="campanias/[id]/inscripciones" />
+        <Stack.Screen name="campanias/mis-inscripciones" />
+        <Stack.Screen name="perdidos/index" />
+        <Stack.Screen name="perdidos/nueva" />
+        <Stack.Screen name="perdidos/[id]" />
+        <Stack.Screen name="transito/index" />
+        <Stack.Screen name="transito/nueva" />
+        <Stack.Screen name="transito/[id]" />
+        <Stack.Screen name="donaciones/index" />
+        <Stack.Screen name="donaciones/nueva" />
+        <Stack.Screen name="donaciones/[id]" />
+        <Stack.Screen name="veterinarias/index" />
+        <Stack.Screen name="veterinarias/nueva" />
+        <Stack.Screen name="veterinarias/[id]" />
+        <Stack.Screen name="match/index" />
+        <Stack.Screen name="match/matches" />
+        <Stack.Screen name="match/[matchId]" />
+        <Stack.Screen name="suscripcion/index" />
+        <Stack.Screen name="productos/index" />
+        <Stack.Screen name="productos/nueva" />
+        <Stack.Screen name="productos/[id]" />
+        <Stack.Screen name="productos/favoritos" />
+        <Stack.Screen name="carrito/index" />
+        <Stack.Screen name="pedidos/mis-compras" />
+        <Stack.Screen name="pedidos/mis-ventas" />
+        <Stack.Screen name="pedidos/[id]" />
+        <Stack.Screen name="juego/index" />
+        <Stack.Screen name="juego/[mascotaId]" />
+        <Stack.Screen name="admin/index" />
+        <Stack.Screen name="admin/verificaciones" />
+        <Stack.Screen name="admin/denuncias" />
+        <Stack.Screen name="admin/reportes" />
+      </Stack>
+    </AppChrome>
   );
 }

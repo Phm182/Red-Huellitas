@@ -1,11 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
+import { Image as ExpoImage } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
+  Image,
   Linking,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,17 +21,24 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { mascotasApi } from '../api/mascotasApi';
+import { perfilApi } from '../api/perfilApi';
 import { publicacionesApi } from '../api/publicacionesApi';
 import { usuariosApi } from '../api/usuariosApi';
+import { useAuth } from '../auth/AuthProvider';
 import { useSeguirToggle } from '../hooks/useSeguirToggle';
 import { Mascota, PerfilPublico, Post } from '../types';
 import { elevation, radii } from '../theme/elevation';
 import { centeredContent, MAX_CONTENT_WIDTH } from '../theme/layout';
 import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
-import { rhMediaUrl } from '../utils/media';
-import { hapticLeve } from '../utils/haptics';
+import { setAvatarDisplay, useAvatarDisplay, clearAvatarDisplay } from '../utils/avatarDisplayStore';
+import { saveAvatarCache } from '../utils/avatarCache';
+import { comprimirImagen } from '../utils/imagen';
+import { apiBaseUrl } from '../api/client';
+import { makeDurableImageUri, rhAvatarUrl, rhMediaUrl } from '../utils/media';
+import { hapticExito, hapticLeve } from '../utils/haptics';
 import { AppButton } from './AppButton';
+import { AppMessageModal } from './AppMessageModal';
 import { DenunciaButtonStub } from './DenunciaButtonStub';
 import { EmptyState } from './ui/EmptyState';
 import { Skeleton } from './ui/Skeleton';
@@ -45,6 +58,8 @@ const LADO_CELDA = (ancho - SEPARACION * 2) / 3;
 export function PerfilBody({ username, userId }: PerfilBodyProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { user, actualizarUsuario, avatarBust, setAvatarPreviewUri } = useAuth();
+  const avatarDisplay = useAvatarDisplay();
 
   const [perfil, setPerfil] = useState<PerfilPublico | null>(null);
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
@@ -52,6 +67,18 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
   const [loading, setLoading] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
   const [pestania, setPestania] = useState<Pestania>('publicaciones');
+  const [avatarAbierto, setAvatarAbierto] = useState(false);
+  const [subiendoAvatar, setSubiendoAvatar] = useState(false);
+  const [mensajeAvatar, setMensajeAvatar] = useState<{ titulo: string; cuerpo: string } | null>(null);
+
+  const perfilCargadoRef = useRef(false);
+  /** Al volver del picker, useFocusEffect no debe recargar ni mostrar skeleton. */
+  const omitirProximoFocusRef = useRef(false);
+  const subiendoAvatarRef = useRef(false);
+  /** Path de avatar recién subido: impide que un GET en carrera restaure el anterior. */
+  const avatarLockPathRef = useRef<string | null>(null);
+  const avatarPreviewRef = useRef<string | null>(null);
+  avatarPreviewRef.current = avatarDisplay.uri;
 
   const { siguiendo, busy: siguiendoBusy, toggle: onToggleSeguir } = useSeguirToggle(
     perfil?.userId ?? 0,
@@ -71,7 +98,25 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
       if (!activo()) return;
 
       if (resPerfil.success && resPerfil.data) {
-        setPerfil(resPerfil.data);
+        setPerfil((prev) => {
+          const next = resPerfil.data!;
+          const locked = avatarLockPathRef.current;
+          if (locked) {
+            return {
+              ...next,
+              avatarPath: locked,
+              avatarBust: prev?.avatarBust ?? next.avatarBust,
+            };
+          }
+          if (avatarPreviewRef.current && prev?.avatarPath) {
+            return {
+              ...next,
+              avatarPath: prev.avatarPath,
+              avatarBust: prev.avatarBust ?? next.avatarBust,
+            };
+          }
+          return next;
+        });
         const [resMascotas, resPosts] = await Promise.all([
           mascotasApi.listarUsuario(resPerfil.data.userId),
           publicacionesApi.listarUsuario(resPerfil.data.userId),
@@ -89,11 +134,24 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
 
   useFocusEffect(
     useCallback(() => {
+      // Tras la primera carga, NUNCA recargar por focus: al cerrar el picker /
+      // modal el focus disparaba un GET que devolvía la URL cacheada del CDN
+      // y la foto nueva “volvía atrás” a los pocos segundos.
+      if (perfilCargadoRef.current || omitirProximoFocusRef.current || subiendoAvatarRef.current) {
+        return;
+      }
+
       let vivo = true;
       setLoading(true);
-      cargar(() => vivo).finally(() => {
-        if (vivo) setLoading(false);
-      });
+
+      cargar(() => vivo)
+        .then(() => {
+          if (vivo) perfilCargadoRef.current = true;
+        })
+        .finally(() => {
+          if (vivo) setLoading(false);
+        });
+
       return () => {
         vivo = false;
       };
@@ -104,6 +162,198 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
     setRefrescando(true);
     await cargar(() => true);
     setRefrescando(false);
+  };
+
+  const aplicarAvatar = (avatarPath: string, previewUri: string, bust?: number | null) => {
+    const b = bust && bust > 0 ? bust : Date.now();
+    const uid = user?.userId ?? perfil?.userId;
+    setPerfil((prev) => (prev ? { ...prev, avatarPath, avatarBust: b } : prev));
+    setAvatarDisplay(previewUri, avatarPath);
+    setAvatarPreviewUri(previewUri);
+    avatarLockPathRef.current = avatarPath;
+    if (uid != null) {
+      void saveAvatarCache({
+        userId: uid,
+        path: avatarPath,
+        bust: b,
+        dataUri: previewUri,
+      });
+    }
+    if (user && (user.userId === uid || perfil?.esUnoMismo)) {
+      actualizarUsuario({ ...user, avatarPath, avatarBust: b });
+    }
+  };
+
+  const pathDesdeRespuestaAvatar = (data: {
+    avatarPath?: string | null;
+    avatarUrl?: string | null;
+  } | null | undefined): string | null => {
+    if (data?.avatarPath) {
+      return data.avatarPath.replace(/^\/+/, '').replace(/^uploads\//, '');
+    }
+    const url = data?.avatarUrl ?? '';
+    const match = url.match(/avatares\/[^/?#]+/i);
+    if (match) {
+      return match[0];
+    }
+    return perfil?.avatarPath ?? user?.avatarPath ?? (user ? `avatares/${user.userId}.jpg` : null);
+  };
+
+  const subirDesdeUri = async (uri: string) => {
+    setSubiendoAvatar(true);
+    subiendoAvatarRef.current = true;
+    omitirProximoFocusRef.current = true;
+    const prevUri = avatarDisplay.uri;
+    const prevPath = avatarDisplay.path;
+    try {
+      const comprimida = await comprimirImagen(uri);
+      const durable = await makeDurableImageUri(comprimida);
+      // Preview inmediata; si el POST falla, se revierte abajo.
+      setAvatarDisplay(durable);
+      setAvatarPreviewUri(durable);
+
+      // Web: data-URI→Blob. Nativo: file URI del manipulator.
+      const paraSubir = Platform.OS === 'web' ? durable : comprimida;
+      let res = await perfilApi.subirAvatar(paraSubir);
+      if (!res.success && Platform.OS === 'web' && paraSubir !== comprimida) {
+        res = await perfilApi.subirAvatar(comprimida);
+      }
+
+      // En test/prod viejo el PHP solo manda avatarUrl (sin avatarPath).
+      // Antes exigíamos avatarPath y revertíamos un upload que SÍ había guardado.
+      const path = pathDesdeRespuestaAvatar(res.data);
+      if (res.success && path) {
+        aplicarAvatar(path, durable, res.data?.avatarBust ?? Date.now());
+        hapticExito();
+        setAvatarAbierto(false);
+        setMensajeAvatar({
+          titulo: t('perfil.myProfile'),
+          cuerpo: t('perfil.photoUpdated'),
+        });
+      } else if (res.success) {
+        // Guardó pero no pudimos resolver path: igual mantenemos la preview.
+        setAvatarDisplay(durable);
+        setAvatarPreviewUri(durable);
+        if (user) {
+          void saveAvatarCache({
+            userId: user.userId,
+            path: user.avatarPath || `avatares/${user.userId}.jpg`,
+            bust: Date.now(),
+            dataUri: durable,
+          });
+        }
+        hapticExito();
+        setAvatarAbierto(false);
+        setMensajeAvatar({
+          titulo: t('perfil.myProfile'),
+          cuerpo: t('perfil.photoUpdated'),
+        });
+      } else {
+        if (prevUri) {
+          setAvatarDisplay(prevUri, prevPath);
+          setAvatarPreviewUri(prevUri);
+        } else {
+          clearAvatarDisplay();
+          setAvatarPreviewUri(null);
+        }
+        const host = apiBaseUrl().replace(/^https?:\/\//, '').slice(0, 48);
+        setMensajeAvatar({
+          titulo: t('perfil.myProfile'),
+          cuerpo: `${res.message || t('perfil.photoUpdateError')} (${host})`,
+        });
+      }
+    } catch (e) {
+      if (prevUri) {
+        setAvatarDisplay(prevUri, prevPath);
+        setAvatarPreviewUri(prevUri);
+      } else {
+        clearAvatarDisplay();
+        setAvatarPreviewUri(null);
+      }
+      setMensajeAvatar({
+        titulo: t('perfil.myProfile'),
+        cuerpo: e instanceof Error ? e.message : t('perfil.photoUpdateError'),
+      });
+    } finally {
+      setSubiendoAvatar(false);
+      subiendoAvatarRef.current = false;
+      omitirProximoFocusRef.current = false;
+    }
+  };
+
+  const elegirDeGaleria = async () => {
+    hapticLeve();
+    omitirProximoFocusRef.current = true;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: Platform.OS !== 'web',
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      await subirDesdeUri(result.assets[0].uri);
+    } else {
+      omitirProximoFocusRef.current = false;
+    }
+  };
+
+  const tomarFoto = async () => {
+    hapticLeve();
+    omitirProximoFocusRef.current = true;
+    const permiso = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permiso.granted) {
+      omitirProximoFocusRef.current = false;
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      await subirDesdeUri(result.assets[0].uri);
+    } else {
+      omitirProximoFocusRef.current = false;
+    }
+  };
+
+  const pedirFuenteFoto = () => {
+    const abrirPicker = () => {
+      if (Platform.OS === 'web') {
+        void elegirDeGaleria();
+        return;
+      }
+      Alert.alert(t('perfil.changePhoto'), undefined, [
+        { text: t('perfil.takePhoto'), onPress: () => void tomarFoto() },
+        { text: t('perfil.chooseFromGallery'), onPress: () => void elegirDeGaleria() },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]);
+    };
+
+    // Si el visor sigue abierto, el file picker (sobre todo en web) no aplica el cambio.
+    if (avatarAbierto) {
+      omitirProximoFocusRef.current = true;
+      setAvatarAbierto(false);
+      setTimeout(abrirPicker, Platform.OS === 'web' ? 180 : 60);
+      return;
+    }
+    abrirPicker();
+  };
+
+  const onPressAvatar = () => {
+    if (!perfil) return;
+    hapticLeve();
+    if (perfil.esUnoMismo) {
+      if (!perfil.avatarPath && !avatarDisplay.uri) {
+        pedirFuenteFoto();
+      } else {
+        setAvatarAbierto(true);
+      }
+      return;
+    }
+    if (perfil.avatarPath) {
+      setAvatarAbierto(true);
+    }
   };
 
   if (loading || !perfil) {
@@ -122,8 +372,17 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
   }
 
   const items = pestania === 'publicaciones' ? posts : mascotas;
+  const esPropio = Boolean(perfil.esUnoMismo || (user && user.userId === perfil.userId));
+  const bust = esPropio ? (perfil.avatarBust ?? avatarBust) : (perfil.avatarBust ?? 0);
+  const avatarUri =
+    esPropio && avatarDisplay.uri
+      ? avatarDisplay.uri
+      : perfil.avatarPath
+        ? rhAvatarUrl(perfil.avatarPath, bust)
+        : null;
 
   return (
+    <>
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.container, centeredContent]}
@@ -133,24 +392,47 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
       }
     >
       <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.header}>
-        {perfil.avatarPath ? (
-          <Image
-            source={{ uri: rhMediaUrl(perfil.avatarPath) }}
-            style={[styles.avatar, { borderColor: colors.surface }]}
-            contentFit="cover"
-            transition={280}
-          />
-        ) : (
-          <View
-            style={[
-              styles.avatar,
-              styles.avatarPlaceholder,
-              { backgroundColor: colors.accentSoft, borderColor: colors.surface },
-            ]}
-          >
-            <Ionicons name="person" size={40} color={colors.accent} />
-          </View>
-        )}
+        <Pressable
+          onPress={onPressAvatar}
+          disabled={subiendoAvatar}
+          accessibilityRole="button"
+          accessibilityLabel={
+            perfil.esUnoMismo
+              ? perfil.avatarPath
+                ? t('perfil.changePhoto')
+                : t('perfil.addPhoto')
+              : t('perfil.myProfile')
+          }
+          style={styles.avatarPress}
+        >
+          {avatarUri ? (
+            <Image
+              key={`av-${avatarDisplay.version}-${bust}-${perfil.avatarPath ?? ''}`}
+              source={{ uri: avatarUri }}
+              style={[styles.avatar, { borderColor: colors.surface }]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.avatar,
+                styles.avatarPlaceholder,
+                { backgroundColor: colors.accentSoft, borderColor: colors.surface },
+              ]}
+            >
+              <Ionicons name="person" size={40} color={colors.accent} />
+            </View>
+          )}
+          {perfil.esUnoMismo ? (
+            <View style={[styles.avatarBadge, { backgroundColor: colors.primary }]}>
+              {subiendoAvatar ? (
+                <ActivityIndicator color={colors.primaryText} size="small" />
+              ) : (
+                <Ionicons name={perfil.avatarPath ? 'camera' : 'add'} size={14} color={colors.primaryText} />
+              )}
+            </View>
+          ) : null}
+        </Pressable>
 
         <Text style={[type.titleSm, { color: colors.text, marginTop: 12 }]}>{perfil.nombreCompleto}</Text>
         <Text style={[type.bodySm, { color: colors.textMuted }]}>@{perfil.username}</Text>
@@ -241,6 +523,7 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
         <EmptyState
           icon={pestania === 'publicaciones' ? 'images-outline' : 'paw-outline'}
           titulo={pestania === 'publicaciones' ? t('feed.emptyFeed') : t('mascotas.emptyState')}
+          fillScreen={false}
         />
       ) : (
         <Animated.View entering={FadeIn.duration(240)} style={styles.grid}>
@@ -252,7 +535,7 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
                   onPress={() => router.push(`/(app)/publicaciones/${p.postId}`)}
                 >
                   {p.fotos[0] ? (
-                    <Image
+                    <ExpoImage
                       source={{ uri: rhMediaUrl(p.fotos[0].path) }}
                       style={styles.celdaFoto}
                       contentFit="cover"
@@ -284,7 +567,7 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
                   onPress={() => router.push(`/(app)/mascota/${m.mascotaId}`)}
                 >
                   {m.fotos && m.fotos[0] ? (
-                    <Image
+                    <ExpoImage
                       source={{ uri: rhMediaUrl(m.fotos[0].path) }}
                       style={styles.celdaFoto}
                       contentFit="cover"
@@ -305,6 +588,47 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
         </Animated.View>
       )}
     </ScrollView>
+
+    <Modal
+      visible={avatarAbierto}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setAvatarAbierto(false)}
+    >
+      <View style={styles.avatarModal}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setAvatarAbierto(false)} />
+        <View style={styles.avatarModalContent}>
+          {avatarUri ? (
+            <Image
+              key={`big-${avatarDisplay.version}-${bust}-${perfil.avatarPath ?? ''}`}
+              source={{ uri: avatarUri }}
+              style={styles.avatarGrande}
+              resizeMode="cover"
+            />
+          ) : null}
+          {perfil.esUnoMismo ? (
+            <AppButton
+              label={t('perfil.changePhoto')}
+              onPress={pedirFuenteFoto}
+              loading={subiendoAvatar}
+              style={{ marginTop: 16, alignSelf: 'stretch' }}
+            />
+          ) : null}
+          <Pressable onPress={() => setAvatarAbierto(false)} style={styles.avatarCerrar}>
+            <Text style={[type.label, { color: '#fff' }]}>{t('common.close')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+
+    <AppMessageModal
+      visible={mensajeAvatar != null}
+      title={mensajeAvatar?.titulo ?? ''}
+      message={mensajeAvatar?.cuerpo ?? ''}
+      confirmLabel={t('common.close')}
+      onClose={() => setMensajeAvatar(null)}
+    />
+    </>
   );
 }
 
@@ -313,8 +637,30 @@ const styles = StyleSheet.create({
   skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SEPARACION, marginTop: 28 },
   container: { flexGrow: 1, paddingBottom: 32 },
   header: { alignItems: 'center', paddingTop: 32, paddingHorizontal: 24 },
+  avatarPress: { position: 'relative' },
   avatar: { width: 92, height: 92, borderRadius: radii.pill, borderWidth: 3 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  avatarBadge: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...elevation.sm,
+  },
+  avatarModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  avatarModalContent: { width: '100%', maxWidth: 360, alignItems: 'center' },
+  avatarGrande: { width: 280, height: 280, borderRadius: 140 },
+  avatarCerrar: { marginTop: 18, padding: 10 },
   zona: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   statsRow: {
     flexDirection: 'row',

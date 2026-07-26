@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { adopcionApi } from '../../../../src/api/adopcionApi';
 import { LogoSiluetaNegra } from '../../../../src/components/LogoImage';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 import { AdopcionPostulacionRecibida } from '../../../../src/types';
 import { centeredContent } from '../../../../src/theme/layout';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
-import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 
 export default function PostulacionesRecibidasScreen() {
   const { t } = useTranslation();
@@ -41,11 +42,11 @@ export default function PostulacionesRecibidasScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, postulaciones.length === 0 && styles.listEmpty]}
       data={postulaciones}
       keyExtractor={(p) => String(p.adopcionPostulacionId)}
       ListEmptyComponent={
-        <Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('adopcion.emptyPostulaciones')}</Text>
+        <EmptyState icon="people-outline" titulo={t('adopcion.emptyPostulaciones')} />
       }
       renderItem={({ item }) => (
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -78,6 +79,7 @@ export default function PostulacionesRecibidasScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
   autorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   avatar: { width: 36, height: 36, borderRadius: 18 },

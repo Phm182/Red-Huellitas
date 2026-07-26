@@ -6,11 +6,12 @@ import { matchApi } from '../../../src/api/matchApi';
 import { mascotasApi } from '../../../src/api/mascotasApi';
 import { perfilApi } from '../../../src/api/perfilApi';
 import { RazaPicker } from '../../../src/components/RazaPicker';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { Especie, Mascota, MatchCandidato, Sexo, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
 const SEXOS: Sexo[] = ['macho', 'hembra'];
@@ -327,10 +328,12 @@ export default function MatchScreen() {
           </View>
         ) : (
           <View style={styles.centered}>
-            <Text style={{ color: colors.textMuted, textAlign: 'center' }}>{t('match.emptyDeck')}</Text>
-            <Pressable style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]} onPress={cargarDeck}>
-              <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('match.buscarDeNuevo')}</Text>
-            </Pressable>
+            <EmptyState
+              icon="heart-outline"
+              titulo={t('match.emptyDeck')}
+              accionLabel={t('match.buscarDeNuevo')}
+              onAccion={cargarDeck}
+            />
           </View>
         )}
       </View>

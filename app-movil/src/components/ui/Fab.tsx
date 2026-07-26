@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { elevation, radii } from '../../theme/elevation';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -20,10 +20,13 @@ export function Fab({
   onPress,
   icon = 'add',
   accessibilityLabel,
+  style,
 }: {
   onPress: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
   accessibilityLabel?: string;
+  /** Override de posición (ej. bottom más alto por el tab bar global). */
+  style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
@@ -43,7 +46,7 @@ export function Fab({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 12, stiffness: 220 });
       }}
-      style={[styles.fab, elevation.lg, { backgroundColor: colors.primary }, animStyle]}
+      style={[styles.fab, elevation.lg, { backgroundColor: colors.primary }, animStyle, style]}
     >
       <Ionicons name={icon} size={26} color={colors.primaryText} />
     </AnimatedPressable>

@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { juegoApi } from '../../../src/api/juegoApi';
 import { MascotaAvatar } from '../../../src/components/MascotaAvatar';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { MascotaJuegoResumen } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function JuegoSelectorScreen() {
   const { t } = useTranslation();
@@ -49,13 +50,11 @@ export default function JuegoSelectorScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.lista, centeredContent]}
+      contentContainerStyle={[styles.lista, centeredContent, mascotas.length === 0 && styles.listaEmpty]}
       data={mascotas}
       keyExtractor={(m) => String(m.mascotaId)}
       ListEmptyComponent={
-        <Text style={{ color: colors.textMuted, marginTop: 24, textAlign: 'center' }}>
-          {mensaje ?? t('juego.sinMascotas')}
-        </Text>
+        <EmptyState icon="game-controller-outline" titulo={mensaje ?? t('juego.sinMascotas')} />
       }
       renderItem={({ item }) => (
         <Pressable
@@ -86,6 +85,7 @@ export default function JuegoSelectorScreen() {
 const styles = StyleSheet.create({
   centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   lista: { padding: 16 },
+  listaEmpty: { flexGrow: 1 },
   tarjeta: {
     flexDirection: 'row',
     alignItems: 'center',

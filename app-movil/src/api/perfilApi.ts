@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiBaseUrl, apiGet, apiPost } from './client';
 import { Visibilidad, VerificacionEstado } from '../types';
 import { appendImageFile } from '../utils/upload';
 
@@ -11,6 +11,9 @@ export const perfilApi = {
     ),
 
   estadoVerificacion: () => apiGet<VerificacionEstado>('ajax/perfil/verificacion_estado.php', undefined, true),
+
+  verificacionArchivoUrl: (tipo: 'dniFrente' | 'dniDorso' | 'selfie') =>
+    `${apiBaseUrl()}/ajax/perfil/verificacion_archivo.php?tipo=${tipo}`,
 
   subirVerificacion: async (files: { dniFrente?: string; dniDorso?: string; selfie?: string }) => {
     const form = new FormData();
@@ -29,7 +32,11 @@ export const perfilApi = {
   subirAvatar: async (uri: string) => {
     const form = new FormData();
     await appendImageFile(form, 'avatar', uri, 'avatar.jpg');
-    return apiPost<{ avatarUrl: string }>('ajax/perfil/avatar_subir.php', form, true);
+    return apiPost<{ avatarPath?: string; avatarUrl?: string; avatarBust?: number | null }>(
+      'ajax/perfil/avatar_subir.php',
+      form,
+      true
+    );
   },
 
   guardarPushToken: (expoPushToken: string) =>

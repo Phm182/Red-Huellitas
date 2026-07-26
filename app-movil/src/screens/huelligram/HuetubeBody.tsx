@@ -1,19 +1,26 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Dimensions, FlatList, Pressable, StyleSheet, Text, View, ViewToken } from 'react-native';
-import { shortsApi } from '../../../src/api/shortsApi';
-import { ShortCard } from '../../../src/components/ShortCard';
-import { Post } from '../../../src/types';
-import { useTheme } from '../../../src/theme/ThemeProvider';
-import { Fab } from '../../../src/components/ui/Fab';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import { shortsApi } from '../../api/shortsApi';
+import { ShortCard } from '../../components/ShortCard';
+import { EmptyState, useContentAreaHeight } from '../../components/ui/EmptyState';
+import { Fab } from '../../components/ui/Fab';
+import { SkeletonList } from '../../components/ui/Skeleton';
+import { Post } from '../../types';
+import { useTheme } from '../../theme/ThemeProvider';
 
-const { height: ALTURA_PANTALLA } = Dimensions.get('window');
+type Props = {
+  /** Lo que ocupa el bloque de Huellitas + solapas por encima de este feed. */
+  alturaExtra?: number;
+};
 
-export default function ShortsScreen() {
+export function HuetubeBody({ alturaExtra = 0 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  // Sin descontar el encabezado de Huelligram cada video mediría de más y el
+  // snap dejaría al siguiente cortado a mitad de pantalla.
+  const itemHeight = useContentAreaHeight(alturaExtra);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,33 +74,37 @@ export default function ShortsScreen() {
   }
 
   return (
-    <View style={styles.list}>
+    <View style={[styles.list, { backgroundColor: posts.length === 0 ? colors.background : '#000' }]}>
       <FlatList
         data={posts}
         keyExtractor={(p) => String(p.postId)}
         renderItem={({ item, index }) => (
-          <ShortCard post={item} onEliminado={onEliminado} activo={index === activeIndex} />
+          <ShortCard
+            post={item}
+            onEliminado={onEliminado}
+            activo={index === activeIndex}
+            height={itemHeight}
+          />
         )}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={ALTURA_PANTALLA}
+        snapToInterval={itemHeight}
         decelerationRate="fast"
         onEndReached={cargarMas}
         onEndReachedThreshold={0.5}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        ListEmptyComponent={
-          <View style={[styles.centered, { height: ALTURA_PANTALLA }]}>
-            <Text style={{ color: '#fff' }}>{t('shorts.empty')}</Text>
-          </View>
-        }
+        contentContainerStyle={posts.length === 0 ? { flexGrow: 1 } : undefined}
+        ListEmptyComponent={<EmptyState icon="play-circle-outline" titulo={t('shorts.empty')} />}
       />
-      <Fab onPress={() => router.push('/(app)/publicaciones/nueva_video')} />
+      <Fab
+        onPress={() => router.push('/(app)/publicaciones/nueva_video')}
+        accessibilityLabel={t('shorts.createTitle')}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { flex: 1, backgroundColor: '#000' },
+  list: { flex: 1 },
 });

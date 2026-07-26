@@ -4,12 +4,14 @@
         "cancel": "Annulla",
         "save": "Salva",
         "loading": "Caricamento...",
-        "error": "Si Ã¨ verificato un errore",
+        "error": "Si è verificato un errore",
         "retry": "Riprova",
         "send": "Invia",
         "changesSaved": "Modifiche salvate",
-        "yes": "SÃ¬",
-        "no": "No"
+        "yes": "Sì",
+        "no": "No",
+        "close": "Chiudi",
+        "seeAll": "Vedi tutto"
     },
     "auth": {
         "loginTitle": "Accedi",
@@ -21,10 +23,10 @@
         "registerButton": "Registrati",
         "continueWithGoogle": "Continua con Google",
         "noAccount": "Non hai un account? Registrati",
-        "hasAccount": "Hai giÃ  un account? Accedi",
+        "hasAccount": "Hai già un account? Accedi",
         "invalidCredentials": "Email o password non validi",
         "acceptClause": "Accetto la clausola anti-allevamenti illegali e i termini di utilizzo",
-        "antiCriaderosClause": "Red Huellitas vieta rigorosamente l'uso della piattaforma per l'allevamento e la vendita sistematica di animali (\"allevamenti illegali\"). Questa condotta puÃ² costituire maltrattamento di animali ed Ã¨ soggetta a sanzioni legali secondo la normativa vigente. Registrandoti, dichiari di non svolgere questa attivitÃ  e accetti che il tuo account possa essere segnalato, sospeso o denunciato alle autoritÃ  competenti se questa pratica viene rilevata.",
+        "antiCriaderosClause": "Red Huellitas vieta rigorosamente l'uso della piattaforma per l'allevamento e la vendita sistematica di animali (\"allevamenti illegali\"). Questa condotta può costituire maltrattamento di animali ed è soggetta a sanzioni legali secondo la normativa vigente. Registrandoti, dichiari di non svolgere questa attività e accetti che il tuo account possa essere segnalato, sospeso o denunciato alle autorità competenti se questa pratica viene rilevata.",
         "forgotPassword": "Forgot your password?",
         "forgotTitle": "Reset password",
         "forgotSubtitleEmail": "We'll email a 6-digit code if the account exists.",
@@ -45,14 +47,14 @@
         "usernameZoneTitle": "Scegli il tuo nome utente e la tua zona",
         "username": "Nome utente",
         "usernameAvailable": "Disponibile",
-        "usernameTaken": "GiÃ  in uso",
+        "usernameTaken": "Già in uso",
         "usernameInvalid": "3-30 caratteri: minuscole, numeri, punto o trattino basso",
         "zoneLabel": "Zona / quartiere",
         "getLocation": "Usa la mia posizione attuale",
         "locationObtained": "Posizione ottenuta",
         "locationPermissionDenied": "Abbiamo bisogno della tua posizione per continuare",
         "verificationTitle": "Verifica dell'account",
-        "verificationSubtitle": "Per la tua sicurezza e quella degli altri utenti, verifica la tua identitÃ  prima di contattare o pubblicare.",
+        "verificationSubtitle": "Per la tua sicurezza e quella degli altri utenti, verifica la tua identità prima di contattare o pubblicare.",
         "dniFront": "Documento (fronte)",
         "dniBack": "Documento (retro)",
         "selfie": "Selfie",
@@ -68,13 +70,13 @@
         "verificationCheckBackFail": "The back ID photo did not pass automatic verification.",
         "verificationCheckSelfieFail": "The selfie did not pass automatic verification.",
         "verificationResubmit": "Resubmit documents",
-        "skipForNow": "Completa piÃ¹ tardi"
+        "skipForNow": "Completa più tardi"
     },
     "settings": {
         "whatsappTitle": "Numero WhatsApp",
         "whatsappNumber": "Numero WhatsApp",
-        "whatsappHelp": "SarÃ  usato per permettere ad altri utenti di contattarti direttamente.",
-        "whatsappVisibility": "VisibilitÃ ",
+        "whatsappHelp": "Sarà usato per permettere ad altri utenti di contattarti direttamente.",
+        "whatsappVisibility": "Visibilità",
         "visibilityPublic": "Pubblica",
         "visibilityPrivate": "Privata",
         "verificationStatusTitle": "Stato di verifica",
@@ -88,7 +90,7 @@
         "addPet": "Aggiungi animale",
         "emptyState": "Non hai ancora aggiunto nessun animale",
         "verificationRequiredTitle": "Devi verificare il tuo account",
-        "verificationRequiredBody": "Per aggiungere animali devi prima completare la verifica dell'identitÃ  (documento + selfie).",
+        "verificationRequiredBody": "Per aggiungere animali devi prima completare la verifica dell'identità (documento + selfie).",
         "goToVerification": "Vai alla verifica",
         "nombre": "Nome",
         "sexo": "Sesso",
@@ -109,7 +111,7 @@
         "addFoto": "Aggiungi",
         "carnetVacunas": "Libretto vaccinazioni",
         "carnetUpload": "Carica libretto vaccinazioni",
-        "carnetVisibilityPublic": "Pubblico (chiunque puÃ² vederlo)",
+        "carnetVisibilityPublic": "Pubblico (chiunque può vederlo)",
         "carnetVisibilityPrivate": "Privato (solo tu e chi condividi)",
         "carnetShare": "Condividi il libretto con un utente",
         "carnetShareUsernamePlaceholder": "@utente",
@@ -121,7 +123,7 @@
         "saveButton": "Salva animale",
         "deleteButton": "Elimina animale",
         "deleteConfirmTitle": "Eliminare l'animale?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app.",
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app.",
         "notFound": "Animale non trovato",
         "owner": "Proprietario/a",
         "editButton": "Modifica"
@@ -152,19 +154,19 @@
         "typeImprovement": "Miglioramento",
         "typeBug": "Bug",
         "detailPlaceholder": "Raccontaci i dettagli...",
-        "submitted": "Grazie! La tua segnalazione Ã¨ stata inviata.",
+        "submitted": "Grazie! La tua segnalazione è stata inviata.",
         "denounceUser": "Segnala utente",
         "denounceReasonPlaceholder": "Motivo (es: allevamento illegale, maltrattamento)",
         "denounceSubmitted": "Segnalazione registrata"
     },
     "home": {
         "welcome": "Benvenuto su Red Huellitas",
-        "masTabTitle": "Altro",
+        "masTabTitle": "Impostazioni",
         "switchAccountTitle": "Switch account",
         "addAccount": "Add account"
     },
     "feed": {
-        "tabTitle": "Home",
+        "tabTitle": "Huelligram",
         "createTitle": "Nuovo post",
         "captionPlaceholder": "Cosa sta facendo il tuo animale?",
         "fotos": "Foto",
@@ -174,16 +176,16 @@
         "meDivierte": "Mi diverte",
         "share": "Condividi",
         "seguir": "Segui",
-        "siguiendo": "Segui giÃ ",
+        "siguiendo": "Segui già",
         "emptyFeed": "Ancora nessun post. Segui qualcuno o crea il primo!",
         "loadingMore": "Caricamento altri...",
         "deleteConfirmTitle": "Eliminare il post?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app.",
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app.",
         "deleteButton": "Elimina",
         "postDeleted": "Post eliminato",
         "postNotFound": "Post non trovato",
         "verificationRequiredTitle": "Devi verificare il tuo account",
-        "verificationRequiredBody": "Per pubblicare devi prima completare la verifica dell'identitÃ  (documento + selfie).",
+        "verificationRequiredBody": "Per pubblicare devi prima completare la verifica dell'identità (documento + selfie).",
         "goToVerification": "Vai alla verifica",
         "origenRecomendado": "Consigliato per te"
     },
@@ -197,21 +199,21 @@
         "subtabGeneral": "Generale",
         "emptyGeneral": "Nessuna notizia al momento",
         "emptyTipo": "Ancora nessun post di questo tipo",
-        "readMore": "Leggi di piÃ¹"
+        "readMore": "Leggi di più"
     },
     "shorts": {
-        "tabTitle": "Shorts",
-        "createTitle": "Nuovo short",
-        "empty": "Ancora nessuno short",
+        "tabTitle": "Huetube",
+        "createTitle": "Nuovo Huetube",
+        "empty": "Ancora nessun Huetube",
         "pickVideo": "Scegli video",
         "retakeVideo": "Cambia video"
     },
     "historias": {
-        "addLabel": "La tua storia",
+        "addLabel": "La tua Huellita",
         "you": "Tu",
         "vistasTitulo": "Visualizzazioni",
         "vistasVacio": "Non l'ha ancora vista nessuno",
-        "vistasVacioDesc": "Quando qualcuno guarderà la tua storia, apparirà qui.",
+        "vistasVacioDesc": "Quando qualcuno guarderà la tua Huellita, apparirà qui.",
         "responder": "Invia messaggio…",
         "responderPregunta": "Rispondi alla domanda…",
         "recortar": "Ritaglia",
@@ -224,7 +226,7 @@
         "quitarPreguntas": "Rimuovi domande",
         "agregarEncuesta": "Aggiungi sondaggio",
         "agregarPreguntas": "Aggiungi casella domande",
-        "yaHayInteractivo": "Questa storia ha già un sondaggio o una casella domande. Rimuovila per aggiungerne un'altra.",
+        "yaHayInteractivo": "Questa Huellita ha già un sondaggio o una casella domande. Rimuovila per aggiungerne un'altra.",
         "preguntame": "CHIEDIMI",
         "escribiRespuesta": "Scrivi la tua risposta…",
         "timerOff": "Senza timer",
@@ -250,7 +252,7 @@
         "preguntasAyuda": "Crea le domande che vuoi fare a chi vuole adottare (facoltativo).",
         "tipoPregunta": {
             "texto": "Testo libero",
-            "si_no": "SÃ¬ / No",
+            "si_no": "Sì / No",
             "opcion_multiple": "Scelta multipla"
         },
         "preguntaTextoPlaceholder": "Scrivi la domanda",
@@ -286,7 +288,7 @@
         "tituloLabel": "Titolo",
         "descripcionLabel": "Descrizione",
         "fechaDesdeLabel": "Data",
-        "esRangoLabel": "Dura piÃ¹ giorni",
+        "esRangoLabel": "Dura più giorni",
         "fechaHastaLabel": "Fino al",
         "zonaLabel": "Zona / indirizzo",
         "zonaPlaceholder": "Es: Piazza San Marco",
@@ -295,12 +297,12 @@
         "cupoMaximoPlaceholder": "Nessun limite se lasciato vuoto",
         "publicarButton": "Pubblica campagna",
         "verInscriptos": "Vedi iscritti",
-        "yaInscripto": "Sei giÃ  iscritto",
+        "yaInscripto": "Sei già iscritto",
         "inscribirmeButton": "Iscrivimi",
         "cupoLleno": "Posti esauriti",
         "eliminarButton": "Elimina campagna",
         "deleteConfirmTitle": "Eliminare la campagna?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app.",
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app.",
         "emptyInscriptos": "Ancora nessun iscritto",
         "emptyMisInscripciones": "Non ti sei ancora iscritto a nessuna campagna"
     },
@@ -314,7 +316,7 @@
             "encontrado": "Trovato"
         },
         "tipoLabel": "Tipo di segnalazione",
-        "vincularMascotaLabel": "Ãˆ uno dei tuoi animali?",
+        "vincularMascotaLabel": "È uno dei tuoi animali?",
         "elegirMascotaLabel": "Scegli quale",
         "ultimoLugarLabel": "Ultimo luogo visto",
         "ultimoLugarPlaceholder": "Es: Piazza San Martino",
@@ -322,10 +324,10 @@
         "publicarButton": "Pubblica segnalazione",
         "marcarReencontradoButton": "Segna come ritrovato",
         "reencontradoConfirmTitle": "Segnare come ritrovato?",
-        "reencontradoConfirmBody": "La bella notizia verrÃ  pubblicata automaticamente nel feed Home.",
+        "reencontradoConfirmBody": "La bella notizia verrà pubblicata automaticamente nel feed Home.",
         "eliminarButton": "Elimina segnalazione",
         "deleteConfirmTitle": "Eliminare la segnalazione?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app.",
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app.",
         "estadoPerdido": {
             "activo": "Attivo",
             "reencontrado": "Ritrovato"
@@ -341,7 +343,7 @@
             "ofrezco": "Offro transito"
         },
         "tipoLabel": "Tipo di pubblicazione",
-        "vincularMascotaLabel": "Ãˆ uno dei tuoi animali?",
+        "vincularMascotaLabel": "È uno dei tuoi animali?",
         "elegirMascotaLabel": "Scegli quale",
         "especieAceptaLabel": "Specie accettata (facoltativo)",
         "descripcionLabel": "Descrizione",
@@ -352,7 +354,7 @@
         "publicarButton": "Pubblica transito",
         "eliminarButton": "Elimina pubblicazione",
         "deleteConfirmTitle": "Eliminare la pubblicazione?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app."
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app."
     },
     "donaciones": {
         "tituloLista": "Donazioni",
@@ -371,13 +373,13 @@
         "categoriaLabel": "Categoria",
         "especieLabel": "Specie (facoltativo)",
         "descripcionLabel": "Descrizione",
-        "descripcionPlaceholder": "Cosa Ã¨, quantitÃ  approssimativa, stato...",
+        "descripcionPlaceholder": "Cosa è, quantità approssimativa, stato...",
         "zonaLabel": "Zona",
         "zonaPlaceholder": "Es: Piazza San Martino",
         "publicarButton": "Pubblica donazione",
         "eliminarButton": "Elimina pubblicazione",
         "deleteConfirmTitle": "Eliminare la pubblicazione?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app."
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app."
     },
     "veterinarias": {
         "tituloLista": "Veterinari vicini",
@@ -387,7 +389,7 @@
         "nombreLabel": "Nome",
         "nombrePlaceholder": "Es: Veterinaria San Roque",
         "descripcionLabel": "Descrizione (facoltativo)",
-        "descripcionPlaceholder": "Servizi, specialitÃ ...",
+        "descripcionPlaceholder": "Servizi, specialità...",
         "telefonoLabel": "Telefono (facoltativo)",
         "telefonoPlaceholder": "Es: 011-4444-5555",
         "whatsappLabel": "WhatsApp (facoltativo)",
@@ -401,7 +403,7 @@
         "llamarButton": "Chiama",
         "eliminarButton": "Elimina veterinario",
         "deleteConfirmTitle": "Eliminare il veterinario?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app."
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app."
     },
     "match": {
         "tituloLista": "Match tra Animali",
@@ -413,7 +415,7 @@
             "hembra": "Femmina"
         },
         "edadBucket": {
-            "cualquiera": "Qualsiasi etÃ ",
+            "cualquiera": "Qualsiasi età",
             "cachorro": "Cucciolo",
             "joven": "Giovane",
             "adulto": "Adulto",
@@ -422,11 +424,11 @@
         "sinLimite": "Senza limite",
         "emptyDeck": "Al momento non ci sono altri animali da mostrare. Prova ad ampliare il raggio o cambiare i filtri.",
         "buscarDeNuevo": "Cerca di nuovo",
-        "sinMascotasTitulo": "Attiva la modalitÃ  Match",
+        "sinMascotasTitulo": "Attiva la modalità Match",
         "sinMascotasBody": "Ti serve almeno un animale contrassegnato come 'Disponibile per Match' per iniziare.",
         "irAMisMascotas": "Vai a I miei animali",
-        "esUnMatch": "Ãˆ un Match! ðŸŽ‰",
-        "esUnMatchBody": "Anche a {{nombre}} Ã¨ piaciuto il tuo animale.",
+        "esUnMatch": "È un Match! 🎉",
+        "esUnMatchBody": "Anche a {{nombre}} è piaciuto il tuo animale.",
         "irAlChat": "Vai alla chat",
         "cerrarModal": "Chiudi",
         "emptyMatches": "Ancora nessun match. Continua a scorrere!",
@@ -436,7 +438,7 @@
         "esperandoConfirmacionOtro": "In attesa della conferma dell'altra persona",
         "deshacerButton": "Annulla match",
         "deshacerConfirmTitle": "Annullare questo match?",
-        "deshacerConfirmBody": "La conversazione verrÃ  chiusa per entrambi. Questa azione non puÃ² essere annullata dall'app."
+        "deshacerConfirmBody": "La conversazione verrà chiusa per entrambi. Questa azione non può essere annullata dall'app."
     },
     "suscripcion": {
         "tituloLista": "Vetrina Commerciale",
@@ -444,10 +446,10 @@
         "sinSuscripcion": "Non hai ancora un abbonamento attivo.",
         "pagarCon": "Paga con",
         "pagarMercadoPago": "Paga con Mercado Pago",
-        "yaPagueActualizar": "Ho giÃ  pagato, aggiorna lo stato",
+        "yaPagueActualizar": "Ho già pagato, aggiorna lo stato",
         "pagarTransferencia": "Paga con bonifico",
-        "solicitudEnviada": "La tua richiesta Ã¨ stata inviata. Ti confermiamo su WhatsApp appena il pagamento viene accreditato.",
-        "sinWhatsappSoporte": "Non c'Ã¨ ancora un WhatsApp di supporto configurato."
+        "solicitudEnviada": "La tua richiesta è stata inviata. Ti confermiamo su WhatsApp appena il pagamento viene accreditato.",
+        "sinWhatsappSoporte": "Non c'è ancora un WhatsApp di supporto configurato."
     },
     "productos": {
         "tituloLista": "Prodotti e Servizi",
@@ -466,14 +468,14 @@
         "descripcionLabel": "Descrizione (facoltativo)",
         "descripcionPlaceholder": "Dettagli, stato, condizioni...",
         "precioLabel": "Prezzo",
-        "cantidadLabel": "QuantitÃ ",
+        "cantidadLabel": "Quantità",
         "especieLabel": "Specie (facoltativo)",
         "zonaLabel": "Zona",
         "zonaPlaceholder": "Es: Piazza San Martino",
         "publicarButton": "Pubblica",
         "eliminarButton": "Elimina pubblicazione",
         "deleteConfirmTitle": "Eliminare la pubblicazione?",
-        "deleteConfirmBody": "Questa azione non puÃ² essere annullata dall'app.",
+        "deleteConfirmBody": "Questa azione non può essere annullata dall'app.",
         "emptyLista": "Ancora nessuna pubblicazione",
         "emptyFavoritos": "Ancora nessun preferito",
         "agregarAlCarrito": "Aggiungi al carrello",
@@ -483,8 +485,8 @@
     },
     "carrito": {
         "tituloLista": "Carrello",
-        "empty": "Il tuo carrello Ã¨ vuoto",
-        "cantidadLabel": "QuantitÃ ",
+        "empty": "Il tuo carrello è vuoto",
+        "cantidadLabel": "Quantità",
         "quitarButton": "Rimuovi",
         "vaciarButton": "Svuota carrello",
         "vaciarConfirmTitle": "Svuotare il carrello?",
@@ -496,7 +498,7 @@
         "checkoutSuccessTitle": "Acquisto completato!",
         "checkoutSuccessBody": "Controlla lo stato in \"I miei acquisti\".",
         "verMisCompras": "Vedi I miei acquisti",
-        "errorStock": "Scorte insufficienti per quella quantitÃ "
+        "errorStock": "Scorte insufficienti per quella quantità"
     },
     "pedidos": {
         "misCompras": "I miei acquisti",
@@ -532,10 +534,10 @@
         "conectarButton": "Collega account Mercado Pago",
         "conectadoComo": "Connesso come {{email}}",
         "cambiarCuentaButton": "Cambia account",
-        "noConfigurado": "Il collegamento con Mercado Pago non Ã¨ ancora configurato"
+        "noConfigurado": "Il collegamento con Mercado Pago non è ancora configurato"
     },
     "juego": {
-        "titulo": "Prenditi cura del tuo animale",
+        "titulo": "HuePlay",
         "sinMascotas": "Aggiungi prima un animale per poterne prendere cura qui.",
         "sinEmpezar": "Non te ne sei ancora occupato",
         "nivel": "Livello {{nivel}}",
@@ -553,25 +555,25 @@
             "dormir": "Riposa"
         },
         "animo": {
-            "feliz": "Ãˆ felice e pieno di energia!",
-            "bien": "Ãˆ tranquillo e a suo agio.",
-            "aburrido": "Ãˆ un po' annoiato, un momento con te gli farebbe bene.",
+            "feliz": "È felice e pieno di energia!",
+            "bien": "È tranquillo e a suo agio.",
+            "aburrido": "È un po' annoiato, un momento con te gli farebbe bene.",
             "decaido": "Gli manchi. Passa un attimo a coccolarlo."
         },
         "racha_one": "{{count}} giorno di fila",
         "racha_other": "{{count}} giorni di fila",
         "avatar": {
             "crear": "Crea avatar con IA",
-            "generando": "Sto creando l'avatar del tuo animaleâ€¦\nPuÃ² richiedere qualche secondo.",
+            "generando": "Sto creando l'avatar del tuo animale…\nPuò richiedere qualche secondo.",
             "regenerar": "Generane un altro",
             "volverFoto": "Torna alla foto",
             "restantes_one": "Ti resta {{count}} avatar oggi",
             "restantes_other": "Ti restano {{count}} avatar oggi",
             "motivo": {
-                "no_configurado": "La creazione di avatar con IA non Ã¨ ancora disponibile.",
+                "no_configurado": "La creazione di avatar con IA non è ancora disponibile.",
                 "sin_foto": "Aggiungi una foto del tuo animale per creare il suo avatar.",
-                "limite_usuario": "Hai giÃ  usato tutti i tuoi avatar di oggi. Torna domani.",
-                "limite_global": "Ãˆ stato raggiunto il limite giornaliero di avatar. Torna domani."
+                "limite_usuario": "Hai già usato tutti i tuoi avatar di oggi. Torna domani.",
+                "limite_global": "È stato raggiunto il limite giornaliero di avatar. Torna domani."
             }
         }
     },
@@ -652,23 +654,65 @@
         "titulo": "Catene",
         "tituloNueva": "Nuova catena",
         "continuar": "Continua la catena",
-        "sumarOtra": "Aggiungi una storia",
+        "sumarOtra": "Aggiungi una Huellita",
         "participantes": "partecipanti",
-        "historiasActivas": "storie attive",
+        "historiasActivas": "Huellitas attive",
         "elHilo": "Il filo",
         "quienesSeSumaron": "Chi si è unito",
         "laEmpezo": "Iniziata da",
         "vacio": "Ancora nessuna catena",
-        "vacioDesc": "Una catena è un tema che qualcuno propone e gli altri continuano con la propria storia. Crea la prima.",
+        "vacioDesc": "Una catena è un tema che qualcuno propone e gli altri continuano con la propria Huellita. Crea la prima.",
         "crear": "Crea una catena",
-        "crearYSubir": "Crea e pubblica la mia storia",
+        "crearYSubir": "Crea e pubblica la mia Huellita",
         "tema": "Tema",
         "descripcion": "Descrizione (facoltativa)",
         "ideas": "Idee:",
-        "explicacion": "Proponi un tema e gli altri lo continuano con la propria storia. La catena resta viva anche quando le storie scadono dopo 24 ore.",
-        "vencieron": "Le storie sono scadute",
+        "explicacion": "Proponi un tema e gli altri lo continuano con la propria Huellita. La catena resta viva anche quando le Huellitas scadono dopo 24 ore.",
+        "vencieron": "Le Huellitas sono scadute",
         "vencieronDesc": "La catena è ancora viva: pubblica la tua e ricomincia.",
         "invitar": "Invita",
         "invitados": "Inviti inviati"
+    },
+    "nav": {
+        "huelligram": "Huelligram",
+        "buscar": "Cerca",
+        "rescate": "Salvataggio",
+        "tienda": "Negozio",
+        "salud": "Salute",
+        "hueplay": "HuePlay",
+        "configuracion": "Impostazioni",
+        "atajosHint": "Tieni premuto per le scorciatoie",
+        "rescateDesc": "Trovare, ospitare e dare una casa",
+        "tiendaDesc": "Comprare, vendere e i tuoi ordini",
+        "saludDesc": "Cure, veterinari e rifugi"
+    },
+    "huelligram": {
+        "publicaciones": "Post",
+        "noticias": "Notizie",
+        "huetube": "Huetube"
+    },
+    "refugios": {
+        "tituloLista": "Rifugi",
+        "emptyLista": "Ancora nessun rifugio",
+        "emptyDesc": "Quando un'associazione si registrerà, la vedrai qui.",
+        "cercanos": "Vicino a te",
+        "verPerfil": "Vedi profilo"
+    },
+    "cuidados": {
+        "tituloLista": "Cure",
+        "subtitulo": "Guide brevi per prenderti cura del tuo compagno",
+        "emptyLista": "Ancora nessuna guida per questa specie",
+        "especie": {
+            "perro": "Cane",
+            "gato": "Gatto",
+            "otro": "Altri"
+        },
+        "categoria": {
+            "alimentacion": "Alimentazione",
+            "higiene": "Igiene",
+            "salud": "Salute",
+            "ejercicio": "Esercizio",
+            "convivencia": "Convivenza"
+        }
     }
 }

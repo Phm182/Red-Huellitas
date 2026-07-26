@@ -64,7 +64,8 @@ export default function NuevoShortScreen() {
     const res = await shortsApi.crear(texto.trim() || undefined, videoUri, duracionSegundos, mimeType);
     setSubmitting(false);
     if (res.success) {
-      router.replace('/(app)/(tabs)/shorts');
+      // Huetube dejó de ser una pestaña propia: ahora es una solapa de Huelligram.
+      router.replace('/(app)/(tabs)?solapa=huetube' as never);
     } else {
       setError(res.message);
     }
@@ -107,7 +108,7 @@ export default function NuevoShortScreen() {
 
       <AppInput
         style={styles.textarea}
-        placeholder={t('feed.captionPlaceholder')}
+        placeholder={t('feed.captionPlaceholder')}
         value={texto}
         onChangeText={setTexto}
         multiline

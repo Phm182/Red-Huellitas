@@ -95,7 +95,7 @@ export function PedidosLista({ cargar, esVenta }: Props) {
         <SkeletonList />
       ) : (
         <FlatList
-          contentContainerStyle={[styles.list, centeredContent]}
+          contentContainerStyle={[styles.list, centeredContent, pedidos.length === 0 && { flexGrow: 1 }]}
           data={pedidos}
           keyExtractor={(p) => String(p.pedidoId)}
           onEndReached={onCargarMas}

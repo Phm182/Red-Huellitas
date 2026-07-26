@@ -1,14 +1,13 @@
 import { useFocusEffect } from 'expo-router';
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { adminApi } from '../../../src/api/adminApi';
@@ -21,6 +20,18 @@ import { AppInput } from '../../../src/components/AppInput';
 
 const ESTADOS: VerificacionRevisionEstado[] = ['pendiente', 'aprobado', 'rechazado'];
 const ARCHIVOS: VerificacionArchivoTipo[] = ['dniFrente', 'dniDorso', 'selfie'];
+
+function labelMetodo(metodo: string | null | undefined, t: (k: string) => string): string | null {
+  if (!metodo) return null;
+  if (metodo === 'gemini' || metodo === 'automatica') return t('onboarding.verificationMethodAuto');
+  if (metodo === 'gemini+renaper' || metodo === 'automatica_renaper') {
+    return t('onboarding.verificationMethodRenaper');
+  }
+  if (metodo === 'manual' || metodo === 'gemini_error' || metodo === 'pendiente') {
+    return t('onboarding.verificationMethodManual');
+  }
+  return metodo;
+}
 
 /**
  * Las imágenes de verificación no tienen URL pública: se sirven por un
@@ -36,6 +47,8 @@ function ImagenProtegida({ userId, tipo }: { userId: number; tipo: VerificacionA
 
   useEffect(() => {
     let vigente = true;
+    setUri(null);
+    setFallo(false);
     fetchAuthenticatedImageUri(adminApi.verificacionArchivoUrl(userId, tipo), token).then((resultado) => {
       if (!vigente) return;
       if (resultado) {
@@ -53,11 +66,19 @@ function ImagenProtegida({ userId, tipo }: { userId: number; tipo: VerificacionA
     <View style={styles.imagenCaja}>
       <Text style={[styles.imagenLabel, { color: colors.textMuted }]}>{t(`admin.archivo_${tipo}`)}</Text>
       {uri ? (
-        <Image source={{ uri }} style={[styles.imagen, { borderColor: colors.border }]} resizeMode="cover" />
+        <Image
+          source={{ uri }}
+          style={[styles.imagen, { borderColor: colors.border }]}
+          contentFit="cover"
+          onError={() => {
+            setUri(null);
+            setFallo(true);
+          }}
+        />
       ) : (
-        <View style={[styles.imagen, styles.imagenVacia, { borderColor: colors.border }]}>
+        <View style={[styles.imagen, styles.imagenVacia, { borderColor: colors.border, backgroundColor: colors.background }]}>
           {fallo ? (
-            <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center' }}>
+            <Text style={{ color: colors.danger, fontSize: 11, textAlign: 'center' }}>
               {t('admin.archivoNoDisponible')}
             </Text>
           ) : (
@@ -135,7 +156,11 @@ export default function AdminVerificacionesScreen() {
   const puntaje = (valor: number | null) => (valor === null ? '—' : `${Math.round(valor * 100)}%`);
 
   return (
-    <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }]}>
+    <ScrollView
+      contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }]}
+      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
+    >
       <View style={styles.chipRow}>
         {ESTADOS.map((op) => {
           const activo = estado === op;
@@ -201,7 +226,7 @@ export default function AdminVerificacionesScreen() {
               ) : null}
               {item.autoMetodo ? (
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {t('admin.metodo')}: {item.autoMetodo}
+                  {t('admin.metodo')}: {labelMetodo(item.autoMetodo, t) ?? item.autoMetodo}
                 </Text>
               ) : null}
               {item.motivoRechazo ? (
@@ -214,7 +239,7 @@ export default function AdminVerificacionesScreen() {
             <AppInput
               value={motivos[item.userId] ?? ''}
               onChangeText={(texto) => setMotivos((previos) => ({ ...previos, [item.userId]: texto }))}
-              placeholder={t('admin.motivoPlaceholder')}
+              placeholder={t('admin.motivoPlaceholder')}
               style={styles.input}
               multiline
             />

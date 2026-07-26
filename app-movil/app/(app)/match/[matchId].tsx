@@ -16,9 +16,10 @@ import {
 } from 'react-native';
 import { matchApi } from '../../../src/api/matchApi';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { MascotaMatch, MatchMensaje } from '../../../src/types';
 import { useTheme } from '../../../src/theme/ThemeProvider';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -183,7 +184,7 @@ export default function MatchChatScreen() {
           </View>
         )}
         ListEmptyComponent={
-          <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 24 }}>{t('match.sinMensajesAun')}</Text>
+          <EmptyState icon="chatbubble-outline" titulo={t('match.sinMensajesAun')} />
         }
       />
 

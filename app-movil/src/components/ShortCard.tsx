@@ -20,6 +20,8 @@ interface ShortCardProps {
   onEliminado?: (postId: number) => void;
   /** Solo el Short visible en pantalla reproduce — los demás quedan pausados. */
   activo: boolean;
+  /** Alto del slide (viewport menos header/tabs). */
+  height?: number;
 }
 
 const { height: ALTURA_PANTALLA } = Dimensions.get('window');
@@ -61,7 +63,7 @@ function BotonLateral({
   );
 }
 
-export function ShortCard({ post, onEliminado, activo }: ShortCardProps) {
+export function ShortCard({ post, onEliminado, activo, height = ALTURA_PANTALLA }: ShortCardProps) {
   const { t } = useTranslation();
 
   const {
@@ -95,7 +97,7 @@ export function ShortCard({ post, onEliminado, activo }: ShortCardProps) {
   }, [activo, player]);
 
   return (
-    <View style={[styles.container, { height: ALTURA_PANTALLA }]}>
+    <View style={[styles.container, { height }]}>
       <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
 
       {/* Degradado inferior: sin esto el texto blanco desaparece sobre los

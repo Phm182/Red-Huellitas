@@ -10,7 +10,8 @@
         "changesSaved": "Cambios guardados",
         "yes": "Sí",
         "no": "No",
-        "close": "Cerrar"
+        "close": "Cerrar",
+        "seeAll": "Ver todo"
     },
     "auth": {
         "loginTitle": "Iniciar sesión",
@@ -191,12 +192,12 @@
     },
     "home": {
         "welcome": "Bienvenido a Red Huellitas",
-        "masTabTitle": "Más",
+        "masTabTitle": "Configuración",
         "switchAccountTitle": "Cambiar de cuenta",
         "addAccount": "Agregar cuenta"
     },
     "feed": {
-        "tabTitle": "Inicio",
+        "tabTitle": "Huelligram",
         "createTitle": "Nueva publicación",
         "captionPlaceholder": "¿Qué está haciendo tu mascota?",
         "fotos": "Fotos",
@@ -232,19 +233,19 @@
         "readMore": "Leer más"
     },
     "shorts": {
-        "tabTitle": "Shorts",
-        "createTitle": "Nuevo short",
-        "empty": "Todavía no hay shorts",
+        "tabTitle": "Huetube",
+        "createTitle": "Nuevo Huetube",
+        "empty": "Todavía no hay Huetube",
         "pickVideo": "Elegir video",
         "retakeVideo": "Cambiar video"
     },
     "historias": {
-        "addLabel": "Tu historia",
+        "addLabel": "Tu Huellita",
         "you": "Tú",
         "permissionDenied": "Necesitamos permiso para acceder a tus fotos y videos.",
         "videoTooLong": "El video puede durar como máximo 60 segundos.",
-        "uploadFailed": "No se pudo subir la historia. Probá con un video más corto o en MP4.",
-        "cameraPermission": "Para crear historias necesitamos acceso a la cámara.",
+        "uploadFailed": "No se pudo subir la Huellita. Probá con un video más corto o en MP4.",
+        "cameraPermission": "Para crear Huellitas necesitamos acceso a la cámara.",
         "allowCamera": "Permitir cámara",
         "openSystemCamera": "Abrir cámara del sistema",
         "systemCam": "Cámara",
@@ -264,14 +265,14 @@
         "textDragHint": "Arrastrá, pellizcá y girá el texto con dos dedos",
         "textLiveHint": "Se ve arriba mientras escribís. Tocá Agregar para fijarlo.",
         "drawHint": "Deslizá el dedo para dibujar",
-        "publish": "Tu historia",
+        "publish": "Tu Huellita",
         "changeMedia": "Cambiar media",
         "retake": "Cámara",
         "tapToFit": "Tocá la pantalla para ver el video completo",
         "fitContainHint": "Ajuste: video completo. Tocá de nuevo para llenar",
         "vistasTitulo": "Vistas",
         "vistasVacio": "Todavía no la vio nadie",
-        "vistasVacioDesc": "Cuando alguien mire tu historia, va a aparecer acá.",
+        "vistasVacioDesc": "Cuando alguien mire tu Huellita, va a aparecer acá.",
         "responder": "Enviar mensaje…",
         "responderPregunta": "Respondé la pregunta…",
         "recortar": "Recortar",
@@ -284,7 +285,7 @@
         "quitarPreguntas": "Quitar preguntas",
         "agregarEncuesta": "Agregar encuesta",
         "agregarPreguntas": "Agregar caja de preguntas",
-        "yaHayInteractivo": "Ya hay una encuesta o pregunta en esta historia. Sacala para poner otra.",
+        "yaHayInteractivo": "Ya hay una encuesta o pregunta en esta Huellita. Sacala para poner otra.",
         "preguntame": "PREGUNTAME",
         "escribiRespuesta": "Escribí tu respuesta…",
         "timerOff": "Sin temp.",
@@ -595,7 +596,7 @@
         "noConfigurado": "La vinculación con Mercado Pago no está configurada todavía"
     },
     "juego": {
-        "titulo": "Cuidar a mi mascota",
+        "titulo": "HuePlay",
         "sinMascotas": "Primero cargá una mascota para poder cuidarla acá.",
         "sinEmpezar": "Todavía no la cuidaste",
         "nivel": "Nivel {{nivel}}",
@@ -698,23 +699,65 @@
         "titulo": "Cadenas",
         "tituloNueva": "Nueva cadena",
         "continuar": "Continuar cadena",
-        "sumarOtra": "Sumar otra historia",
+        "sumarOtra": "Sumar otra Huellita",
         "participantes": "participantes",
-        "historiasActivas": "historias activas",
+        "historiasActivas": "Huellitas activas",
         "elHilo": "El hilo",
         "quienesSeSumaron": "Quiénes se sumaron",
         "laEmpezo": "La empezó",
         "vacio": "Todavía no hay cadenas",
-        "vacioDesc": "Una cadena es un tema que alguien propone y el resto continúa con su propia historia. Creá la primera.",
+        "vacioDesc": "Una cadena es un tema que alguien propone y el resto continúa con su propia Huellita. Creá la primera.",
         "crear": "Crear una cadena",
-        "crearYSubir": "Crear y subir mi historia",
+        "crearYSubir": "Crear y subir mi Huellita",
         "tema": "Tema",
         "descripcion": "Descripción (opcional)",
         "ideas": "Ideas:",
-        "explicacion": "Proponés un tema y el resto lo continúa con su propia historia. La cadena sigue viva aunque las historias venzan a las 24hs.",
-        "vencieron": "Las historias vencieron",
+        "explicacion": "Proponés un tema y el resto lo continúa con su propia Huellita. La cadena sigue viva aunque las Huellitas venzan a las 24hs.",
+        "vencieron": "Las Huellitas vencieron",
         "vencieronDesc": "La cadena sigue viva: subí la tuya y arranca de nuevo.",
         "invitar": "Invitar",
         "invitados": "Invitaciones enviadas"
+    },
+    "nav": {
+        "huelligram": "Huelligram",
+        "buscar": "Buscar",
+        "rescate": "Rescate",
+        "tienda": "Tienda",
+        "salud": "Salud",
+        "hueplay": "HuePlay",
+        "configuracion": "Configuración",
+        "atajosHint": "Mantené apretado para ver los atajos",
+        "rescateDesc": "Encontrar, dar y buscar hogar",
+        "tiendaDesc": "Comprar, vender y tus pedidos",
+        "saludDesc": "Cuidados, veterinarias y refugios"
+    },
+    "huelligram": {
+        "publicaciones": "Publicaciones",
+        "noticias": "Noticias",
+        "huetube": "Huetube"
+    },
+    "refugios": {
+        "tituloLista": "Refugios",
+        "emptyLista": "Todavía no hay refugios cargados",
+        "emptyDesc": "Cuando una protectora se registre, la vas a ver acá.",
+        "cercanos": "Cerca tuyo",
+        "verPerfil": "Ver perfil"
+    },
+    "cuidados": {
+        "tituloLista": "Cuidados",
+        "subtitulo": "Guías cortas para cuidar mejor a tu compañero",
+        "emptyLista": "Todavía no hay guías para esta especie",
+        "especie": {
+            "perro": "Perro",
+            "gato": "Gato",
+            "otro": "Otros"
+        },
+        "categoria": {
+            "alimentacion": "Alimentación",
+            "higiene": "Higiene",
+            "salud": "Salud",
+            "ejercicio": "Ejercicio",
+            "convivencia": "Convivencia"
+        }
     }
 }

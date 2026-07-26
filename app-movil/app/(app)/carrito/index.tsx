@@ -4,11 +4,12 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { carritoApi } from '../../../src/api/carritoApi';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { CarritoPublico, Pedido } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function CarritoScreen() {
   const { t } = useTranslation();
@@ -137,8 +138,8 @@ export default function CarritoScreen() {
 
   if (!carrito || carrito.grupos.length === 0) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background, padding: 32 }]}>
-        <Text style={{ color: colors.textMuted, textAlign: 'center' }}>{t('carrito.empty')}</Text>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <EmptyState icon="cart-outline" titulo={t('carrito.empty')} />
       </View>
     );
   }

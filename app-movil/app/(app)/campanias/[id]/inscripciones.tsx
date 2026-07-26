@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { campaniaApi } from '../../../../src/api/campaniaApi';
 import { LogoSiluetaNegra } from '../../../../src/components/LogoImage';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 import { CampaniaInscripto } from '../../../../src/types';
 import { centeredContent } from '../../../../src/theme/layout';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
-import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 
 export default function InscripcionesRecibidasScreen() {
   const { t } = useTranslation();
@@ -41,11 +42,11 @@ export default function InscripcionesRecibidasScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, inscriptos.length === 0 && styles.listEmpty]}
       data={inscriptos}
       keyExtractor={(i) => String(i.campaniaInscripcionId)}
       ListEmptyComponent={
-        <Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('campanias.emptyInscriptos')}</Text>
+        <EmptyState icon="people-outline" titulo={t('campanias.emptyInscriptos')} />
       }
       renderItem={({ item }) => (
         <View style={[styles.row, { borderColor: colors.border }]}>
@@ -69,6 +70,7 @@ export default function InscripcionesRecibidasScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, paddingVertical: 12 },
   avatar: { width: 40, height: 40, borderRadius: 20 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },

@@ -11,7 +11,7 @@ export { Badge } from './Badge';
 export type { BadgeTono } from './Badge';
 export { ChipRow, FilterChip, RadioChips } from './ChipRow';
 export type { ChipOption, RadioKm } from './ChipRow';
-export { EmptyState } from './EmptyState';
+export { EmptyState, useContentAreaHeight } from './EmptyState';
 export { Fab } from './Fab';
 export { ListCard } from './ListCard';
 export { Screen } from './Screen';

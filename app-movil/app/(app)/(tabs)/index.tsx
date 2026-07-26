@@ -1,95 +1,108 @@
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
-import { publicacionesApi } from '../../../src/api/publicacionesApi';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { HistoriasBar } from '../../../src/components/HistoriasBar';
-import { PostCard } from '../../../src/components/PostCard';
-import { Post } from '../../../src/types';
-import { centeredContent } from '../../../src/theme/layout';
-import { fonts, type } from '../../../src/theme/typography';
+import { HuetubeBody } from '../../../src/screens/huelligram/HuetubeBody';
+import { NoticiasBody } from '../../../src/screens/huelligram/NoticiasBody';
+import { PublicacionesBody } from '../../../src/screens/huelligram/PublicacionesBody';
+import { radii } from '../../../src/theme/elevation';
+import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { hapticLeve } from '../../../src/utils/haptics';
 
-export default function FeedScreen() {
+type Solapa = 'publicaciones' | 'noticias' | 'huetube';
+
+const SOLAPAS: { key: Solapa; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'publicaciones', labelKey: 'huelligram.publicaciones', icon: 'images-outline' },
+  { key: 'noticias', labelKey: 'huelligram.noticias', icon: 'newspaper-outline' },
+  { key: 'huetube', labelKey: 'huelligram.huetube', icon: 'play-circle-outline' },
+];
+
+/** Alto del bloque fijo (Huellitas + solapas), para que Huetube calcule bien. */
+export const HUELLIGRAM_HEADER_HEIGHT = 154;
+
+/**
+ * Huelligram: las Huellitas arriba y, debajo, las tres solapas de contenido.
+ *
+ * Noticias y Huetube dejaron de ser pestañas de la barra inferior — ese lugar
+ * ahora lo ocupan los hubs (Rescate, Tienda, Salud…). Como los tres feeds son
+ * "lo que pasa en la comunidad", viven juntos acá.
+ */
+export default function HuelligramScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const params = useLocalSearchParams<{ solapa?: string }>();
+  const [solapa, setSolapa] = useState<Solapa>('publicaciones');
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cargandoMas, setCargandoMas] = useState(false);
-  const [nextCursor, setNextCursor] = useState<number | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      let activo = true;
-      setLoading(true);
-      publicacionesApi.feed().then((res) => {
-        if (!activo) return;
-        if (res.success && res.data) {
-          setPosts(res.data.posts);
-          setNextCursor(res.data.nextCursor);
-        }
-        setLoading(false);
-      });
-      return () => {
-        activo = false;
-      };
-    }, [])
-  );
-
-  const cargarMas = async () => {
-    if (cargandoMas || nextCursor === null) return;
-    setCargandoMas(true);
-    const res = await publicacionesApi.feed(nextCursor);
-    if (res.success && res.data) {
-      setPosts((prev) => [...prev, ...res.data!.posts]);
-      setNextCursor(res.data.nextCursor);
+  // El menú de atajos entra directo a una solapa con ?solapa=…
+  useEffect(() => {
+    const pedida = params.solapa;
+    if (pedida === 'publicaciones' || pedida === 'noticias' || pedida === 'huetube') {
+      setSolapa(pedida);
     }
-    setCargandoMas(false);
-  };
-
-  const onEliminado = (postId: number) => {
-    setPosts((prev) => prev.filter((p) => p.postId !== postId));
-  };
-
-  if (loading) {
-    return (
-      <Atmosphere style={styles.centered}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </Atmosphere>
-    );
-  }
+  }, [params.solapa]);
 
   return (
     <Atmosphere>
-      <FlatList
-        style={{ flex: 1, backgroundColor: 'transparent' }}
-        contentContainerStyle={[styles.list, centeredContent]}
-        data={posts}
-        keyExtractor={(p) => String(p.postId)}
-        renderItem={({ item, index }) => (
-          <PostCard post={item} onEliminado={onEliminado} index={index} />
-        )}
-        ListHeaderComponent={<HistoriasBar />}
-          ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('feed.emptyFeed')}</Text>
-          </View>
-        }
-        onEndReached={cargarMas}
-        onEndReachedThreshold={0.4}
-        ListFooterComponent={
-          cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
-        }
-      />
+      <View style={styles.encabezado}>
+        <HistoriasBar />
+
+        <View style={[styles.solapas, { borderBottomColor: colors.border }]}>
+          {SOLAPAS.map((s) => {
+            const activa = solapa === s.key;
+            return (
+              <Pressable
+                key={s.key}
+                onPress={() => {
+                  hapticLeve();
+                  setSolapa(s.key);
+                }}
+                style={[styles.solapa, activa && { borderBottomColor: colors.primary }]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: activa }}
+              >
+                <Ionicons
+                  name={s.icon}
+                  size={16}
+                  color={activa ? colors.primary : colors.textMuted}
+                />
+                <Text
+                  style={[styles.solapaLabel, { color: activa ? colors.primary : colors.textMuted }]}
+                  numberOfLines={1}
+                >
+                  {t(s.labelKey)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.cuerpo}>
+        {solapa === 'publicaciones' ? <PublicacionesBody /> : null}
+        {solapa === 'noticias' ? <NoticiasBody /> : null}
+        {solapa === 'huetube' ? <HuetubeBody alturaExtra={HUELLIGRAM_HEADER_HEIGHT} /> : null}
+      </View>
     </Atmosphere>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: 14, paddingBottom: 28 },
-  empty: { marginTop: 40, alignItems: 'center', paddingHorizontal: 24, gap: 8 },
-  emptyTitle: { fontFamily: fonts.displaySemi, fontSize: 20, textAlign: 'center' },
+  encabezado: { paddingTop: 10, paddingHorizontal: 12 },
+  solapas: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  solapa: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  solapaLabel: { fontFamily: fonts.bodySemi, fontSize: 13 },
+  cuerpo: { flex: 1, borderTopLeftRadius: radii.sm, overflow: 'hidden' },
 });

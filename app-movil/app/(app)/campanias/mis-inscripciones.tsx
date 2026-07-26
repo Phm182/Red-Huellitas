@@ -3,10 +3,11 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { campaniaApi } from '../../../src/api/campaniaApi';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { CampaniaInscripcionPropia } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisInscripcionesScreen() {
   const { t } = useTranslation();
@@ -38,11 +39,11 @@ export default function MisInscripcionesScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, inscripciones.length === 0 && styles.listEmpty]}
       data={inscripciones}
       keyExtractor={(i) => String(i.campaniaInscripcionId)}
       ListEmptyComponent={
-        <Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('campanias.emptyMisInscripciones')}</Text>
+        <EmptyState icon="ticket-outline" titulo={t('campanias.emptyMisInscripciones')} />
       }
       renderItem={({ item }) => (
         <Pressable
@@ -65,5 +66,6 @@ export default function MisInscripcionesScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
 });

@@ -59,7 +59,7 @@ export function ListaUsuarios({ cargar, emptyLabel }: ListaUsuariosProps) {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, { flexGrow: 1 }]}
       data={usuarios}
       keyExtractor={(u) => String(u.userId)}
       ListEmptyComponent={<EmptyState icon="people-outline" titulo={emptyLabel} />}

@@ -3,11 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { productosApi } from '../../../src/api/productosApi';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { Producto } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function ProductosFavoritosScreen() {
   const { t } = useTranslation();
@@ -39,10 +40,10 @@ export default function ProductosFavoritosScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.list, centeredContent]}
+      contentContainerStyle={[styles.list, centeredContent, favoritos.length === 0 && styles.listEmpty]}
       data={favoritos}
       keyExtractor={(p) => String(p.productoId)}
-      ListEmptyComponent={<Text style={{ color: colors.textMuted, marginTop: 24 }}>{t('productos.emptyFavoritos')}</Text>}
+      ListEmptyComponent={<EmptyState icon="heart-outline" titulo={t('productos.emptyFavoritos')} />}
       renderItem={({ item }) => (
         <Pressable
           style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -67,6 +68,7 @@ export default function ProductosFavoritosScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
+  listEmpty: { flexGrow: 1 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
   foto: { width: 56, height: 56, borderRadius: 10 },
 });
