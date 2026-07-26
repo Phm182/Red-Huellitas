@@ -3,35 +3,23 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/noticias.php';
+require_once __DIR__ . '/../../funciones/noticias_ingesta.php';
 
 rh_require_auth($conn);
 
-$cursor = isset($_GET['cursor']) && $_GET['cursor'] !== '' ? (int) $_GET['cursor'] : null;
+// cursor = offset de la lista mezclada (0, 20, 40…).
+$offset = isset($_GET['cursor']) && $_GET['cursor'] !== '' ? max(0, (int) $_GET['cursor']) : 0;
 $limit = isset($_GET['limit']) ? max(1, min(50, (int) $_GET['limit'])) : 20;
 
-$sql = "SELECT * FROM NoticiaExterna WHERE Estado = 'A'";
-$types = '';
-$params = [];
-if ($cursor !== null) {
-    $sql .= ' AND NoticiaExternaId < ?';
-    $types .= 'i';
-    $params[] = $cursor;
+// Primera página: si la tabla está vacía o vieja, intenta RSS rápido.
+if ($offset === 0) {
+    @set_time_limit(45);
+    rh_noticias_asegurar_recientes($conn, 6);
 }
-$sql .= ' ORDER BY NoticiaExternaId DESC LIMIT ' . $limit;
 
-$stmt = $conn->prepare($sql);
-if ($types !== '') {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$result = $stmt->get_result();
+$resultado = rh_noticias_listar_mezcladas($conn, $offset, $limit);
 
-$noticias = [];
-while ($row = $result->fetch_assoc()) {
-    $noticias[] = rh_noticia_publico($row);
-}
-$stmt->close();
-
-$nextCursor = count($noticias) === $limit ? $noticias[count($noticias) - 1]['noticiaExternaId'] : null;
-
-json_success(['noticias' => $noticias, 'nextCursor' => $nextCursor]);
+json_success([
+    'noticias' => $resultado['noticias'],
+    'nextCursor' => $resultado['nextCursor'],
+]);

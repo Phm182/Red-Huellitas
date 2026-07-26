@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/uploads.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -58,6 +59,7 @@ json_success([
     'nombreCompleto' => $usuario['NombreCompleto'],
     'zonaDescripcion' => $usuario['ZonaDescripcion'],
     'avatarPath' => $usuario['AvatarPath'],
+    'avatarBust' => rh_avatar_bust($usuario['AvatarPath'] ?? null),
     'whatsappNumero' => $whatsappVisible ? $usuario['WhatsappNumero'] : null,
     'whatsappVisibilidad' => $usuario['WhatsappVisibilidad'],
     'totalSeguidores' => $totalSeguidores,

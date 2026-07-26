@@ -102,7 +102,7 @@ function rh_gemini_generar_avatar(string $rutaFoto): array
     finfo_close($finfo);
 
     $config = rh_gemini_config();
-    $url = str_replace('{modelo}', $config['GEMINI_MODELO'] ?? 'gemini-2.5-flash-image', $config['GEMINI_ENDPOINT'] ?? '');
+    $url = str_replace('{modelo}', $config['GEMINI_MODELO'] ?? 'gemini-3.1-flash-image', $config['GEMINI_ENDPOINT'] ?? '');
     if ($url === '') {
         return $fallo('Falta configurar el endpoint de Gemini');
     }
@@ -202,7 +202,28 @@ function rh_gemini_extraer_texto(array $respuesta): ?string
 function rh_gemini_modelo_texto(): string
 {
     $config = rh_gemini_config();
-    return (string) ($config['GEMINI_MODELO_TEXTO'] ?? 'gemini-2.5-flash');
+    return (string) ($config['GEMINI_MODELO_TEXTO'] ?? 'gemini-3.5-flash');
+}
+
+/**
+ * Lista de modelos a probar si el principal falla (404 / no disponible para la key).
+ *
+ * @return list<string>
+ */
+function rh_gemini_modelos_texto_fallback(): array
+{
+    $config = rh_gemini_config();
+    $principal = rh_gemini_modelo_texto();
+    $extra = $config['GEMINI_MODELO_TEXTO_FALLBACKS'] ?? [
+        'gemini-3.5-flash',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+    ];
+    if (!is_array($extra)) {
+        $extra = [];
+    }
+    $lista = array_values(array_unique(array_filter(array_merge([$principal], $extra), 'is_string')));
+    return $lista;
 }
 
 /**
@@ -220,8 +241,8 @@ function rh_gemini_generate_content(array $parts): array
     }
 
     $config = rh_gemini_config();
-    $url = str_replace('{modelo}', rh_gemini_modelo_texto(), $config['GEMINI_ENDPOINT'] ?? '');
-    if ($url === '') {
+    $endpointTpl = (string) ($config['GEMINI_ENDPOINT'] ?? '');
+    if ($endpointTpl === '') {
         return $fallo('Falta configurar el endpoint de Gemini');
     }
 
@@ -232,47 +253,62 @@ function rh_gemini_generate_content(array $parts): array
             'responseMimeType' => 'application/json',
         ],
     ];
+    $payload = json_encode($body);
+    $ultimoError = 'Gemini rechazó el pedido';
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'x-goog-api-key: ' . $config['GEMINI_API_KEY'],
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, RH_GEMINI_TIMEOUT_SEGUNDOS);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    foreach (rh_gemini_modelos_texto_fallback() as $modelo) {
+        $url = str_replace('{modelo}', $modelo, $endpointTpl);
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'x-goog-api-key: ' . $config['GEMINI_API_KEY'],
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, RH_GEMINI_TIMEOUT_SEGUNDOS);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
-    $raw = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $errCurl = curl_error($ch);
-    curl_close($ch);
+        $raw = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errCurl = curl_error($ch);
+        curl_close($ch);
 
-    if ($raw === false) {
-        error_log('rh_gemini_text: cURL — ' . $errCurl);
-        return $fallo('No se pudo conectar con Gemini');
+        if ($raw === false) {
+            error_log('rh_gemini_text: cURL — ' . $errCurl);
+            return $fallo('No se pudo conectar con Gemini');
+        }
+
+        $respuesta = json_decode($raw, true);
+        if (!is_array($respuesta)) {
+            return $fallo('Gemini devolvió una respuesta inesperada');
+        }
+
+        if ($httpCode >= 400) {
+            $detalle = $respuesta['error']['message'] ?? ('HTTP ' . $httpCode);
+            error_log("rh_gemini_text [$modelo]: $detalle");
+            $ultimoError = $httpCode === 429
+                ? 'Se agotó la cuota de Gemini, probá más tarde'
+                : 'Gemini rechazó el pedido';
+            // 404 / modelo no disponible → probar el siguiente. Otros errores (401, 429) cortan.
+            if ($httpCode === 404 || stripos($detalle, 'not found') !== false
+                || stripos($detalle, 'no longer available') !== false
+                || stripos($detalle, 'is not found') !== false) {
+                continue;
+            }
+            return $fallo($ultimoError);
+        }
+
+        $texto = rh_gemini_extraer_texto($respuesta);
+        if ($texto === null || $texto === '') {
+            $ultimoError = 'Gemini no devolvió texto';
+            continue;
+        }
+
+        return ['ok' => true, 'texto' => $texto, 'error' => null, 'raw' => $respuesta];
     }
 
-    $respuesta = json_decode($raw, true);
-    if (!is_array($respuesta)) {
-        return $fallo('Gemini devolvió una respuesta inesperada');
-    }
-
-    if ($httpCode >= 400) {
-        $detalle = $respuesta['error']['message'] ?? ('HTTP ' . $httpCode);
-        error_log('rh_gemini_text: ' . $detalle);
-        return $fallo($httpCode === 429
-            ? 'Se agotó la cuota de Gemini, probá más tarde'
-            : 'Gemini rechazó el pedido');
-    }
-
-    $texto = rh_gemini_extraer_texto($respuesta);
-    if ($texto === null || $texto === '') {
-        return $fallo('Gemini no devolvió texto');
-    }
-
-    return ['ok' => true, 'texto' => $texto, 'error' => null, 'raw' => $respuesta];
+    return $fallo($ultimoError);
 }
 
 function rh_gemini_part_imagen(string $ruta): ?array

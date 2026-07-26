@@ -144,11 +144,13 @@ function rh_usuario_verificado(mysqli $conn, int $userId): bool
  */
 function rh_usuario_resumen(array $u): array
 {
+    require_once __DIR__ . '/uploads.php';
     return [
         'userId' => (int) $u['UserId'],
         'username' => $u['Username'],
         'nombreCompleto' => $u['NombreCompleto'],
         'avatarPath' => $u['AvatarPath'],
+        'avatarBust' => rh_avatar_bust($u['AvatarPath'] ?? null),
     ];
 }
 
@@ -160,6 +162,7 @@ function rh_usuario_resumen(array $u): array
  */
 function rh_usuario_publico(mysqli $conn, array $u): array
 {
+    require_once __DIR__ . '/uploads.php';
     $tipoUsuarioCodigo = null;
     if (!empty($u['TipoUsuarioId'])) {
         $stmt = $conn->prepare('SELECT Codigo FROM TipoUsuarioCatalogo WHERE TipoUsuarioId = ?');
@@ -181,6 +184,7 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'whatsappNumero' => $u['WhatsappNumero'],
         'whatsappVisibilidad' => $u['WhatsappVisibilidad'],
         'avatarPath' => $u['AvatarPath'],
+        'avatarBust' => rh_avatar_bust($u['AvatarPath'] ?? null),
         'onboardingCompleto' => $u['OnboardingCompleto'] === 'Y',
         'aceptoClausulaAntiCriaderos' => (bool) $u['AceptoClausulaAntiCriaderos'],
         'rol' => $u['Rol'],

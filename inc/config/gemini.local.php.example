@@ -16,10 +16,13 @@ return [
     // endpoint nuevo (/v1beta/interactions) con otro formato de request. Si
     // cambia, se ajusta acá sin tocar código. El {modelo} se reemplaza solo.
     'GEMINI_ENDPOINT' => 'https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent',
-    'GEMINI_MODELO'   => 'gemini-2.5-flash-image',
+    // Avatar img2img. Si tu key no tiene cuota en este modelo, probá
+    // gemini-3.1-flash-image o el que liste ListModels.
+    'GEMINI_MODELO'   => 'gemini-3.1-flash-image',
 
     // Modelo multimodal de texto (OCR DNI + face match). No uses el de imagen.
-    'GEMINI_MODELO_TEXTO' => 'gemini-2.5-flash',
+    // gemini-2.5-flash dejó de aceptar keys nuevas ("no longer available to new users").
+    'GEMINI_MODELO_TEXTO' => 'gemini-3.5-flash',
 
     // Umbrales 0–1 para auto-aprobar / auto-rechazar verificación de cuenta.
     'VERIF_UMBRAL_APROBAR'  => 0.78,

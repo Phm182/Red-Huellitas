@@ -52,6 +52,7 @@ function rh_verificacion_auto_evaluar(
         'faceMatchScore' => null,
         'metodo' => 'pendiente',
         'detalle' => [],
+        'problemas' => [],
         'dniNumero' => null,
         'nombreExtraido' => null,
         'kycExternoId' => null,
@@ -61,6 +62,7 @@ function rh_verificacion_auto_evaluar(
     if (!rh_gemini_configurado()) {
         $base['motivo'] = 'Revisión automática no disponible; queda pendiente de revisión manual';
         $base['metodo'] = 'manual';
+        $base['problemas'] = ['La revisión automática no está configurada en el servidor'];
         return $base;
     }
 
@@ -73,6 +75,7 @@ function rh_verificacion_auto_evaluar(
         $base['motivo'] = 'Revisión automática no disponible; queda pendiente de revisión manual';
         $base['metodo'] = 'gemini_error';
         $base['detalle'] = ['error' => $analisis['error'] ?? 'No se pudo analizar automáticamente'];
+        $base['problemas'] = ['No se pudo completar la revisión automática; un moderador lo revisará'];
         return $base;
     }
 
@@ -103,11 +106,33 @@ function rh_verificacion_auto_evaluar(
     $problemas = is_array($d['problemas']) ? $d['problemas'] : [];
     $resumen = trim((string) ($d['resumen'] ?? ''));
 
+    // Asegura problemas accionables aunque Gemini no los liste.
+    if (empty($d['es_dni_frente'])) {
+        $problemas[] = 'El frente no se reconoce como DNI argentino';
+    }
+    if (empty($d['es_dni_dorso'])) {
+        $problemas[] = 'El dorso no se reconoce como DNI argentino';
+    }
+    if (empty($d['documento_legible'])) {
+        $problemas[] = 'El documento no se lee con claridad';
+    }
+    if (empty($d['selfie_tiene_rostro'])) {
+        $problemas[] = 'La selfie no muestra un rostro claro';
+    }
+    if ($face < $umbralRechazar) {
+        $problemas[] = 'La selfie no coincide con la foto del DNI';
+    }
+    if ($nombreOk === false) {
+        $problemas[] = 'El nombre del DNI no coincide con el del perfil';
+    }
+    $problemas = array_values(array_unique(array_filter(array_map('strval', $problemas))));
+    $base['detalle']['gemini']['problemas'] = $problemas;
+    $base['problemas'] = $problemas;
+
     if (!$docsOk || $face < $umbralRechazar || empty($d['selfie_tiene_rostro'])) {
-        $motivo = $resumen !== '' ? $resumen : 'Las imágenes no pasan la verificación automática';
-        if ($problemas) {
-            $motivo = implode('; ', array_slice($problemas, 0, 3));
-        }
+        $motivo = $problemas
+            ? implode('; ', array_slice($problemas, 0, 3))
+            : ($resumen !== '' ? $resumen : 'Las imágenes no pasan la verificación automática');
         $base['estado'] = 'rechazado';
         $base['motivo'] = mb_substr($motivo, 0, 250);
         return $base;
@@ -160,11 +185,108 @@ function rh_verificacion_auto_evaluar(
     }
 
     $base['estado'] = 'pendiente';
-    $base['motivo'] = $resumen !== ''
-        ? $resumen
-        : 'Quedó en revisión: la confianza automática no fue suficiente';
+    $base['motivo'] = $problemas
+        ? implode('; ', array_slice($problemas, 0, 3))
+        : ($resumen !== ''
+            ? $resumen
+            : 'Quedó en revisión: la confianza automática no fue suficiente');
     $base['motivo'] = mb_substr((string) $base['motivo'], 0, 250);
     return $base;
+}
+
+/**
+ * Payload público del estado de verificación (sin paths).
+ *
+ * @param array<string,mixed>|null $verificacion
+ * @param array<string,mixed>|null $auto Resultado fresco de rh_verificacion_auto_evaluar
+ * @return array<string,mixed>
+ */
+function rh_verificacion_estado_publico(?array $verificacion, ?array $auto = null): array
+{
+    if (!$verificacion) {
+        return [
+            'estadoRevision' => 'sin_enviar',
+            'motivoRechazo' => null,
+            'tieneDniFrente' => false,
+            'tieneDniDorso' => false,
+            'tieneSelfie' => false,
+            'autoScore' => null,
+            'faceMatchScore' => null,
+            'autoMetodo' => null,
+            'kycEstado' => null,
+            'problemas' => [],
+            'checks' => null,
+        ];
+    }
+
+    $detalle = [];
+    if (!empty($verificacion['AutoDetalle'])) {
+        $decoded = json_decode((string) $verificacion['AutoDetalle'], true);
+        if (is_array($decoded)) {
+            $detalle = $decoded;
+        }
+    }
+
+    $gemini = is_array($detalle['gemini'] ?? null) ? $detalle['gemini'] : [];
+    $problemas = [];
+    if (is_array($auto['problemas'] ?? null)) {
+        $problemas = array_values(array_map('strval', $auto['problemas']));
+    } elseif (is_array($gemini['problemas'] ?? null)) {
+        $problemas = array_values(array_map('strval', $gemini['problemas']));
+    } elseif (!empty($verificacion['MotivoRechazo'])) {
+        $problemas = array_values(array_filter(array_map('trim', explode(';', (string) $verificacion['MotivoRechazo']))));
+    }
+
+    $checks = null;
+    if ($gemini || $auto) {
+        $src = $gemini ?: ($auto['detalle']['gemini'] ?? []);
+        if (is_array($src) && $src) {
+            $checks = [
+                'esDniFrente' => !empty($src['es_dni_frente']),
+                'esDniDorso' => !empty($src['es_dni_dorso']),
+                'documentoLegible' => !empty($src['documento_legible']),
+                'selfieTieneRostro' => !empty($src['selfie_tiene_rostro']),
+                'faceMatchScore' => isset($src['face_match_score']) ? (float) $src['face_match_score'] : null,
+            ];
+        }
+    }
+
+    return [
+        'estadoRevision' => $verificacion['EstadoRevision'],
+        'motivoRechazo' => $verificacion['MotivoRechazo'] ?? null,
+        'tieneDniFrente' => !empty($verificacion['DniFrentePath']),
+        'tieneDniDorso' => !empty($verificacion['DniDorsoPath']),
+        'tieneSelfie' => !empty($verificacion['SelfiePath']),
+        'autoScore' => isset($verificacion['AutoScore']) && $verificacion['AutoScore'] !== null
+            ? (float) $verificacion['AutoScore']
+            : ($auto['autoScore'] ?? null),
+        'faceMatchScore' => isset($verificacion['FaceMatchScore']) && $verificacion['FaceMatchScore'] !== null
+            ? (float) $verificacion['FaceMatchScore']
+            : ($auto['faceMatchScore'] ?? null),
+        // Códigos internos (gemini_error, pendiente) no se exponen al usuario.
+        'autoMetodo' => rh_verificacion_metodo_publico(
+            $verificacion['AutoMetodo'] ?? ($auto['metodo'] ?? null)
+        ),
+        'kycEstado' => $verificacion['KycEstado'] ?? ($auto['kycEstado'] ?? null),
+        'problemas' => $problemas,
+        'checks' => $checks,
+    ];
+}
+
+/**
+ * Traduce AutoMetodo a un valor presentable (o null si es técnico/fallido).
+ */
+function rh_verificacion_metodo_publico(mixed $metodo): ?string
+{
+    if (!is_string($metodo) || $metodo === '') {
+        return null;
+    }
+    return match ($metodo) {
+        'gemini' => 'automatica',
+        'gemini+renaper' => 'automatica_renaper',
+        'manual' => 'manual',
+        default => null, // gemini_error, pendiente, etc.
+    };
 }
 
 /**

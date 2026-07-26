@@ -1,23 +1,16 @@
 <?php
 /**
- * Sirve una de las tres imágenes de la verificación de identidad (dniFrente,
- * dniDorso, selfie) al moderador. Nunca hay URL pública de estos archivos:
- * viven en inc/storage/verificacion/ (fuera del docroot servible) y sólo
- * salen por acá. Mismo molde que mascotas/carnet_ver.php.
+ * Sirve una imagen de verificación al dueño autenticado (dniFrente, dniDorso,
+ * selfie). Misma idea que admin/verificacion_archivo.php pero sólo para el
+ * UserId de la sesión — para que al reabrir la pantalla vea lo que ya subió.
  */
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 
-rh_require_admin($conn);
-
-$userId = (int) ($_GET['userId'] ?? 0);
+$userId = rh_require_auth($conn);
 $tipo = (string) ($_GET['tipo'] ?? '');
-
-if ($userId <= 0) {
-    json_error('Falta userId');
-}
 
 $columnas = [
     'dniFrente' => 'DniFrentePath',
@@ -25,7 +18,7 @@ $columnas = [
     'selfie' => 'SelfiePath',
 ];
 if (!isset($columnas[$tipo])) {
-    json_error('tipo inválido (dniFrente, dniDorso o selfie)');
+    json_error('tipo inválido (dniFrente, dniDorso, selfie)');
 }
 
 $stmt = $conn->prepare('SELECT * FROM UsuarioVerificacion WHERE UserId = ?');
@@ -38,7 +31,5 @@ if (!$verificacion || empty($verificacion[$columnas[$tipo]])) {
     json_error('Archivo no encontrado', 404);
 }
 
-// basename() defensivo: el path sale de la DB, pero no se confía en que no
-// tenga ../ — el nombre de archivo es lo único que hace falta.
 $archivo = rh_dir_verificacion_usuario($userId) . '/' . basename((string) $verificacion[$columnas[$tipo]]);
 rh_servir_archivo_privado($archivo);

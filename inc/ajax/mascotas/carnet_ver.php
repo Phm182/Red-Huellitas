@@ -31,16 +31,4 @@ if (!rh_mascota_tiene_acceso_carnet($conn, $mascota, $viewerUserId)) {
 }
 
 $archivo = rh_dir_carnet_mascota($mascotaId) . '/' . basename($mascota['CarnetVacunasPath']);
-if (!is_file($archivo)) {
-    json_error('Carnet no encontrado', 404);
-}
-
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mime = finfo_file($finfo, $archivo);
-finfo_close($finfo);
-
-header('Content-Type: ' . $mime);
-header('Content-Length: ' . filesize($archivo));
-header('Cache-Control: private, max-age=0, no-cache');
-readfile($archivo);
-exit;
+rh_servir_archivo_privado($archivo);

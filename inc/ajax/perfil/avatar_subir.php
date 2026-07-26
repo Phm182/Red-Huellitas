@@ -26,7 +26,8 @@ $stmt->bind_param('si', $path, $userId);
 $stmt->execute();
 $stmt->close();
 
-// URL pública relativa al root del proyecto (uploads/ es servido directo por Apache).
-$avatarUrl = '/Red Huellitas/uploads/' . $path;
-
-json_success(['avatarUrl' => $avatarUrl], 'Avatar actualizado');
+json_success([
+    'avatarPath' => $path,
+    'avatarUrl' => '/uploads/' . $path,
+    'avatarBust' => rh_avatar_bust($path),
+], 'Avatar actualizado');

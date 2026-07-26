@@ -6,8 +6,16 @@ composer.lock
 # Cada uno tiene su .example al lado con las claves vacías.
 inc/config/*.local.php
 
-# Archivos privados servidos con control de acceso (carnets, verificación DNI/selfie)
-inc/storage/
+# Archivos privados servidos con control de acceso (carnets, verificación DNI/selfie).
+# Se versiona .htaccess para que el deny exista en el hosting; el resto son uploads.
+inc/storage/**
+!inc/storage/
+!inc/storage/.htaccess
+!inc/storage/verificacion/
+!inc/storage/verificacion/.htaccess
+!inc/storage/carnets/
+!inc/storage/carnets/.htaccess
+
 
 # Archivos subidos por usuarios (avatares, fotos de mascotas, publicaciones, productos)
 uploads/
