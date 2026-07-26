@@ -10,6 +10,7 @@ import { CategoriaDonacion, Especie, TipoDonacion, VerificacionEstado } from '..
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoDonacion[] = ['necesito', 'ofrezco'];
 const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo'];
@@ -160,24 +161,20 @@ export default function NuevaDonacionScreen() {
       </View>
 
       <Text style={[styles.label, { color: colors.text }]}>{t('donaciones.descripcionLabel')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder={t('donaciones.descripcionPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         multiline
       />
 
       <MultiImagePickerField label={t('mascotas.fotos')} uris={fotos} onChange={setFotos} addLabel={t('mascotas.addFoto')} />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('donaciones.zonaLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={zonaDescripcion}
         onChangeText={setZonaDescripcion}
         placeholder={t('donaciones.zonaPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}

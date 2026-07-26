@@ -6,6 +6,7 @@ import { useAuth } from '../../../src/auth/AuthProvider';
 import { Visibilidad } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { AppInput } from '../../../src/components/AppInput';
 
 export default function WhatsappScreen() {
   const { t } = useTranslation();
@@ -37,10 +38,8 @@ export default function WhatsappScreen() {
       <Text style={[styles.label, { color: colors.text }]}>{t('settings.whatsappNumber')}</Text>
       <Text style={{ color: colors.textMuted, marginBottom: 16 }}>{t('settings.whatsappHelp')}</Text>
 
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         placeholder="+549..."
-        placeholderTextColor={colors.textMuted}
         value={numero}
         onChangeText={setNumero}
         keyboardType="phone-pad"

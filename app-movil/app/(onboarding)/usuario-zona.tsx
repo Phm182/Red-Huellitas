@@ -17,6 +17,7 @@ import { authApi } from '../../src/api/authApi';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { centeredContent } from '../../src/theme/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { AppInput } from '../../src/components/AppInput';
 
 export default function UsuarioZonaScreen() {
   const { t } = useTranslation();
@@ -112,10 +113,8 @@ export default function UsuarioZonaScreen() {
       >
         <Text style={[styles.title, { color: colors.text }]}>{t('onboarding.usernameZoneTitle')}</Text>
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        <AppInput
           placeholder={t('onboarding.username')}
-          placeholderTextColor={colors.textMuted}
           value={username}
           onChangeText={(v) => setUsername(v.toLowerCase())}
           autoCapitalize="none"
@@ -131,10 +130,8 @@ export default function UsuarioZonaScreen() {
           <Text style={{ color: colors.danger, marginBottom: 8 }}>{t('onboarding.usernameInvalid')}</Text>
         ) : null}
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+        <AppInput
           placeholder={t('onboarding.zoneLabel')}
-          placeholderTextColor={colors.textMuted}
           value={zonaDescripcion}
           onChangeText={setZonaDescripcion}
         />

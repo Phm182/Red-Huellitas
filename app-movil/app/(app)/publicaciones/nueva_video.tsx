@@ -9,6 +9,7 @@ import { VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 export default function NuevoShortScreen() {
   const { t } = useTranslation();
@@ -104,10 +105,9 @@ export default function NuevoShortScreen() {
         </Text>
       </Pressable>
 
-      <TextInput
-        style={[styles.textarea, { borderColor: colors.border, color: colors.text }]}
-        placeholder={t('feed.captionPlaceholder')}
-        placeholderTextColor={colors.textMuted}
+      <AppInput
+        style={styles.textarea}
+        placeholder={t('feed.captionPlaceholder')}
         value={texto}
         onChangeText={setTexto}
         multiline

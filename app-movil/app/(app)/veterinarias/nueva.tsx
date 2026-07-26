@@ -10,6 +10,7 @@ import { VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 export default function NuevaVeterinariaScreen() {
   const { t } = useTranslation();
@@ -116,41 +117,33 @@ export default function NuevaVeterinariaScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.nombreLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={nombre}
         onChangeText={setNombre}
         placeholder={t('veterinarias.nombrePlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.descripcionLabel')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder={t('veterinarias.descripcionPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         multiline
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.telefonoLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={telefono}
         onChangeText={setTelefono}
         placeholder={t('veterinarias.telefonoPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         keyboardType="phone-pad"
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.whatsappLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={whatsappNumero}
         onChangeText={setWhatsappNumero}
         placeholder={t('veterinarias.whatsappPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         keyboardType="phone-pad"
       />
       {telefono.trim().length === 0 && whatsappNumero.trim().length === 0 ? (
@@ -160,23 +153,19 @@ export default function NuevaVeterinariaScreen() {
       ) : null}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.horarioLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={horario}
         onChangeText={setHorario}
         placeholder={t('veterinarias.horarioPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
 
       <MultiImagePickerField label={t('mascotas.fotos')} uris={fotos} onChange={setFotos} addLabel={t('mascotas.addFoto')} />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('veterinarias.zonaLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={zonaDescripcion}
         onChangeText={setZonaDescripcion}
         placeholder={t('veterinarias.zonaPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}

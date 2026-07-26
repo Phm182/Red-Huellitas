@@ -10,6 +10,7 @@ import { Especie, ProductoCategoriaItem, TipoListado, VerificacionEstado } from 
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoListado[] = ['producto', 'servicio'];
 const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
@@ -169,44 +170,36 @@ export default function NuevoProductoScreen() {
       </ScrollView>
 
       <Text style={[styles.label, { color: colors.text }]}>{t('productos.nombreLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={nombre}
         onChangeText={setNombre}
         placeholder={t('productos.nombrePlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('productos.descripcionLabel')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder={t('productos.descripcionPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         multiline
       />
 
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('productos.precioLabel')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={precio}
             onChangeText={setPrecio}
             placeholder="0"
-            placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
           />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('productos.cantidadLabel')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={cantidad}
             onChangeText={setCantidad}
             placeholder="1"
-            placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
           />
         </View>
@@ -230,12 +223,10 @@ export default function NuevoProductoScreen() {
       <MultiImagePickerField label={t('mascotas.fotos')} uris={fotos} onChange={setFotos} addLabel={t('mascotas.addFoto')} />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('productos.zonaLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={zonaDescripcion}
         onChangeText={setZonaDescripcion}
         placeholder={t('productos.zonaPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}

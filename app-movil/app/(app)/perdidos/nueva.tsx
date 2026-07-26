@@ -12,6 +12,7 @@ import { Especie, Mascota, Sexo, TipoPerdido, VerificacionEstado } from '../../.
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoPerdido[] = ['perdido', 'encontrado'];
 
@@ -202,8 +203,7 @@ export default function NuevoPerdidoScreen() {
       ) : (
         <>
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.nombre')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={nombre}
             onChangeText={setNombre}
           />
@@ -249,8 +249,7 @@ export default function NuevoPerdidoScreen() {
           />
 
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.descripcion')}</Text>
-          <TextInput
-            style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+          <AppInput style={styles.textarea}
             value={descripcion}
             onChangeText={setDescripcion}
             multiline
@@ -261,12 +260,10 @@ export default function NuevoPerdidoScreen() {
       )}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('perdidos.ultimoLugarLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={ultimoLugarDescripcion}
         onChangeText={setUltimoLugarDescripcion}
         placeholder={t('perdidos.ultimoLugarPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}
@@ -284,12 +281,10 @@ export default function NuevoPerdidoScreen() {
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('perdidos.fechaSucesoLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={fechaSuceso}
         onChangeText={setFechaSuceso}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor={colors.textMuted}
       />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}

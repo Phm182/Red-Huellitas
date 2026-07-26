@@ -11,6 +11,7 @@ import { Especie, PreguntaBorrador, Sexo, VerificacionEstado } from '../../../sr
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 export default function NuevaAdopcionScreen() {
   const { t } = useTranslation();
@@ -109,8 +110,7 @@ export default function NuevaAdopcionScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.nombre')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={nombre}
         onChangeText={setNombre}
       />
@@ -133,8 +133,7 @@ export default function NuevaAdopcionScreen() {
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.edadAnios')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={edadAnios}
             onChangeText={setEdadAnios}
             keyboardType="number-pad"
@@ -142,8 +141,7 @@ export default function NuevaAdopcionScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.edadMeses')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={edadMeses}
             onChangeText={setEdadMeses}
             keyboardType="number-pad"
@@ -177,12 +175,10 @@ export default function NuevaAdopcionScreen() {
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.descripcion')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder={t('mascotas.descripcionPlaceholder')}
-        placeholderTextColor={colors.textMuted}
         multiline
       />
 

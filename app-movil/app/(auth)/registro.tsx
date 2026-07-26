@@ -21,6 +21,7 @@ import { radii } from '../../src/theme/elevation';
 import { centeredContent } from '../../src/theme/layout';
 import { fonts, type } from '../../src/theme/typography';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { AppInput } from '../../src/components/AppInput';
 
 const isWeb = Platform.OS === 'web';
 
@@ -72,19 +73,15 @@ export default function RegistroScreen() {
       <Text style={[styles.title, { color: colors.text }]}>{t('auth.registerTitle')}</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>Red Huellitas</Text>
 
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         placeholder={t('auth.fullName')}
-        placeholderTextColor={colors.textMuted}
         value={nombreCompleto}
         onChangeText={setNombreCompleto}
         autoComplete="name"
         textContentType="name"
       />
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         placeholder={t('auth.email')}
-        placeholderTextColor={colors.textMuted}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -93,10 +90,8 @@ export default function RegistroScreen() {
         autoComplete="email"
         textContentType="emailAddress"
       />
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         placeholder={t('auth.password')}
-        placeholderTextColor={colors.textMuted}
         value={password}
         onChangeText={setPassword}
         secureTextEntry

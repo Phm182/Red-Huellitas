@@ -17,6 +17,7 @@ import { VerificacionArchivoTipo, VerificacionRevisionEstado, VerificacionPendie
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { fetchAuthenticatedImageUri } from '../../../src/utils/media';
+import { AppInput } from '../../../src/components/AppInput';
 
 const ESTADOS: VerificacionRevisionEstado[] = ['pendiente', 'aprobado', 'rechazado'];
 const ARCHIVOS: VerificacionArchivoTipo[] = ['dniFrente', 'dniDorso', 'selfie'];
@@ -210,12 +211,11 @@ export default function AdminVerificacionesScreen() {
               ) : null}
             </View>
 
-            <TextInput
+            <AppInput
               value={motivos[item.userId] ?? ''}
               onChangeText={(texto) => setMotivos((previos) => ({ ...previos, [item.userId]: texto }))}
-              placeholder={t('admin.motivoPlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder={t('admin.motivoPlaceholder')}
+              style={styles.input}
               multiline
             />
 

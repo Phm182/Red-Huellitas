@@ -23,6 +23,7 @@ import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { comprimirImagen } from '../../../../src/utils/imagen';
 import { rhMediaUrl } from '../../../../src/utils/media';
 import { SkeletonList } from '../../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../../src/components/AppInput';
 
 export default function EditarMascotaScreen() {
   const { t } = useTranslation();
@@ -190,7 +191,7 @@ export default function EditarMascotaScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.nombre')}</Text>
-      <TextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={nombre} onChangeText={setNombre} />
+      <AppInput value={nombre} onChangeText={setNombre} />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.sexo')}</Text>
       <View style={styles.segmented}>
@@ -210,8 +211,7 @@ export default function EditarMascotaScreen() {
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.edadAnios')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={edadAnios}
             onChangeText={setEdadAnios}
             keyboardType="number-pad"
@@ -219,8 +219,7 @@ export default function EditarMascotaScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.edadMeses')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={edadMeses}
             onChangeText={setEdadMeses}
             keyboardType="number-pad"
@@ -258,8 +257,7 @@ export default function EditarMascotaScreen() {
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.descripcion')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         multiline
@@ -313,12 +311,10 @@ export default function EditarMascotaScreen() {
 
       <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 6 }}>{t('mascotas.carnetShare')}</Text>
       <View style={styles.row}>
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text, flex: 1 }]}
+        <AppInput
           value={compartirUsername}
           onChangeText={setCompartirUsername}
           placeholder={t('mascotas.carnetShareUsernamePlaceholder')}
-          placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
         />
         <Pressable

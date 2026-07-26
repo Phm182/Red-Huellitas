@@ -9,6 +9,7 @@ import { TipoCampania, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoCampania[] = ['castracion', 'vacunacion'];
 
@@ -131,27 +132,23 @@ export default function NuevaCampaniaScreen() {
       </View>
 
       <Text style={[styles.label, { color: colors.text }]}>{t('campanias.tituloLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={titulo}
         onChangeText={setTitulo}
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('campanias.descripcionLabel')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         multiline
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('campanias.fechaDesdeLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={fechaDesde}
         onChangeText={setFechaDesde}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor={colors.textMuted}
       />
 
       <View style={[styles.switchRow, { borderColor: colors.border }]}>
@@ -161,23 +158,19 @@ export default function NuevaCampaniaScreen() {
       {esRango ? (
         <>
           <Text style={[styles.label, { color: colors.text }]}>{t('campanias.fechaHastaLabel')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={fechaHasta}
             onChangeText={setFechaHasta}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
           />
         </>
       ) : null}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('campanias.zonaLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={zonaDescripcion}
         onChangeText={setZonaDescripcion}
         placeholder={t('campanias.zonaPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}
@@ -201,13 +194,11 @@ export default function NuevaCampaniaScreen() {
       {requiereInscripcion ? (
         <>
           <Text style={[styles.label, { color: colors.text }]}>{t('campanias.cupoMaximoLabel')}</Text>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             value={cupoMaximo}
             onChangeText={setCupoMaximo}
             keyboardType="number-pad"
             placeholder={t('campanias.cupoMaximoPlaceholder')}
-            placeholderTextColor={colors.textMuted}
           />
         </>
       ) : null}

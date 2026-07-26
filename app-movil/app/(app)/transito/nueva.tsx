@@ -12,6 +12,7 @@ import { Especie, Mascota, Sexo, TipoTransito, VerificacionEstado } from '../../
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoTransito[] = ['necesito', 'ofrezco'];
 const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
@@ -208,8 +209,7 @@ export default function NuevoTransitoScreen() {
           {tipo === 'necesito' ? (
             <>
               <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.nombre')}</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              <AppInput
                 value={nombre}
                 onChangeText={setNombre}
               />
@@ -265,30 +265,25 @@ export default function NuevoTransitoScreen() {
       )}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('transito.descripcionLabel')}</Text>
-      <TextInput
-        style={[styles.input, styles.textarea, { borderColor: colors.border, color: colors.text }]}
+      <AppInput style={styles.textarea}
         value={descripcion}
         onChangeText={setDescripcion}
         multiline
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('transito.duracionDiasLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={duracionDias}
         onChangeText={setDuracionDias}
         keyboardType="number-pad"
         placeholder={t('transito.duracionDiasPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('transito.zonaLabel')}</Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         value={zonaDescripcion}
         onChangeText={setZonaDescripcion}
         placeholder={t('transito.zonaPlaceholder')}
-        placeholderTextColor={colors.textMuted}
       />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}

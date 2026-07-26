@@ -15,6 +15,7 @@ import { authApi } from '../../src/api/authApi';
 import { LogoImage } from '../../src/components/LogoImage';
 import { centeredContent } from '../../src/theme/layout';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { AppInput } from '../../src/components/AppInput';
 
 const isWeb = Platform.OS === 'web';
 
@@ -71,10 +72,8 @@ export default function RecuperarPasswordScreen() {
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
       {message ? <Text style={{ color: colors.success, marginBottom: 12 }}>{message}</Text> : null}
 
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+      <AppInput
         placeholder={t('auth.email')}
-        placeholderTextColor={colors.textMuted}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -84,19 +83,15 @@ export default function RecuperarPasswordScreen() {
 
       {paso === 'codigo' ? (
         <>
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             placeholder={t('auth.resetCode')}
-            placeholderTextColor={colors.textMuted}
             value={codigo}
             onChangeText={setCodigo}
             keyboardType="number-pad"
             maxLength={6}
           />
-          <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          <AppInput
             placeholder={t('auth.newPassword')}
-            placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry

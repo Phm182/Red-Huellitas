@@ -6,6 +6,7 @@ import { adminApi } from '../../../src/api/adminApi';
 import { DenunciaEstado, DenunciaPendiente } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { AppInput } from '../../../src/components/AppInput';
 
 const ESTADOS: DenunciaEstado[] = ['pendiente', 'revisada', 'desestimada'];
 
@@ -184,12 +185,11 @@ export default function AdminDenunciasScreen() {
                 </Pressable>
               ) : null}
 
-              <TextInput
+              <AppInput
                 value={notas[item.denunciaId] ?? ''}
                 onChangeText={(texto) => setNotas((previos) => ({ ...previos, [item.denunciaId]: texto }))}
-                placeholder={t('admin.notaPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                placeholder={t('admin.notaPlaceholder')}
+                style={styles.input}
                 multiline
               />
 

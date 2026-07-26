@@ -6,6 +6,7 @@ import { adminApi } from '../../../src/api/adminApi';
 import { ReporteEstado, ReportePendiente, ReporteTipo } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { AppInput } from '../../../src/components/AppInput';
 
 const ESTADOS: ReporteEstado[] = ['pendiente', 'resuelto', 'descartado'];
 const TIPOS: (ReporteTipo | null)[] = [null, 'mejora', 'falla'];
@@ -148,12 +149,11 @@ export default function AdminReportesScreen() {
               </Text>
             </View>
 
-            <TextInput
+            <AppInput
               value={notas[item.reporteId] ?? ''}
               onChangeText={(texto) => setNotas((previos) => ({ ...previos, [item.reporteId]: texto }))}
-              placeholder={t('admin.notaPlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder={t('admin.notaPlaceholder')}
+              style={styles.input}
               multiline
             />
 
