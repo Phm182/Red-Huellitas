@@ -207,9 +207,10 @@ Dos arreglos que salieron en el camino:
 
 ## 7. Infraestructura pendiente (no urgente, ver detalle en `AUTOMATIZACIONES_PENDIENTES.md`)
 
-- Tarea programada de Windows para la ingesta de Noticias (`inc/cli/ingestar_noticias.php`).
+- Tareas programadas de Windows (los 3 scripts CLI están hechos y probados; falta registrarlos): ingesta de Noticias (`inc/cli/ingestar_noticias.php`), recordatorios del minijuego (`inc/cli/juego_recordatorios.php`) y limpieza de Historias vencidas (`inc/cli/limpiar_historias.php`).
 - Subir `upload_max_filesize`/`post_max_size` en `php.ini` (actual 40M, necesario 80M para videos de Shorts de hasta 60MB).
-- Limpieza física futura de archivos de Historias vencidas (script no implementado todavía).
+- `npx eas init` para que el push funcione (sin `extra.eas.projectId` ningún dispositivo registra token y **todo el push del proyecto está inactivo**).
 - Revisar límites de `php.ini` reales del hosting antes de producción.
+- **Deploy a producción**: el panel de moderación existe sólo en local. Verificado el 2026-07-25 que `https://redhuellitas.bitflow.com.ar/inc/ajax/admin/*.php` da 404 y que la migración `019` tampoco corrió allá. Hay que subir archivos + correr `019`/`020`/`021` en la base del hosting + poner el usuario como admin ahí.
 
 Ninguna de estas bloquea seguir con Fase 6 en desarrollo local.

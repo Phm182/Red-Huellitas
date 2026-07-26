@@ -13,23 +13,26 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
   ```
 - **Estado**: no ejecutado todavía.
 
-### 2. php.ini — Subir límite de subida para videos (Shorts/Historias)
-- **Qué**: `upload_max_filesize` y `post_max_size` están en 40M (default XAMPP). El límite de la app para videos es 60MB, así que hoy PHP corta antes de llegar a la validación propia.
-- **Por qué pendiente**: es un cambio de configuración del sistema, no algo que deba tocar por mi cuenta.
-- **Pasos**:
-  1. Editar `C:\xampp\php\php.ini`.
-  2. Subir `upload_max_filesize = 80M` y `post_max_size = 80M`.
-  3. Reiniciar Apache desde el panel de XAMPP.
-- **Estado**: no ejecutado todavía (confirmado con un test real: un video de 65MB hoy es rechazado por el límite de PHP, no por la validación de la app).
+### 2. php.ini — Subir límite de subida para videos (Shorts/Historias) — **HECHO (2026-07-26)**
+- **Qué**: `upload_max_filesize` y `post_max_size` estaban en 40M (default XAMPP), por debajo del límite de 60MB de la app (`RH_MAX_VIDEO_BYTES`), así que PHP cortaba antes de llegar a la validación propia.
+- **Hecho**: ambos a **80M** en `C:\xampp\php\php.ini` (líneas 701 y 853), con backup en `C:\xampp\php\php.ini.backup-20260726`. Apache reiniciado y verificado sirviendo `upload_max_filesize=80M` / `post_max_size=80M`.
+- **Ojo al reiniciar Apache en este XAMPP**: no está instalado como servicio de Windows, así que `httpd -k restart` falla con `AH00436: No installed service named "Apache2.4"`. Hay que `taskkill /F /IM httpd.exe` y volver a lanzar `C:\xampp\apache\bin\httpd.exe` (o usar el panel de XAMPP).
 
-### 3. Limpieza física de Historias vencidas
-- **Qué**: los archivos de `uploads/historias/{UserId}/` de historias con `ExpiraEn < NOW()` quedan en disco (la fila de `Historia` sigue existiendo con `Estado='A'`, solo se excluye por query en tiempo de lectura — no hay borrado físico ni de la fila).
-- **Por qué pendiente**: no bloquea nada funcional (las historias vencidas nunca se muestran), es limpieza de espacio en disco a futuro.
-- **Sugerencia de implementación futura**: script CLI similar a `ingestar_noticias.php` que:
-  - Busque `Historia` con `ExpiraEn < NOW() - INTERVAL 7 DAY` (margen de seguridad).
-  - Borre el archivo físico (`MediaPath`) y la fila (o la marque `Estado='I'` primero, y borre el archivo en una segunda pasada).
-  - Se registraría con `schtasks` igual que la ingesta de noticias (ej. una vez por día).
-- **Estado**: no implementado.
+### 3. Limpieza física de Historias vencidas — **SCRIPT LISTO, falta registrar la tarea**
+- **Qué**: los archivos de `uploads/historias/{UserId}/` de historias vencidas quedaban en disco para siempre (las historias se ocultan por query, `ExpiraEn > NOW()`, nunca se borran solas).
+- **Implementado (2026-07-25)**: `inc/cli/limpiar_historias.php`. Borra archivo + `HistoriaVista` + la fila de las historias vencidas hace más de `RH_HISTORIAS_DIAS_MARGEN` (7) días. Verificado con 5 casos reales: vencida sin denuncia, vencida con denuncia pendiente, vencida con denuncia resuelta, dentro del margen, y vigente.
+  - **Una historia con denuncia PENDIENTE no se toca**: el panel de moderación necesita poder ver el contenido para decidir. Se saltea y se limpia sola en la corrida siguiente, una vez resuelta (probado).
+  - `Denuncia.HistoriaId` tiene FK contra `Historia`, así que las denuncias **ya resueltas** se desenganchan (`HistoriaId = NULL`) antes de borrar la fila. La denuncia conserva motivo, nota, estado y quién la resolvió.
+  - Si un archivo no se puede borrar, **la fila no se borra**: sin la fila se pierde el path y el archivo quedaría huérfano para siempre. Se reintenta en la corrida siguiente.
+- **Probar sin borrar nada**:
+  ```bash
+  C:\xampp\php\php.exe "C:\xampp\htdocs\Red Huellitas\inc\cli\limpiar_historias.php" --dry-run
+  ```
+- **Comando para programarla** (una vez por día de madrugada):
+  ```bash
+  schtasks /create /tn "RH_Limpiar_Historias" /tr "C:\xampp\php\php.exe \"C:\xampp\htdocs\Red Huellitas\inc\cli\limpiar_historias.php\"" /sc daily /st 04:00
+  ```
+- **Estado**: script hecho y verificado; la tarea programada no se registró (modifica la máquina, es decisión del usuario).
 
 ### 5. Tarea programada — Recordatorios del minijuego (Fase 7a)
 - **Qué**: corre `inc/cli/juego_recordatorios.php`, que avisa por push a los usuarios cuya mascota del juego tiene los stats bajos ("tu mascota te extraña"). Manda un push por usuario, no uno por mascota, y saltea a quien haya jugado en las últimas 20hs.
