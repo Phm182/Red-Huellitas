@@ -240,6 +240,36 @@ El usuario reportó que el recorte se trababa a veces sí y a veces no. Eran tre
 
 ---
 
+### Marca propia, hubs, privacidad, chat y notificaciones (2026-07-27)
+
+**La navegación era de cuando la app tenía 4 pantallas.** Con 7 fases construidas, Tienda, Salud, Rescate y Juegos estaban todos escondidos en un "Más" con 6 tiles y 10 links sueltos. Ahora la barra inferior agrupa por tema y dice qué hace la app en vez de listar pantallas.
+
+**Nombres**: Inicio → **Huelligram**, Historias → **Huellitas**, Shorts → **Huetube**, Juegos → **HuePlay**, Más → **Configuración**. Sólo cambian los textos: rutas y tablas siguen diciendo `historias`, porque renombrarlas es un diff enorme sin efecto visible y tocar esas rutas ya rompió el router una vez.
+
+**`src/navigation/hubs.ts` es la fuente única** de los 6 hubs. La leen la barra, el menú de mantener apretado y la grilla de cada hub. Antes la lista vivía duplicada entre la barra y el cajón de "Más" y se desincronizaba sola.
+
+**Huelligram** tiene las Huellitas arriba y tres solapas debajo (Publicaciones · Noticias · Huetube), que también se cambian deslizando el dedo.
+
+**Riel de flotantes** abajo a la derecha, en columna: notificaciones, chat, mis animales y publicar. Los tres secundarios son de 42px en color de superficie y sólo publicar va en color de marca — cuatro botones grandes tapaban el contenido. Los "crear" de cada pantalla se corrieron a la izquierda del riel para no pisarse. Se apagan enteros en Huellitas, fotos y videos.
+
+**Cuenta privada** (`sql/025`): `rh_puede_ver_perfil()` es el gate único y se llama desde los **cinco** caminos que exponen contenido de un usuario (publicaciones, mascotas, Huellitas, seguidores, seguidos). La ficha del perfil sigue visible porque si no no habría forma de encontrar a alguien para pedirle seguirlo; el WhatsApp no se filtra ni marcado como público. **Al pasar a privado los seguidores actuales se conservan**: echarlos sería destruir datos por un cambio de setting.
+
+**Notificaciones** (`sql/026`): `rh_notificar()` guarda la fila y después manda el push. Antes se llamaba directo a `rh_enviar_push()` en 10 lugares y no quedaba nada — si el celular estaba apagado, la notificación no existió nunca. Los tres badges salen de un solo endpoint cada 30s.
+
+**Chat** (`sql/027`): el estado vive **por participante**, no por conversación. Es lo que hace posible la bandeja: para el que escribe es una charla y para el que recibe, si no se conocen, es una solicitud. Cuenta como conocerse que uno siga al otro, que haya match de mascotas o un pedido en común. A una solicitud sin aceptar no se le manda push. Sin websockets en hosting compartido: **polling cada 4s pidiendo sólo lo nuevo**. Del MSN: zumbido que sacude la pantalla, mensaje personal y emoticones que se convierten al escribir.
+
+**Refugios** no necesitó tabla: es un usuario con `TipoUsuario = 'refugio'`, que existía desde el registro y no se usaba para nada. **Cuidados** (`sql/028`) es contenido semilla real por especie.
+
+**Dos bugs de encoding encontrados de paso**, ninguno del pedido:
+1. **Los 8 i18n que no son es/en estaban doble-codificados**: en chino se veía `é¦–é¡µ` en vez de `首页`, en ruso `Ð“Ð»Ð°Ð²Ð½Ð°Ñ`. La app era ilegible en 4 idiomas. Reparado revirtiendo el mapeo cp1252→UTF-8.
+2. **`app/+html.tsx` no se aplica en el dev server** — sólo al export estático. Por eso la regla que oculta las barras de scroll nunca corría. Ahora se inyecta desde el runtime (`src/theme/hideScrollbars.ts`).
+
+⚠️ **Las migraciones con acentos hay que correrlas con `--default-character-set=utf8mb4`**, si no el cliente de MySQL asume latin1 y entra todo roto.
+
+**Falta**: enganchar `rh_notificar()` en los 9 llamadores viejos de `rh_enviar_push()` (hoy sólo lo usan seguimiento y chat), la tarjeta de interacciones dentro de cada mascota, y el rediseño visual de las pantallas de detalle.
+
+---
+
 ## 4. Cómo seguir mañana
 
 1. Confirmar que XAMPP (MySQL + Apache) está corriendo: `/c/xampp/mysql_start.bat` y `/c/xampp/apache_start.bat` en background si no lo están.

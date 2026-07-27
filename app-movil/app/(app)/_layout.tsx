@@ -41,6 +41,8 @@ export default function AppLayout() {
         <Stack.Screen name="rescate/index" />
         <Stack.Screen name="tienda/index" />
         <Stack.Screen name="salud/index" />
+        <Stack.Screen name="refugios/index" />
+        <Stack.Screen name="cuidados/index" />
         <Stack.Screen name="notificaciones/index" />
         <Stack.Screen name="chat/index" />
         <Stack.Screen name="chat/[conversacionId]" />

@@ -44,6 +44,29 @@ export interface SolicitudSeguimiento {
   usuario: UsuarioResumen & { zonaDescripcion: string | null; avatarBust?: number | null };
 }
 
+export type EspecieCuidado = 'perro' | 'gato' | 'otro';
+export type CategoriaCuidado =
+  | 'alimentacion'
+  | 'higiene'
+  | 'salud'
+  | 'ejercicio'
+  | 'convivencia';
+
+export interface CuidadoRecomendacion {
+  cuidadoId: number;
+  especie: EspecieCuidado;
+  categoria: CategoriaCuidado;
+  titulo: string;
+  resumen: string;
+  cuerpo: string;
+}
+
+/** Un refugio es un usuario con TipoUsuario 'refugio', no una tabla aparte. */
+export interface RefugioResumen extends UsuarioResumen {
+  avatarBust?: number | null;
+  zonaDescripcion: string | null;
+}
+
 /** El otro lado de una charla, con su mensaje personal estilo MSN. */
 export interface ChatOtro extends UsuarioResumen {
   avatarBust?: number | null;
