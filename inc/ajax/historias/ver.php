@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/historias.php';
+require_once __DIR__ . '/../../funciones/privacidad.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -14,6 +15,8 @@ $userId = (int) ($_GET['userId'] ?? 0);
 if ($userId <= 0) {
     json_error('Falta userId');
 }
+
+rh_require_ver_perfil($conn, $viewerUserId, $userId);
 
 $stmt = $conn->prepare(
     "SELECT * FROM Historia WHERE UserId = ? AND Estado = 'A' AND ExpiraEn > NOW() ORDER BY CreatedAt ASC"

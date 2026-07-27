@@ -190,5 +190,7 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'rol' => $u['Rol'],
         'tipoUsuarioCodigo' => $tipoUsuarioCodigo,
         'notificarProximidad' => (bool) ($u['NotificarProximidad'] ?? 1),
+        'perfilPrivado' => (bool) ($u['PerfilPrivado'] ?? 0),
+        'mensajePersonal' => $u['MensajePersonal'] ?? null,
     ];
 }

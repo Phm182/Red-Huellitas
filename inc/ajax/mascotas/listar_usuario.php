@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
+require_once __DIR__ . '/../../funciones/privacidad.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -10,6 +11,8 @@ $targetUserId = (int) ($_GET['userId'] ?? 0);
 if ($targetUserId <= 0) {
     json_error('Falta userId');
 }
+
+rh_require_ver_perfil($conn, $viewerUserId, $targetUserId);
 
 $stmt = $conn->prepare(
     "SELECT * FROM Mascota WHERE UserId = ? AND Estado = 'A' ORDER BY CreatedAt DESC"

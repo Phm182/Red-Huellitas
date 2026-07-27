@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/privacidad.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -51,7 +52,15 @@ if (!$esUnoMismo) {
     $stmt->close();
 }
 
-$whatsappVisible = $esUnoMismo || $usuario['WhatsappVisibilidad'] === 'publica';
+// La ficha de una cuenta privada se ve igual (nombre, avatar, contadores): si
+// no, no habría forma de encontrar a alguien para pedirle seguirlo. Lo que se
+// corta es el contenido, y de eso se encargan los endpoints de listado.
+$puedeVer = rh_puede_ver_perfil($conn, $viewerUserId, $targetUserId);
+$estadoSeguimiento = rh_estado_seguimiento($conn, $viewerUserId, $targetUserId);
+
+// El WhatsApp sí es dato de contacto: en una cuenta privada no se filtra ni
+// aunque esté marcado como público.
+$whatsappVisible = $esUnoMismo || ($puedeVer && $usuario['WhatsappVisibilidad'] === 'publica');
 
 json_success([
     'userId' => $targetUserId,
@@ -66,4 +75,8 @@ json_success([
     'totalSeguidos' => $totalSeguidos,
     'siguiendoYo' => $siguiendoYo,
     'esUnoMismo' => $esUnoMismo,
+    'perfilPrivado' => (bool) ($usuario['PerfilPrivado'] ?? 0),
+    'puedeVerContenido' => $puedeVer,
+    'estadoSeguimiento' => $estadoSeguimiento,
+    'mensajePersonal' => $usuario['MensajePersonal'] ?? null,
 ]);

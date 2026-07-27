@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/publicaciones.php';
+require_once __DIR__ . '/../../funciones/privacidad.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -10,6 +11,8 @@ $targetUserId = (int) ($_GET['userId'] ?? 0);
 if ($targetUserId <= 0) {
     json_error('Falta userId');
 }
+
+rh_require_ver_perfil($conn, $viewerUserId, $targetUserId);
 
 $cursor = isset($_GET['cursor']) && $_GET['cursor'] !== '' ? (int) $_GET['cursor'] : null;
 $limit = isset($_GET['limit']) ? max(1, min(50, (int) $_GET['limit'])) : 15;
