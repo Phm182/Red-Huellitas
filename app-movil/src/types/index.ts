@@ -44,6 +44,38 @@ export interface SolicitudSeguimiento {
   usuario: UsuarioResumen & { zonaDescripcion: string | null; avatarBust?: number | null };
 }
 
+/** El otro lado de una charla, con su mensaje personal estilo MSN. */
+export interface ChatOtro extends UsuarioResumen {
+  avatarBust?: number | null;
+  mensajePersonal: string | null;
+}
+
+export interface ChatMensaje {
+  mensajeId: number;
+  userIdEmisor: number;
+  texto: string;
+  /** El zumbido viaja como mensaje para quedar en el historial. */
+  tipo: 'texto' | 'zumbido';
+  createdAt: string;
+}
+
+export interface ChatConversacion {
+  conversacionId: number;
+  ultimoMensajeEn: string | null;
+  ultimoTexto: string | null;
+  ultimoTipo: 'texto' | 'zumbido' | null;
+  noLeidos: number;
+  otro: ChatOtro;
+}
+
+export interface ChatDetalle {
+  conversacionId: number;
+  /** Para el que recibe puede ser una solicitud aunque para el otro sea activa. */
+  estado: 'activa' | 'solicitud' | 'archivada';
+  otro: ChatOtro | null;
+  mensajes: ChatMensaje[];
+}
+
 /** Los badges del riel de flotantes; salen todos de un solo endpoint. */
 export interface Contadores {
   notificaciones: number;
