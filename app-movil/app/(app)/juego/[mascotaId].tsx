@@ -1,4 +1,4 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -81,6 +81,14 @@ export default function JuegoScreen() {
     setAvatarBusy('generar');
     const res = await juegoApi.avatarGenerar(Number(mascotaId));
     setAvatarBusy(null);
+
+    // 402 = no tiene suscripción activa. Mostrarle un error sin salida sería
+    // una pared: se lo lleva directo a los planes.
+    if (res.status === 402) {
+      router.push('/(app)/suscripcion' as never);
+      return;
+    }
+
     if (res.success && res.data) {
       setJuego(res.data.juego);
       setCelebrar((c) => c + 1);
@@ -157,6 +165,8 @@ export default function JuegoScreen() {
       <View style={styles.avatarZona}>
         <MascotaViva
           especie={juego.especie}
+          raza={juego.raza}
+          nombre={juego.nombre}
           animo={juego.animo}
           accion={actuando}
           disparo={celebrar}

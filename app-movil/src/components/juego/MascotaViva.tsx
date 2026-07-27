@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -10,316 +11,405 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Ellipse,
+  G,
+  LinearGradient,
+  Path,
+  RadialGradient,
+  Stop,
+} from 'react-native-svg';
 import { JuegoAnimo } from '../../types';
 import { useTheme } from '../../theme/ThemeProvider';
+import { pelajeDe } from './pelaje';
 
-/** Las acciones que la mascota sabe actuar. */
 export type AccionViva = 'alimentar' | 'jugar' | 'banar' | 'dormir' | null;
 
 type Props = {
   especie: string;
+  /** Lo que el usuario escribió como raza; define el pelaje. */
+  raza?: string | null;
+  nombre: string;
   animo: JuegoAnimo;
-  /** Cambiar esto dispara la actuación; null vuelve al reposo. */
   accion: AccionViva;
   /** Se incrementa desde afuera para re-disparar la misma acción. */
   disparo?: number;
   tamano?: number;
 };
 
-const AnimatedView = Animated.createAnimatedComponent(View);
+const AG = Animated.createAnimatedComponent(G);
+const AEllipse = Animated.createAnimatedComponent(Ellipse);
 
 /**
- * La mascota del juego, **dibujada por código**.
+ * La mascota del juego, dibujada y animada por código.
  *
- * Antes acá iba la foto real (o una generada con IA) con una animación de
- * respiración encima. El problema es de fondo: una imagen no puede comer,
- * saltar ni dormirse — por más avatar que genere la IA, sigue siendo un PNG
- * quieto. Para que la mascota *actúe* hay que dibujarla en partes y animar
- * cada parte por separado, que es lo que hace este componente.
+ * **Todo vive en un solo `<Svg>` de 300×300.** La versión anterior tenía la
+ * cola en su propio SVG rotando sobre su propio pivote, y por eso se despegaba
+ * del cuerpo. Acá cada parte es un `<G>` con su origen puesto en la
+ * articulación real —la cola gira desde donde nace en el lomo, la cabeza desde
+ * el cuello— así que al moverse siguen unidas.
  *
- * Ventaja lateral: no depende de ninguna API, funciona sin conexión y no
- * gasta cuota.
- *
- * Cada acción tiene su gesto:
- * - **alimentar**: baja la cabeza al plato y mastica.
- * - **jugar**: salta y menea la cola fuerte.
- * - **bañar**: se sacude de lado a lado y salen burbujas.
- * - **dormir**: se acurruca, cierra los ojos y aparecen las Z.
+ * El color sale de la raza (ver `pelaje.ts`): un siamés se ve siamés.
  */
-export function MascotaViva({ especie, animo, accion, disparo = 0, tamano = 200 }: Props) {
+export function MascotaViva({
+  especie,
+  raza,
+  nombre,
+  animo,
+  accion,
+  disparo = 0,
+  tamano = 230,
+}: Props) {
   const { colors } = useTheme();
+  const p = pelajeDe(especie, raza ?? null, nombre);
   const esGato = especie === 'gato';
+  const durmiendo = accion === 'dormir';
 
-  // --- Estado de reposo: respira y parpadea ---
-  const respirar = useSharedValue(1);
-  const cabeza = useSharedValue(0);
-  const cola = useSharedValue(0);
+  const respirar = useSharedValue(0);
+  const colaAng = useSharedValue(0);
+  const cabezaAng = useSharedValue(0);
+  const cabezaY = useSharedValue(0);
+  const mandibula = useSharedValue(0);
+  const parpado = useSharedValue(0);
   const cuerpoY = useSharedValue(0);
-  const parpadeo = useSharedValue(1);
-  const inclinacion = useSharedValue(0);
+  const cuerpoAng = useSharedValue(0);
+  const orejaAng = useSharedValue(0);
   const burbujas = useSharedValue(0);
   const zzz = useSharedValue(0);
   const plato = useSharedValue(0);
 
-  const durmiendo = accion === 'dormir';
-
+  // --- Reposo ---
   useEffect(() => {
-    // La respiración cambia con el ánimo: más lenta y chata cuando está bajón.
-    const dur = durmiendo ? 2800 : animo === 'decaido' ? 2400 : animo === 'aburrido' ? 1900 : 1300;
-    const amp = durmiendo ? 1.05 : animo === 'decaido' ? 1.02 : 1.05;
-
+    const dur = durmiendo ? 2400 : animo === 'decaido' ? 2100 : animo === 'aburrido' ? 1700 : 1250;
     respirar.value = withRepeat(
       withSequence(
-        withTiming(amp, { duration: dur, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.ease) })
+        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: dur, easing: Easing.inOut(Easing.sin) })
       ),
       -1,
       false
     );
+    // Decaída baja la cabeza; dormida la apoya del todo.
+    cabezaAng.value = withTiming(durmiendo ? 16 : animo === 'decaido' ? 9 : 0, { duration: 600 });
+    orejaAng.value = withTiming(durmiendo || animo === 'decaido' ? 16 : 0, { duration: 600 });
+  }, [animo, durmiendo, respirar, cabezaAng, orejaAng]);
 
-    // Cuando está decaída, la cabeza cae; dormida, se acurruca más.
-    inclinacion.value = withTiming(durmiendo ? 12 : animo === 'decaido' ? 7 : 0, { duration: 500 });
-  }, [animo, durmiendo, respirar, inclinacion]);
-
-  // Cola: sólo se menea si está despierta, y más rápido cuanto mejor el ánimo.
   useEffect(() => {
     if (durmiendo) {
-      cola.value = withTiming(0, { duration: 400 });
+      colaAng.value = withTiming(0, { duration: 500 });
       return;
     }
-    const dur = animo === 'feliz' ? 260 : animo === 'bien' ? 420 : 900;
-    cola.value = withRepeat(
+    const dur = animo === 'feliz' ? 240 : animo === 'bien' ? 400 : 820;
+    const amp = animo === 'feliz' ? 26 : animo === 'bien' ? 16 : 8;
+    colaAng.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.quad) }),
-        withTiming(-1, { duration: dur, easing: Easing.inOut(Easing.quad) })
+        withTiming(amp, { duration: dur, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-amp, { duration: dur, easing: Easing.inOut(Easing.quad) })
       ),
       -1,
       true
     );
-  }, [animo, durmiendo, cola]);
+  }, [animo, durmiendo, colaAng]);
 
-  // Parpadeo: cerrar los ojos un instante cada tanto. Dormida quedan cerrados.
   useEffect(() => {
     if (durmiendo) {
-      parpadeo.value = withTiming(0.06, { duration: 500 });
+      parpado.value = withTiming(1, { duration: 600 });
       return;
     }
-    parpadeo.value = 1;
+    parpado.value = 0;
     const id = setInterval(() => {
-      parpadeo.value = withSequence(
-        withTiming(0.1, { duration: 90 }),
-        withTiming(1, { duration: 120 })
-      );
-    }, 3200);
+      parpado.value = withSequence(withTiming(1, { duration: 80 }), withTiming(0, { duration: 130 }));
+    }, 3400);
     return () => clearInterval(id);
-  }, [durmiendo, parpadeo]);
+  }, [durmiendo, parpado]);
 
   // --- Actuaciones ---
   useEffect(() => {
     if (!accion) return;
 
     if (accion === 'alimentar') {
-      // Aparece el plato, baja la cabeza y mastica cuatro veces.
-      plato.value = withSequence(withTiming(1, { duration: 200 }), withDelay(2200, withTiming(0, { duration: 300 })));
-      cabeza.value = withSequence(
-        withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) }),
+      plato.value = withSequence(
+        withTiming(1, { duration: 260 }),
+        withDelay(2400, withTiming(0, { duration: 320 }))
+      );
+      // Baja el cuello hasta el plato y mastica: la mandíbula abre y cierra.
+      cabezaAng.value = withSequence(
+        withTiming(30, { duration: 380, easing: Easing.out(Easing.cubic) }),
+        withDelay(1500, withTiming(0, { duration: 420, easing: Easing.inOut(Easing.cubic) }))
+      );
+      cabezaY.value = withSequence(
+        withTiming(26, { duration: 380, easing: Easing.out(Easing.cubic) }),
+        withDelay(1500, withTiming(0, { duration: 420 }))
+      );
+      mandibula.value = withDelay(
+        400,
         withRepeat(
-          withSequence(withTiming(0.82, { duration: 150 }), withTiming(1, { duration: 150 })),
-          4,
+          withSequence(withTiming(1, { duration: 130 }), withTiming(0, { duration: 130 })),
+          6,
           false
-        ),
-        withTiming(0, { duration: 320 })
+        )
       );
     }
 
     if (accion === 'jugar') {
-      // Dos saltos con squash: sube rápido y aterriza con resorte.
       cuerpoY.value = withSequence(
-        withTiming(-38, { duration: 260, easing: Easing.out(Easing.quad) }),
-        withSpring(0, { damping: 7, stiffness: 190 }),
-        withTiming(-26, { duration: 230, easing: Easing.out(Easing.quad) }),
-        withSpring(0, { damping: 8, stiffness: 200 })
+        withTiming(-44, { duration: 270, easing: Easing.out(Easing.cubic) }),
+        withSpring(0, { damping: 7, stiffness: 200 }),
+        withTiming(-28, { duration: 230, easing: Easing.out(Easing.cubic) }),
+        withSpring(0, { damping: 8, stiffness: 210 })
+      );
+      cabezaAng.value = withSequence(
+        withTiming(-14, { duration: 260 }),
+        withSpring(0, { damping: 9 })
       );
     }
 
     if (accion === 'banar') {
-      // Sacudida lateral clásica de perro mojado + burbujas subiendo.
-      inclinacion.value = withSequence(
-        withRepeat(withSequence(withTiming(-13, { duration: 90 }), withTiming(13, { duration: 90 })), 6, true),
-        withTiming(0, { duration: 200 })
+      cuerpoAng.value = withSequence(
+        withRepeat(
+          withSequence(withTiming(-9, { duration: 85 }), withTiming(9, { duration: 85 })),
+          7,
+          true
+        ),
+        withSpring(0, { damping: 10 })
       );
       burbujas.value = withSequence(
-        withTiming(1, { duration: 1400, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: 250 })
+        withTiming(1, { duration: 1600, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 300 })
       );
     }
 
-    if (accion === 'dormir') {
-      zzz.value = withRepeat(withTiming(1, { duration: 2200, easing: Easing.out(Easing.quad) }), -1, false);
-    } else {
-      zzz.value = withTiming(0, { duration: 300 });
-    }
-  }, [accion, disparo, cabeza, cuerpoY, inclinacion, burbujas, zzz, plato]);
+    zzz.value = durmiendo
+      ? withRepeat(withTiming(1, { duration: 2400, easing: Easing.out(Easing.quad) }), -1, false)
+      : withTiming(0, { duration: 300 });
+  }, [accion, disparo, durmiendo, cabezaAng, cabezaY, mandibula, cuerpoY, cuerpoAng, burbujas, zzz, plato]);
 
-  const estiloCuerpo = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: cuerpoY.value },
-      { scale: respirar.value },
-      { rotate: `${inclinacion.value}deg` },
-    ],
+  // --- Props animadas: cada parte gira desde su articulación ---
+  const propsCuerpo = useAnimatedProps(() => ({
+    // El pecho se infla al respirar; el resto sigue quieto.
+    scaleY: 1 + respirar.value * 0.035,
+    originX: 150,
+    originY: 210,
+    rotation: cuerpoAng.value,
+  })) as never;
+
+  // La cola nace en (208, 176): ahí va el origen, por eso no se despega.
+  const propsCola = useAnimatedProps(() => ({
+    rotation: colaAng.value,
+    originX: 208,
+    originY: 176,
+  })) as never;
+
+  // El cuello está en (150, 150).
+  const propsCabeza = useAnimatedProps(() => ({
+    rotation: cabezaAng.value,
+    originX: 150,
+    originY: 150,
+    translateY: cabezaY.value,
+  })) as never;
+
+  const propsOrejaIzq = useAnimatedProps(() => ({ rotation: -orejaAng.value, originX: 116, originY: 86 })) as never;
+  const propsOrejaDer = useAnimatedProps(() => ({ rotation: orejaAng.value, originX: 184, originY: 86 })) as never;
+
+  // Párpado: una elipse del color del pelaje que baja sobre el ojo.
+  const propsParpIzq = useAnimatedProps(() => ({ ry: 1 + parpado.value * 10 })) as never;
+  const propsParpDer = useAnimatedProps(() => ({ ry: 1 + parpado.value * 10 })) as never;
+
+  // Mandíbula: el hocico se estira hacia abajo al masticar.
+  const propsMandibula = useAnimatedProps(() => ({ ry: 7 + mandibula.value * 4 })) as never;
+
+  const estiloEscena = useAnimatedStyle(() => ({ transform: [{ translateY: cuerpoY.value }] }));
+  const estiloSombra = useAnimatedStyle(() => ({
+    // La sombra se achica cuando salta: es lo que hace leer la altura.
+    transform: [{ scaleX: 1 - Math.min(Math.abs(cuerpoY.value) / 120, 0.45) }],
+    opacity: 0.45 - Math.min(Math.abs(cuerpoY.value) / 300, 0.25),
   }));
-
-  const estiloCabeza = useAnimatedStyle(() => ({
-    transform: [{ translateY: cabeza.value * tamano * 0.11 }, { scaleY: 1 - cabeza.value * 0.05 }],
+  const estiloBurbujas = useAnimatedStyle(() => ({
+    opacity: burbujas.value > 0 ? 1 - burbujas.value * 0.55 : 0,
+    transform: [{ translateY: -burbujas.value * tamano * 0.45 }, { scale: 0.7 + burbujas.value * 0.5 }],
   }));
-
-  const estiloCola = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${cola.value * (animo === 'feliz' ? 34 : 20)}deg` }],
+  const estiloZzz = useAnimatedStyle(() => ({
+    opacity: durmiendo ? Math.max(0, 1 - zzz.value) : 0,
+    transform: [{ translateY: -zzz.value * tamano * 0.28 }, { translateX: zzz.value * tamano * 0.1 }],
   }));
-
-  const estiloOjos = useAnimatedStyle(() => ({ transform: [{ scaleY: parpadeo.value }] }));
   const estiloPlato = useAnimatedStyle(() => ({ opacity: plato.value }));
 
-  const estiloBurbujas = useAnimatedStyle(() => ({
-    opacity: burbujas.value > 0 ? 1 - burbujas.value * 0.6 : 0,
-    transform: [{ translateY: -burbujas.value * tamano * 0.42 }],
-  }));
-
-  const estiloZzz = useAnimatedStyle(() => ({
-    opacity: durmiendo ? 1 - zzz.value : 0,
-    transform: [{ translateY: -zzz.value * tamano * 0.3 }, { translateX: zzz.value * tamano * 0.12 }],
-  }));
-
-  const w = tamano;
-  const h = tamano;
-  const pelo = colors.primary;
-  const peloOscuro = colors.accent;
-
   return (
-    <View style={[styles.escenario, { width: w, height: h * 1.15 }]}>
-      {/* Sombra en el piso: da peso y hace que el salto se lea */}
-      <View style={[styles.sombra, { width: w * 0.5, backgroundColor: colors.border }]} />
+    <View style={[styles.escena, { width: tamano, height: tamano }]}>
+      <Animated.View style={[styles.sombra, { width: tamano * 0.44, backgroundColor: '#000' }, estiloSombra]} />
 
-      <AnimatedView style={[styles.zzz, estiloZzz]}>
-        <Svg width={w * 0.3} height={w * 0.3} viewBox="0 0 40 40">
-          <Path d="M6 8h14L6 24h16" stroke={colors.textMuted} strokeWidth={3} fill="none" strokeLinecap="round" />
-          <Path d="M24 2h10L24 14h11" stroke={colors.textMuted} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+      <Animated.View style={[styles.zzz, estiloZzz]} pointerEvents="none">
+        <Svg width={tamano * 0.26} height={tamano * 0.26} viewBox="0 0 40 40">
+          <Path d="M6 9h13L6 25h15" stroke={colors.textMuted} strokeWidth={3.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M24 2h9L24 13h10" stroke={colors.textMuted} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
-      </AnimatedView>
+      </Animated.View>
 
-      <AnimatedView style={[styles.burbujas, estiloBurbujas]}>
-        <Svg width={w * 0.55} height={w * 0.5} viewBox="0 0 60 60">
-          <Circle cx="12" cy="42" r="7" fill={colors.primarySoft} opacity={0.9} />
-          <Circle cx="32" cy="30" r="10" fill={colors.primarySoft} opacity={0.8} />
-          <Circle cx="48" cy="44" r="6" fill={colors.primarySoft} opacity={0.85} />
-          <Circle cx="24" cy="14" r="5" fill={colors.primarySoft} opacity={0.7} />
+      <Animated.View style={[styles.burbujas, estiloBurbujas]} pointerEvents="none">
+        <Svg width={tamano * 0.62} height={tamano * 0.5} viewBox="0 0 80 64">
+          <Circle cx="14" cy="46" r="9" fill="#BFE6F5" opacity={0.75} />
+          <Circle cx="40" cy="30" r="13" fill="#D6F0FA" opacity={0.7} />
+          <Circle cx="64" cy="48" r="8" fill="#BFE6F5" opacity={0.8} />
+          <Circle cx="28" cy="12" r="6" fill="#EAF8FD" opacity={0.65} />
         </Svg>
-      </AnimatedView>
+      </Animated.View>
 
-      <AnimatedView style={estiloCuerpo}>
-        <Svg width={w} height={h} viewBox="0 0 200 200">
-          {/* Cola: se dibuja primero para que quede detrás del cuerpo */}
-          <AnimatedView />
-          <Ellipse cx="100" cy="132" rx="52" ry="42" fill={pelo} />
-          <Ellipse cx="100" cy="146" rx="34" ry="26" fill={colors.primarySoft} />
-          {/* Patas */}
-          <Ellipse cx="72" cy="168" rx="15" ry="11" fill={peloOscuro} />
-          <Ellipse cx="128" cy="168" rx="15" ry="11" fill={peloOscuro} />
-        </Svg>
+      <Animated.View style={estiloEscena}>
+        <Svg width={tamano} height={tamano} viewBox="0 0 300 300">
+          <Defs>
+            {/* Volumen: el cuerpo se aclara arriba y se oscurece abajo */}
+            <RadialGradient id="cuerpo" cx="42%" cy="30%" r="78%">
+              <Stop offset="0" stopColor={p.claro} />
+              <Stop offset="0.55" stopColor={p.base} />
+              <Stop offset="1" stopColor={p.sombra} />
+            </RadialGradient>
+            <RadialGradient id="cara" cx="42%" cy="32%" r="76%">
+              <Stop offset="0" stopColor={p.claro} />
+              <Stop offset="0.6" stopColor={p.base} />
+              <Stop offset="1" stopColor={p.sombra} />
+            </RadialGradient>
+            <LinearGradient id="brillo" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#fff" stopOpacity="0.35" />
+              <Stop offset="1" stopColor="#fff" stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
 
-        {/* La cola va en su propio SVG para poder rotarla sola */}
-        <AnimatedView style={[styles.cola, estiloCola]}>
-          <Svg width={w * 0.3} height={w * 0.3} viewBox="0 0 60 60">
+          {/* ---- COLA: se dibuja primero para quedar detrás del cuerpo ---- */}
+          <AG animatedProps={propsCola}>
             {esGato ? (
               <Path
-                d="M10 50 C 40 50, 52 30, 44 8"
-                stroke={pelo}
-                strokeWidth={11}
+                d="M208 176 C 244 178, 262 150, 254 112"
+                stroke={p.puntas ?? p.sombra}
+                strokeWidth={17}
                 fill="none"
                 strokeLinecap="round"
               />
             ) : (
-              <Path d="M8 46 C 30 44, 44 30, 46 12" stroke={pelo} strokeWidth={13} fill="none" strokeLinecap="round" />
+              <Path
+                d="M208 176 C 240 172, 254 150, 250 124"
+                stroke={p.sombra}
+                strokeWidth={21}
+                fill="none"
+                strokeLinecap="round"
+              />
             )}
-          </Svg>
-        </AnimatedView>
+          </AG>
 
-        {/* Cabeza: baja al plato al comer */}
-        <AnimatedView style={[styles.cabeza, estiloCabeza]}>
-          <Svg width={w * 0.62} height={w * 0.62} viewBox="0 0 120 120">
-            {/* Orejas: puntiagudas en gato, caídas en perro */}
-            {esGato ? (
+          {/* ---- CUERPO ---- */}
+          <AG animatedProps={propsCuerpo}>
+            {/* Patas traseras, detrás del torso */}
+            <Ellipse cx="112" cy="238" rx="24" ry="17" fill={p.sombra} />
+            <Ellipse cx="188" cy="238" rx="24" ry="17" fill={p.sombra} />
+
+            <Ellipse cx="150" cy="196" rx="72" ry="60" fill="url(#cuerpo)" />
+            {/* Pecho y panza claros */}
+            <Ellipse cx="150" cy="214" rx="44" ry="36" fill={p.claro} opacity={0.85} />
+
+            {p.patron === 'manchas' ? (
               <>
-                <Path d="M22 34 L18 6 L46 24 Z" fill={pelo} />
-                <Path d="M98 34 L102 6 L74 24 Z" fill={pelo} />
+                <Ellipse cx="106" cy="176" rx="22" ry="18" fill={p.sombra} opacity={0.55} />
+                <Ellipse cx="192" cy="216" rx="17" ry="14" fill={p.sombra} opacity={0.45} />
               </>
-            ) : (
+            ) : null}
+            {p.patron === 'atigrado' ? (
               <>
-                <Ellipse cx="20" cy="44" rx="13" ry="26" fill={peloOscuro} />
-                <Ellipse cx="100" cy="44" rx="13" ry="26" fill={peloOscuro} />
+                <Path d="M120 150 q 14 20 6 42" stroke={p.sombra} strokeWidth={7} fill="none" strokeLinecap="round" opacity={0.6} />
+                <Path d="M150 144 q 12 22 4 46" stroke={p.sombra} strokeWidth={7} fill="none" strokeLinecap="round" opacity={0.6} />
+                <Path d="M180 150 q 12 20 4 40" stroke={p.sombra} strokeWidth={7} fill="none" strokeLinecap="round" opacity={0.6} />
               </>
-            )}
+            ) : null}
 
-            <Circle cx="60" cy="60" r="42" fill={pelo} />
-            <Ellipse cx="60" cy="76" rx="24" ry="18" fill={colors.primarySoft} />
+            {/* Patas delanteras */}
+            <Ellipse cx="122" cy="248" rx="21" ry="15" fill={p.puntas ?? p.base} />
+            <Ellipse cx="178" cy="248" rx="21" ry="15" fill={p.puntas ?? p.base} />
 
-            {/* Ojos: el scaleY del parpadeo los cierra */}
-            <AnimatedView />
-            <Circle cx="44" cy="52" r="6.5" fill="#1a1a1a" />
-            <Circle cx="76" cy="52" r="6.5" fill="#1a1a1a" />
-            <Circle cx="46" cy="49.5" r="2.2" fill="#fff" />
-            <Circle cx="78" cy="49.5" r="2.2" fill="#fff" />
+            <Ellipse cx="128" cy="168" rx="40" ry="26" fill="url(#brillo)" />
+          </AG>
 
-            {/* Hocico */}
-            <Ellipse cx="60" cy="70" rx="8" ry="6" fill="#1a1a1a" />
+          {/* ---- CABEZA: gira y baja desde el cuello (150,150) ---- */}
+          <AG animatedProps={propsCabeza}>
+            {/* Orejas detrás del cráneo */}
+            <AG animatedProps={propsOrejaIzq}>
+              {esGato ? (
+                <Path d="M118 62 L104 20 L152 46 Z" fill={p.puntas ?? p.sombra} />
+              ) : (
+                <Ellipse cx="110" cy="92" rx="20" ry="38" fill={p.puntas ?? p.sombra} />
+              )}
+            </AG>
+            <AG animatedProps={propsOrejaDer}>
+              {esGato ? (
+                <Path d="M182 62 L196 20 L148 46 Z" fill={p.puntas ?? p.sombra} />
+              ) : (
+                <Ellipse cx="190" cy="92" rx="20" ry="38" fill={p.puntas ?? p.sombra} />
+              )}
+            </AG>
+
+            <Circle cx="150" cy="96" r="60" fill="url(#cara)" />
+
+            {/* Máscara de puntas (siamés, husky) */}
+            {p.patron === 'puntas' ? (
+              <Ellipse cx="150" cy="118" rx="36" ry="28" fill={p.puntas ?? p.sombra} opacity={0.75} />
+            ) : null}
+
+            {/* Hocico claro */}
+            <Ellipse cx="150" cy="118" rx="30" ry="23" fill={p.claro} opacity={p.patron === 'puntas' ? 0.55 : 0.95} />
+
+            {/* Ojos: iris del color de la receta + brillo */}
+            <Circle cx="128" cy="88" r="11" fill="#fff" />
+            <Circle cx="172" cy="88" r="11" fill="#fff" />
+            <Circle cx="129" cy="89" r="8" fill={p.ojos} />
+            <Circle cx="173" cy="89" r="8" fill={p.ojos} />
+            <Circle cx="129" cy="89" r={esGato ? 3.4 : 4.6} fill="#141414" />
+            <Circle cx="173" cy="89" r={esGato ? 3.4 : 4.6} fill="#141414" />
+            <Circle cx="132" cy="85" r="3" fill="#fff" />
+            <Circle cx="176" cy="85" r="3" fill="#fff" />
+
+            {/* Párpados: bajan al parpadear y quedan bajos al dormir */}
+            <AEllipse animatedProps={propsParpIzq} cx="128" cy="82" rx="12" fill={p.base} />
+            <AEllipse animatedProps={propsParpDer} cx="172" cy="82" rx="12" fill={p.base} />
+
+            {/* Nariz y boca */}
+            <AEllipse animatedProps={propsMandibula} cx="150" cy="110" rx="10" fill="#2A2A2E" />
             <Path
-              d="M60 76 L60 82 M60 82 C 52 82, 50 90, 44 88 M60 82 C 68 82, 70 90, 76 88"
-              stroke="#1a1a1a"
-              strokeWidth={2.6}
+              d="M150 120 L150 128 M150 128 C 139 128, 136 139, 127 136 M150 128 C 161 128, 164 139, 173 136"
+              stroke="#2A2A2E"
+              strokeWidth={3.4}
               fill="none"
               strokeLinecap="round"
             />
+
             {esGato ? (
               <Path
-                d="M30 68 L10 64 M30 74 L10 76 M90 68 L110 64 M90 74 L110 76"
-                stroke="#1a1a1a"
-                strokeWidth={1.8}
+                d="M116 108 L84 100 M116 116 L84 120 M184 108 L216 100 M184 116 L216 120"
+                stroke="#2A2A2E"
+                strokeWidth={2}
                 strokeLinecap="round"
+                opacity={0.7}
               />
             ) : null}
-          </Svg>
-
-          {/* Los párpados van encima, como dos tapas que bajan */}
-          <AnimatedView style={[styles.parpados, estiloOjos]} pointerEvents="none">
-            <Svg width={w * 0.62} height={w * 0.62} viewBox="0 0 120 120">
-              <Circle cx="44" cy="52" r="0.1" fill={pelo} />
-            </Svg>
-          </AnimatedView>
-        </AnimatedView>
-      </AnimatedView>
-
-      {/* Plato: aparece sólo al alimentar */}
-      <AnimatedView style={[styles.plato, estiloPlato]}>
-        <Svg width={w * 0.34} height={w * 0.2} viewBox="0 0 70 40">
-          <Path d="M4 12 H66 L58 34 H12 Z" fill={colors.accent} />
-          <Ellipse cx="35" cy="12" rx="31" ry="8" fill={colors.accentSoft} />
-          <Circle cx="26" cy="12" r="4" fill={colors.text} opacity={0.5} />
-          <Circle cx="38" cy="10" r="4.5" fill={colors.text} opacity={0.5} />
-          <Circle cx="47" cy="13" r="3.5" fill={colors.text} opacity={0.5} />
+          </AG>
         </Svg>
-      </AnimatedView>
+      </Animated.View>
+
+      <Animated.View style={[styles.plato, estiloPlato]} pointerEvents="none">
+        <Svg width={tamano * 0.3} height={tamano * 0.17} viewBox="0 0 70 40">
+          <Path d="M4 13 H66 L57 35 H13 Z" fill={colors.accent} />
+          <Ellipse cx="35" cy="13" rx="31" ry="8.5" fill={colors.accentSoft} />
+          <Circle cx="26" cy="12" r="4.5" fill="#8B5E2F" />
+          <Circle cx="38" cy="10" r="5" fill="#A56C34" />
+          <Circle cx="47" cy="13.5" r="4" fill="#8B5E2F" />
+        </Svg>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  escenario: { alignItems: 'center', justifyContent: 'flex-end' },
-  sombra: { position: 'absolute', bottom: 6, height: 10, borderRadius: 999, opacity: 0.5 },
-  cabeza: { position: 'absolute', top: -6, alignSelf: 'center' },
-  parpados: { position: 'absolute', top: 0, left: 0 },
-  cola: { position: 'absolute', right: -6, top: '46%' },
-  plato: { position: 'absolute', bottom: 0, alignSelf: 'center' },
-  burbujas: { position: 'absolute', bottom: '30%', alignSelf: 'center' },
-  zzz: { position: 'absolute', top: 0, right: '18%' },
+  escena: { alignItems: 'center', justifyContent: 'center' },
+  sombra: { position: 'absolute', bottom: 10, height: 12, borderRadius: 999, opacity: 0.4 },
+  plato: { position: 'absolute', bottom: 4, alignSelf: 'center' },
+  burbujas: { position: 'absolute', bottom: '26%', alignSelf: 'center' },
+  zzz: { position: 'absolute', top: 2, right: '16%' },
 });

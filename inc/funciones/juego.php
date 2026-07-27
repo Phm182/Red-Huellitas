@@ -273,6 +273,9 @@ function rh_juego_publico(mysqli $conn, array $juego, array $mascota): array
         'mascotaId' => (int) $mascota['MascotaId'],
         'nombre' => $mascota['Nombre'],
         'especie' => $mascota['Especie'],
+        // La raza va al cliente para elegir el pelaje: un siamés tiene que
+        // verse siamés y no del color de marca.
+        'raza' => $mascota['RazaTexto'] ?? null,
         'avatarPath' => $avatarPath,
         'avatarEsGenerado' => $juego['AvatarPath'] !== null,
         'stats' => $stats,

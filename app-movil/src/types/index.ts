@@ -734,6 +734,8 @@ export interface MascotaJuego {
   mascotaId: number;
   nombre: string;
   especie: Especie;
+  /** Raza escrita por el usuario; define el pelaje del dibujo. */
+  raza: string | null;
   avatarPath: string | null;
   avatarEsGenerado: boolean;
   stats: JuegoStats;
@@ -866,4 +868,10 @@ export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T | null;
+  /**
+   * HTTP de la respuesta. Se expone para los casos donde el código importa y
+   * no alcanza con success/message — ej. un 402 que tiene que llevar a la
+   * pantalla de planes en vez de mostrar un cartel de error.
+   */
+  status?: number;
 }

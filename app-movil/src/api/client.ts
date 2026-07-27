@@ -84,7 +84,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
     return { success: false, message: hint, data: null };
   }
 
-  return json;
+  return { ...json, status: response.status };
 }
 
 export const apiGet = <T>(path: string, params?: Record<string, unknown>, auth = false) =>

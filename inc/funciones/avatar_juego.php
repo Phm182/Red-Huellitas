@@ -10,6 +10,7 @@
  */
 
 require_once __DIR__ . '/gemini.php';
+require_once __DIR__ . '/suscripcion.php';
 
 /**
  * Cuánto le queda al usuario hoy y si puede generar.
@@ -96,6 +97,14 @@ function rh_avatar_generar(mysqli $conn, array $juego, array $mascota, int $user
 
     if (!rh_gemini_configurado()) {
         return $fallo('La generación de avatares no está disponible todavía', 503);
+    }
+
+    // Generar una imagen con IA tiene costo real por cada llamada (Google no
+    // ofrece tier gratuito para modelos de imagen), así que queda para quien
+    // sostiene la app con su suscripción. El 402 es la señal para que la app
+    // lleve a la pantalla de planes en vez de mostrar un error muerto.
+    if (!rh_usuario_tiene_suscripcion_activa($conn, $userId)) {
+        return $fallo('El avatar con IA es parte de la suscripción', 402);
     }
 
     $cuota = rh_avatar_cuota_disponible($conn, $userId);
