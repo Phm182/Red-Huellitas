@@ -1,8 +1,9 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { adopcionApi } from '../../../../src/api/adopcionApi';
+import { chatApi } from '../../../../src/api/chatApi';
 import { LogoSiluetaNegra } from '../../../../src/components/LogoImage';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { SkeletonList } from '../../../../src/components/ui/Skeleton';
@@ -18,6 +19,7 @@ export default function PostulacionesRecibidasScreen() {
 
   const [postulaciones, setPostulaciones] = useState<AdopcionPostulacionRecibida[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatBusy, setChatBusy] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +36,16 @@ export default function PostulacionesRecibidasScreen() {
       };
     }, [id])
   );
+
+  const abrirChat = async (userId: number) => {
+    if (chatBusy) return;
+    setChatBusy(userId);
+    const res = await chatApi.abrir({ userId });
+    setChatBusy(null);
+    if (res.success && res.data) {
+      router.push(`/(app)/chat/${res.data.conversacionId}` as never);
+    }
+  };
 
   if (loading) {
     return <SkeletonList />;
@@ -58,10 +70,23 @@ export default function PostulacionesRecibidasScreen() {
                 <LogoSiluetaNegra style={{ width: 16, height: 16 }} />
               </View>
             )}
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={{ color: colors.text, fontWeight: '600' }}>{item.adoptante.nombreCompleto}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 12 }}>@{item.adoptante.username}</Text>
             </View>
+            <Pressable
+              onPress={() => abrirChat(item.adoptante.userId)}
+              disabled={chatBusy === item.adoptante.userId}
+              style={[styles.chatBtn, { borderColor: colors.primary }]}
+            >
+              {chatBusy === item.adoptante.userId ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 12 }}>
+                  {t('adopcion.chatearPostulante')}
+                </Text>
+              )}
+            </Pressable>
           </View>
 
           {item.respuestas.map((r, index) => (
@@ -77,7 +102,6 @@ export default function PostulacionesRecibidasScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
   listEmpty: { flexGrow: 1 },
   card: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
@@ -85,4 +109,5 @@ const styles = StyleSheet.create({
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   respuestaBlock: { marginBottom: 8 },
+  chatBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
 });

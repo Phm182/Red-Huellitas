@@ -71,6 +71,42 @@ export const adopcionApi = {
     return apiPost<{ adopcion: Adopcion }>('ajax/adopcion/crear.php', form, true);
   },
 
+  actualizar: async (
+    adopcionId: number,
+    params: CrearAdopcionParams & { fotosExistentesIds: number[] }
+  ) => {
+    const form = new FormData();
+    form.append('adopcionId', String(adopcionId));
+    form.append('nombre', params.nombre);
+    form.append('sexo', params.sexo);
+    form.append('especie', params.especie);
+    if (params.razaId !== null) form.append('razaId', String(params.razaId));
+    if (params.razaTexto) form.append('razaTexto', params.razaTexto);
+    if (params.edadAnios !== undefined && params.edadAnios !== null) {
+      form.append('edadAnios', String(params.edadAnios));
+    }
+    if (params.edadMeses !== undefined && params.edadMeses !== null) {
+      form.append('edadMeses', String(params.edadMeses));
+    }
+    if (params.descripcion) form.append('descripcion', params.descripcion);
+
+    const orden: string[] = [];
+    let nuevaIdx = 0;
+    for (let i = 0; i < params.fotos.length; i++) {
+      const existenteId = params.fotosExistentesIds[i] ?? 0;
+      if (existenteId > 0) {
+        orden.push(`e:${existenteId}`);
+      } else {
+        orden.push(`n:${nuevaIdx}`);
+        await appendImageFile(form, 'fotos[]', params.fotos[i], `foto${nuevaIdx}.jpg`);
+        nuevaIdx++;
+      }
+    }
+    form.append('ordenFotos', JSON.stringify(orden));
+
+    return apiPost<{ adopcion: Adopcion }>('ajax/adopcion/actualizar.php', form, true);
+  },
+
   listar: (especie?: Especie, cursor?: number | null, limit = 15) =>
     apiGet<AdopcionListaResultado>(
       'ajax/adopcion/listar.php',

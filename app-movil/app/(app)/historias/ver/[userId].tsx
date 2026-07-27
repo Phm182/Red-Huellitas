@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { historiasApi } from '../../../../src/api/historiasApi';
+import { DenunciaButtonStub } from '../../../../src/components/DenunciaButtonStub';
 import { StoryInteractivoCard } from '../../../../src/stories/StoryInteractivoCard';
 import { StoryMediaFill } from '../../../../src/stories/StoryMediaFill';
 import { StoryVolumeSlider } from '../../../../src/stories/StoryVolumeSlider';
@@ -409,6 +410,13 @@ export default function VisorHistoriasScreen() {
         <Pressable style={styles.iconBtn} onPress={onCompartirHistoria}>
           <Ionicons name="paper-plane-outline" size={20} color="#fff" />
         </Pressable>
+        {!actual.esAutor ? (
+          <DenunciaButtonStub
+            userId={actual.userId}
+            historiaId={actual.historiaId}
+            compacto
+          />
+        ) : null}
         <Pressable style={styles.iconBtn} onPress={safeGoBack}>
           <Ionicons name="close" size={22} color="#fff" />
         </Pressable>

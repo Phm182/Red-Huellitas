@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "Continuar",
         "cancel": "Cancelar",
@@ -532,9 +532,14 @@
         "tituloSeccion": "Conta de venda (Mercado Pago)",
         "descripcion": "Vincule sua conta do Mercado Pago para receber diretamente pelas suas vendas do catálogo.",
         "conectarButton": "Conectar conta do Mercado Pago",
-        "conectadoComo": "Conectado como {{email}}",
+        "conectadoComo": "Conectado como {{nombre}}",
         "cambiarCuentaButton": "Trocar de conta",
-        "noConfigurado": "A vinculação com o Mercado Pago ainda não está configurada"
+        "desconectarButton": "Desconectar",
+        "noSePudoDesconectar": "Não foi possível desconectar.",
+        "noConfigurado": "A vinculação com o Mercado Pago ainda não está configurada",
+        "conectadoComoLabel": "Conectado como",
+        "desconectarConfirmTitle": "Desconectar Mercado Pago?",
+        "desconectarConfirmBody": "Vai parar de receber pagamentos com essa conta até conectar de novo."
     },
     "juego": {
         "titulo": "HuePlay",

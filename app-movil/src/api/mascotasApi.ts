@@ -66,22 +66,39 @@ export const mascotasApi = {
 
   obtener: (mascotaId: number) => apiGet<{ mascota: Mascota }>('ajax/mascotas/obtener.php', { mascotaId }, true),
 
-  actualizar: (mascotaId: number, campos: Omit<CrearMascotaParams, 'fotos' | 'carnetUri' | 'carnetVisibilidad' | 'disponibleParaMatch'>) =>
-    apiPost<{ mascota: Mascota }>(
-      'ajax/mascotas/actualizar.php',
-      {
-        mascotaId,
-        nombre: campos.nombre,
-        sexo: campos.sexo,
-        especie: campos.especie,
-        razaId: campos.razaId ?? '',
-        razaTexto: campos.razaTexto ?? '',
-        edadAnios: campos.edadAnios ?? '',
-        edadMeses: campos.edadMeses ?? '',
-        descripcion: campos.descripcion ?? '',
-      },
-      true
-    ),
+  actualizar: (
+    mascotaId: number,
+    campos: Omit<CrearMascotaParams, 'fotos' | 'carnetUri' | 'carnetVisibilidad' | 'disponibleParaMatch'> & {
+      modoBanner?: 'portada' | 'banner';
+      bannerFocusY?: number;
+      bannerUri?: string | null;
+    }
+  ) => {
+    const body: Record<string, unknown> = {
+      mascotaId,
+      nombre: campos.nombre,
+      sexo: campos.sexo,
+      especie: campos.especie,
+      razaId: campos.razaId ?? '',
+      razaTexto: campos.razaTexto ?? '',
+      edadAnios: campos.edadAnios ?? '',
+      edadMeses: campos.edadMeses ?? '',
+      descripcion: campos.descripcion ?? '',
+    };
+    if (campos.modoBanner) body.modoBanner = campos.modoBanner;
+    if (campos.bannerFocusY !== undefined) body.bannerFocusY = String(campos.bannerFocusY);
+
+    if (campos.bannerUri) {
+      return (async () => {
+        const form = new FormData();
+        Object.entries(body).forEach(([k, v]) => form.append(k, String(v)));
+        await appendImageFile(form, 'banner', campos.bannerUri!, 'banner.jpg');
+        return apiPost<{ mascota: Mascota }>('ajax/mascotas/actualizar.php', form, true);
+      })();
+    }
+
+    return apiPost<{ mascota: Mascota }>('ajax/mascotas/actualizar.php', body, true);
+  },
 
   eliminar: (mascotaId: number) => apiPost<null>('ajax/mascotas/eliminar.php', { mascotaId }, true),
 

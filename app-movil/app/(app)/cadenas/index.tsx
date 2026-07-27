@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { cadenasApi } from '../../../src/api/historiasApi';
@@ -12,6 +13,7 @@ import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** Avatares apilados de los últimos que se sumaron. */
@@ -62,6 +64,7 @@ function PilaAvatares({ cadena }: { cadena: Cadena }) {
  * interesante que una nueva y muerta.
  */
 export default function CadenasScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const [cadenas, setCadenas] = useState<Cadena[]>([]);
@@ -125,6 +128,14 @@ export default function CadenasScreen() {
             accionLabel="Crear una cadena"
             onAccion={() => router.push('/(app)/cadenas/nueva')}
           />
+        }
+        ListFooterComponent={
+          cadenas.length > 0 ? (
+            <ListEndAddButton
+              label={t('cadenas.tituloNueva')}
+              onPress={() => router.push('/(app)/cadenas/nueva')}
+            />
+          ) : null
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 50).springify()}>

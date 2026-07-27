@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "계속",
         "cancel": "취소",
@@ -532,9 +532,14 @@
         "tituloSeccion": "판매자 계정 (Mercado Pago)",
         "descripcion": "Mercado Pago 계정을 연결하면 카탈로그 판매 대금을 직접 받을 수 있습니다.",
         "conectarButton": "Mercado Pago 계정 연결",
-        "conectadoComo": "{{email}} 계정으로 연결됨",
+        "conectadoComo": "{{nombre}} 계정으로 연결됨",
         "cambiarCuentaButton": "계정 변경",
-        "noConfigurado": "Mercado Pago 연결이 아직 설정되지 않았습니다"
+        "desconectarButton": "연결 해제",
+        "noSePudoDesconectar": "연결을 해제하지 못했습니다.",
+        "noConfigurado": "Mercado Pago 연결이 아직 설정되지 않았습니다",
+        "conectadoComoLabel": "연결됨",
+        "desconectarConfirmTitle": "Mercado Pago 연결을 해제할까요?",
+        "desconectarConfirmBody": "다시 연결하기 전까지 이 계정으로 판매 대금을 받을 수 없습니다."
     },
     "juego": {
         "titulo": "HuePlay",

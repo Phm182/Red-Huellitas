@@ -22,6 +22,8 @@ export interface Usuario {
   perfilPrivado: boolean;
   /** El "mensaje personal" del MSN, debajo del nombre en el chat. */
   mensajePersonal: string | null;
+  /** Código del plan activo (hue_plus / hue_plus_comercial) o null. */
+  planCodigo?: string | null;
 }
 
 export interface Notificacion {
@@ -172,6 +174,9 @@ export interface Mascota {
   razaTexto: string | null;
   raza: string | null;
   descripcion: string | null;
+  modoBanner?: 'portada' | 'banner';
+  bannerPath?: string | null;
+  bannerFocusY?: number;
   carnetDisponible: boolean;
   carnetVisibilidad: Visibilidad;
   tengoAccesoCarnet: boolean;
@@ -187,6 +192,7 @@ export interface UsuarioResumen {
   username: string | null;
   nombreCompleto: string;
   avatarPath: string | null;
+  planCodigo?: string | null;
 }
 
 export interface PerfilPublico {
@@ -202,6 +208,7 @@ export interface PerfilPublico {
   totalSeguidos: number;
   siguiendoYo: boolean;
   esUnoMismo: boolean;
+  planCodigo?: string | null;
 }
 
 export interface BusquedaResultado {
@@ -389,6 +396,8 @@ export interface Adopcion {
   createdAt: string;
   preguntas?: AdopcionPregunta[];
   totalPostulaciones?: number;
+  editable?: boolean;
+  motivoNoEditable?: string | null;
 }
 
 /** Pregunta nueva en el builder de creación, antes de tener un ID real. */
@@ -615,10 +624,31 @@ export type SuscripcionMetodo = 'mercadopago' | 'manual';
 
 export interface SuscripcionEstado {
   planCodigo: string | null;
+  planNombre?: string | null;
+  sinComision?: boolean;
   activa: boolean;
   pagaHasta: string | null;
   metodoActivo: SuscripcionMetodo | null;
   ultimoPago: string | null;
+}
+
+export interface SuscripcionPlanItem {
+  itemId: number;
+  texto: string;
+  orden: number;
+  estado?: string;
+}
+
+export interface SuscripcionPlan {
+  planId: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  montoMensual: number;
+  orden: number;
+  sinComision: boolean;
+  estado: string;
+  items: SuscripcionPlanItem[];
 }
 
 export type TipoListado = 'producto' | 'servicio';
@@ -715,6 +745,10 @@ export interface PedidoListaResultado {
 export interface MpVendedorEstado {
   conectado: boolean;
   mpEmail: string | null;
+  mpNombre?: string | null;
+  mpTelefono?: string | null;
+  /** true si el servidor tiene Client ID/Secret/redirect listos para OAuth. */
+  marketplaceListo?: boolean;
 }
 
 export type JuegoAnimo = 'feliz' | 'bien' | 'aburrido' | 'decaido';

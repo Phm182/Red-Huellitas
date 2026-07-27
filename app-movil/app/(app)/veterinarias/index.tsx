@@ -10,6 +10,7 @@ import { rhMediaUrl } from '../../../src/utils/media';
 import { RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
+import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function VeterinariasListaScreen() {
@@ -100,7 +101,17 @@ export default function VeterinariasListaScreen() {
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
+            <>
+              {listados.length > 0 ? (
+                <ListEndAddButton
+                  label={t('veterinarias.tituloNueva')}
+                  onPress={() => router.push('/(app)/veterinarias/nueva')}
+                />
+              ) : null}
+              {cargandoMas ? (
+                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+              ) : null}
+            </>
           }
         />
       )}

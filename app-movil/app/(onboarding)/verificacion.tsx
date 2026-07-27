@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -26,6 +26,8 @@ type Dialogo = {
   onOk: () => void;
 };
 
+type FaseProgreso = 'idle' | 'subiendo' | 'analizando';
+
 export default function VerificacionScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -47,9 +49,13 @@ export default function VerificacionScreen() {
   const [estadoActual, setEstadoActual] = useState<VerificacionEstado | null>(null);
   const [cargandoPrevias, setCargandoPrevias] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [fase, setFase] = useState<FaseProgreso>('idle');
+  const [progreso, setProgreso] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
+  const progresoTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const faseRef = useRef<FaseProgreso>('idle');
 
   const mostrarResultado = (titulo: string, cuerpo: string, onOk: () => void) => {
     setDialogo({ titulo, cuerpo, onOk });
@@ -60,6 +66,29 @@ export default function VerificacionScreen() {
     setDialogo(null);
     cb?.();
   };
+
+  const detenerProgreso = () => {
+    if (progresoTimer.current) {
+      clearInterval(progresoTimer.current);
+      progresoTimer.current = null;
+    }
+  };
+
+  const iniciarProgreso = () => {
+    detenerProgreso();
+    faseRef.current = 'subiendo';
+    setFase('subiendo');
+    setProgreso(5);
+    progresoTimer.current = setInterval(() => {
+      setProgreso((p) => {
+        const techo = faseRef.current === 'subiendo' ? 42 : 92;
+        if (p >= techo) return p;
+        return Math.min(techo, p + (faseRef.current === 'subiendo' ? 2.4 : 1.5));
+      });
+    }, 280);
+  };
+
+  useEffect(() => () => detenerProgreso(), []);
 
   const cargarPrevias = useCallback(async () => {
     setCargandoPrevias(true);
@@ -132,16 +161,26 @@ export default function VerificacionScreen() {
     setError(null);
     setExito(null);
     setSubmitting(true);
+    iniciarProgreso();
 
     const payload: { dniFrente?: string; dniDorso?: string; selfie?: string } = {};
-    // Sólo manda archivos nuevos o, si no hay dirty pero ya están las 3 en
-    // servidor, reintenta el análisis automático sin re-subir.
     if (dirty.dniFrente && dniFrente) payload.dniFrente = dniFrente;
     if (dirty.dniDorso && dniDorso) payload.dniDorso = dniDorso;
     if (dirty.selfie && selfie) payload.selfie = selfie;
 
+    setTimeout(() => {
+      if (progresoTimer.current) {
+        faseRef.current = 'analizando';
+        setFase('analizando');
+        setProgreso((p) => Math.max(p, 48));
+      }
+    }, 1100);
+
     const res = await perfilApi.subirVerificacion(payload);
+    detenerProgreso();
+    setProgreso(100);
     setSubmitting(false);
+    setFase('idle');
 
     if (res.success && res.data) {
       setEstadoActual(res.data);
@@ -173,6 +212,7 @@ export default function VerificacionScreen() {
 
       setExito(cuerpo);
       setError(null);
+      setProgreso(0);
       mostrarResultado(titulo, cuerpo, () => {
         if (estado === 'rechazado' || estado === 'pendiente') {
           router.replace('/(app)/ajustes/verificacion-estado');
@@ -181,6 +221,7 @@ export default function VerificacionScreen() {
         }
       });
     } else {
+      setProgreso(0);
       const msg = res.message || t('onboarding.verificationAutoFail');
       setError(msg);
       setExito(null);
@@ -190,6 +231,12 @@ export default function VerificacionScreen() {
 
   const problemas = estadoActual?.problemas ?? [];
   const checks = estadoActual?.checks;
+  const etiquetaFase =
+    fase === 'subiendo'
+      ? t('onboarding.verificationProgressUpload')
+      : fase === 'analizando'
+        ? t('onboarding.verificationProgressAnalyze')
+        : t('common.loading');
 
   return (
     <>
@@ -297,6 +344,24 @@ export default function VerificacionScreen() {
         </Pressable>
       </ScrollView>
 
+      {submitting ? (
+        <View style={styles.overlay} pointerEvents="auto">
+          <View style={[styles.overlayCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.overlayTitle, { color: colors.text }]}>{etiquetaFase}</Text>
+            <View style={[styles.barraFondo, { backgroundColor: colors.border }]}>
+              <View
+                style={[
+                  styles.barraFill,
+                  { width: `${Math.round(progreso)}%`, backgroundColor: colors.primary },
+                ]}
+              />
+            </View>
+            <Text style={{ color: colors.textMuted, marginTop: 8 }}>{Math.round(progreso)}%</Text>
+          </View>
+        </View>
+      ) : null}
+
       <AppMessageModal
         visible={dialogo != null}
         title={dialogo?.titulo ?? ''}
@@ -322,4 +387,23 @@ const styles = StyleSheet.create({
   feedback: { marginBottom: 12, lineHeight: 20 },
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 8 },
   skipLink: { marginTop: 16, alignItems: 'center' },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    zIndex: 20,
+  },
+  overlayCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 22,
+    alignItems: 'center',
+  },
+  overlayTitle: { marginTop: 14, fontWeight: '700', textAlign: 'center', marginBottom: 14 },
+  barraFondo: { width: '100%', height: 10, borderRadius: 6, overflow: 'hidden' },
+  barraFill: { height: '100%', borderRadius: 6 },
 });

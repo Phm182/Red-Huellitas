@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "继续",
         "cancel": "取消",
@@ -532,9 +532,14 @@
         "tituloSeccion": "卖家账户（Mercado Pago）",
         "descripcion": "绑定你的Mercado Pago账户，直接收取目录销售的款项。",
         "conectarButton": "绑定Mercado Pago账户",
-        "conectadoComo": "已绑定账户：{{email}}",
+        "conectadoComo": "已绑定账户：{{nombre}}",
         "cambiarCuentaButton": "更换账户",
-        "noConfigurado": "Mercado Pago绑定功能尚未配置"
+        "desconectarButton": "断开连接",
+        "noSePudoDesconectar": "无法断开连接。",
+        "noConfigurado": "Mercado Pago绑定功能尚未配置",
+        "conectadoComoLabel": "已绑定",
+        "desconectarConfirmTitle": "断开 Mercado Pago？",
+        "desconectarConfirmBody": "在重新连接之前，将无法用该账户收款。"
     },
     "juego": {
         "titulo": "HuePlay",

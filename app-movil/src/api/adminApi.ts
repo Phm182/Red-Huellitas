@@ -56,12 +56,23 @@ export const adminApi = {
       true
     ),
 
-  denunciaResolver: (denunciaId: number, estado: 'revisada' | 'desestimada', nota?: string) =>
-    apiPost<{ denunciaId: number; estadoRevision: DenunciaEstado }>(
-      'ajax/admin/denuncia_resolver.php',
-      { denunciaId, estado, ...(nota ? { nota } : {}) },
-      true
-    ),
+  denunciaResolver: (
+    denunciaId: number,
+    estado: 'revisada' | 'desestimada',
+    nota?: string,
+    accion?: 'baja_contenido' | 'baja_y_advertir' | 'advertir'
+  ) =>
+    apiPost<{
+      denunciaId: number;
+      estadoRevision: DenunciaEstado;
+      contenidoBajado?: boolean;
+      avisoEnviado?: boolean;
+    }>('ajax/admin/denuncia_resolver.php', {
+      denunciaId,
+      estado,
+      ...(nota ? { nota } : {}),
+      ...(accion ? { accion } : {}),
+    }, true),
 
   reportesListar: (estado: ReporteEstado, tipo: ReporteTipo | null, params?: ListaParams) =>
     apiGet<{ reportes: ReportePendiente[]; nextCursor: number | null }>(

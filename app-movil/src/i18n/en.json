@@ -187,8 +187,20 @@
         "detailPlaceholder": "Tell us the details...",
         "submitted": "Thanks! Your report was sent.",
         "denounceUser": "Report user",
-        "denounceReasonPlaceholder": "Reason (e.g. illegal breeding, abuse)",
-        "denounceSubmitted": "Report submitted"
+        "denounceContent": "Report",
+        "denounceHint": "Red Huellitas is an animal network. If this content doesn't belong, report it for review.",
+        "denounceReasonPlaceholder": "Describe the issue…",
+        "denounceDetailOptional": "Optional details…",
+        "denounceSubmitted": "Report submitted",
+        "denouncePendingReview": "An admin will review it.",
+        "motivos": {
+            "no_contenido_animal": "Not animal-related content",
+            "criadero_ilegal": "Illegal breeding / sales",
+            "maltrato": "Animal abuse",
+            "spam": "Spam or scam",
+            "contenido_inapropiado": "Inappropriate / sexual content",
+            "otro": "Other"
+        }
     },
     "home": {
         "welcome": "Welcome to Red Huellitas",
@@ -500,9 +512,11 @@
         "deshacerConfirmBody": "This closes the conversation for both of you. This can't be undone from the app."
     },
     "suscripcion": {
-        "tituloLista": "Business Storefront",
+        "tituloLista": "Subscriptions",
         "activaHasta": "Active until {{fecha}}",
         "sinSuscripcion": "You don't have an active subscription yet.",
+        "sinPlanes": "No plans available. If you're an admin, check the plan catalog.",
+        "verificacionParaPagar": "You can browse plans, but paying or connecting Mercado Pago requires a verified account.",
         "pagarCon": "Pay with",
         "pagarMercadoPago": "Pay with Mercado Pago",
         "yaPagueActualizar": "I already paid, refresh status",
@@ -591,9 +605,15 @@
         "tituloSeccion": "Seller account (Mercado Pago)",
         "descripcion": "Link your Mercado Pago account to get paid directly for your catalog sales.",
         "conectarButton": "Connect Mercado Pago account",
-        "conectadoComo": "Connected as {{email}}",
+        "conectadoComo": "Connected as {{nombre}}",
+        "conectadoComoLabel": "Connected as",
         "cambiarCuentaButton": "Switch account",
-        "noConfigurado": "Mercado Pago linking isn't set up yet"
+        "desconectarButton": "Disconnect",
+        "desconectarConfirmTitle": "Disconnect Mercado Pago?",
+        "desconectarConfirmBody": "You will stop receiving catalog payments with that account until you connect it again.",
+        "noConfigurado": "Mercado Pago linking isn't set up yet",
+        "noSePudoAbrir": "Could not open Mercado Pago. Check that the browser is not blocking pop-ups.",
+        "noSePudoDesconectar": "Could not disconnect the Mercado Pago account."
     },
     "juego": {
         "titulo": "HuePlay",
@@ -685,7 +705,10 @@
         "verContenido": "Open reported content",
         "notaPlaceholder": "Internal note (optional)",
         "marcarRevisada": "Mark reviewed",
-        "desestimar": "Dismiss",
+        "desestimar": "Dismiss (revert report)",
+        "darDeBaja": "Take down content",
+        "bajaYAdvertir": "Take down and warn",
+        "advertirUsuario": "Warn user",
         "suspenderUsuario": "Suspend user",
         "reactivarUsuario": "Reactivate user",
         "usuarioSuspendido": "suspended",

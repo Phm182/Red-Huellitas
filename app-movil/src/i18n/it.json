@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "Continua",
         "cancel": "Annulla",
@@ -532,9 +532,14 @@
         "tituloSeccion": "Account venditore (Mercado Pago)",
         "descripcion": "Collega il tuo account Mercado Pago per ricevere direttamente i pagamenti delle tue vendite nel catalogo.",
         "conectarButton": "Collega account Mercado Pago",
-        "conectadoComo": "Connesso come {{email}}",
+        "conectadoComo": "Connesso come {{nombre}}",
         "cambiarCuentaButton": "Cambia account",
-        "noConfigurado": "Il collegamento con Mercado Pago non è ancora configurato"
+        "desconectarButton": "Disconnetti",
+        "noSePudoDesconectar": "Impossibile disconnettere.",
+        "noConfigurado": "Il collegamento con Mercado Pago non è ancora configurato",
+        "conectadoComoLabel": "Connesso come",
+        "desconectarConfirmTitle": "Disconnettere Mercado Pago?",
+        "desconectarConfirmBody": "Non riceverai più i pagamenti con questo account finché non lo ricolleghi."
     },
     "juego": {
         "titulo": "HuePlay",

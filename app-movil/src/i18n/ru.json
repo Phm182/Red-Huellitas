@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "Продолжить",
         "cancel": "Отмена",
@@ -532,9 +532,14 @@
         "tituloSeccion": "Аккаунт продавца (Mercado Pago)",
         "descripcion": "Привяжите свой аккаунт Mercado Pago, чтобы получать оплату напрямую за продажи из каталога.",
         "conectarButton": "Привязать аккаунт Mercado Pago",
-        "conectadoComo": "Подключено как {{email}}",
+        "conectadoComo": "Подключено как {{nombre}}",
         "cambiarCuentaButton": "Сменить аккаунт",
-        "noConfigurado": "Привязка Mercado Pago пока не настроена"
+        "desconectarButton": "Отключить",
+        "noSePudoDesconectar": "Не удалось отключить.",
+        "noConfigurado": "Привязка Mercado Pago пока не настроена",
+        "conectadoComoLabel": "Подключено как",
+        "desconectarConfirmTitle": "Отключить Mercado Pago?",
+        "desconectarConfirmBody": "Вы перестанете получать оплату с этим аккаунтом, пока не подключите его снова."
     },
     "juego": {
         "titulo": "HuePlay",

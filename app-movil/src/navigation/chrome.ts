@@ -57,8 +57,8 @@ export function isAppTabRoot(pathname: string): boolean {
   });
 }
 
-/** Ícono del hub actual, para el header. */
-export function tabIconForPath(pathname: string): TabIconName {
+/** Ícono del hub actual, para el header. Null si la ruta no pertenece a ningún hub. */
+export function tabIconForPath(pathname: string): TabIconName | null {
   const hub = HUBS.find((h) => h.match(pathname));
-  return hub ? hub.iconActive : 'paw';
+  return hub ? hub.iconActive : null;
 }

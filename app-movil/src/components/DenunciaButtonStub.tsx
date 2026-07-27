@@ -11,33 +11,41 @@ import { hapticError, hapticExito } from '../utils/haptics';
 import { AppButton } from './AppButton';
 import { AppInput } from './AppInput';
 
+/** Motivos curados — el primero es el que más importa en una red animal. */
+export const DENUNCIA_MOTIVOS = [
+  'no_contenido_animal',
+  'criadero_ilegal',
+  'maltrato',
+  'spam',
+  'contenido_inapropiado',
+  'otro',
+] as const;
+
+export type DenunciaMotivoKey = (typeof DENUNCIA_MOTIVOS)[number];
+
 interface DenunciaButtonStubProps {
   userId: number;
-  /** Si se denuncia desde una publicación puntual, queda asociada en Denuncia.PostId. */
   postId?: number;
-  /** Si se denuncia desde un listado de adopción, queda asociada en Denuncia.AdopcionId. */
+  historiaId?: number;
   adopcionId?: number;
-  /** Si se denuncia desde una campaña, queda asociada en Denuncia.CampaniaId. */
   campaniaId?: number;
-  /** Si se denuncia desde un reporte de perdido/encontrado, queda asociada en Denuncia.PerdidoId. */
   perdidoId?: number;
-  /** Si se denuncia desde una publicación de tránsito, queda asociada en Denuncia.TransitoId. */
   transitoId?: number;
-  /** Si se denuncia desde una publicación de donación, queda asociada en Denuncia.DonacionId. */
   donacionId?: number;
-  /** Si se denuncia desde una veterinaria, queda asociada en Denuncia.VeterinariaId. */
   veterinariaId?: number;
-  /** Si se denuncia desde una publicación de producto/servicio, queda asociada en Denuncia.ProductoId. */
   productoId?: number;
+  /** Compacto: sólo el ícono (p. ej. en el visor de historias). */
+  compacto?: boolean;
 }
 
 /**
- * Botón de denuncia genérico y reusable — apunta a un usuario y, opcionalmente,
- * a un contenido puntual (Post, Historia, Adopcion, Campania, etc).
+ * Botón de denuncia genérico — apunta a un usuario y, opcionalmente,
+ * a un contenido puntual (Post, Historia, Adopción, etc).
  */
 export function DenunciaButtonStub({
   userId,
   postId,
+  historiaId,
   adopcionId,
   campaniaId,
   perdidoId,
@@ -45,40 +53,58 @@ export function DenunciaButtonStub({
   donacionId,
   veterinariaId,
   productoId,
+  compacto = false,
 }: DenunciaButtonStubProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
   const [visible, setVisible] = useState(false);
-  const [motivo, setMotivo] = useState('');
+  const [motivoKey, setMotivoKey] = useState<DenunciaMotivoKey>('no_contenido_animal');
+  const [detalle, setDetalle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const hayContenido = !!(
+    postId ||
+    historiaId ||
+    adopcionId ||
+    campaniaId ||
+    perdidoId ||
+    transitoId ||
+    donacionId ||
+    veterinariaId ||
+    productoId
+  );
+
   const cerrar = () => {
     setVisible(false);
-    setMotivo('');
+    setMotivoKey('no_contenido_animal');
+    setDetalle('');
     setEnviado(false);
     setError(null);
   };
 
   const onEnviar = async () => {
-    if (!motivo.trim()) return;
+    if (motivoKey === 'otro' && !detalle.trim()) return;
     setSubmitting(true);
     setError(null);
-    const res = await reportesApi.crearDenuncia(
-      userId,
-      motivo.trim(),
-      undefined,
+
+    const motivoLabel = t(`report.motivos.${motivoKey}`);
+    const res = await reportesApi.crearDenuncia({
+      userIdDenunciado: userId,
+      motivo: motivoLabel,
+      detalle: detalle.trim() || undefined,
       postId,
+      historiaId,
       adopcionId,
       campaniaId,
       perdidoId,
       transitoId,
       donacionId,
       veterinariaId,
-      productoId
-    );
+      productoId,
+    });
     setSubmitting(false);
     if (res.success) {
       hapticExito();
@@ -90,11 +116,23 @@ export function DenunciaButtonStub({
     }
   };
 
+  const puedeEnviar = motivoKey !== 'otro' || detalle.trim().length > 0;
+
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} style={styles.trigger} hitSlop={8}>
-        <Ionicons name="flag-outline" size={15} color={colors.danger} />
-        <Text style={[type.label, { color: colors.danger }]}>{t('report.denounceUser')}</Text>
+      <Pressable
+        onPress={() => setVisible(true)}
+        style={compacto ? styles.triggerCompacto : styles.trigger}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('report.denounceContent')}
+      >
+        <Ionicons name="flag-outline" size={compacto ? 20 : 15} color={compacto ? '#fff' : colors.danger} />
+        {compacto ? null : (
+          <Text style={[type.label, { color: colors.danger }]}>
+            {hayContenido ? t('report.denounceContent') : t('report.denounceUser')}
+          </Text>
+        )}
       </Pressable>
 
       <Modal visible={visible} transparent animationType="none" onRequestClose={cerrar}>
@@ -117,6 +155,9 @@ export function DenunciaButtonStub({
                     <Text style={[type.titleSm, { color: colors.text, textAlign: 'center' }]}>
                       {t('report.denounceSubmitted')}
                     </Text>
+                    <Text style={[type.bodySm, { color: colors.textMuted, textAlign: 'center' }]}>
+                      {t('report.denouncePendingReview')}
+                    </Text>
                   </View>
                 ) : (
                   <>
@@ -125,16 +166,53 @@ export function DenunciaButtonStub({
                         <Ionicons name="flag" size={18} color={colors.danger} />
                       </View>
                       <Text style={[type.titleSm, { color: colors.text, flex: 1 }]}>
-                        {t('report.denounceUser')}
+                        {hayContenido ? t('report.denounceContent') : t('report.denounceUser')}
                       </Text>
                     </View>
 
+                    <Text style={[type.bodySm, { color: colors.textMuted, marginBottom: 10 }]}>
+                      {t('report.denounceHint')}
+                    </Text>
+
+                    <View style={styles.motivos}>
+                      {DENUNCIA_MOTIVOS.map((key) => {
+                        const activo = motivoKey === key;
+                        return (
+                          <Pressable
+                            key={key}
+                            onPress={() => setMotivoKey(key)}
+                            style={[
+                              styles.motivoChip,
+                              {
+                                borderColor: activo ? colors.danger : colors.border,
+                                backgroundColor: activo ? colors.danger : 'transparent',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={{
+                                color: activo ? '#fff' : colors.text,
+                                fontWeight: '600',
+                                fontSize: 13,
+                              }}
+                            >
+                              {t(`report.motivos.${key}`)}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
                     <AppInput
-                      placeholder={t('report.denounceReasonPlaceholder')}
-                      value={motivo}
-                      onChangeText={setMotivo}
+                      placeholder={
+                        motivoKey === 'otro'
+                          ? t('report.denounceReasonPlaceholder')
+                          : t('report.denounceDetailOptional')
+                      }
+                      value={detalle}
+                      onChangeText={setDetalle}
                       multiline
-                      style={{ minHeight: 88, textAlignVertical: 'top' }}
+                      style={{ minHeight: 72, textAlignVertical: 'top', marginTop: 10 }}
                     />
 
                     {error ? (
@@ -153,7 +231,7 @@ export function DenunciaButtonStub({
                         variant="danger"
                         onPress={onEnviar}
                         loading={submitting}
-                        disabled={!motivo.trim()}
+                        disabled={!puedeEnviar}
                         style={{ flex: 1 }}
                       />
                     </View>
@@ -170,11 +248,19 @@ export function DenunciaButtonStub({
 
 const styles = StyleSheet.create({
   trigger: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  triggerCompacto: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
   overlayWrap: { flex: 1 },
   overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  cardWrap: { width: '100%', maxWidth: 380 },
+  cardWrap: { width: '100%', maxWidth: 400 },
   card: { borderRadius: radii.lg, borderWidth: 1, padding: 20 },
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   encabezadoIcono: {
     width: 36,
     height: 36,
@@ -182,8 +268,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acciones: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  exito: { alignItems: 'center', paddingVertical: 12, gap: 12 },
+  motivos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  motivoChip: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  acciones: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  exito: { alignItems: 'center', paddingVertical: 12, gap: 10 },
   exitoIcono: {
     width: 56,
     height: 56,

@@ -1,8 +1,10 @@
 import { apiGet, apiPost } from './client';
-import { SuscripcionEstado } from '../types';
+import { SuscripcionEstado, SuscripcionPlan } from '../types';
 
 export const suscripcionApi = {
   estado: () => apiGet<{ suscripcion: SuscripcionEstado }>('ajax/suscripcion/estado.php', undefined, true),
+
+  planes: () => apiGet<{ planes: SuscripcionPlan[] }>('ajax/suscripcion/planes.php', undefined, true),
 
   solicitarManual: (planId?: number) =>
     apiPost<{ solicitudId: number; whatsappUrl: string | null }>(

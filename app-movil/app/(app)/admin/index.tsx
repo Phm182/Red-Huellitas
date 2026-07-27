@@ -126,6 +126,13 @@ export default function AdminHubScreen() {
       pendientes: resumen?.reportesPendientes ?? 0,
       onPress: () => router.push('/(app)/admin/reportes'),
     },
+    {
+      icon: 'diamond-outline',
+      titulo: 'Planes HuePlus',
+      descripcion: 'Nombre, precio, beneficios y planes nuevos',
+      pendientes: 0,
+      onPress: () => router.push('/(app)/admin/planes'),
+    },
   ];
 
   if (loading) {

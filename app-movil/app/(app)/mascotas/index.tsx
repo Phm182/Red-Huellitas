@@ -14,6 +14,7 @@ import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisMascotasScreen() {
@@ -94,6 +95,14 @@ export default function MisMascotasScreen() {
             onAccion={() => router.push('/(app)/mascotas/nueva')}
           />
         }
+        ListFooterComponent={
+          mascotas.length > 0 ? (
+            <ListEndAddButton
+              label={t('mascotas.addPet')}
+              onPress={() => router.push('/(app)/mascotas/nueva')}
+            />
+          ) : null
+        }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).springify()} style={{ flex: 1 }}>
             <Pressable
@@ -104,11 +113,21 @@ export default function MisMascotasScreen() {
               ]}
               onPress={() => router.push(`/(app)/mascota/${item.mascotaId}`)}
             >
-              {item.fotos && item.fotos[0] ? (
+              {(item.modoBanner === 'banner' && item.bannerPath) || (item.fotos && item.fotos[0]) ? (
                 <Image
-                  source={{ uri: rhMediaUrl(item.fotos[0].path) }}
+                  source={{
+                    uri:
+                      item.modoBanner === 'banner' && item.bannerPath
+                        ? rhMediaUrl(item.bannerPath)
+                        : rhMediaUrl(item.fotos![0].path),
+                  }}
                   style={styles.cardPhoto}
                   contentFit="cover"
+                  contentPosition={
+                    item.modoBanner === 'banner' && item.bannerPath
+                      ? 'center'
+                      : { top: `${Math.round((item.bannerFocusY ?? 0.5) * 100)}%` }
+                  }
                   transition={220}
                 />
               ) : (

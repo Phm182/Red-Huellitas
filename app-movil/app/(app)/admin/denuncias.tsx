@@ -88,10 +88,14 @@ export default function AdminDenunciasScreen() {
     }
   };
 
-  const resolver = async (item: DenunciaPendiente, nuevoEstado: 'revisada' | 'desestimada') => {
+  const resolver = async (
+    item: DenunciaPendiente,
+    nuevoEstado: 'revisada' | 'desestimada',
+    accion?: 'baja_contenido' | 'baja_y_advertir' | 'advertir'
+  ) => {
     setBusyId(item.denunciaId);
     const nota = (notas[item.denunciaId] ?? '').trim();
-    const res = await adminApi.denunciaResolver(item.denunciaId, nuevoEstado, nota || undefined);
+    const res = await adminApi.denunciaResolver(item.denunciaId, nuevoEstado, nota || undefined, accion);
     setBusyId(null);
     setMensaje({ texto: res.message, error: !res.success });
     if (res.success) {
@@ -194,12 +198,38 @@ export default function AdminDenunciasScreen() {
               />
 
               <View style={styles.acciones}>
+                {item.contenido ? (
+                  <Pressable
+                    disabled={busyId === item.denunciaId}
+                    onPress={() => resolver(item, 'revisada', 'baja_y_advertir')}
+                    style={[styles.boton, { backgroundColor: colors.danger, opacity: busyId === item.denunciaId ? 0.6 : 1 }]}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600' }}>{t('admin.bajaYAdvertir')}</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    disabled={busyId === item.denunciaId}
+                    onPress={() => resolver(item, 'revisada', 'advertir')}
+                    style={[styles.boton, { backgroundColor: colors.danger, opacity: busyId === item.denunciaId ? 0.6 : 1 }]}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600' }}>{t('admin.advertirUsuario')}</Text>
+                  </Pressable>
+                )}
+                {item.contenido ? (
+                  <Pressable
+                    disabled={busyId === item.denunciaId}
+                    onPress={() => resolver(item, 'revisada', 'baja_contenido')}
+                    style={[styles.boton, styles.botonSecundario, { borderColor: colors.danger, opacity: busyId === item.denunciaId ? 0.6 : 1 }]}
+                  >
+                    <Text style={{ color: colors.danger, fontWeight: '600' }}>{t('admin.darDeBaja')}</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   disabled={busyId === item.denunciaId}
                   onPress={() => resolver(item, 'revisada')}
-                  style={[styles.boton, { backgroundColor: colors.primary, opacity: busyId === item.denunciaId ? 0.6 : 1 }]}
+                  style={[styles.boton, styles.botonSecundario, { borderColor: colors.border, opacity: busyId === item.denunciaId ? 0.6 : 1 }]}
                 >
-                  <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('admin.marcarRevisada')}</Text>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>{t('admin.marcarRevisada')}</Text>
                 </Pressable>
                 <Pressable
                   disabled={busyId === item.denunciaId}
@@ -249,7 +279,7 @@ const styles = StyleSheet.create({
   datos: { borderTopWidth: 1, marginTop: 12, paddingTop: 8, gap: 2 },
   link: { marginTop: 8 },
   input: { borderWidth: 1, borderRadius: 8, padding: 10, marginTop: 12, minHeight: 44 },
-  acciones: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  boton: { flex: 1, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  boton: { borderRadius: 8, paddingVertical: 12, paddingHorizontal: 12, alignItems: 'center', minWidth: '46%' },
   botonSecundario: { borderWidth: 1, backgroundColor: 'transparent' },
 });

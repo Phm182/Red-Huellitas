@@ -1,11 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
+import { Image as ExpoImage } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -51,6 +53,25 @@ export default function EditarMascotaScreen() {
   const [compartirUsername, setCompartirUsername] = useState('');
   const [compartiendo, setCompartiendo] = useState(false);
   const [carnetVisibilidad, setCarnetVisibilidad] = useState<Visibilidad>('privada');
+  const [modoBanner, setModoBanner] = useState<'portada' | 'banner'>('portada');
+  const [bannerFocusY, setBannerFocusY] = useState(0.5);
+  const [bannerUriLocal, setBannerUriLocal] = useState<string | null>(null);
+  const [bannerDirty, setBannerDirty] = useState(false);
+  const bannerFocusRef = useRef(0.5);
+  bannerFocusRef.current = bannerFocusY;
+  const focusStart = useRef(0.5);
+  const panBanner = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        focusStart.current = bannerFocusRef.current;
+      },
+      onPanResponderMove: (_e, g) => {
+        const next = Math.max(0, Math.min(1, focusStart.current - g.dy / 130));
+        setBannerFocusY(next);
+      },
+    })
+  ).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +92,10 @@ export default function EditarMascotaScreen() {
           setEdadMeses(m.edadMeses ? String(m.edadMeses) : '');
           setDescripcion(m.descripcion ?? '');
           setCarnetVisibilidad(m.carnetVisibilidad);
+          setModoBanner(m.modoBanner === 'banner' ? 'banner' : 'portada');
+          setBannerFocusY(m.bannerFocusY ?? 0.5);
+          setBannerUriLocal(m.bannerPath ? rhMediaUrl(m.bannerPath) : null);
+          setBannerDirty(false);
         }
         if (activo) setLoading(false);
       });
@@ -92,13 +117,36 @@ export default function EditarMascotaScreen() {
       razaTexto: razaId === null ? razaTexto?.trim() ?? null : null,
       edadAnios: edadAnios ? parseInt(edadAnios, 10) : null,
       edadMeses: edadMeses ? parseInt(edadMeses, 10) : null,
+      descripcion: descripcion.trim() || undefined,
+      modoBanner,
+      bannerFocusY,
+      bannerUri: modoBanner === 'banner' && bannerDirty && bannerUriLocal ? bannerUriLocal : null,
     });
     setGuardando(false);
     if (res.success) {
       setMensaje(t('common.changesSaved'));
+      if (res.data?.mascota) {
+        setMascota(res.data.mascota);
+        setBannerDirty(false);
+        if (res.data.mascota.bannerPath) {
+          setBannerUriLocal(rhMediaUrl(res.data.mascota.bannerPath));
+        }
+      }
     } else {
       setError(res.message);
     }
+  };
+
+  const onElegirBanner = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const comprimida = await comprimirImagen(result.assets[0].uri);
+    setBannerUriLocal(comprimida);
+    setBannerDirty(true);
+    setModoBanner('banner');
   };
 
   const onAgregarFoto = async () => {
@@ -263,6 +311,52 @@ export default function EditarMascotaScreen() {
         multiline
       />
 
+      <Text style={[styles.label, { color: colors.text, marginTop: 8 }]}>{t('mascotas.bannerTitulo')}</Text>
+      <View style={styles.segmented}>
+        {([
+          { key: 'portada' as const, label: t('mascotas.bannerPortada') },
+          { key: 'banner' as const, label: t('mascotas.bannerPropio') },
+        ]).map((opt) => (
+          <Pressable
+            key={opt.key}
+            onPress={() => setModoBanner(opt.key)}
+            style={[
+              styles.segment,
+              { borderColor: colors.primary, backgroundColor: modoBanner === opt.key ? colors.primary : 'transparent' },
+            ]}
+          >
+            <Text style={{ color: modoBanner === opt.key ? colors.primaryText : colors.primary, fontSize: 12, fontWeight: '600' }}>
+              {opt.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {modoBanner === 'portada' && fotos[0] ? (
+        <>
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>{t('mascotas.bannerFocusAyuda')}</Text>
+          <View {...panBanner.panHandlers} style={[styles.bannerPreview, { borderColor: colors.border }]}>
+            <ExpoImage
+              source={{ uri: rhMediaUrl(fotos[0].path) }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              contentPosition={{ top: `${Math.round(bannerFocusY * 100)}%` }}
+            />
+          </View>
+        </>
+      ) : null}
+
+      {modoBanner === 'banner' ? (
+        <>
+          {bannerUriLocal ? (
+            <Image source={{ uri: bannerUriLocal }} style={[styles.bannerPreview, { borderColor: colors.border }]} resizeMode="cover" />
+          ) : null}
+          <Pressable style={[styles.button, styles.outlineButton, { borderColor: colors.primary }]} onPress={onElegirBanner}>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('mascotas.bannerSubir')}</Text>
+          </Pressable>
+        </>
+      ) : null}
+
       {mensaje ? <Text style={{ color: colors.success, marginBottom: 12 }}>{mensaje}</Text> : null}
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 
@@ -360,6 +454,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  bannerPreview: {
+    width: '100%',
+    height: 130,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
   slot: { width: 80, height: 80, borderRadius: 10, overflow: 'hidden' },
   thumb: { width: '100%', height: '100%' },
   addSlot: { borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },

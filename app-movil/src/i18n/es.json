@@ -71,6 +71,9 @@
         "verificationSubtitle": "Para tu seguridad y la de otros usuarios, verificá tu identidad antes de contactar o publicar.",
         "verificationAutoHint": "Al enviar las 3 fotos, un sistema automático comprueba que sean un DNI y que la selfie coincida con la foto del documento. Si hay convenio Renaper, también se valida el rostro contra el registro oficial.",
         "verificationNeedAllPhotos": "Subí las 3 fotos: frente, dorso y selfie.",
+        "verificationProgressUpload": "Subiendo tus documentos…",
+        "verificationProgressAnalyze": "Verificando identidad con IA…",
+        "verificationProgressDone": "Listo",
         "verificationAutoOk": "Tu identidad fue verificada automáticamente. Ya podés usar las funciones que lo requieren.",
         "verificationAutoFail": "No pudimos verificar las imágenes. Revisá que se vea bien el DNI y que la selfie sea clara, de frente.",
         "verificationAutoPending": "Recibimos tus documentos. Quedaron en revisión porque la confianza automática no fue suficiente.",
@@ -134,6 +137,11 @@
         "descripcionPlaceholder": "Contanos sobre tu mascota...",
         "fotos": "Fotos",
         "addFoto": "Agregar",
+        "bannerTitulo": "Banner del listado",
+        "bannerPortada": "Usar foto de portada",
+        "bannerPropio": "Subir banner apaisado",
+        "bannerFocusAyuda": "Arrastrá verticalmente para encuadrar cómo se ve recortada en el listado.",
+        "bannerSubir": "Elegir imagen de banner",
         "carnetVacunas": "Carnet de vacunas",
         "carnetUpload": "Subir carnet",
         "carnetVisibilityPublic": "Pública (cualquiera la puede ver)",
@@ -155,10 +163,11 @@
     },
     "busqueda": {
         "navLabel": "Buscar",
-        "placeholder": "Buscar usuarios, mascotas o razas...",
+        "placeholder": "Buscar usuarios, mascotas o funciones...",
         "emptyResults": "Sin resultados",
         "sectionUsers": "Usuarios",
         "sectionPets": "Mascotas",
+        "sectionFeatures": "Funciones",
         "minChars": "Escribí al menos 2 caracteres"
     },
     "perfil": {
@@ -187,8 +196,20 @@
         "detailPlaceholder": "Contanos el detalle...",
         "submitted": "¡Gracias! Tu reporte fue enviado.",
         "denounceUser": "Denunciar usuario",
-        "denounceReasonPlaceholder": "Motivo (ej: cría ilegal, maltrato)",
-        "denounceSubmitted": "Denuncia registrada"
+        "denounceContent": "Denunciar",
+        "denounceHint": "Red Huellitas es una red de animales. Si el contenido no corresponde, denuncialo para revisión.",
+        "denounceReasonPlaceholder": "Contá el detalle…",
+        "denounceDetailOptional": "Detalle opcional…",
+        "denounceSubmitted": "Denuncia registrada",
+        "denouncePendingReview": "Un administrador la va a revisar.",
+        "motivos": {
+            "no_contenido_animal": "No es contenido animal",
+            "criadero_ilegal": "Criadero / venta ilegal",
+            "maltrato": "Maltrato animal",
+            "spam": "Spam o engaño",
+            "contenido_inapropiado": "Contenido indebido / sexual",
+            "otro": "Otro motivo"
+        }
     },
     "home": {
         "welcome": "Bienvenido a Red Huellitas",
@@ -326,6 +347,11 @@
         "emptyFavoritos": "Todavía no guardaste ninguna publicación",
         "misPostulaciones": "Mis postulaciones",
         "misFavoritos": "Mis favoritos",
+        "editar": "Editar publicación",
+        "fotos": "Fotos",
+        "noEditableTitulo": "No se puede editar",
+        "noEditable": "Esta publicación está en conexión con otro usuario.",
+        "chatearPostulante": "Chatear",
         "estadoRevision": {
             "pendiente": "Pendiente de revisión",
             "aceptada": "Aceptada",
@@ -500,9 +526,11 @@
         "deshacerConfirmBody": "Se va a cerrar la conversación para ambos. Esta acción no se puede deshacer desde la app."
     },
     "suscripcion": {
-        "tituloLista": "Vitrina Comercial",
+        "tituloLista": "Suscripciones",
         "activaHasta": "Activa hasta el {{fecha}}",
         "sinSuscripcion": "No tenés una suscripción activa todavía.",
+        "sinPlanes": "No hay planes disponibles. Si sos admin, revisá el catálogo de planes.",
+        "verificacionParaPagar": "Podés mirar los planes, pero para pagar o conectar Mercado Pago necesitás tener la cuenta verificada.",
         "pagarCon": "Pagar con",
         "pagarMercadoPago": "Pagar con Mercado Pago",
         "yaPagueActualizar": "Ya pagué, actualizar estado",
@@ -589,11 +617,17 @@
     },
     "mpVendedor": {
         "tituloSeccion": "Cuenta de venta (Mercado Pago)",
-        "descripcion": "Vinculá tu cuenta de Mercado Pago para cobrar directamente por tus ventas del catálogo.",
+        "descripcion": "Vinculá tu cuenta de Mercado Pago para cobrar directamente por tus ventas en la tienda.",
         "conectarButton": "Conectar cuenta de Mercado Pago",
-        "conectadoComo": "Conectado como {{email}}",
+        "conectadoComo": "Conectado como {{nombre}}",
+        "conectadoComoLabel": "Conectado como",
         "cambiarCuentaButton": "Cambiar cuenta",
-        "noConfigurado": "La vinculación con Mercado Pago no está configurada todavía"
+        "desconectarButton": "Desconectar",
+        "desconectarConfirmTitle": "¿Desconectar Mercado Pago?",
+        "desconectarConfirmBody": "Vas a dejar de cobrar ventas con esa cuenta hasta que vuelvas a conectarla.",
+        "noConfigurado": "El servidor aún no tiene Client ID/Secret de Mercado Pago. Revisá mercadopago.local.php y recargá.",
+        "noSePudoAbrir": "No se pudo abrir Mercado Pago. Revisá que el navegador no bloquee ventanas emergentes.",
+        "noSePudoDesconectar": "No se pudo desconectar la cuenta de Mercado Pago."
     },
     "juego": {
         "titulo": "HuePlay",
@@ -622,7 +656,7 @@
         "racha_one": "{{count}} día seguido",
         "racha_other": "{{count}} días seguidos",
         "avatar": {
-            "crear": "Crear avatar con IA",
+            "crear": "Crear tu mascota real con IA",
             "generando": "Creando el avatar de tu mascota…\nPuede tardar unos segundos.",
             "regenerar": "Generar otro",
             "volverFoto": "Volver a la foto",
@@ -685,7 +719,10 @@
         "verContenido": "Ver el contenido denunciado",
         "notaPlaceholder": "Nota interna (opcional)",
         "marcarRevisada": "Marcar revisada",
-        "desestimar": "Desestimar",
+        "desestimar": "Desestimar (revertir denuncia)",
+        "darDeBaja": "Dar de baja contenido",
+        "bajaYAdvertir": "Dar de baja y advertir",
+        "advertirUsuario": "Advertir usuario",
         "suspenderUsuario": "Suspender usuario",
         "reactivarUsuario": "Reactivar usuario",
         "usuarioSuspendido": "suspendido",

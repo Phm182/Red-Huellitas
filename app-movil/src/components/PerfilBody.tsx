@@ -41,6 +41,7 @@ import { AppButton } from './AppButton';
 import { AppMessageModal } from './AppMessageModal';
 import { DenunciaButtonStub } from './DenunciaButtonStub';
 import { EmptyState } from './ui/EmptyState';
+import { HuePlusBadge } from './HuePlusBadge';
 import { Skeleton } from './ui/Skeleton';
 
 interface PerfilBodyProps {
@@ -434,7 +435,10 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
           ) : null}
         </Pressable>
 
-        <Text style={[type.titleSm, { color: colors.text, marginTop: 12 }]}>{perfil.nombreCompleto}</Text>
+        <View style={styles.nombreRow}>
+          <Text style={[type.titleSm, { color: colors.text }]}>{perfil.nombreCompleto}</Text>
+          <HuePlusBadge planCodigo={perfil.planCodigo ?? (esPropio ? user?.planCodigo : null)} size={15} />
+        </View>
         <Text style={[type.bodySm, { color: colors.textMuted }]}>@{perfil.username}</Text>
 
         {perfil.zonaDescripcion ? (
@@ -637,6 +641,7 @@ const styles = StyleSheet.create({
   skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SEPARACION, marginTop: 28 },
   container: { flexGrow: 1, paddingBottom: 32 },
   header: { alignItems: 'center', paddingTop: 32, paddingHorizontal: 24 },
+  nombreRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   avatarPress: { position: 'relative' },
   avatar: { width: 92, height: 92, borderRadius: radii.pill, borderWidth: 3 },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },

@@ -2,15 +2,26 @@ import { Platform } from 'react-native';
 import { ApiResponse } from '../types';
 
 /**
- * En web del mismo subdominio: `/inc` (o EXPO_PUBLIC_API_URL al buildear).
- * En nativo / Expo Go: env o localhost XAMPP.
+ * Backend PHP.
+ * - Navegador en localhost → siempre XAMPP local (ignora bitflow del .env.production).
+ * - Sitio hosteado → mismo origen /inc.
+ * - Nativo → EXPO_PUBLIC_API_URL del .env.
  */
 function getApiUrl(): string {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost/Red%20Huellitas/inc';
+    }
+    // Web export en el hosting: PHP vive en /inc del mismo dominio.
+    if (host.includes('bitflow.com.ar') || host.includes('redhuellitas')) {
+      return `${window.location.origin}/inc`;
+    }
   }
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin}/inc`;
+
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+  if (fromEnv) {
+    return fromEnv;
   }
   return 'http://localhost/Red%20Huellitas/inc';
 }
@@ -58,7 +69,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
       body: requestBody,
     });
   } catch (e) {
-    return { success: false, message: 'No se pudo conectar con el servidor', data: null };
+    const hint =
+      Platform.OS === 'web'
+        ? `No se pudo conectar con ${API_URL}. Si estás en la PC abrí http://localhost:8081 (Expo), no el sitio de bitflow. ¿XAMPP/Apache encendido?`
+        : `No se pudo conectar con ${API_URL}.`;
+    return { success: false, message: hint, data: null };
   }
 
   let json: ApiResponse<T>;

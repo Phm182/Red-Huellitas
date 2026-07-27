@@ -27,7 +27,8 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
   const insets = useSafeAreaInsets();
   const tabRoot = isAppTabRoot(pathname);
   const title = titleForPath(pathname, t);
-  const tabIcon = tabRoot ? tabIconForPath(pathname) : null;
+  // Ícono del hub en raíz y en rutas hijas (p. ej. /juego/[id] también lleva joystick).
+  const tabIcon = tabIconForPath(pathname);
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const displayName = user?.username

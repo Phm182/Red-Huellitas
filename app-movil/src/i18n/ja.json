@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "続ける",
         "cancel": "キャンセル",
@@ -532,9 +532,14 @@
         "tituloSeccion": "出品者アカウント（Mercado Pago）",
         "descripcion": "Mercado Pagoアカウントを連携すると、カタログでの販売代金を直接受け取れます。",
         "conectarButton": "Mercado Pagoアカウントを連携",
-        "conectadoComo": "{{email}} として連携中",
+        "conectadoComo": "{{nombre}} として連携中",
         "cambiarCuentaButton": "アカウントを変更",
-        "noConfigurado": "Mercado Pago連携はまだ設定されていません"
+        "desconectarButton": "連携解除",
+        "noSePudoDesconectar": "連携を解除できませんでした。",
+        "noConfigurado": "Mercado Pago連携はまだ設定されていません",
+        "conectadoComoLabel": "連携中",
+        "desconectarConfirmTitle": "Mercado Pagoの連携を解除しますか？",
+        "desconectarConfirmBody": "再連携するまで、このアカウントでの売上受け取りができなくなります。"
     },
     "juego": {
         "titulo": "HuePlay",

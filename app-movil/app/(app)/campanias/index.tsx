@@ -12,6 +12,7 @@ import { Badge } from '../../../src/components/ui/Badge';
 import { ChipOption, ChipRow } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
+import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** El nombre de icono que acepta ChipOption (Ionicons). */
@@ -132,7 +133,17 @@ export default function CampaniasListaScreen() {
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
+            <>
+              {campanias.length > 0 ? (
+                <ListEndAddButton
+                  label={t('campanias.tituloNueva')}
+                  onPress={() => router.push('/(app)/campanias/nueva')}
+                />
+              ) : null}
+              {cargandoMas ? (
+                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+              ) : null}
+            </>
           }
         />
       )}

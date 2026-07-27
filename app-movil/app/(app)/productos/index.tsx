@@ -12,6 +12,7 @@ import { rhMediaUrl } from '../../../src/utils/media';
 import { ChipOption, ChipRow, RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
+import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** El nombre de icono que acepta ChipOption (Ionicons). */
@@ -175,7 +176,17 @@ export default function ProductosListaScreen() {
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            cargandoMas ? <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} /> : null
+            <>
+              {listados.length > 0 ? (
+                <ListEndAddButton
+                  label={t('productos.tituloNueva')}
+                  onPress={() => router.push('/(app)/productos/nueva')}
+                />
+              ) : null}
+              {cargandoMas ? (
+                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+              ) : null}
+            </>
           }
         />
       )}

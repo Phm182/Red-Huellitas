@@ -70,6 +70,7 @@ export default function AppLayout() {
         <Stack.Screen name="adopcion/index" />
         <Stack.Screen name="adopcion/nueva" />
         <Stack.Screen name="adopcion/[id]" />
+        <Stack.Screen name="adopcion/[id]/editar" />
         <Stack.Screen name="adopcion/[id]/postular" />
         <Stack.Screen name="adopcion/[id]/postulaciones" />
         <Stack.Screen name="adopcion/mis-postulaciones" />
@@ -109,6 +110,7 @@ export default function AppLayout() {
         <Stack.Screen name="admin/verificaciones" />
         <Stack.Screen name="admin/denuncias" />
         <Stack.Screen name="admin/reportes" />
+        <Stack.Screen name="admin/planes" />
       </Stack>
     </AppChrome>
   );

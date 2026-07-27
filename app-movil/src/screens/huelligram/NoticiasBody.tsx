@@ -200,7 +200,9 @@ export function NoticiasBody() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  subtabsBar: { flexGrow: 0, paddingHorizontal: 12, paddingVertical: 10 },
+  // `flexShrink: 0` + `zIndex`: sin eso la fila se achicaba al crecer la lista
+  // y las tarjetas de noticias le pasaban por encima.
+  subtabsBar: { flexGrow: 0, flexShrink: 0, zIndex: 2, paddingHorizontal: 12, paddingVertical: 10 },
   subtabChip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginRight: 8 },
   list: { padding: 16 },
   listEmpty: { flexGrow: 1 },

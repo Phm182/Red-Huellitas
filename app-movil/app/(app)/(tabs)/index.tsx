@@ -1,14 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { HistoriasBar } from '../../../src/components/HistoriasBar';
 import { HuetubeBody } from '../../../src/screens/huelligram/HuetubeBody';
 import { NoticiasBody } from '../../../src/screens/huelligram/NoticiasBody';
 import { PublicacionesBody } from '../../../src/screens/huelligram/PublicacionesBody';
-import { radii } from '../../../src/theme/elevation';
 import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticLeve } from '../../../src/utils/haptics';
@@ -24,63 +30,91 @@ const SOLAPAS: { key: Solapa; labelKey: string; icon: keyof typeof Ionicons.glyp
 /** Alto del bloque fijo (Huellitas + solapas), para que Huetube calcule bien. */
 export const HUELLIGRAM_HEADER_HEIGHT = 154;
 
-/** Cuánto hay que arrastrar de costado para que cuente como cambio de solapa. */
-const UMBRAL_SWIPE = 55;
-/** Movimiento mínimo antes de robarle el gesto al scroll de la lista. */
-const UMBRAL_GESTO = 14;
+const ANCHO = Dimensions.get('window').width;
+const UMBRAL = 0.22;
 
 /**
- * Huelligram: las Huellitas arriba y, debajo, las tres solapas de contenido.
- *
- * Noticias y Huetube dejaron de ser pestañas de la barra inferior — ese lugar
- * ahora lo ocupan los hubs (Rescate, Tienda, Salud…). Como los tres feeds son
- * "lo que pasa en la comunidad", viven juntos acá.
+ * Huelligram: Huellitas arriba y tres solapas con swipe horizontal animado.
  */
 export default function HuelligramScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ solapa?: string }>();
-  const [solapa, setSolapa] = useState<Solapa>('publicaciones');
+  const [indice, setIndice] = useState(0);
+  const indiceRef = useRef(0);
+  const offset = useSharedValue(0);
+  const arrastre = useSharedValue(0);
 
-  // La solapa se refleja en la URL para que el botón + del riel sepa qué
-  // crear: en Huetube tiene que ofrecer un video, no una publicación.
-  const irASolapa = (s: Solapa) => {
-    setSolapa(s);
-    router.setParams({ solapa: s });
-  };
+  const aplicarIndice = useCallback((i: number, animar: boolean) => {
+    const clamped = Math.max(0, Math.min(SOLAPAS.length - 1, i));
+    const cambio = clamped !== indiceRef.current;
+    indiceRef.current = clamped;
+    setIndice(clamped);
+    if (animar) {
+      offset.value = withSpring(-clamped * ANCHO, { damping: 22, stiffness: 220, mass: 0.9 });
+    } else if (cambio) {
+      offset.value = -clamped * ANCHO;
+    }
+    const key = SOLAPAS[clamped].key;
+    if (params.solapa !== key) {
+      router.setParams({ solapa: key });
+    }
+  }, [offset, params.solapa]);
 
-  // El menú de atajos entra directo a una solapa con ?solapa=…
   useEffect(() => {
     const pedida = params.solapa;
-    if (pedida === 'publicaciones' || pedida === 'noticias' || pedida === 'huetube') {
-      setSolapa(pedida);
+    const i = SOLAPAS.findIndex((s) => s.key === pedida);
+    if (i >= 0 && i !== indiceRef.current) {
+      aplicarIndice(i, false);
     }
-  }, [params.solapa]);
+  }, [params.solapa, aplicarIndice]);
 
-  // El PanResponder se crea una sola vez; la solapa actual la lee de un ref
-  // para no re-registrar los handlers en cada cambio.
-  const solapaRef = useRef(solapa);
-  solapaRef.current = solapa;
-
-  const swipe = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        // Sólo reclama el gesto si el movimiento es claramente horizontal: si
-        // no, se comería el scroll vertical de las listas.
-        onMoveShouldSetPanResponder: (_e, g) =>
-          Math.abs(g.dx) > UMBRAL_GESTO && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-        onPanResponderRelease: (_e, g) => {
-          if (Math.abs(g.dx) < UMBRAL_SWIPE) return;
-          const i = SOLAPAS.findIndex((s) => s.key === solapaRef.current);
-          const destino = g.dx < 0 ? i + 1 : i - 1;
-          if (destino < 0 || destino >= SOLAPAS.length) return;
-          hapticLeve();
-          irASolapa(SOLAPAS[destino].key);
-        },
-      }),
-    []
+  const alCambiarPorGesto = useCallback(
+    (destino: number) => {
+      hapticLeve();
+      aplicarIndice(destino, false);
+    },
+    [aplicarIndice]
   );
+
+  const gesto = Gesture.Pan()
+    .activeOffsetX([-18, 18])
+    .failOffsetY([-14, 14])
+    .onUpdate((e) => {
+      const i = indiceRef.current;
+      const base = -i * ANCHO;
+      const next = base + e.translationX;
+      const min = -(SOLAPAS.length - 1) * ANCHO;
+      if (next > 0) {
+        arrastre.value = next * 0.35 - base;
+      } else if (next < min) {
+        arrastre.value = min + (next - min) * 0.35 - base;
+      } else {
+        arrastre.value = e.translationX;
+      }
+    })
+    .onEnd((e) => {
+      const i = indiceRef.current;
+      const recorrido = e.translationX / ANCHO;
+      let destino = i;
+      if (recorrido < -UMBRAL || e.velocityX < -700) {
+        destino = i + 1;
+      } else if (recorrido > UMBRAL || e.velocityX > 700) {
+        destino = i - 1;
+      }
+      destino = Math.max(0, Math.min(SOLAPAS.length - 1, destino));
+      const visual = -i * ANCHO + arrastre.value;
+      arrastre.value = 0;
+      offset.value = visual;
+      offset.value = withSpring(-destino * ANCHO, { damping: 22, stiffness: 220, mass: 0.9 });
+      if (destino !== i) {
+        runOnJS(alCambiarPorGesto)(destino);
+      }
+    });
+
+  const estiloTrack = useAnimatedStyle(() => ({
+    transform: [{ translateX: offset.value + arrastre.value }],
+  }));
 
   return (
     <Atmosphere>
@@ -88,14 +122,14 @@ export default function HuelligramScreen() {
         <HistoriasBar />
 
         <View style={[styles.solapas, { borderBottomColor: colors.border }]}>
-          {SOLAPAS.map((s) => {
-            const activa = solapa === s.key;
+          {SOLAPAS.map((s, i) => {
+            const activa = indice === i;
             return (
               <Pressable
                 key={s.key}
                 onPress={() => {
                   hapticLeve();
-                  irASolapa(s.key);
+                  aplicarIndice(i, true);
                 }}
                 style={[styles.solapa, activa && { borderBottomColor: colors.primary }]}
                 accessibilityRole="tab"
@@ -118,11 +152,21 @@ export default function HuelligramScreen() {
         </View>
       </View>
 
-      <View style={styles.cuerpo} {...swipe.panHandlers}>
-        {solapa === 'publicaciones' ? <PublicacionesBody /> : null}
-        {solapa === 'noticias' ? <NoticiasBody /> : null}
-        {solapa === 'huetube' ? <HuetubeBody alturaExtra={HUELLIGRAM_HEADER_HEIGHT} /> : null}
-      </View>
+      <GestureDetector gesture={gesto}>
+        <View style={styles.cuerpo}>
+          <Animated.View style={[styles.track, { width: ANCHO * SOLAPAS.length }, estiloTrack]}>
+            <View style={[styles.pagina, { width: ANCHO }]} collapsable={false}>
+              <PublicacionesBody />
+            </View>
+            <View style={[styles.pagina, { width: ANCHO }]} collapsable={false}>
+              <NoticiasBody />
+            </View>
+            <View style={[styles.pagina, { width: ANCHO }]} collapsable={false}>
+              <HuetubeBody alturaExtra={HUELLIGRAM_HEADER_HEIGHT} />
+            </View>
+          </Animated.View>
+        </View>
+      </GestureDetector>
     </Atmosphere>
   );
 }
@@ -141,5 +185,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   solapaLabel: { fontFamily: fonts.bodySemi, fontSize: 13 },
-  cuerpo: { flex: 1, borderTopLeftRadius: radii.sm, overflow: 'hidden' },
+  cuerpo: { flex: 1, overflow: 'hidden' },
+  track: { flex: 1, flexDirection: 'row' },
+  pagina: { height: '100%' },
 });

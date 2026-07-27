@@ -104,6 +104,24 @@ export default function AdopcionDetalleScreen() {
 
       {adopcion.esDueno ? (
         <>
+          {adopcion.editable === false ? (
+            <View style={[styles.lockBox, { backgroundColor: colors.accentSoft, borderColor: colors.border }]}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>{t('adopcion.noEditableTitulo')}</Text>
+              <Text style={{ color: colors.textMuted, marginTop: 4 }}>
+                {adopcion.motivoNoEditable || t('adopcion.noEditable')}
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
+              onPress={() =>
+                router.push({ pathname: '/(app)/adopcion/[id]/editar', params: { id: adopcion.adopcionId } })
+              }
+            >
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('adopcion.editar')}</Text>
+            </Pressable>
+          )}
+
           <Text style={[styles.label, { color: colors.text }]}>{t('adopcion.estadoLabel')}</Text>
           <View style={styles.segmented}>
             {ESTADOS.map((e) => {
@@ -163,5 +181,6 @@ const styles = StyleSheet.create({
   segmented: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center' },
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4 },
+  lockBox: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 12 },
   denunciaRow: { marginTop: 16, alignItems: 'center' },
 });

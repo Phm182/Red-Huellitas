@@ -3,7 +3,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { juegoApi } from '../../../src/api/juegoApi';
-import { MascotaViva } from '../../../src/components/juego/MascotaViva';
+import { useAuth } from '../../../src/auth/AuthProvider';
+import { HuePlusBadge } from '../../../src/components/HuePlusBadge';
+import { MascotaAnimada } from '../../../src/components/juego/MascotaAnimada';
 import { StatBar } from '../../../src/components/StatBar';
 import { JuegoAccion, JuegoAvatarEstado, MascotaJuego } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -33,6 +35,7 @@ function formatearEspera(segundos: number): string {
 export default function JuegoScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { mascotaId } = useLocalSearchParams<{ mascotaId: string }>();
 
   const [juego, setJuego] = useState<MascotaJuego | null>(null);
@@ -163,13 +166,12 @@ export default function JuegoScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }, centeredContent]}>
       <View style={styles.avatarZona}>
-        <MascotaViva
+        <MascotaAnimada
           especie={juego.especie}
-          raza={juego.raza}
-          nombre={juego.nombre}
           animo={juego.animo}
           accion={actuando}
           disparo={celebrar}
+          tamano={240}
         />
         <Text style={[styles.nombre, { color: colors.text }]}>{juego.nombre}</Text>
         <Text style={{ color: colors.textMuted, textAlign: 'center' }}>{t(`juego.animo.${juego.animo}`)}</Text>
@@ -198,9 +200,10 @@ export default function JuegoScreen() {
         ) : avatar?.disponible ? (
           <View style={styles.avatarAccion}>
             <Pressable
-              style={[styles.avatarBoton, { borderColor: colors.primary }]}
+              style={[styles.avatarBoton, { borderColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={onGenerarAvatar}
             >
+              <HuePlusBadge planCodigo={user?.planCodigo} comoAccionPlus size={14} />
               <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                 ✨ {t('juego.avatar.crear')}
               </Text>

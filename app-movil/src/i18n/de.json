@@ -1,4 +1,4 @@
-﻿{
+{
     "common": {
         "continue": "Weiter",
         "cancel": "Abbrechen",
@@ -532,9 +532,14 @@
         "tituloSeccion": "Verkäuferkonto (Mercado Pago)",
         "descripcion": "Verknüpfe dein Mercado-Pago-Konto, um direkt für deine Verkäufe im Katalog bezahlt zu werden.",
         "conectarButton": "Mercado-Pago-Konto verknüpfen",
-        "conectadoComo": "Verbunden als {{email}}",
+        "conectadoComo": "Verbunden als {{nombre}}",
         "cambiarCuentaButton": "Konto wechseln",
-        "noConfigurado": "Die Mercado-Pago-Verknüpfung ist noch nicht eingerichtet"
+        "desconectarButton": "Trennen",
+        "noSePudoDesconectar": "Konto konnte nicht getrennt werden.",
+        "noConfigurado": "Die Mercado-Pago-Verknüpfung ist noch nicht eingerichtet",
+        "conectadoComoLabel": "Verbunden als",
+        "desconectarConfirmTitle": "Mercado Pago trennen?",
+        "desconectarConfirmBody": "Du erhältst keine Zahlungen mehr mit diesem Konto, bis du es erneut verbindest."
     },
     "juego": {
         "titulo": "HuePlay",
