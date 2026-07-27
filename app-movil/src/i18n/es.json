@@ -759,5 +759,29 @@
             "ejercicio": "Ejercicio",
             "convivencia": "Convivencia"
         }
+    },
+    "notificaciones": {
+        "titulo": "Notificaciones",
+        "vacio": "No tenés notificaciones",
+        "vacioDesc": "Acá te van a llegar los avisos de tus publicaciones, mascotas y campañas.",
+        "marcarLeidas": "Marcar todas como leídas",
+        "hoy": "Hoy",
+        "antes": "Antes"
+    },
+    "chat": {
+        "titulo": "Mensajes",
+        "vacio": "Todavía no tenés mensajes",
+        "vacioDesc": "Cuando alguien te escriba, la charla va a aparecer acá.",
+        "solicitudes": "Solicitudes",
+        "charlas": "Charlas",
+        "escribiMensaje": "Escribí un mensaje…",
+        "zumbido": "Zumbido",
+        "zumbidoEnviado": "¡Zumbido!",
+        "aceptar": "Aceptar",
+        "rechazar": "Rechazar",
+        "solicitudDe": "te quiere escribir",
+        "sinSolicitudes": "No hay solicitudes",
+        "escribiendo": "escribiendo…",
+        "nuevaCharla": "Nueva charla"
     }
 }

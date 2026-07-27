@@ -714,5 +714,29 @@
             "ejercicio": "Активность",
             "convivencia": "Совместная жизнь"
         }
+    },
+    "notificaciones": {
+        "titulo": "Уведомления",
+        "vacio": "Уведомлений нет",
+        "vacioDesc": "Здесь появятся новости о ваших постах, питомцах и акциях.",
+        "marcarLeidas": "Отметить все прочитанными",
+        "hoy": "Сегодня",
+        "antes": "Ранее"
+    },
+    "chat": {
+        "titulo": "Сообщения",
+        "vacio": "Сообщений пока нет",
+        "vacioDesc": "Когда вам напишут, чат появится здесь.",
+        "solicitudes": "Запросы",
+        "charlas": "Чаты",
+        "escribiMensaje": "Напишите сообщение…",
+        "zumbido": "Внимание",
+        "zumbidoEnviado": "Отправлено!",
+        "aceptar": "Принять",
+        "rechazar": "Отклонить",
+        "solicitudDe": "хочет вам написать",
+        "sinSolicitudes": "Запросов нет",
+        "escribiendo": "печатает…",
+        "nuevaCharla": "Новый чат"
     }
 }

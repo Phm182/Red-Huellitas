@@ -712,5 +712,29 @@
             "ejercicio": "運動",
             "convivencia": "暮らし"
         }
+    },
+    "notificaciones": {
+        "titulo": "お知らせ",
+        "vacio": "お知らせはありません",
+        "vacioDesc": "投稿・うちの子・キャンペーンのお知らせがここに届きます。",
+        "marcarLeidas": "すべて既読にする",
+        "hoy": "今日",
+        "antes": "それ以前"
+    },
+    "chat": {
+        "titulo": "メッセージ",
+        "vacio": "まだメッセージはありません",
+        "vacioDesc": "誰かがメッセージを送るとここに表示されます。",
+        "solicitudes": "リクエスト",
+        "charlas": "トーク",
+        "escribiMensaje": "メッセージを入力…",
+        "zumbido": "ノック",
+        "zumbidoEnviado": "ノックを送信！",
+        "aceptar": "承認",
+        "rechazar": "拒否",
+        "solicitudDe": "さんがメッセージを送りたがっています",
+        "sinSolicitudes": "リクエストはありません",
+        "escribiendo": "入力中…",
+        "nuevaCharla": "新しいトーク"
     }
 }

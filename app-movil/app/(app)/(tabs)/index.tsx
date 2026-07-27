@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { HistoriasBar } from '../../../src/components/HistoriasBar';
 import { HuetubeBody } from '../../../src/screens/huelligram/HuetubeBody';
@@ -24,6 +24,11 @@ const SOLAPAS: { key: Solapa; labelKey: string; icon: keyof typeof Ionicons.glyp
 /** Alto del bloque fijo (Huellitas + solapas), para que Huetube calcule bien. */
 export const HUELLIGRAM_HEADER_HEIGHT = 154;
 
+/** Cuánto hay que arrastrar de costado para que cuente como cambio de solapa. */
+const UMBRAL_SWIPE = 55;
+/** Movimiento mínimo antes de robarle el gesto al scroll de la lista. */
+const UMBRAL_GESTO = 14;
+
 /**
  * Huelligram: las Huellitas arriba y, debajo, las tres solapas de contenido.
  *
@@ -44,6 +49,31 @@ export default function HuelligramScreen() {
       setSolapa(pedida);
     }
   }, [params.solapa]);
+
+  // El PanResponder se crea una sola vez; la solapa actual la lee de un ref
+  // para no re-registrar los handlers en cada cambio.
+  const solapaRef = useRef(solapa);
+  solapaRef.current = solapa;
+
+  const swipe = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        // Sólo reclama el gesto si el movimiento es claramente horizontal: si
+        // no, se comería el scroll vertical de las listas.
+        onMoveShouldSetPanResponder: (_e, g) =>
+          Math.abs(g.dx) > UMBRAL_GESTO && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onPanResponderRelease: (_e, g) => {
+          if (Math.abs(g.dx) < UMBRAL_SWIPE) return;
+          const i = SOLAPAS.findIndex((s) => s.key === solapaRef.current);
+          const destino = g.dx < 0 ? i + 1 : i - 1;
+          if (destino < 0 || destino >= SOLAPAS.length) return;
+          hapticLeve();
+          setSolapa(SOLAPAS[destino].key);
+        },
+      }),
+    []
+  );
 
   return (
     <Atmosphere>
@@ -81,7 +111,7 @@ export default function HuelligramScreen() {
         </View>
       </View>
 
-      <View style={styles.cuerpo}>
+      <View style={styles.cuerpo} {...swipe.panHandlers}>
         {solapa === 'publicaciones' ? <PublicacionesBody /> : null}
         {solapa === 'noticias' ? <NoticiasBody /> : null}
         {solapa === 'huetube' ? <HuetubeBody alturaExtra={HUELLIGRAM_HEADER_HEIGHT} /> : null}

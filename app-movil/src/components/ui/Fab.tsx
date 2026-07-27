@@ -9,12 +9,12 @@ import { hapticLeve } from '../../utils/haptics';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
- * Botón flotante de "crear".
+ * Botón flotante de "crear" **de la pantalla** (nueva adopción, nueva
+ * campaña…), distinto del `+` global del `FloatingDock`.
  *
- * Estaba duplicado en 9 listados, todos con `<Text>+</Text>` en vez de un
- * icono, sin sombra, y anclados a `left: 20` para no chocar con el
- * `FloatingReportButton` global — que se borró y ya no existe. Acá vuelve a
- * la esquina inferior derecha, que es donde la gente lo busca.
+ * Va corrido a la izquierda del riel de flotantes: el dock ocupa desde
+ * `right: 14` hasta `right: 62`, así que quedarse en `right: 20` lo dejaba
+ * justo debajo del `+` global, con dos botones "crear" pisándose.
  */
 export function Fab({
   onPress,
@@ -46,9 +46,9 @@ export function Fab({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 12, stiffness: 220 });
       }}
-      style={[styles.fab, elevation.lg, { backgroundColor: colors.primary }, animStyle, style]}
+      style={[styles.fab, elevation.md, { backgroundColor: colors.accent }, animStyle, style]}
     >
-      <Ionicons name={icon} size={26} color={colors.primaryText} />
+      <Ionicons name={icon} size={22} color={colors.primaryText} />
     </AnimatedPressable>
   );
 }
@@ -56,10 +56,11 @@ export function Fab({
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 58,
-    height: 58,
+    // A la izquierda del riel del FloatingDock, que vive en right: 14–62.
+    right: 76,
+    bottom: 20,
+    width: 48,
+    height: 48,
     borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',

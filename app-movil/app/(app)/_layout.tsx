@@ -41,6 +41,8 @@ export default function AppLayout() {
         <Stack.Screen name="rescate/index" />
         <Stack.Screen name="tienda/index" />
         <Stack.Screen name="salud/index" />
+        <Stack.Screen name="notificaciones/index" />
+        <Stack.Screen name="chat/index" />
         <Stack.Screen name="ajustes/whatsapp" />
         <Stack.Screen name="ajustes/verificacion-estado" />
         <Stack.Screen name="buscar" />

@@ -714,5 +714,29 @@
             "ejercicio": "Esercizio",
             "convivencia": "Convivenza"
         }
+    },
+    "notificaciones": {
+        "titulo": "Notifiche",
+        "vacio": "Nessuna notifica",
+        "vacioDesc": "Gli avvisi sui tuoi post, animali e campagne appariranno qui.",
+        "marcarLeidas": "Segna tutte come lette",
+        "hoy": "Oggi",
+        "antes": "Prima"
+    },
+    "chat": {
+        "titulo": "Messaggi",
+        "vacio": "Ancora nessun messaggio",
+        "vacioDesc": "Quando qualcuno ti scriverà, la chat apparirà qui.",
+        "solicitudes": "Richieste",
+        "charlas": "Chat",
+        "escribiMensaje": "Scrivi un messaggio…",
+        "zumbido": "Trillo",
+        "zumbidoEnviado": "Trillo inviato!",
+        "aceptar": "Accetta",
+        "rechazar": "Rifiuta",
+        "solicitudDe": "vuole scriverti",
+        "sinSolicitudes": "Nessuna richiesta",
+        "escribiendo": "sta scrivendo…",
+        "nuevaCharla": "Nuova chat"
     }
 }

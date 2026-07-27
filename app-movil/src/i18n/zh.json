@@ -712,5 +712,29 @@
             "ejercicio": "运动",
             "convivencia": "共处"
         }
+    },
+    "notificaciones": {
+        "titulo": "通知",
+        "vacio": "暂无通知",
+        "vacioDesc": "关于你的帖子、宠物和活动的提醒会显示在这里。",
+        "marcarLeidas": "全部标为已读",
+        "hoy": "今天",
+        "antes": "更早"
+    },
+    "chat": {
+        "titulo": "消息",
+        "vacio": "还没有消息",
+        "vacioDesc": "有人给你发消息时，会显示在这里。",
+        "solicitudes": "请求",
+        "charlas": "聊天",
+        "escribiMensaje": "写条消息…",
+        "zumbido": "抖动",
+        "zumbidoEnviado": "已发送抖动！",
+        "aceptar": "接受",
+        "rechazar": "拒绝",
+        "solicitudDe": "想给你发消息",
+        "sinSolicitudes": "没有请求",
+        "escribiendo": "正在输入…",
+        "nuevaCharla": "新聊天"
     }
 }

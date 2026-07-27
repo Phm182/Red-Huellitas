@@ -714,5 +714,29 @@
             "ejercicio": "Exercice",
             "convivencia": "Vie commune"
         }
+    },
+    "notificaciones": {
+        "titulo": "Notifications",
+        "vacio": "Aucune notification",
+        "vacioDesc": "Les infos sur vos publications, animaux et campagnes arriveront ici.",
+        "marcarLeidas": "Tout marquer comme lu",
+        "hoy": "Aujourd'hui",
+        "antes": "Avant"
+    },
+    "chat": {
+        "titulo": "Messages",
+        "vacio": "Pas encore de messages",
+        "vacioDesc": "Quand quelqu'un vous écrira, la conversation apparaîtra ici.",
+        "solicitudes": "Demandes",
+        "charlas": "Discussions",
+        "escribiMensaje": "Écrivez un message…",
+        "zumbido": "Wizz",
+        "zumbidoEnviado": "Wizz envoyé !",
+        "aceptar": "Accepter",
+        "rechazar": "Refuser",
+        "solicitudDe": "veut vous écrire",
+        "sinSolicitudes": "Aucune demande",
+        "escribiendo": "écrit…",
+        "nuevaCharla": "Nouvelle discussion"
     }
 }

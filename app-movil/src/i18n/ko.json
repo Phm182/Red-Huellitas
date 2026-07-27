@@ -712,5 +712,29 @@
             "ejercicio": "운동",
             "convivencia": "함께 살기"
         }
+    },
+    "notificaciones": {
+        "titulo": "알림",
+        "vacio": "알림이 없습니다",
+        "vacioDesc": "게시물, 반려동물, 캠페인 소식이 여기에 표시됩니다.",
+        "marcarLeidas": "모두 읽음으로 표시",
+        "hoy": "오늘",
+        "antes": "이전"
+    },
+    "chat": {
+        "titulo": "메시지",
+        "vacio": "아직 메시지가 없습니다",
+        "vacioDesc": "누군가 메시지를 보내면 여기에 표시됩니다.",
+        "solicitudes": "요청",
+        "charlas": "대화",
+        "escribiMensaje": "메시지 입력…",
+        "zumbido": "노크",
+        "zumbidoEnviado": "노크를 보냈어요!",
+        "aceptar": "수락",
+        "rechazar": "거절",
+        "solicitudDe": "님이 메시지를 보내고 싶어 합니다",
+        "sinSolicitudes": "요청이 없습니다",
+        "escribiendo": "입력 중…",
+        "nuevaCharla": "새 대화"
     }
 }

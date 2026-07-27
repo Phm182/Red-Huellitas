@@ -1,11 +1,12 @@
 import { Stack } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import '../src/i18n/i18n';
 import { AuthProvider } from '../src/auth/AuthProvider';
 import { FontBootstrap } from '../src/theme/FontBootstrap';
+import { ocultarBarrasDeScroll } from '../src/theme/hideScrollbars';
 import { fonts } from '../src/theme/typography';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 
@@ -36,6 +37,10 @@ function StackWithTheme() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    ocultarBarrasDeScroll();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>

@@ -714,5 +714,29 @@
             "ejercicio": "Bewegung",
             "convivencia": "Zusammenleben"
         }
+    },
+    "notificaciones": {
+        "titulo": "Mitteilungen",
+        "vacio": "Keine Mitteilungen",
+        "vacioDesc": "Infos zu deinen Beiträgen, Tieren und Aktionen erscheinen hier.",
+        "marcarLeidas": "Alle als gelesen markieren",
+        "hoy": "Heute",
+        "antes": "Früher"
+    },
+    "chat": {
+        "titulo": "Nachrichten",
+        "vacio": "Noch keine Nachrichten",
+        "vacioDesc": "Wenn dir jemand schreibt, erscheint der Chat hier.",
+        "solicitudes": "Anfragen",
+        "charlas": "Chats",
+        "escribiMensaje": "Nachricht schreiben…",
+        "zumbido": "Anstupsen",
+        "zumbidoEnviado": "Angestupst!",
+        "aceptar": "Annehmen",
+        "rechazar": "Ablehnen",
+        "solicitudDe": "möchte dir schreiben",
+        "sinSolicitudes": "Keine Anfragen",
+        "escribiendo": "schreibt…",
+        "nuevaCharla": "Neuer Chat"
     }
 }

@@ -11,7 +11,7 @@ import { MAX_CONTENT_WIDTH } from '../../theme/layout';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AppBottomNav } from './AppBottomNav';
 import { AppTopHeader } from './AppTopHeader';
-import { PublishFab } from './PublishFab';
+import { FloatingDock } from './FloatingDock';
 
 type Props = {
   children: React.ReactNode;
@@ -80,8 +80,8 @@ export function AppChrome({ children }: Props) {
         </View>
 
         {chrome.header ? <AppTopHeader columnWidth={columnWidth} columnLeft={columnLeft} /> : null}
-        {chrome.tabBar || chrome.header ? (
-          <PublishFab
+        {chrome.dock ? (
+          <FloatingDock
             columnWidth={columnWidth}
             columnLeft={columnLeft}
             tabBarVisible={chrome.tabBar}

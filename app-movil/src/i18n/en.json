@@ -759,5 +759,29 @@
             "ejercicio": "Exercise",
             "convivencia": "Living together"
         }
+    },
+    "notificaciones": {
+        "titulo": "Notifications",
+        "vacio": "No notifications",
+        "vacioDesc": "Updates about your posts, pets and campaigns will show up here.",
+        "marcarLeidas": "Mark all as read",
+        "hoy": "Today",
+        "antes": "Earlier"
+    },
+    "chat": {
+        "titulo": "Messages",
+        "vacio": "No messages yet",
+        "vacioDesc": "When someone writes to you, the chat will show up here.",
+        "solicitudes": "Requests",
+        "charlas": "Chats",
+        "escribiMensaje": "Write a message…",
+        "zumbido": "Nudge",
+        "zumbidoEnviado": "Nudge sent!",
+        "aceptar": "Accept",
+        "rechazar": "Decline",
+        "solicitudDe": "wants to message you",
+        "sinSolicitudes": "No requests",
+        "escribiendo": "typing…",
+        "nuevaCharla": "New chat"
     }
 }
