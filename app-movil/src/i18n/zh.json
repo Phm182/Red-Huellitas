@@ -736,5 +736,16 @@
         "sinSolicitudes": "没有请求",
         "escribiendo": "正在输入…",
         "nuevaCharla": "新聊天"
+    },
+    "configuracion": {
+        "cuenta": "账户",
+        "privacidad": "隐私",
+        "notificaciones": "通知",
+        "apariencia": "外观",
+        "moderacion": "审核",
+        "ayuda": "帮助",
+        "cuentaPrivada": "私密账户",
+        "cuentaPrivadaDesc": "只有关注你的人才能看到你的帖子、Huellitas 和宠物。新的人需要先申请。",
+        "solicitudes": "关注请求"
     }
 }

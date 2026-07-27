@@ -738,5 +738,16 @@
         "sinSolicitudes": "Sem solicitações",
         "escribiendo": "digitando…",
         "nuevaCharla": "Nova conversa"
+    },
+    "configuracion": {
+        "cuenta": "Conta",
+        "privacidad": "Privacidade",
+        "notificaciones": "Notificações",
+        "apariencia": "Aparência",
+        "moderacion": "Moderação",
+        "ayuda": "Ajuda",
+        "cuentaPrivada": "Conta privada",
+        "cuentaPrivadaDesc": "Só quem te segue vê suas publicações, Huellitas e pets. Os novos precisam pedir permissão.",
+        "solicitudes": "Solicitações para seguir"
     }
 }

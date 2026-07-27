@@ -736,5 +736,16 @@
         "sinSolicitudes": "リクエストはありません",
         "escribiendo": "入力中…",
         "nuevaCharla": "新しいトーク"
+    },
+    "configuracion": {
+        "cuenta": "アカウント",
+        "privacidad": "プライバシー",
+        "notificaciones": "お知らせ",
+        "apariencia": "外観",
+        "moderacion": "モデレーション",
+        "ayuda": "ヘルプ",
+        "cuentaPrivada": "非公開アカウント",
+        "cuentaPrivadaDesc": "フォロワーだけが投稿・Huellita・うちの子を見られます。新しい人はリクエストが必要です。",
+        "solicitudes": "フォローリクエスト"
     }
 }

@@ -738,5 +738,16 @@
         "sinSolicitudes": "Aucune demande",
         "escribiendo": "écrit…",
         "nuevaCharla": "Nouvelle discussion"
+    },
+    "configuracion": {
+        "cuenta": "Compte",
+        "privacidad": "Confidentialité",
+        "notificaciones": "Notifications",
+        "apariencia": "Apparence",
+        "moderacion": "Modération",
+        "ayuda": "Aide",
+        "cuentaPrivada": "Compte privé",
+        "cuentaPrivadaDesc": "Seuls vos abonnés voient vos publications, Huellitas et animaux. Les nouveaux doivent demander.",
+        "solicitudes": "Demandes d'abonnement"
     }
 }

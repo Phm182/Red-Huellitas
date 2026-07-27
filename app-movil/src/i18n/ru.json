@@ -738,5 +738,16 @@
         "sinSolicitudes": "Запросов нет",
         "escribiendo": "печатает…",
         "nuevaCharla": "Новый чат"
+    },
+    "configuracion": {
+        "cuenta": "Аккаунт",
+        "privacidad": "Приватность",
+        "notificaciones": "Уведомления",
+        "apariencia": "Оформление",
+        "moderacion": "Модерация",
+        "ayuda": "Помощь",
+        "cuentaPrivada": "Закрытый аккаунт",
+        "cuentaPrivadaDesc": "Ваши посты, Huellitas и питомцев видят только подписчики. Новым нужно отправить запрос.",
+        "solicitudes": "Запросы на подписку"
     }
 }

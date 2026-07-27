@@ -18,6 +18,39 @@ export interface Usuario {
   rol: string;
   tipoUsuarioCodigo: string | null;
   notificarProximidad: boolean;
+  /** Cuenta privada: sólo tus seguidores ven tu contenido. */
+  perfilPrivado: boolean;
+  /** El "mensaje personal" del MSN, debajo del nombre en el chat. */
+  mensajePersonal: string | null;
+}
+
+export interface Notificacion {
+  notificacionId: number;
+  tipo: string;
+  titulo: string;
+  cuerpo: string;
+  /** A dónde lleva tocarla, ej. /(app)/match/12 */
+  ruta: string | null;
+  actorUserId: number | null;
+  /** Si nació de una mascota, se cuenta y se muestra dentro de ella. */
+  mascotaId: number | null;
+  leida: boolean;
+  createdAt: string;
+}
+
+export interface SolicitudSeguimiento {
+  solicitudId: number;
+  createdAt: string;
+  usuario: UsuarioResumen & { zonaDescripcion: string | null; avatarBust?: number | null };
+}
+
+/** Los badges del riel de flotantes; salen todos de un solo endpoint. */
+export interface Contadores {
+  notificaciones: number;
+  mascotas: number;
+  mensajes: number;
+  solicitudesChat: number;
+  solicitudesSeguir: number;
 }
 
 export interface TipoUsuarioCatalogoItem {

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useContadores } from '../../hooks/useContadores';
 import { APP_TAB_BAR_HEIGHT, chromeForPath } from '../../navigation/chrome';
 import { elevation, radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
@@ -104,6 +105,8 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const chrome = chromeForPath(pathname);
+  // El hook va antes del early return: los hooks no pueden ser condicionales.
+  const { contadores } = useContadores();
 
   if (!chrome.dock) return null;
 
@@ -121,16 +124,19 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
         <BotonFlotante
           icon="notifications-outline"
           label={t('notificaciones.titulo')}
+          badge={contadores.notificaciones}
           onPress={() => router.push('/(app)/notificaciones' as never)}
         />
         <BotonFlotante
           icon="chatbubble-ellipses-outline"
           label={t('chat.titulo')}
+          badge={contadores.mensajes + contadores.solicitudesChat}
           onPress={() => router.push('/(app)/chat' as never)}
         />
         <BotonFlotante
           icon="paw-outline"
           label={t('mascotas.title')}
+          badge={contadores.mascotas}
           onPress={() => router.push('/(app)/mascotas' as never)}
         />
         <BotonFlotante

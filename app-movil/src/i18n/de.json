@@ -738,5 +738,16 @@
         "sinSolicitudes": "Keine Anfragen",
         "escribiendo": "schreibt…",
         "nuevaCharla": "Neuer Chat"
+    },
+    "configuracion": {
+        "cuenta": "Konto",
+        "privacidad": "Privatsphäre",
+        "notificaciones": "Mitteilungen",
+        "apariencia": "Darstellung",
+        "moderacion": "Moderation",
+        "ayuda": "Hilfe",
+        "cuentaPrivada": "Privates Konto",
+        "cuentaPrivadaDesc": "Nur wer dir folgt, sieht deine Beiträge, Huellitas und Tiere. Neue müssen erst fragen.",
+        "solicitudes": "Follower-Anfragen"
     }
 }

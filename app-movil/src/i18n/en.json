@@ -783,5 +783,16 @@
         "sinSolicitudes": "No requests",
         "escribiendo": "typing…",
         "nuevaCharla": "New chat"
+    },
+    "configuracion": {
+        "cuenta": "Account",
+        "privacidad": "Privacy",
+        "notificaciones": "Notifications",
+        "apariencia": "Appearance",
+        "moderacion": "Moderation",
+        "ayuda": "Help",
+        "cuentaPrivada": "Private account",
+        "cuentaPrivadaDesc": "Only your followers see your posts, Huellitas and pets. New ones have to ask you first.",
+        "solicitudes": "Follow requests"
     }
 }
