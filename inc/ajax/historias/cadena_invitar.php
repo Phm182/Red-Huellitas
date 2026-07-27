@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/cadenas.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -48,34 +49,16 @@ foreach ($ids as $destinoId) {
 }
 $stmt->close();
 
-// Push en un solo lote a los que tengan token (rh_enviar_push ya agrupa de a
-// 100 por llamada).
-$placeholders = implode(',', array_fill(0, count($ids), '?'));
-$stmt = $conn->prepare(
-    "SELECT ExpoPushToken FROM Usuario
-     WHERE UserId IN ($placeholders) AND ExpoPushToken IS NOT NULL AND Estado = 'A'"
+// Una notificación por invitado: rh_notificar guarda las filas y agrupa el
+// push solo, así que ya no hace falta juntar tokens a mano acá.
+rh_notificar(
+    $conn,
+    $ids,
+    'cadena_invitacion',
+    'Te invitaron a una cadena 🔗',
+    sprintf('Sumate a "%s" con tu historia.', $cadena['Tema']),
+    '/(app)/cadenas/' . $cadenaId,
+    ['actorUserId' => $userId]
 );
-$stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$tokens = [];
-while ($row = $result->fetch_assoc()) {
-    $tokens[] = $row['ExpoPushToken'];
-}
-$stmt->close();
-
-if ($tokens !== []) {
-    try {
-        rh_enviar_push(
-            $tokens,
-            'Te invitaron a una cadena 🔗',
-            sprintf('Sumate a "%s" con tu historia.', $cadena['Tema']),
-            ['ruta' => '/cadenas/' . $cadenaId]
-        );
-    } catch (Throwable $e) {
-        error_log('cadena_invitar: ' . $e->getMessage());
-    }
-}
 
 json_success(['invitados' => count($ids)], 'Invitaciones enviadas');

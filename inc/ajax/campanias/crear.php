@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/campania.php';
 require_once __DIR__ . '/../../funciones/geo.php';
 require_once __DIR__ . '/../../funciones/push.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 const RH_CAMPANIA_RADIO_NOTIFICACION_KM = 5.0;
 
@@ -84,10 +85,14 @@ try {
     unset($destinatarios[$userId]); // no notificarle al propio creador
     if (count($destinatarios) > 0) {
         $tipoLabel = $tipo === 'castracion' ? 'castración' : 'vacunación';
-        rh_enviar_push(
-            array_values($destinatarios),
+        rh_notificar(
+            $conn,
+            array_keys($destinatarios),
+            'campania_nueva',
             'Nueva campaña cerca tuyo',
-            "Campaña de $tipoLabel: $titulo"
+            "Campaña de $tipoLabel: $titulo",
+            '/(app)/campanias/' . $campaniaId,
+            ['actorUserId' => $userId]
         );
     }
 } catch (Throwable $e) {

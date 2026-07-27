@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, usePathname } from 'expo-router';
+import { router, useGlobalSearchParams, usePathname } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContadores } from '../../hooks/useContadores';
+import { accionCrearPara } from '../../navigation/accionCrear';
 import { APP_TAB_BAR_HEIGHT, chromeForPath } from '../../navigation/chrome';
 import { elevation, radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
@@ -107,6 +108,10 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
   const chrome = chromeForPath(pathname);
   // El hook va antes del early return: los hooks no pueden ser condicionales.
   const { contadores } = useContadores();
+  // useGlobalSearchParams (y no useLocalSearchParams) porque el dock vive
+  // fuera de la pantalla: necesita los params de la ruta activa, no los suyos.
+  const { solapa } = useGlobalSearchParams<{ solapa?: string }>();
+  const crear = accionCrearPara(pathname, solapa);
 
   if (!chrome.dock) return null;
 
@@ -139,10 +144,13 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
           badge={contadores.mascotas}
           onPress={() => router.push('/(app)/mascotas' as never)}
         />
+        {/* El `+` es contextual: en Mis Mascotas crea una mascota, en Adopción
+            una publicación de adopción. Un solo botón de crear, siempre en el
+            mismo lugar, haciendo lo que la pantalla dice. */}
         <BotonFlotante
-          icon="add"
-          label={t('feed.createTitle')}
-          onPress={() => router.push('/(app)/publicaciones/nueva')}
+          icon={crear.icon}
+          label={t(crear.labelKey)}
+          onPress={() => router.push(crear.route as never)}
           principal
         />
       </View>

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/perdido.php';
 require_once __DIR__ . '/../../funciones/geo.php';
 require_once __DIR__ . '/../../funciones/push.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 const RH_PERDIDO_RADIO_NOTIFICACION_KM = 5.0;
 
@@ -144,7 +145,15 @@ try {
         $cuerpo = $tipo === 'perdido'
             ? 'Se perdió una mascota cerca tuyo'
             : 'Encontraron una mascota cerca tuyo';
-        rh_enviar_push(array_values($destinatarios), 'Perdidos y Reencontrados', $cuerpo);
+        rh_notificar(
+            $conn,
+            array_keys($destinatarios),
+            'perdido_cerca',
+            'Perdidos y Reencontrados',
+            $cuerpo,
+            '/(app)/perdidos/' . $perdidoId,
+            ['actorUserId' => $userId]
+        );
     }
 } catch (Throwable $e) {
     // Silencioso a propósito: el reporte ya se creó, la notificación es secundaria.

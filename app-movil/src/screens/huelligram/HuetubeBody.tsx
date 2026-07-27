@@ -5,7 +5,6 @@ import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
 import { shortsApi } from '../../api/shortsApi';
 import { ShortCard } from '../../components/ShortCard';
 import { EmptyState, useContentAreaHeight } from '../../components/ui/EmptyState';
-import { Fab } from '../../components/ui/Fab';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { Post } from '../../types';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -96,10 +95,6 @@ export function HuetubeBody({ alturaExtra = 0 }: Props) {
         viewabilityConfig={viewabilityConfig}
         contentContainerStyle={posts.length === 0 ? { flexGrow: 1 } : undefined}
         ListEmptyComponent={<EmptyState icon="play-circle-outline" titulo={t('shorts.empty')} />}
-      />
-      <Fab
-        onPress={() => router.push('/(app)/publicaciones/nueva_video')}
-        accessibilityLabel={t('shorts.createTitle')}
       />
     </View>
   );

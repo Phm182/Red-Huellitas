@@ -9,7 +9,6 @@ import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { Fab } from '../../../src/components/ui/Fab';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
@@ -105,8 +104,6 @@ export default function VeterinariasListaScreen() {
           }
         />
       )}
-
-      <Fab onPress={() => router.push('/(app)/veterinarias/nueva')} />
     </View>
   );
 }

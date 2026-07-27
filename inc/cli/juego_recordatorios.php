@@ -24,6 +24,7 @@ require_once __DIR__ . '/../funciones/bd.php';
 require_once __DIR__ . '/../funciones/mascotas.php';
 require_once __DIR__ . '/../funciones/juego.php';
 require_once __DIR__ . '/../funciones/push.php';
+require_once __DIR__ . '/../funciones/notificaciones.php';
 
 /** Por debajo de este promedio de stats se considera que vale avisar. */
 const RH_JUEGO_UMBRAL_RECORDATORIO = 40;
@@ -43,12 +44,12 @@ $sql = 'SELECT MascotaJuego.*, ' . rh_juego_campos_tiempo() . ",
         JOIN Mascota ON Mascota.MascotaId = MascotaJuego.MascotaId AND Mascota.Estado = 'A'
         JOIN Usuario ON Usuario.UserId = MascotaJuego.UserId
         WHERE Usuario.NotificarJuego = 1
-          AND Usuario.Estado = 'A'
-          AND (? = 1 OR Usuario.ExpoPushToken IS NOT NULL)";
+          AND Usuario.Estado = 'A'";
 
+// Ya no se filtra por token: ahora el recordatorio se guarda como notificación
+// aunque el usuario no tenga push (entra sólo por web, o el token venció), y
+// lo va a ver igual al abrir la app.
 $stmt = $conn->prepare($sql);
-$permitirSinToken = $dryRun ? 1 : 0;
-$stmt->bind_param('i', $permitirSinToken);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -107,11 +108,17 @@ foreach ($porUsuario as $userId => $datos) {
             continue;
         }
 
-        rh_enviar_push(
-            [$datos['token']],
+        // Con mascotaId: el recordatorio del juego aparece en el botón de
+        // animales y dentro de la ficha de esa mascota, no en la campanita
+        // general — es una interacción de ESA mascota.
+        rh_notificar(
+            $conn,
+            [(int) $userId],
+            'juego_recordatorio',
             $titulo,
             $body,
-            ['ruta' => '/juego/' . $datos['mascotaId']]
+            '/(app)/juego/' . $datos['mascotaId'],
+            ['mascotaId' => (int) $datos['mascotaId']]
         );
         $enviados++;
     } catch (Throwable $e) {

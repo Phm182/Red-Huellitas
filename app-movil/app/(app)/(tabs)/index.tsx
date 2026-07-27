@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -42,6 +42,13 @@ export default function HuelligramScreen() {
   const params = useLocalSearchParams<{ solapa?: string }>();
   const [solapa, setSolapa] = useState<Solapa>('publicaciones');
 
+  // La solapa se refleja en la URL para que el botón + del riel sepa qué
+  // crear: en Huetube tiene que ofrecer un video, no una publicación.
+  const irASolapa = (s: Solapa) => {
+    setSolapa(s);
+    router.setParams({ solapa: s });
+  };
+
   // El menú de atajos entra directo a una solapa con ?solapa=…
   useEffect(() => {
     const pedida = params.solapa;
@@ -69,7 +76,7 @@ export default function HuelligramScreen() {
           const destino = g.dx < 0 ? i + 1 : i - 1;
           if (destino < 0 || destino >= SOLAPAS.length) return;
           hapticLeve();
-          setSolapa(SOLAPAS[destino].key);
+          irASolapa(SOLAPAS[destino].key);
         },
       }),
     []
@@ -88,7 +95,7 @@ export default function HuelligramScreen() {
                 key={s.key}
                 onPress={() => {
                   hapticLeve();
-                  setSolapa(s.key);
+                  irASolapa(s.key);
                 }}
                 style={[styles.solapa, activa && { borderBottomColor: colors.primary }]}
                 accessibilityRole="tab"

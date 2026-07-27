@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/push.php';
 require_once __DIR__ . '/../../funciones/match.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -37,16 +38,22 @@ $mensajeId = (int) $stmt->insert_id;
 $stmt->close();
 
 $otroUserId = rh_match_otro_usuario_id($match, $userId);
-$stmt = $conn->prepare('SELECT ExpoPushToken FROM Usuario WHERE UserId = ?');
-$stmt->bind_param('i', $otroUserId);
-$stmt->execute();
-$otro = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$preview = mb_strlen($texto) > 80 ? mb_substr($texto, 0, 80) . '…' : $texto;
 
-if ($otro && $otro['ExpoPushToken']) {
-    $preview = mb_strlen($texto) > 80 ? mb_substr($texto, 0, 80) . '…' : $texto;
-    rh_enviar_push([$otro['ExpoPushToken']], 'Nuevo mensaje de Match', $preview);
-}
+// La mascota del que recibe: la del match que NO es la suya.
+$mascotaDelOtro = (int) $match['UserIdA'] === $otroUserId
+    ? (int) $match['MascotaIdA']
+    : (int) $match['MascotaIdB'];
+
+rh_notificar(
+    $conn,
+    [$otroUserId],
+    'match_mensaje',
+    'Nuevo mensaje de Match',
+    $preview,
+    '/(app)/match/' . $matchId,
+    ['actorUserId' => $userId, 'mascotaId' => $mascotaDelOtro]
+);
 
 $stmt = $conn->prepare('SELECT * FROM MatchMensaje WHERE MensajeId = ?');
 $stmt->bind_param('i', $mensajeId);

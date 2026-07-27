@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/push.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -51,11 +52,14 @@ $stmt->close();
 
 if (!empty($historia['ExpoPushToken'])) {
     try {
-        rh_enviar_push(
-            [$historia['ExpoPushToken']],
-            'Respondieron tu historia',
+        rh_notificar(
+            $conn,
+            [(int) $historia['UserId']],
+            'historia_respuesta',
+            'Respondieron tu Huellita',
             sprintf('%s: %s', $historia['QuienResponde'], mb_substr($texto, 0, 80)),
-            ['ruta' => '/historias/' . (int) $historia['UserId']]
+            '/(app)/historias/ver/' . (int) $historia['UserId'],
+            ['actorUserId' => $userId]
         );
     } catch (Throwable $e) {
         error_log('historias/responder.php: ' . $e->getMessage());

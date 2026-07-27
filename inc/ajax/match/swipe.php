@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/push.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/match.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -110,19 +111,20 @@ $stmt->close();
 $matchId = (int) $matchRow['MatchId'];
 $otroUserId = (int) $destino['UserId'];
 
-$stmt = $conn->prepare('SELECT ExpoPushToken FROM Usuario WHERE UserId = ?');
-$stmt->bind_param('i', $otroUserId);
-$stmt->execute();
-$otroUsuario = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if ($otroUsuario && $otroUsuario['ExpoPushToken']) {
-    rh_enviar_push(
-        [$otroUsuario['ExpoPushToken']],
-        '¡Tenés un nuevo match! 🐾',
-        "A {$origen['Nombre']} y {$destino['Nombre']} se gustaron."
-    );
-}
+// La notificación se cuelga de la mascota del destinatario: así aparece en el
+// botón de animales y dentro de la ficha de esa mascota, no perdida en la
+// campanita general.
+rh_notificar(
+    $conn,
+    [$otroUserId],
+    'match_nuevo',
+    '¡Tenés un nuevo match! 🐾',
+    "A {$origen['Nombre']} y {$destino['Nombre']} se gustaron.",
+    '/(app)/match/' . $matchId,
+    // La mascota del destinatario es la de destino, no $mascotaIdB: A y B se
+    // ordenan por id, así que B puede ser cualquiera de las dos.
+    ['actorUserId' => $userId, 'mascotaId' => $mascotaIdDestino]
+);
 
 json_success([
     'match' => true,

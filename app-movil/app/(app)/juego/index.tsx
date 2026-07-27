@@ -54,7 +54,23 @@ export default function JuegoSelectorScreen() {
       data={mascotas}
       keyExtractor={(m) => String(m.mascotaId)}
       ListEmptyComponent={
-        <EmptyState icon="game-controller-outline" titulo={mensaje ?? t('juego.sinMascotas')} />
+        // Un estado vacío sin salida es una pared: si HuePlay necesita una
+        // mascota o la cuenta verificada, el botón tiene que llevar ahí mismo.
+        mensaje ? (
+          <EmptyState
+            icon="shield-checkmark-outline"
+            titulo={mensaje}
+            accionLabel={t('feed.goToVerification')}
+            onAccion={() => router.push('/(app)/ajustes/verificacion-estado')}
+          />
+        ) : (
+          <EmptyState
+            icon="game-controller-outline"
+            titulo={t('juego.sinMascotas')}
+            accionLabel={t('mascotas.addPet')}
+            onAccion={() => router.push('/(app)/mascotas/nueva')}
+          />
+        )
       }
       renderItem={({ item }) => (
         <Pressable

@@ -15,6 +15,7 @@
  */
 
 require_once __DIR__ . '/push.php';
+require_once __DIR__ . '/notificaciones.php';
 
 const RH_CADENA_LIMITE_DEFAULT = 20;
 const RH_CADENA_LIMITE_MAX = 50;
@@ -125,17 +126,22 @@ function rh_cadena_notificar_continuacion(mysqli $conn, int $cadenaId, int $auto
     $datos = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    if (!$datos || (int) $datos['CreadorUserId'] === $autorUserId || empty($datos['ExpoPushToken'])) {
+    // Ya no se pide token: la notificación se guarda igual y rh_notificar
+    // decide sola si además hay push que mandar.
+    if (!$datos || (int) $datos['CreadorUserId'] === $autorUserId) {
         return;
     }
 
     // Un push que falla nunca puede tumbar la publicación de la historia.
     try {
-        rh_enviar_push(
-            [$datos['ExpoPushToken']],
+        rh_notificar(
+            $conn,
+            [(int) $datos['CreadorUserId']],
+            'cadena_continuada',
             'Se sumaron a tu cadena 🔗',
             sprintf('%s continuó "%s".', $datos['AutorNombre'], $datos['Tema']),
-            ['ruta' => '/cadenas/' . $cadenaId]
+            '/(app)/cadenas/' . $cadenaId,
+            ['actorUserId' => $autorUserId]
         );
     } catch (Throwable $e) {
         error_log('rh_cadena_notificar_continuacion: ' . $e->getMessage());

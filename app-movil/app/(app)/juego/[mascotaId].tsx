@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { juegoApi } from '../../../src/api/juegoApi';
-import { MascotaAvatar } from '../../../src/components/MascotaAvatar';
+import { MascotaViva } from '../../../src/components/juego/MascotaViva';
 import { StatBar } from '../../../src/components/StatBar';
 import { JuegoAccion, JuegoAvatarEstado, MascotaJuego } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -40,6 +40,9 @@ export default function JuegoScreen() {
   const [accionEnCurso, setAccionEnCurso] = useState<JuegoAccion | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [celebrar, setCelebrar] = useState(0);
+  // Qué está actuando la mascota. Va aparte de accionEnCurso porque la
+  // animación tiene que durar lo suyo aunque la request vuelva en 200ms.
+  const [actuando, setActuando] = useState<JuegoAccion | null>(null);
   const [ahora, setAhora] = useState(Date.now());
 
   const [avatar, setAvatar] = useState<JuegoAvatarEstado | null>(null);
@@ -114,6 +117,12 @@ export default function JuegoScreen() {
     if (accionEnCurso !== null) return;
     setMensaje(null);
     setAccionEnCurso(tipo);
+    setActuando(tipo);
+    // 'dormir' se queda hasta que el usuario haga otra cosa; el resto vuelve
+    // al reposo cuando termina el gesto.
+    if (tipo !== 'dormir') {
+      setTimeout(() => setActuando(null), 2600);
+    }
     const res = await juegoApi.accion(Number(mascotaId), tipo);
     setAccionEnCurso(null);
 
@@ -146,11 +155,11 @@ export default function JuegoScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }, centeredContent]}>
       <View style={styles.avatarZona}>
-        <MascotaAvatar
-          avatarPath={juego.avatarPath}
-          animo={juego.animo}
+        <MascotaViva
           especie={juego.especie}
-          celebrar={celebrar}
+          animo={juego.animo}
+          accion={actuando}
+          disparo={celebrar}
         />
         <Text style={[styles.nombre, { color: colors.text }]}>{juego.nombre}</Text>
         <Text style={{ color: colors.textMuted, textAlign: 'center' }}>{t(`juego.animo.${juego.animo}`)}</Text>

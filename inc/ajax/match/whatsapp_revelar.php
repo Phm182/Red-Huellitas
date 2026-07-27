@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/push.php';
 require_once __DIR__ . '/../../funciones/match.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -62,8 +63,18 @@ $otro = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 // Si este llamado recién completó el par (yo no había consentido antes), avisarle al otro.
-if (!$yaHabiaConsentimiento && $otro && $otro['ExpoPushToken']) {
-    rh_enviar_push([$otro['ExpoPushToken']], '¡WhatsApp revelado!', 'Ya pueden verse el número de WhatsApp en el chat del match.');
+// Sin el chequeo de token: rh_notificar guarda la fila igual y decide
+// sola si además hay push que mandar.
+if (!$yaHabiaConsentimiento) {
+    rh_notificar(
+        $conn,
+        [$otroUserId],
+        'match_whatsapp',
+        '¡WhatsApp revelado!',
+        'Ya pueden verse el número de WhatsApp en el chat del match.',
+        '/(app)/match/' . $matchId,
+        ['actorUserId' => $userId]
+    );
 }
 
 json_success([

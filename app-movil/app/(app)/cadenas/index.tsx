@@ -12,7 +12,6 @@ import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { Fab } from '../../../src/components/ui/Fab';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** Avatares apilados de los últimos que se sumaron. */
@@ -172,8 +171,6 @@ export default function CadenasScreen() {
           </Animated.View>
         )}
       />
-
-      <Fab icon="add" onPress={() => router.push('/(app)/cadenas/nueva')} />
     </View>
   );
 }
