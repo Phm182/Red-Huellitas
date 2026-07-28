@@ -27,8 +27,19 @@ $direccion = trim($_POST['direccion'] ?? '') ?: null;
 $zonaLat = isset($_POST['zonaLat']) ? (float) $_POST['zonaLat'] : null;
 $zonaLng = isset($_POST['zonaLng']) ? (float) $_POST['zonaLng'] : null;
 $requiereInscripcion = filter_var($_POST['requiereInscripcion'] ?? false, FILTER_VALIDATE_BOOLEAN);
+// Publicar en nombre de un equipo. 0/vacío = la organiza la persona.
+$equipoId = isset($_POST['equipoId']) && $_POST['equipoId'] !== '' ? (int) $_POST['equipoId'] : null;
 $cupoMaximo = isset($_POST['cupoMaximo']) && $_POST['cupoMaximo'] !== '' ? (int) $_POST['cupoMaximo'] : null;
 
+if ($equipoId !== null) {
+    require_once __DIR__ . '/../../funciones/equipo.php';
+    // Sólo el dueño y los admins publican por el equipo: si alcanzara con ser
+    // miembro, sumarse a una organización conocida daría permiso para hablar
+    // en su nombre el mismo día.
+    if (!rh_equipo_puede_administrar($conn, $equipoId, $userId)) {
+        json_error('No podés publicar en nombre de ese equipo', 403);
+    }
+}
 if (!in_array($tipo, ['castracion', 'vacunacion'], true)) {
     json_error("tipo debe ser 'castracion' o 'vacunacion'");
 }
@@ -63,13 +74,14 @@ if (!$requiereInscripcion) {
 
 $stmt = $conn->prepare(
     'INSERT INTO Campania
-        (UserId, Tipo, Titulo, Descripcion, FechaDesde, FechaHasta, ZonaDescripcion, Direccion, ZonaLat, ZonaLng, RequiereInscripcion, CupoMaximo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        (UserId, EquipoId, Tipo, Titulo, Descripcion, FechaDesde, FechaHasta, ZonaDescripcion, Direccion, ZonaLat, ZonaLng, RequiereInscripcion, CupoMaximo)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 $requiereInt = $requiereInscripcion ? 1 : 0;
 $stmt->bind_param(
-    'isssssssddii',
+    'iisssssssddii',
     $userId,
+    $equipoId,
     $tipo,
     $titulo,
     $descripcion,

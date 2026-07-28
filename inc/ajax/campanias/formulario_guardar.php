@@ -19,6 +19,8 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/equipo.php';
+require_once __DIR__ . '/../../funciones/calificacion.php';
 require_once __DIR__ . '/../../funciones/campania_inscripcion.php';
 
 $userId = rh_require_auth($conn);
@@ -37,7 +39,7 @@ $stmt->close();
 if (!$campania) {
     json_error('Campaña no encontrada', 404);
 }
-if ((int) $campania['UserId'] !== $userId) {
+if (!rh_campania_puede_administrar($conn, $campania, $userId)) {
     json_error('No organizás esta campaña', 403);
 }
 

@@ -13,6 +13,8 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/equipo.php';
+require_once __DIR__ . '/../../funciones/calificacion.php';
 require_once __DIR__ . '/../../funciones/campania_inscripcion.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 
@@ -32,14 +34,14 @@ $stmt->close();
 if (!$campania) {
     json_error('Campaña no encontrada', 404);
 }
-if ((int) $campania['UserId'] !== $userId) {
+if (!rh_campania_puede_administrar($conn, $campania, $userId)) {
     json_error('No organizás esta campaña', 403);
 }
 
 // --- Inscripciones con su gente -------------------------------------------
 $stmt = $conn->prepare(
     'SELECT i.CampaniaInscripcionId, i.UserId, i.Estado, i.Posicion, i.CreatedAt,
-            i.CanceladaEn, i.AvisoAusenciaEn, i.NotaAusencia,
+            i.CanceladaEn, i.AvisoAusenciaEn, i.NotaAusencia, i.Asistio,
             u.Username, u.NombreCompleto, u.AvatarPath, u.WhatsappNumero
      FROM CampaniaInscripcion i
      JOIN Usuario u ON u.UserId = i.UserId
@@ -63,6 +65,8 @@ while ($r = $res->fetch_assoc()) {
         'canceladaEn' => $r['CanceladaEn'],
         'avisoAusenciaEn' => $r['AvisoAusenciaEn'],
         'notaAusencia' => $r['NotaAusencia'],
+        // null = todavía no se pasó lista (ver sql/045).
+        'asistio' => $r['Asistio'],
         'usuario' => [
             'userId' => (int) $r['UserId'],
             'username' => $r['Username'],
@@ -74,9 +78,41 @@ while ($r = $res->fetch_assoc()) {
             'whatsappNumero' => $r['WhatsappNumero'],
         ],
         'respuestas' => [],
+        // Reputación e historial del inscripto. Es lo que el organizador
+        // necesita para decidir un cupo: alguien que se anotó cinco veces y
+        // no fue ninguna no debería tapar a alguien de la lista de espera.
+        'reputacion' => rh_reputacion($conn, 'usuario', (int) $r['UserId']),
+        'asistencias' => rh_usuario_asistencias($conn, (int) $r['UserId']),
+        'miCalificacion' => null,
     ];
 }
 $stmt->close();
+
+// Qué inscriptos ya calificó el organizador, en una sola consulta.
+$organizador = rh_campania_organizador($campania);
+$stmt = $conn->prepare(
+    "SELECT ParaId, Puntaje, Comentario FROM Calificacion
+     WHERE Contexto = 'campania' AND ContextoId = ?
+       AND DeTipo = ? AND DeId = ? AND ParaTipo = 'usuario' AND Estado = 'A'"
+);
+$stmt->bind_param('isi', $campaniaId, $organizador['tipo'], $organizador['id']);
+$stmt->execute();
+$res = $stmt->get_result();
+$califPorUsuario = [];
+while ($r = $res->fetch_assoc()) {
+    $califPorUsuario[(int) $r['ParaId']] = [
+        'puntaje' => (int) $r['Puntaje'],
+        'comentario' => $r['Comentario'],
+    ];
+}
+$stmt->close();
+
+foreach ($inscripciones as $id => $ins) {
+    $uid = $ins['usuario']['userId'];
+    if (isset($califPorUsuario[$uid])) {
+        $inscripciones[$id]['miCalificacion'] = $califPorUsuario[$uid];
+    }
+}
 
 // --- Respuestas del formulario, en una sola consulta ----------------------
 if (count($ids) > 0) {

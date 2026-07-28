@@ -6,6 +6,8 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/equipo.php';
+require_once __DIR__ . '/../../funciones/calificacion.php';
 
 $userId = rh_require_auth($conn);
 
@@ -14,7 +16,7 @@ if ($campaniaId <= 0) {
     json_error('Falta campaniaId');
 }
 
-$stmt = $conn->prepare('SELECT UserId FROM Campania WHERE CampaniaId = ?');
+$stmt = $conn->prepare('SELECT UserId, EquipoId FROM Campania WHERE CampaniaId = ?');
 $stmt->bind_param('i', $campaniaId);
 $stmt->execute();
 $campania = $stmt->get_result()->fetch_assoc();
@@ -23,7 +25,7 @@ $stmt->close();
 if (!$campania) {
     json_error('Campaña no encontrada', 404);
 }
-if ((int) $campania['UserId'] !== $userId) {
+if (!rh_campania_puede_administrar($conn, $campania, $userId)) {
     json_error('No tenés permiso para ver estas inscripciones', 403);
 }
 

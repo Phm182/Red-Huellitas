@@ -62,6 +62,60 @@ function rh_campania_publico(mysqli $conn, array $c, int $viewerUserId): array
         'createdAt' => $c['CreatedAt'],
     ];
 
+    // Quién organiza: el equipo si lo hay, si no la persona de `autor`.
+    // La app muestra el equipo en primer plano porque es lo que da confianza:
+    // "lo hace el gobierno de la ciudad" pesa más que quién lo cargó.
+    require_once __DIR__ . '/calificacion.php';
+
+    $data['equipo'] = null;
+    $equipoId = isset($c['EquipoId']) ? (int) $c['EquipoId'] : 0;
+    if ($equipoId > 0) {
+        $stmt = $conn->prepare(
+            'SELECT e.EquipoId, e.Nombre, e.AvatarPath, e.Verificado,
+                    t.Codigo, t.Nombre AS TipoNombre, t.Icono, t.Color
+             FROM Equipo e
+             JOIN TipoEquipoCatalogo t ON t.TipoEquipoId = e.TipoEquipoId
+             WHERE e.EquipoId = ?'
+        );
+        $stmt->bind_param('i', $equipoId);
+        $stmt->execute();
+        $eq = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if ($eq) {
+            $data['equipo'] = [
+                'equipoId' => (int) $eq['EquipoId'],
+                'nombre' => $eq['Nombre'],
+                'avatarPath' => $eq['AvatarPath'],
+                'verificado' => (bool) $eq['Verificado'],
+                'tipo' => [
+                    'codigo' => $eq['Codigo'],
+                    'nombre' => $eq['TipoNombre'],
+                    'icono' => $eq['Icono'],
+                    'color' => $eq['Color'],
+                ],
+            ];
+        }
+    }
+
+    $organizador = rh_campania_organizador($c);
+    $data['organizador'] = [
+        'tipo' => $organizador['tipo'],
+        'id' => $organizador['id'],
+        'reputacion' => rh_reputacion($conn, $organizador['tipo'], $organizador['id']),
+    ];
+    $data['termino'] = rh_campania_termino($c);
+
+    // `esDueno` sigue siendo "la cargué yo", pero administrar una campaña de
+    // equipo también le toca a los admins del equipo aunque no la hayan
+    // creado: si no, el que la cargó se va de vacaciones y nadie pasa lista.
+    if ($equipoId > 0) {
+        require_once __DIR__ . '/equipo.php';
+        $data['puedoAdministrar'] = rh_equipo_puede_administrar($conn, $equipoId, $viewerUserId);
+    } else {
+        $data['puedoAdministrar'] = $esDueno;
+    }
+
     $data['mensajeAviso'] = $c['MensajeAviso'] ?? null;
     $data['bajaLimiteHoras'] = isset($c['BajaLimiteHoras']) && $c['BajaLimiteHoras'] !== null
         ? (int) $c['BajaLimiteHoras']
