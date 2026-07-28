@@ -51,8 +51,8 @@ foreach ($porVendedor as $vendedorId => $items) {
     }
     $montoProductos = round($montoProductos, 2);
 
-    $tieneSuscripcion = rh_usuario_tiene_suscripcion_activa($conn, $vendedorId);
-    $comision = rh_pedido_calcular_comision($montoProductos, $tieneSuscripcion);
+    $sinComision = rh_usuario_sin_comision($conn, $vendedorId);
+    $comision = rh_pedido_calcular_comision($montoProductos, $sinComision);
 
     $metodoPago = 'coordinar';
     $estado = 'coordinando';

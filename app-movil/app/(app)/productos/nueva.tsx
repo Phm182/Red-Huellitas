@@ -13,7 +13,7 @@ import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoListado[] = ['producto', 'servicio'];
-const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 
 export default function NuevoProductoScreen() {
   const { t } = useTranslation();
@@ -214,7 +214,7 @@ export default function NuevoProductoScreen() {
             style={[styles.segment, { borderColor: colors.primary, backgroundColor: especie === e ? colors.primary : 'transparent' }]}
           >
             <Text style={{ color: especie === e ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-              {t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`)}
+              {t(especieI18nKey(e))}
             </Text>
           </Pressable>
         ))}
@@ -267,8 +267,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  segmented: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center' },
+  segmented: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  segment: { borderWidth: 1, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   chips: { marginBottom: 12 },
   chip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8 },
   locationButton: { borderWidth: 1, borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },

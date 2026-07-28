@@ -82,7 +82,7 @@ function rh_transito_publico(mysqli $conn, array $t, int $viewerUserId, ?float $
 
     $whatsappVisible = $esDueno || ($t['WhatsappVisibilidad'] ?? null) === 'publica';
 
-    return [
+    $data = [
         'transitoId' => $transitoId,
         'tipo' => $t['Tipo'],
         'autor' => rh_usuario_resumen([
@@ -107,7 +107,17 @@ function rh_transito_publico(mysqli $conn, array $t, int $viewerUserId, ?float $
         'zonaLng' => (float) $t['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,
         'esDueno' => $esDueno,
+        'estadoTransito' => $t['EstadoTransito'] ?? 'disponible',
         'estado' => $t['Estado'],
         'createdAt' => $t['CreatedAt'],
     ];
+
+    if ($esDueno) {
+        require_once __DIR__ . '/edicion.php';
+        $bloqueo = rh_transito_motivo_bloqueo_edicion($t);
+        $data['editable'] = $bloqueo === null;
+        $data['motivoNoEditable'] = $bloqueo;
+    }
+
+    return $data;
 }

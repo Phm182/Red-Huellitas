@@ -151,6 +151,7 @@ function rh_usuario_resumen(array $u): array
         'nombreCompleto' => $u['NombreCompleto'],
         'avatarPath' => $u['AvatarPath'],
         'avatarBust' => rh_avatar_bust($u['AvatarPath'] ?? null),
+        'planCodigo' => null,
     ];
 }
 
@@ -163,6 +164,7 @@ function rh_usuario_resumen(array $u): array
 function rh_usuario_publico(mysqli $conn, array $u): array
 {
     require_once __DIR__ . '/uploads.php';
+    require_once __DIR__ . '/suscripcion.php';
     $tipoUsuarioCodigo = null;
     if (!empty($u['TipoUsuarioId'])) {
         $stmt = $conn->prepare('SELECT Codigo FROM TipoUsuarioCatalogo WHERE TipoUsuarioId = ?');
@@ -192,5 +194,6 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'notificarProximidad' => (bool) ($u['NotificarProximidad'] ?? 1),
         'perfilPrivado' => (bool) ($u['PerfilPrivado'] ?? 0),
         'mensajePersonal' => $u['MensajePersonal'] ?? null,
+        'planCodigo' => rh_usuario_plan_codigo_activo($conn, (int) $u['UserId']),
     ];
 }

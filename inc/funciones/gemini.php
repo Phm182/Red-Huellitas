@@ -218,6 +218,8 @@ function rh_gemini_modelos_texto_fallback(): array
         'gemini-3.5-flash',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-flash-latest',
     ];
     if (!is_array($extra)) {
         $extra = [];
@@ -290,10 +292,13 @@ function rh_gemini_generate_content(array $parts): array
             $ultimoError = $httpCode === 429
                 ? 'Se agotó la cuota de Gemini, probá más tarde'
                 : 'Gemini rechazó el pedido';
-            // 404 / modelo no disponible → probar el siguiente. Otros errores (401, 429) cortan.
-            if ($httpCode === 404 || stripos($detalle, 'not found') !== false
+            // 404 / modelo no disponible / cuota agotada → probar el siguiente de respaldo.
+            if ($httpCode === 404 || $httpCode === 429
+                || stripos($detalle, 'not found') !== false
                 || stripos($detalle, 'no longer available') !== false
-                || stripos($detalle, 'is not found') !== false) {
+                || stripos($detalle, 'is not found') !== false
+                || stripos($detalle, 'quota') !== false
+                || stripos($detalle, 'rate') !== false) {
                 continue;
             }
             return $fallo($ultimoError);

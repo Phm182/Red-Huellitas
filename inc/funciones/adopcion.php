@@ -154,6 +154,23 @@ function rh_adopcion_respuestas_postulacion(mysqli $conn, int $postulacionId): a
 }
 
 /**
+ * Motivo por el que el dueño no puede editar (o null si sí puede).
+ * En proceso / adoptado: ya hay vínculo con otro usuario; cambiar datos
+ * podría engañar al postulante.
+ */
+function rh_adopcion_motivo_bloqueo_edicion(mysqli $conn, array $a): ?string
+{
+    $estado = $a['EstadoAdopcion'] ?? '';
+    if ($estado === 'en_proceso') {
+        return 'No podés editar: la publicación está en conexión con otro usuario. Si se cancela y vuelve a disponible, vas a poder editarla.';
+    }
+    if ($estado === 'adoptado') {
+        return 'No podés editar una publicación ya marcada como adoptada.';
+    }
+    return null;
+}
+
+/**
  * Serializa un row de Adopcion (array asociativo de la DB, con columnas de
  * Usuario ya incluidas vía JOIN) al shape público.
  * $incluirDetalle agrega preguntas/postulaciones (para obtener.php, no para listar.php).
@@ -194,11 +211,15 @@ function rh_adopcion_publico(mysqli $conn, array $a, int $viewerUserId, bool $in
         'createdAt' => $a['CreatedAt'],
     ];
 
+    if ($esDueno) {
+        $bloqueo = rh_adopcion_motivo_bloqueo_edicion($conn, $a);
+        $data['editable'] = $bloqueo === null;
+        $data['motivoNoEditable'] = $bloqueo;
+        $data['totalPostulaciones'] = rh_adopcion_total_postulaciones($conn, $adopcionId);
+    }
+
     if ($incluirDetalle) {
         $data['preguntas'] = rh_adopcion_preguntas($conn, $adopcionId);
-        if ($esDueno) {
-            $data['totalPostulaciones'] = rh_adopcion_total_postulaciones($conn, $adopcionId);
-        }
     }
 
     return $data;

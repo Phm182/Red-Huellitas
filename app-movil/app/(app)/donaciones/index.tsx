@@ -1,62 +1,86 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { donacionesApi } from '../../../src/api/donacionesApi';
-import { CategoriaDonacion, Donacion, TipoDonacion } from '../../../src/types';
+import { CategoriaDonacion, Donacion } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { Badge } from '../../../src/components/ui/Badge';
-import { ChipOption, ChipRow, RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
+import { ChipOption, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { FilterSelect } from '../../../src/components/ui/FilterSelect';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
+import { SwipeableSolapas } from '../../../src/components/ui/SwipeableSolapas';
 
-/** El nombre de icono que acepta ChipOption (Ionicons). */
-type IconoChip = ChipOption<never>["icon"];
+type IconoChip = ChipOption<never>['icon'];
+type Solapa = 'necesito' | 'ofrezco';
 
-const TIPOS: TipoDonacion[] = ['necesito', 'ofrezco'];
-const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo'];
+const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo', 'ropa'];
 
+const ICONO_CAT: Record<CategoriaDonacion, IconoChip> = {
+  alimento: 'nutrition-outline',
+  insumo: 'cube-outline',
+  ropa: 'shirt-outline',
+};
+
+/**
+ * Necesito = ver lo que otros ofrecen (tipo ofrezco).
+ * Ofrezco = mis publicaciones de oferta + crear.
+ */
 export default function DonacionesListaScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
-  const [tipo, setTipo] = useState<TipoDonacion | null>(null);
+  const [solapa, setSolapa] = useState<Solapa>('necesito');
   const [categoria, setCategoria] = useState<CategoriaDonacion | null>(null);
   const [radioKm, setRadioKm] = useState<RadioKm>(20);
   const [listados, setListados] = useState<Donacion[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
 
   const cargar = useCallback(
-    (filtroTipo: TipoDonacion | null, filtroCategoria: CategoriaDonacion | null, filtroRadio: RadioKm) => {
+    (tab: Solapa, filtroCategoria: CategoriaDonacion | null, filtroRadio: RadioKm) => {
       setLoading(true);
-      donacionesApi.listar(filtroTipo ?? undefined, filtroCategoria ?? undefined, filtroRadio).then((res) => {
-        if (res.success && res.data) {
-          setListados(res.data.listados);
-          setNextCursor(res.data.nextCursor);
-        }
-        setLoading(false);
-      });
+      const soloMias = tab === 'ofrezco';
+      donacionesApi
+        .listar('ofrezco', filtroCategoria ?? undefined, filtroRadio, null, 15, soloMias)
+        .then((res) => {
+          if (res.success && res.data) {
+            setListados(res.data.listados);
+            setNextCursor(res.data.nextCursor);
+          }
+          setLoading(false);
+        });
     },
     []
   );
 
   useFocusEffect(
     useCallback(() => {
-      cargar(tipo, categoria, radioKm);
-    }, [tipo, categoria, radioKm, cargar])
+      cargar(solapa, categoria, radioKm);
+    }, [solapa, categoria, radioKm, cargar])
   );
 
   const cargarMas = async () => {
     if (cargandoMas || nextCursor === null || radioKm !== null) return;
     setCargandoMas(true);
-    const res = await donacionesApi.listar(tipo ?? undefined, categoria ?? undefined, null, nextCursor);
+    const res = await donacionesApi.listar(
+      'ofrezco',
+      categoria ?? undefined,
+      null,
+      nextCursor,
+      15,
+      solapa === 'ofrezco'
+    );
     if (res.success && res.data) {
       setListados((prev) => [...prev, ...res.data!.listados]);
       setNextCursor(res.data.nextCursor);
@@ -66,7 +90,14 @@ export default function DonacionesListaScreen() {
 
   const onRefrescar = async () => {
     setRefrescando(true);
-    const res = await donacionesApi.listar(tipo ?? undefined, categoria ?? undefined, radioKm);
+    const res = await donacionesApi.listar(
+      'ofrezco',
+      categoria ?? undefined,
+      radioKm,
+      null,
+      15,
+      solapa === 'ofrezco'
+    );
     if (res.success && res.data) {
       setListados(res.data.listados);
       setNextCursor(res.data.nextCursor);
@@ -74,90 +105,153 @@ export default function DonacionesListaScreen() {
     setRefrescando(false);
   };
 
-  const opcionesTipo: ChipOption<TipoDonacion | null>[] = [
-    { valor: null, label: t('donaciones.todas') },
-    ...TIPOS.map((tp) => ({
-      valor: tp,
-      label: t(`donaciones.tipo.${tp}`),
-      icon: (tp === 'necesito' ? 'hand-left-outline' : 'gift-outline') as IconoChip,
-    })),
-  ];
-
   const opcionesCategoria: ChipOption<CategoriaDonacion | null>[] = [
-    { valor: null, label: t('donaciones.todas') },
+    { valor: null, label: t('donaciones.todas'), icon: 'apps-outline' },
     ...CATEGORIAS.map((c) => ({
       valor: c,
       label: t(`donaciones.categoria.${c}`),
-      icon: (c === 'alimento' ? 'nutrition-outline' : 'cube-outline') as IconoChip,
+      icon: ICONO_CAT[c],
     })),
   ];
 
+  const opcionesDistancia: ChipOption<RadioKm>[] = [
+    { valor: 20, label: '20 km', icon: 'location-outline' },
+    { valor: 50, label: '50 km', icon: 'location-outline' },
+    { valor: 100, label: '100 km', icon: 'location-outline' },
+    { valor: null, label: t('donaciones.todas'), icon: 'globe-outline' },
+  ];
+
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(listados, busqueda, (item) => [
+        item.descripcion,
+        item.especie,
+        item.zonaDescripcion,
+        t(`donaciones.categoria.${item.categoria}`),
+        item.autor.nombreCompleto,
+        item.autor.username,
+      ]),
+    [listados, busqueda, t]
+  );
+
+  const buscando = busqueda.trim().length > 0;
+  const crearTipo = solapa === 'necesito' ? 'necesito' : 'ofrezco';
+  const crearLabel =
+    solapa === 'necesito' ? t('donaciones.publicarNecesito') : t('donaciones.publicarOfrezco');
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={styles.filtros}>
-        <ChipRow opciones={opcionesTipo} seleccionado={tipo} onSelect={setTipo} />
-        <ChipRow opciones={opcionesCategoria} seleccionado={categoria} onSelect={setCategoria} />
-        <RadioChips valor={radioKm} onSelect={setRadioKm} labelTodos={t('donaciones.todas')} />
-      </View>
+      <SwipeableSolapas
+        tabs={[
+          { key: 'necesito', label: t('donaciones.tipo.necesito') },
+          { key: 'ofrezco', label: t('donaciones.tipo.ofrezco') },
+        ]}
+        activa={solapa}
+        onChange={(key) => {
+          setBusqueda('');
+          setSolapa(key);
+        }}
+      >
+        <View style={styles.filtros}>
+          <FilterSelect
+            label={t('common.tipo')}
+            opciones={opcionesCategoria}
+            seleccionado={categoria}
+            onSelect={setCategoria}
+          />
+          <FilterSelect
+            label={t('common.distancia')}
+            opciones={opcionesDistancia}
+            seleccionado={radioKm}
+            onSelect={setRadioKm}
+          />
+        </View>
 
-      {loading ? (
-        <SkeletonList />
-      ) : (
-        <FlatList
-          contentContainerStyle={[styles.list, centeredContent]}
-          data={listados}
-          keyExtractor={(item) => String(item.donacionId)}
-          refreshing={refrescando}
-          onRefresh={onRefrescar}
-          renderItem={({ item, index }) => (
-            <ListCard
-              index={index}
-              titulo={item.descripcion}
-              subtitulo={t(`donaciones.categoria.${item.categoria}`)}
-              meta={item.distanciaKm !== null ? `${item.distanciaKm} km` : null}
-              fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
-              iconoFallback={item.categoria === 'alimento' ? 'nutrition-outline' : 'cube-outline'}
-              badge={
-                <Badge
-                  label={t(`donaciones.tipo.${item.tipo}`)}
-                  tono={item.tipo === 'necesito' ? 'primary' : 'accent'}
-                />
-              }
-              onPress={() =>
-                router.push({ pathname: '/(app)/donaciones/[id]', params: { id: item.donacionId } })
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="gift-outline"
-              titulo={t('donaciones.emptyLista')}
-              accionLabel={t('donaciones.tituloNueva')}
-              onAccion={() => router.push('/(app)/donaciones/nueva')}
-            />
-          }
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={
-            <>
-              {listados.length > 0 ? (
-                <ListEndAddButton
-                  label={t('donaciones.tituloNueva')}
-                  onPress={() => router.push('/(app)/donaciones/nueva')}
-                />
-              ) : null}
-              {cargandoMas ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
-              ) : null}
-            </>
-          }
-        />
-      )}
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+
+        {loading ? (
+          <SkeletonList />
+        ) : (
+          <FlatList
+            contentContainerStyle={[styles.list, centeredContent]}
+            data={filtrados}
+            keyExtractor={(item) => String(item.donacionId)}
+            refreshing={refrescando}
+            onRefresh={onRefrescar}
+            renderItem={({ item, index }) => (
+              <ListCard
+                index={index}
+                titulo={item.descripcion}
+                subtitulo={t(`donaciones.categoria.${item.categoria}`)}
+                meta={item.distanciaKm !== null ? `${item.distanciaKm} km` : null}
+                fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
+                iconoFallback={ICONO_CAT[item.categoria]}
+                badge={
+                  item.esDueno ? (
+                    <Badge label={t('donaciones.mia')} tono="accent" />
+                  ) : undefined
+                }
+                onPress={() =>
+                  router.push({ pathname: '/(app)/donaciones/[id]', params: { id: item.donacionId } })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyState
+                icon="gift-outline"
+                titulo={
+                  buscando
+                    ? t('common.sinResultadosBusqueda')
+                    : solapa === 'ofrezco'
+                      ? t('donaciones.emptyMisOfertas')
+                      : t('donaciones.emptyOfertas')
+                }
+                accionLabel={buscando ? undefined : crearLabel}
+                onAccion={
+                  buscando
+                    ? undefined
+                    : () =>
+                        router.push({
+                          pathname: '/(app)/donaciones/nueva',
+                          params: { tipo: crearTipo },
+                        })
+                }
+              />
+            }
+            onEndReached={cargarMas}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              <>
+                {filtrados.length > 0 ? (
+                  <ListEndAddButton
+                    label={crearLabel}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(app)/donaciones/nueva',
+                        params: { tipo: crearTipo },
+                      })
+                    }
+                  />
+                ) : null}
+                {cargandoMas ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+                ) : null}
+              </>
+            }
+          />
+        )}
+      </SwipeableSolapas>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  filtros: { paddingVertical: 6, gap: 4 },
+  filtros: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   list: { padding: 16, paddingTop: 4, flexGrow: 1 },
 });

@@ -1,17 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { notificacionesApi } from '../../../src/api/notificacionesApi';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { Notificacion } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { hapticLeve } from '../../../src/utils/haptics';
+
+/** Preferencia local: limpiar las notificaciones con sólo entrar. */
+const CLAVE_AUTOLIMPIAR = '@red_huellitas/notif_autolimpiar';
 
 /** Ícono por tipo, para reconocer de un vistazo de qué se trata. */
 const ICONOS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -43,9 +49,11 @@ export default function NotificacionesScreen() {
   const { colors } = useTheme();
 
   const [items, setItems] = useState<Notificacion[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [cargandoMas, setCargandoMas] = useState(false);
+  const [autoLimpiar, setAutoLimpiar] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -56,13 +64,18 @@ export default function NotificacionesScreen() {
         if (res.success && res.data) {
           setItems(res.data.notificaciones);
           setNextCursor(res.data.nextCursor);
+          // Con el check activo, entrar ya cuenta como haberlas visto.
+          if (autoLimpiar && res.data.notificaciones.some((n) => !n.leida)) {
+            void notificacionesApi.marcarLeidas();
+            setItems(res.data.notificaciones.map((n) => ({ ...n, leida: true })));
+          }
         }
         setLoading(false);
       });
       return () => {
         activo = false;
       };
-    }, [])
+    }, [autoLimpiar])
   );
 
   const cargarMas = async () => {
@@ -74,6 +87,25 @@ export default function NotificacionesScreen() {
       setNextCursor(res.data.nextCursor);
     }
     setCargandoMas(false);
+  };
+
+  /**
+   * Preferencia de "limpiar al entrar".
+   *
+   * Se guarda en el dispositivo y no en el servidor: es una manía de cómo a uno
+   * le gusta usar la app, no un dato de la cuenta, y así no hace falta ir y
+   * volver al backend cada vez que se abre la pantalla.
+   */
+  useEffect(() => {
+    AsyncStorage.getItem(CLAVE_AUTOLIMPIAR).then((v) => setAutoLimpiar(v === '1'));
+  }, []);
+
+  const alternarAutoLimpiar = async () => {
+    hapticLeve();
+    const proximo = !autoLimpiar;
+    setAutoLimpiar(proximo);
+    await AsyncStorage.setItem(CLAVE_AUTOLIMPIAR, proximo ? '1' : '0');
+    if (proximo) await marcarTodas();
   };
 
   const marcarTodas = async () => {
@@ -103,25 +135,51 @@ export default function NotificacionesScreen() {
     );
   }
 
+  const filtrados = filtrarPorTexto(items, busqueda, (n) => [n.titulo, n.cuerpo, n.tipo]);
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <Atmosphere>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
       <FlatList
-        data={items}
+        data={filtrados}
         keyExtractor={(n) => String(n.notificacionId)}
-        contentContainerStyle={[styles.lista, centeredContent, items.length === 0 && styles.vacia]}
+        contentContainerStyle={[styles.lista, centeredContent, filtrados.length === 0 && styles.vacia]}
         ListHeaderComponent={
-          hayNoLeidas ? (
-            <Pressable onPress={marcarTodas} style={styles.marcarTodas}>
-              <Ionicons name="checkmark-done-outline" size={16} color={colors.primary} />
-              <Text style={[type.label, { color: colors.primary }]}>{t('notificaciones.marcarLeidas')}</Text>
+          <View style={styles.filaAcciones}>
+            {/* Izquierda: la preferencia. Derecha: la acción manual, que sólo
+                tiene sentido si el automático está apagado. */}
+            <Pressable
+              onPress={alternarAutoLimpiar}
+              style={styles.check}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: autoLimpiar }}
+            >
+              <Ionicons
+                name={autoLimpiar ? 'checkbox' : 'square-outline'}
+                size={18}
+                color={autoLimpiar ? colors.primary : colors.textMuted}
+              />
+              <Text style={[type.label, { color: colors.textMuted }]}>
+                {t('notificaciones.limpiarAlEntrar')}
+              </Text>
             </Pressable>
-          ) : null
+
+            {hayNoLeidas && !autoLimpiar ? (
+              <Pressable onPress={marcarTodas} style={styles.marcarTodas}>
+                <Ionicons name="checkmark-done-outline" size={16} color={colors.primary} />
+                <Text style={[type.label, { color: colors.primary }]}>
+                  {t('notificaciones.marcarLeidas')}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         }
         ListEmptyComponent={
           <EmptyState
             icon="notifications-outline"
-            titulo={t('notificaciones.vacio')}
-            descripcion={t('notificaciones.vacioDesc')}
+            titulo={buscando ? t('common.sinResultadosBusqueda') : t('notificaciones.vacio')}
+            descripcion={buscando ? undefined : t('notificaciones.vacioDesc')}
           />
         }
         renderItem={({ item }) => (
@@ -168,9 +226,11 @@ export default function NotificacionesScreen() {
 
 const styles = StyleSheet.create({
   centrado: { alignItems: 'center', justifyContent: 'center' },
-  lista: { padding: 14, gap: 8, paddingBottom: 28 },
-  vacia: { flexGrow: 1, justifyContent: 'center' },
-  marcarTodas: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', padding: 8 },
+  lista: { padding: 14, gap: 8, paddingBottom: 28, flexGrow: 1 },
+  vacia: { justifyContent: 'center' },
+  marcarTodas: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8 },
+  filaAcciones: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 },
+  check: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8 },
   fila: {
     flexDirection: 'row',
     alignItems: 'center',

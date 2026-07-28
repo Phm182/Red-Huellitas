@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/gemini.php';
 require_once __DIR__ . '/kyc_renaper.php';
+require_once __DIR__ . '/uploads.php';
 
 /**
  * @return array{
@@ -61,8 +62,9 @@ function rh_verificacion_auto_evaluar(
 
     if (!rh_gemini_configurado()) {
         $base['motivo'] = 'Revisión automática no disponible; queda pendiente de revisión manual';
-        $base['metodo'] = 'manual';
+        $base['metodo'] = 'manual_cola';
         $base['problemas'] = ['La revisión automática no está configurada en el servidor'];
+        $base['reintentar'] = true;
         return $base;
     }
 
@@ -76,6 +78,7 @@ function rh_verificacion_auto_evaluar(
         $base['metodo'] = 'gemini_error';
         $base['detalle'] = ['error' => $analisis['error'] ?? 'No se pudo analizar automáticamente'];
         $base['problemas'] = ['No se pudo completar la revisión automática; un moderador lo revisará'];
+        $base['reintentar'] = true;
         return $base;
     }
 
@@ -291,9 +294,20 @@ function rh_verificacion_metodo_publico(mixed $metodo): ?string
 
 /**
  * Persiste el resultado automático sobre la fila de UsuarioVerificacion.
+ * Si falló la IA, agenda reintento (salvo que un admin ya haya resuelto).
  */
 function rh_verificacion_auto_aplicar(mysqli $conn, int $userId, array $resultado): void
 {
+    // Si un moderador ya resolvió, no pisar con IA ni reintentos.
+    $stmt = $conn->prepare('SELECT RevisadoPor, EstadoRevision FROM UsuarioVerificacion WHERE UserId = ?');
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $fila = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($fila && !empty($fila['RevisadoPor'])) {
+        return;
+    }
+
     $estado = (string) $resultado['estado'];
     // Motivo visible al usuario solo si rechazó; el detalle completo va en AutoDetalle.
     $motivo = $estado === 'rechazado' ? ($resultado['motivo'] ?? null) : null;
@@ -310,6 +324,11 @@ function rh_verificacion_auto_aplicar(mysqli $conn, int $userId, array $resultad
         ? (string) $resultado['motivo']
         : null;
 
+    $quiereReintento = !empty($resultado['reintentar']) && $estado === 'pendiente';
+    $mins = isset($resultado['reintento_mins']) ? (int) $resultado['reintento_mins'] : 15;
+    $mins = max(5, min(360, $mins));
+    $reintentoEn = $quiereReintento ? date('Y-m-d H:i:s', time() + $mins * 60) : null;
+
     // Columnas nuevas: si el ALTER aún no corrió, cae a update mínimo.
     $sqlFull = 'UPDATE UsuarioVerificacion SET
         EstadoRevision = ?,
@@ -323,13 +342,52 @@ function rh_verificacion_auto_aplicar(mysqli $conn, int $userId, array $resultad
         KycExternoId = ?,
         KycEstado = ?,
         RevisadoPor = NULL,
-        RevisadoEn = ?
+        RevisadoEn = ?,
+        AutoReintentoEn = ?,
+        AutoReintentos = AutoReintentos + ?
         WHERE UserId = ?';
+
+    $incReintento = $quiereReintento ? 1 : 0;
 
     $stmt = @$conn->prepare($sqlFull);
     if ($stmt) {
         // Si quedó pendiente con una nota, la guardamos en MotivoRechazo solo
         // como mensaje informativo (la UI ya distingue por estado).
+        if ($estado === 'pendiente' && $notaPendiente !== null) {
+            $motivo = mb_substr($notaPendiente, 0, 250);
+        }
+        $stmt->bind_param(
+            'ssssssssssssii',
+            $estado,
+            $motivo,
+            $autoScore,
+            $face,
+            $metodo,
+            $detalle,
+            $dni,
+            $nombre,
+            $kycId,
+            $kycEstado,
+            $revisadoEn,
+            $reintentoEn,
+            $incReintento,
+            $userId
+        );
+        $ok = $stmt->execute();
+        $stmt->close();
+        if ($ok) {
+            return;
+        }
+    }
+
+    // Fallback sin columnas de reintento.
+    $sqlMid = 'UPDATE UsuarioVerificacion SET
+        EstadoRevision = ?, MotivoRechazo = ?, AutoScore = ?, FaceMatchScore = ?,
+        AutoMetodo = ?, AutoDetalle = ?, DniNumeroExtraido = ?, NombreExtraido = ?,
+        KycExternoId = ?, KycEstado = ?, RevisadoPor = NULL, RevisadoEn = ?
+        WHERE UserId = ?';
+    $stmt = @$conn->prepare($sqlMid);
+    if ($stmt) {
         if ($estado === 'pendiente' && $notaPendiente !== null) {
             $motivo = mb_substr($notaPendiente, 0, 250);
         }
@@ -361,4 +419,84 @@ function rh_verificacion_auto_aplicar(mysqli $conn, int $userId, array $resultad
     $stmt->bind_param('sssi', $estado, $motivo, $revisadoEn, $userId);
     $stmt->execute();
     $stmt->close();
+}
+
+/**
+ * Reintenta verificaciones automáticas pendientes (cuota/error de IA).
+ * No toca filas ya resueltas por un admin (RevisadoPor).
+ *
+ * @return array{procesados: int, aprobados: int, rechazados: int, pendientes: int, errores: int}
+ */
+function rh_verificacion_auto_reintentar_pendientes(mysqli $conn, int $limite = 10): array
+{
+    $stats = ['procesados' => 0, 'aprobados' => 0, 'rechazados' => 0, 'pendientes' => 0, 'errores' => 0];
+    $limite = max(1, min(50, $limite));
+
+    $sql = "SELECT UserId, DniFrentePath, DniDorsoPath, SelfiePath, AutoReintentos
+            FROM UsuarioVerificacion
+            WHERE EstadoRevision = 'pendiente'
+              AND RevisadoPor IS NULL
+              AND DniFrentePath IS NOT NULL AND DniDorsoPath IS NOT NULL AND SelfiePath IS NOT NULL
+              AND (
+                    AutoMetodo IN ('gemini_error', 'manual_cola', 'pendiente')
+                    OR AutoReintentoEn IS NOT NULL
+                  )
+              AND (AutoReintentoEn IS NULL OR AutoReintentoEn <= NOW())
+              AND AutoReintentos < 12
+            ORDER BY AutoReintentoEn IS NULL ASC, AutoReintentoEn ASC, UpdatedAt ASC
+            LIMIT $limite";
+
+    $res = @$conn->query($sql);
+    if (!$res) {
+        // Sin columnas nuevas: intentar set mínimo.
+        $res = $conn->query(
+            "SELECT UserId, DniFrentePath, DniDorsoPath, SelfiePath
+             FROM UsuarioVerificacion
+             WHERE EstadoRevision = 'pendiente'
+               AND RevisadoPor IS NULL
+               AND DniFrentePath IS NOT NULL AND DniDorsoPath IS NOT NULL AND SelfiePath IS NOT NULL
+               AND (AutoMetodo IS NULL OR AutoMetodo IN ('gemini_error', 'manual_cola', 'pendiente'))
+             ORDER BY UpdatedAt ASC
+             LIMIT $limite"
+        );
+    }
+    if (!$res) {
+        return $stats;
+    }
+
+    while ($row = $res->fetch_assoc()) {
+        $userId = (int) $row['UserId'];
+        $dir = rh_dir_verificacion_usuario($userId);
+        $rutaFrente = $dir . '/' . basename((string) $row['DniFrentePath']);
+        $rutaDorso = $dir . '/' . basename((string) $row['DniDorsoPath']);
+        $rutaSelfie = $dir . '/' . basename((string) $row['SelfiePath']);
+        if (!is_file($rutaFrente) || !is_file($rutaDorso) || !is_file($rutaSelfie)) {
+            $stats['errores']++;
+            continue;
+        }
+
+        try {
+            $auto = rh_verificacion_auto_evaluar($conn, $userId, $rutaFrente, $rutaDorso, $rutaSelfie);
+            // Backoff: 15m, 30m, 1h… según reintentos previos.
+            $prev = (int) ($row['AutoReintentos'] ?? 0);
+            if (!empty($auto['reintentar'])) {
+                $mins = min(360, 15 * (2 ** min(4, $prev)));
+                $auto['reintento_mins'] = $mins;
+            }
+            rh_verificacion_auto_aplicar($conn, $userId, $auto);
+            $stats['procesados']++;
+            if ($auto['estado'] === 'aprobado') {
+                $stats['aprobados']++;
+            } elseif ($auto['estado'] === 'rechazado') {
+                $stats['rechazados']++;
+            } else {
+                $stats['pendientes']++;
+            }
+        } catch (Throwable $e) {
+            error_log('rh_verificacion_auto_reintentar: ' . $e->getMessage());
+            $stats['errores']++;
+        }
+    }
+
+    return $stats;
 }

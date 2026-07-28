@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS RazaCatalogo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO RazaCatalogo (Especie, Nombre) VALUES
+('perro','Sin raza'),
 ('perro','Mestizo'),
 ('perro','Labrador Retriever'),
 ('perro','Golden Retriever'),
@@ -34,7 +35,10 @@ INSERT IGNORE INTO RazaCatalogo (Especie, Nombre) VALUES
 ('perro','Shih Tzu'),
 ('perro','Yorkshire Terrier'),
 ('perro','Border Collie'),
+('gato','Sin raza'),
 ('gato','Mestizo / Común Europeo'),
+('gato','Atigrado Marrón'),
+('gato','Atigrado Gris'),
 ('gato','Siamés'),
 ('gato','Persa'),
 ('gato','Maine Coon'),

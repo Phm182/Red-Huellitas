@@ -1,6 +1,6 @@
 import { apiGet, apiPost } from './client';
-import { appendImageFile } from '../utils/upload';
-import { CategoriaDonacion, Donacion, Especie, TipoDonacion } from '../types';
+import { appendImageFile, appendOrdenFotos } from '../utils/upload';
+import { CategoriaDonacion, Donacion, Especie, EstadoDonacion, TipoDonacion } from '../types';
 
 interface DonacionListaResultado {
   listados: Donacion[];
@@ -44,12 +44,34 @@ export const donacionesApi = {
     return apiPost<{ donacion: Donacion }>('ajax/donaciones/crear.php', form, true);
   },
 
+  /** `tipo` (necesito/ofrezco) no se puede cambiar desde la edición. */
+  actualizar: async (
+    donacionId: number,
+    params: Omit<CrearDonacionParams, 'tipo'> & { fotosExistentesIds?: (number | null)[] }
+  ) => {
+    const form = new FormData();
+    form.append('donacionId', String(donacionId));
+    form.append('categoria', params.categoria);
+    form.append('descripcion', params.descripcion);
+    form.append('zonaDescripcion', params.zonaDescripcion);
+    form.append('zonaLat', String(params.zonaLat));
+    form.append('zonaLng', String(params.zonaLng));
+    if (params.especie) form.append('especie', params.especie);
+
+    if (params.fotosExistentesIds) {
+      await appendOrdenFotos(form, params.fotos ?? [], params.fotosExistentesIds);
+    }
+
+    return apiPost<{ donacion: Donacion }>('ajax/donaciones/actualizar.php', form, true);
+  },
+
   listar: (
     tipo?: TipoDonacion,
     categoria?: CategoriaDonacion,
     radioKm?: 20 | 50 | 100 | null,
     cursor?: number | null,
-    limit = 15
+    limit = 15,
+    soloMias = false
   ) =>
     apiGet<DonacionListaResultado>(
       'ajax/donaciones/listar.php',
@@ -58,6 +80,7 @@ export const donacionesApi = {
         ...(categoria ? { categoria } : {}),
         ...(radioKm ? { radioKm } : {}),
         ...(!radioKm && cursor ? { cursor } : {}),
+        ...(soloMias ? { soloMias: 1 } : {}),
         limit,
       },
       true
@@ -67,4 +90,12 @@ export const donacionesApi = {
     apiGet<{ donacion: Donacion }>('ajax/donaciones/obtener.php', { donacionId }, true),
 
   eliminar: (donacionId: number) => apiPost<null>('ajax/donaciones/eliminar.php', { donacionId }, true),
+
+  /** Toggle reversible: 'acordado' bloquea la edición, 'disponible' la devuelve. */
+  marcarEstado: (donacionId: number, estadoDonacion: EstadoDonacion) =>
+    apiPost<{ estadoDonacion: EstadoDonacion }>(
+      'ajax/donaciones/estado_actualizar.php',
+      { donacionId, estadoDonacion },
+      true
+    ),
 };

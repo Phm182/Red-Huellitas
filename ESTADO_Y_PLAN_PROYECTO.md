@@ -268,6 +268,30 @@ El usuario reportó que el recorte se trababa a veces sí y a veces no. Eran tre
 
 **Falta**: enganchar `rh_notificar()` en los 9 llamadores viejos de `rh_enviar_push()` (hoy sólo lo usan seguimiento y chat), la tarjeta de interacciones dentro de cada mascota, y el rediseño visual de las pantallas de detalle.
 
+### Edición de publicaciones propias y candados (2026-07-27)
+
+Faltaban los `actualizar.php` de **Tránsito, Donaciones, Perdidos y Productos** (sólo Adopción tenía). Ahora los cuatro existen, con sus pantallas `[id]/editar.tsx` y el botón "Editar publicación" en cada detalle.
+
+**`inc/funciones/edicion.php` es el único lugar que decide cuándo algo deja de editarse.** Cada módulo se bloquea con la señal real que tiene, no con una inventada:
+
+| Módulo | Se bloquea cuando | De dónde sale la señal |
+|---|---|---|
+| Adopción | `en_proceso` / `adoptado` | postulaciones |
+| Perdidos | `reencontrado` | `EstadoPerdido` |
+| Tránsito | `acordado` | `EstadoTransito` — **lo marca el dueño** |
+| Donaciones | `acordado` | `EstadoDonacion` — **lo marca el dueño** |
+| Productos | **nunca** | — |
+
+**Por qué Tránsito y Donaciones necesitaron columna nueva** (`sql/035`): son los únicos módulos donde el acuerdo se cierra afuera de la app y no deja rastro en la base. Deducirlo de "alguien abrió una conversación" congelaría la publicación por una simple consulta. Así que es un toggle explícito y reversible (`estado_actualizar.php` en cada módulo): si el trato se cae, vuelve a `disponible` y se recupera la edición.
+
+**Por qué Productos no se bloquea nunca**, aunque haya un pedido en curso: `PedidoItem` guarda su propia copia de `NombreProducto` y `PrecioUnitario` al confirmarse, y **todo el flujo de pedidos lee de ahí — no hay un solo `JOIN Producto`** (verificado en `rh_pedido_items()`, el detalle, los listados y el PDF). El pedido en curso queda tan congelado como uno entregado, así que el vendedor puede corregir la descripción o reponer stock sin afectar a nadie. Bloquear la publicación no agregaría ninguna garantía. *(El carrito sí muestra el precio vigente, que es lo correcto: todavía no hay nada acordado.)*
+
+El motivo del bloqueo lo escribe **siempre el backend** (`motivoNoEditable`), nunca la app, para que no se desincronicen al cambiar una regla. `rh_sincronizar_fotos()` (mismo archivo) resuelve el reordenamiento de galería para los 5 módulos con un solo helper.
+
+**Números de migración duplicados: resueltos.** Había dos archivos con 025, 026, 027 y 028. Se conservaron los de la tanda de navegación (privacidad, notificaciones, chat, cuidados) porque son los que este documento referencia, y la otra tanda se renumeró a **031–034** (`hueplus_planes`, `mascota_banner`, `fix_hueplus_acentos`, `verificacion_reintentos`), respetando el orden relativo — `033` sigue corrigiendo los acentos que inserta `031`.
+
+⚠️ **`sql/000_todo_schema.sql` está desactualizado**: sólo concatena hasta la `016`. Una instalación nueva hecha desde ese archivo se pierde de la `017` a la `035`. Hoy la única forma correcta de levantar la base de cero es correr las migraciones en orden.
+
 ---
 
 ## 4. Cómo seguir mañana
@@ -282,8 +306,116 @@ El usuario reportó que el recorte se trababa a veces sí y a veces no. Eran tre
 
 ---
 
+## 4bis. Mapa (Planeta) — agregado 2026-07-28
+
+Botón planeta en el centro de la barra inferior, sobresaliendo, que abre
+`/(app)/mapa`: **todas las publicaciones de todos los módulos salvo Huelligram**,
+dibujadas donde está la publicación y no donde está el teléfono.
+
+**Registro único**: `inc/funciones/mapa.php` declara las 8 capas (adopción,
+tránsito, perdidos, donaciones, productos, veterinarias, campañas, refugios) con
+su tabla, columnas de coordenadas, foto de portada y ruta de detalle.
+`rh_mapa_buscar_tipo()` no sabe nada de ningún módulo en particular: agregar una
+capa es agregar una entrada, no tocar la consulta.
+
+**Ubicación difuminada** (`rh_geo_difuminar` en `geo.php`): las publicaciones de
+personas se corren hasta ~500 m (5 cuadras). El corrimiento es **determinista**
+(hash de módulo+id), no aleatorio: con ruido nuevo en cada request bastaría con
+pedir la misma publicación muchas veces y promediar para que el punto real
+aparezca solo. Los lugares públicos (veterinarias, refugios, campañas) van
+exactos — ahí la dirección precisa es el dato útil.
+
+**Adopción no guardaba ubicación** (migración `036`): usaba la zona del dueño,
+que se muda con él. Ahora es de la publicación y se fija al publicar.
+
+**Mapbox con MapLibre de contingencia y tope duro**: el token vive en
+`inc/config/mapa.local.php` (gitignored) y lo entrega `ajax/mapa/sesion.php`
+sólo después de reservar cupo. Nunca está en el bundle — si estuviera, el
+navegador podría crear mapas sin pasar por el contador. Topes: 45.000/mes
+global (Mapbox da 50.000) y 60/día por usuario. Al agotarse responde
+`motor: 'maplibre'` con **200, no error**. Verificado: agotando el cupo a mano,
+la app pasa a MapLibre sola y muestra el aviso.
+
+**Datos de demo**: `php inc/cli/seed_mapa_demo.php` siembra 30 publicaciones por
+barrios reales de CABA; `--limpiar` borra sólo eso (van marcadas con
+`[demo-mapa]` en la descripción).
+
+**Ahorro de consumo**: el mapa se **reutiliza entre navegaciones** — la instancia
+y su nodo DOM viven en un módulo y al volver se re-enganchan, así que Mapbox
+cobra una carga por sesión del navegador y no una por visita. Junto con la
+instancia se reusa la sesión (`sesionMapaViva()`); si no, la pantalla pediría
+`sesion.php` otra vez y descontaría una carga que Mapbox no cobró. Medido: abrir
+= 1, salir y volver = sigue en 1. El caché de puntos (`utils/mapaCache.ts`,
+vencimiento diario) ahorra servidor propio, no Mapbox.
+
+**Ubicación propia vs. del dispositivo**: el punto celeste usa el GPS real
+(`miUbicacion`), separado del centro de búsqueda (`centro`) que se mueve al
+arrastrar. Sin GPS no se dibuja nada — mejor ningún punto que uno que miente.
+
+**Falta**: el lienzo nativo. `mapbox-gl` es DOM y no corre en React Native;
+`@rnmapbox/maps` necesita `expo prebuild` y un token secreto de descarga (`sk.`).
+`MapaLienzo.tsx` (nativo) avisa en vez de romper; el resto de la pantalla anda.
+
+---
+
+## 4ter. Campañas con inscripción — backend listo (2026-07-28)
+
+Migración `043`. Extiende `Campania` (`MensajeAviso`, `BajaLimiteHoras`) y
+`CampaniaInscripcion` (`Estado`, `Posicion`, `CanceladaEn`, `AvisoAusenciaEn`,
+`NotaAusencia`), y suma el formulario dinámico con **las mismas tres tablas que
+Adopción** (`CampaniaPregunta` / `…Opcion` / `CampaniaRespuesta`).
+
+**Toda la lógica de cupo vive en `inc/funciones/campania_inscripcion.php`.** Es
+la parte que la gente reclama ("me anoté antes que él"), así que hay un solo
+lugar donde mirar:
+
+- **Cupo lleno ⇒ lista de espera**, no rechazo. Decirle "no hay lugar" a alguien
+  que igual iría es perder gente que después entra por una baja.
+- **`Posicion` nunca se recalcula**, ni siquiera al cancelar. Es "en qué lugar
+  llegaste", no "qué puesto ocupás hoy"; renumerar dejaría a alguien que se
+  anotó primero detrás de otro por una baja ajena.
+- **Los lugares se cuentan sobre `confirmada`**, no sobre el total de filas: las
+  canceladas y la lista de espera no ocupan.
+- El ascenso usa `UPDATE … WHERE Estado='lista_espera'`: dos bajas simultáneas no
+  pueden ascender dos veces a la misma persona.
+- `CupoMaximo` NULL = ilimitado. No hay flag aparte: dos fuentes para el mismo
+  dato terminan contradiciéndose.
+
+Endpoints: `inscribirme` (valida el formulario y decide confirmada/espera),
+`baja` (sirve para el propio y para el organizador; siempre asciende al que
+sigue), `aviso_ausencia` (para cuando ya venció el plazo de baja),
+`administrar` (panel del organizador en un solo pedido) y `formulario_guardar`.
+
+Dos candados que ya probé: no se puede bajar el cupo por debajo de los
+confirmados, y no se puede cambiar el formulario si alguien ya respondió — la
+FK se llevaría puestas sus respuestas.
+
+**Frontend hecho**: el detalle muestra el aviso importante y, según quién mire,
+"Administrar campaña (n/cupo)" para quien organiza o el estado propio para quien
+se anotó ("En lista de espera · puesto 3") con baja o aviso de ausencia según el
+plazo. Inscribirse abre el formulario **sólo si la campaña tiene preguntas**;
+sin preguntas se anota en el acto.
+
+`campanias/[id]/administrar.tsx` es el panel: barra de ocupación, los cuatro
+estados en chips, y cada persona con su posición, respuestas del formulario,
+nota de ausencia y WhatsApp para coordinar. Después de cada baja **se recarga
+entero** en vez de tocar el estado local: una baja puede ascender a otro, y
+adivinar ese efecto en la pantalla duplicaría la regla que ya vive en el backend.
+
+**Falta**: la pantalla para que quien organiza arme el formulario desde la app
+(el endpoint `formulario_guardar.php` existe y está probado, pero todavía no hay
+UI que lo llame — hoy las preguntas se cargan por API).
+
+---
+
 ## 5. Convenciones técnicas a mantener
 
+- **`sql/000_todo_schema.sql` es generado**: tras tocar `sql/`, correr
+  `php inc/cli/build_schema.php --verificar` y commitear el resultado. Levanta una
+  base descartable y comprueba que la instalación desde cero funcione de verdad.
+  Hay skill `/bd-build-actual` con los errores típicos. Ya detectó dos problemas
+  reales: números de migración duplicados, y `020` fallando en base nueva porque
+  `001` fue editado después para incluir sus columnas.
 - **bind_param**: contar el type-string carácter por carácter contra la lista de parámetros — hubo al menos un bug real por un carácter de más (Tránsito, detectado antes de testear). Es el error más fácil de cometer en este proyecto.
 - **Migraciones SQL idempotentes**: todo `ALTER TABLE` que agrega columna/índice/FK se hace chequeando primero contra `INFORMATION_SCHEMA.COLUMNS` / `.STATISTICS` / `.TABLE_CONSTRAINTS` con un `IF(...)` + `PREPARE`/`EXECUTE`, para poder correr el script dos veces sin romper.
 - **Denuncia polimórfica**: cualquier módulo nuevo que necesite ser denunciable agrega un `<Modulo>Id INT UNSIGNED NULL` al final de la cadena existente en `Denuncia`, y `denuncia_crear.php` se extiende con el nuevo parámetro opcional (mismo patrón en `DenunciaButtonStub.tsx` y `reportesApi.ts`).

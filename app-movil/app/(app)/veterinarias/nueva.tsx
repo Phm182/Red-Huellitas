@@ -24,6 +24,7 @@ export default function NuevaVeterinariaScreen() {
   const [telefono, setTelefono] = useState('');
   const [whatsappNumero, setWhatsappNumero] = useState('');
   const [horario, setHorario] = useState('');
+  const [direccion, setDireccion] = useState('');
   const [fotos, setFotos] = useState<string[]>([]);
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
@@ -80,6 +81,7 @@ export default function NuevaVeterinariaScreen() {
       telefono: telefono.trim() || undefined,
       whatsappNumero: whatsappNumero.trim() || undefined,
       horario: horario.trim() || undefined,
+      direccion: direccion.trim() || undefined,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
       zonaLng: coords.lng,
@@ -157,6 +159,13 @@ export default function NuevaVeterinariaScreen() {
         value={horario}
         onChangeText={setHorario}
         placeholder={t('veterinarias.horarioPlaceholder')}
+      />
+
+      <Text style={[styles.label, { color: colors.text }]}>{t('campanias.direccionLabel')}</Text>
+      <AppInput
+        value={direccion}
+        onChangeText={setDireccion}
+        placeholder={t('campanias.direccionPlaceholder')}
       />
 
       <MultiImagePickerField label={t('mascotas.fotos')} uris={fotos} onChange={setFotos} addLabel={t('mascotas.addFoto')} />

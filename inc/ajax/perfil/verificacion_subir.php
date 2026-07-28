@@ -126,14 +126,40 @@ $tieneTodo = !empty($verificacion['DniFrentePath'])
     && !empty($verificacion['SelfiePath']);
 
 if ($tieneTodo) {
-    @set_time_limit(120);
+    @set_time_limit(180);
+    @ini_set('max_execution_time', '180');
     $dir = rh_dir_verificacion_usuario($userId);
     $rutaFrente = $dir . '/' . basename((string) $verificacion['DniFrentePath']);
     $rutaDorso = $dir . '/' . basename((string) $verificacion['DniDorsoPath']);
     $rutaSelfie = $dir . '/' . basename((string) $verificacion['SelfiePath']);
 
-    $auto = rh_verificacion_auto_evaluar($conn, $userId, $rutaFrente, $rutaDorso, $rutaSelfie);
-    rh_verificacion_auto_aplicar($conn, $userId, $auto);
+    try {
+        $auto = rh_verificacion_auto_evaluar($conn, $userId, $rutaFrente, $rutaDorso, $rutaSelfie);
+        rh_verificacion_auto_aplicar($conn, $userId, $auto);
+    } catch (Throwable $e) {
+        // Nunca devolver 500 vacío después de guardar las fotos: queda en cola
+        // manual + reintento automático.
+        error_log('verificacion_subir auto: ' . $e->getMessage());
+        $auto = [
+            'estado' => 'pendiente',
+            'motivo' => 'Revisión automática no disponible; queda pendiente de revisión manual',
+            'autoScore' => null,
+            'faceMatchScore' => null,
+            'metodo' => 'gemini_error',
+            'detalle' => ['error' => $e->getMessage()],
+            'problemas' => ['No se pudo completar la revisión automática; un moderador lo revisará'],
+            'dniNumero' => null,
+            'nombreExtraido' => null,
+            'kycExternoId' => null,
+            'kycEstado' => null,
+            'reintentar' => true,
+        ];
+        try {
+            rh_verificacion_auto_aplicar($conn, $userId, $auto);
+        } catch (Throwable $e2) {
+            error_log('verificacion_subir aplicar: ' . $e2->getMessage());
+        }
+    }
 
     $stmt = $conn->prepare('SELECT * FROM UsuarioVerificacion WHERE UserId = ?');
     $stmt->bind_param('i', $userId);
@@ -141,9 +167,9 @@ if ($tieneTodo) {
     $verificacion = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    if ($auto['estado'] === 'aprobado') {
+    if (($auto['estado'] ?? '') === 'aprobado') {
         $mensaje = 'Identidad verificada automáticamente';
-    } elseif ($auto['estado'] === 'rechazado') {
+    } elseif (($auto['estado'] ?? '') === 'rechazado') {
         $mensaje = $auto['motivo'] ?? 'Verificación rechazada';
     } else {
         $mensaje = 'Documentos recibidos; quedaron en revisión';

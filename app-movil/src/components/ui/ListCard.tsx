@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { elevation, radii } from '../../theme/elevation';
 import { type } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
+import { MediaLightbox } from '../MediaLightbox';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Si el dedo se movió más que esto, no es un tap (p. ej. swipe de solapa). */
+const MAX_MOVE = 12;
 
 interface ListCardProps {
   titulo: string;
@@ -29,13 +33,8 @@ interface ListCardProps {
 
 /**
  * Tarjeta de listado: foto + título + subtítulo + meta.
- *
- * El mismo layout estaba duplicado en 17 pantallas con medidas ligeramente
- * distintas en cada una (por eso los listados no se veían iguales entre sí
- * aunque mostraran lo mismo).
- *
- * La foto usa `expo-image` para que aparezca con un fade en vez del salto
- * seco de `<Image>`, y para que no se vuelva a descargar al reentrar.
+ * Tap en la foto abre visor a pantalla completa; el press de la card
+ * se ignora si el gesto fue un deslizamiento (cambio de solapa).
  */
 export function ListCard({
   titulo,
@@ -52,16 +51,25 @@ export function ListCard({
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const moved = useRef(false);
+  const [lightbox, setLightbox] = useState(false);
 
   const cuerpo = (
     <>
       {fotoUri ? (
-        <Image
-          source={{ uri: fotoUri }}
-          style={styles.foto}
-          contentFit="cover"
-          transition={220}
-        />
+        <Pressable
+          onPress={() => setLightbox(true)}
+          hitSlop={4}
+        >
+          <Image
+            source={{ uri: fotoUri }}
+            style={styles.foto}
+            contentFit="cover"
+            transition={220}
+          />
+        </Pressable>
       ) : (
         <View style={[styles.foto, styles.fotoVacia, { backgroundColor: colors.accentSoft }]}>
           <Ionicons name={iconoFallback} size={26} color={colors.accent} />
@@ -100,33 +108,54 @@ export function ListCard({
     style,
   ];
 
-  // Escalona la entrada, pero corta a los 8 elementos: más allá de eso la
-  // demora acumulada se nota como lag al scrollear rápido.
   const entrada = FadeInDown.delay(Math.min(index, 8) * 45).springify();
+
+  const lightboxNode = fotoUri ? (
+    <MediaLightbox
+      visible={lightbox}
+      uris={[fotoUri]}
+      onClose={() => setLightbox(false)}
+    />
+  ) : null;
 
   if (!onPress) {
     return (
-      <Animated.View entering={entrada} style={estiloTarjeta}>
-        {cuerpo}
-      </Animated.View>
+      <>
+        <Animated.View entering={entrada} style={estiloTarjeta}>
+          {cuerpo}
+        </Animated.View>
+        {lightboxNode}
+      </>
     );
   }
 
   return (
-    <Animated.View entering={entrada}>
-      <AnimatedPressable
-        onPress={onPress}
-        onPressIn={() => {
-          scale.value = withSpring(0.98, { damping: 18, stiffness: 340 });
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, { damping: 14, stiffness: 240 });
-        }}
-        style={[estiloTarjeta, animStyle]}
-      >
-        {cuerpo}
-      </AnimatedPressable>
-    </Animated.View>
+    <>
+      <Animated.View entering={entrada}>
+        <AnimatedPressable
+          onPress={() => {
+            if (moved.current) return;
+            onPress();
+          }}
+          onPressIn={(e) => {
+            startX.current = e.nativeEvent.pageX;
+            startY.current = e.nativeEvent.pageY;
+            moved.current = false;
+            scale.value = withSpring(0.98, { damping: 18, stiffness: 340 });
+          }}
+          onPressOut={(e) => {
+            const dx = Math.abs(e.nativeEvent.pageX - startX.current);
+            const dy = Math.abs(e.nativeEvent.pageY - startY.current);
+            if (dx > MAX_MOVE || dy > MAX_MOVE) moved.current = true;
+            scale.value = withSpring(1, { damping: 14, stiffness: 240 });
+          }}
+          style={[estiloTarjeta, animStyle]}
+        >
+          {cuerpo}
+        </AnimatedPressable>
+      </Animated.View>
+      {lightboxNode}
+    </>
   );
 }
 

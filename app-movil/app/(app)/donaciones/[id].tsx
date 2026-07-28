@@ -1,9 +1,11 @@
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { donacionesApi } from '../../../src/api/donacionesApi';
+import { BotonEditarPublicacion } from '../../../src/components/BotonEditarPublicacion';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { Donacion } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -18,6 +20,23 @@ export default function DonacionDetalleScreen() {
 
   const [donacion, setDonacion] = useState<Donacion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [estadoBusy, setEstadoBusy] = useState(false);
+
+  /**
+   * Al acordar se pierde la edición y al liberar se recupera, así que hay que
+   * releer del server: `editable` y `motivoNoEditable` los decide el backend.
+   */
+  const onToggleAcordado = async () => {
+    if (!donacion || estadoBusy) return;
+    const nuevo = donacion.estadoDonacion === 'acordado' ? 'disponible' : 'acordado';
+    setEstadoBusy(true);
+    const res = await donacionesApi.marcarEstado(donacion.donacionId, nuevo);
+    if (res.success) {
+      const fresco = await donacionesApi.obtener(donacion.donacionId);
+      if (fresco.success && fresco.data) setDonacion(fresco.data.donacion);
+    }
+    setEstadoBusy(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -57,7 +76,7 @@ export default function DonacionDetalleScreen() {
   }
 
   const especieLabel = donacion.especie
-    ? t(`mascotas.especie${donacion.especie.charAt(0).toUpperCase()}${donacion.especie.slice(1)}`)
+    ? t(especieI18nKey(donacion.especie))
     : null;
 
   return (
@@ -75,6 +94,7 @@ export default function DonacionDetalleScreen() {
 
       <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 6 }}>
         {t(`donaciones.tipo.${donacion.tipo}`).toUpperCase()} · {t(`donaciones.categoria.${donacion.categoria}`)}
+        {donacion.estadoDonacion === 'acordado' ? ` · ${t('edicion.badgeAcordado')}` : ''}
       </Text>
       {especieLabel ? <Text style={{ color: colors.textMuted, marginBottom: 4 }}>{especieLabel}</Text> : null}
       <Text style={{ color: colors.textMuted, marginBottom: 4 }}>{donacion.zonaDescripcion}</Text>
@@ -92,9 +112,32 @@ export default function DonacionDetalleScreen() {
       ) : null}
 
       {donacion.esDueno ? (
-        <Pressable onPress={onEliminar} style={styles.eliminarLink}>
-          <Text style={{ color: colors.danger, fontSize: 12 }}>{t('donaciones.eliminarButton')}</Text>
-        </Pressable>
+        <>
+          <Pressable
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={onToggleAcordado}
+            disabled={estadoBusy}
+          >
+            {estadoBusy ? (
+              <ActivityIndicator color={colors.primaryText} />
+            ) : (
+              <Text style={{ color: colors.primaryText, fontWeight: '600' }}>
+                {donacion.estadoDonacion === 'acordado'
+                  ? t('edicion.marcarDisponible')
+                  : t('edicion.marcarAcordado')}
+              </Text>
+            )}
+          </Pressable>
+          <BotonEditarPublicacion
+            ruta="/(app)/donaciones/[id]/editar"
+            id={donacion.donacionId}
+            editable={donacion.editable}
+            motivoNoEditable={donacion.motivoNoEditable}
+          />
+          <Pressable onPress={onEliminar} style={styles.eliminarLink}>
+            <Text style={{ color: colors.danger, fontSize: 12 }}>{t('donaciones.eliminarButton')}</Text>
+          </Pressable>
+        </>
       ) : (
         <View style={styles.denunciaRow}>
           <DenunciaButtonStub userId={donacion.autor.userId} donacionId={donacion.donacionId} />
@@ -109,6 +152,7 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20 },
   foto: { width: 260, height: 220, borderRadius: 12, marginRight: 8 },
   whatsappButton: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 16 },
+  button: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 12 },
   eliminarLink: { marginTop: 4, alignItems: 'center' },
   denunciaRow: { marginTop: 16, alignItems: 'center' },
 });

@@ -53,6 +53,9 @@ export function AppChrome({ children }: Props) {
   );
 
   const headerOffset = chrome.header ? APP_HEADER_HEIGHT + insets.top : 0;
+
+  // Sin reserva extra por el planeta: ahora sólo asoma media esfera y el
+  // espacio que se ganaba no compensaba el que le robaba a cada pantalla.
   const tabOffset = chrome.tabBar ? APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0) : 0;
 
   return (

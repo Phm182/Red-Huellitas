@@ -9,6 +9,8 @@ import { perfilApi } from '../../../src/api/perfilApi';
 import { MultiImagePickerField } from '../../../src/components/MultiImagePickerField';
 import { RazaPicker } from '../../../src/components/RazaPicker';
 import { Especie, Mascota, Sexo, TipoPerdido, VerificacionEstado } from '../../../src/types';
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
@@ -225,14 +227,14 @@ export default function NuevoPerdidoScreen() {
 
           <Text style={[styles.label, { color: colors.text }]}>{t('mascotas.especie')}</Text>
           <View style={styles.segmented}>
-            {(['perro', 'gato', 'otro'] as Especie[]).map((e) => (
+            {ESPECIES.map((e) => (
               <Pressable
                 key={e}
                 onPress={() => cambiarEspecie(e)}
                 style={[styles.segment, { borderColor: colors.primary, backgroundColor: especie === e ? colors.primary : 'transparent' }]}
               >
                 <Text style={{ color: especie === e ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                  {t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`)}
+                  {t(especieI18nKey(e))}
                 </Text>
               </Pressable>
             ))}
@@ -311,8 +313,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  segmented: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center' },
+  segmented: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  segment: { borderWidth: 1, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

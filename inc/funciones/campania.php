@@ -52,6 +52,7 @@ function rh_campania_publico(mysqli $conn, array $c, int $viewerUserId): array
         'fechaDesde' => $c['FechaDesde'],
         'fechaHasta' => $c['FechaHasta'],
         'zonaDescripcion' => $c['ZonaDescripcion'],
+        'direccion' => $c['Direccion'] ?? null,
         'zonaLat' => (float) $c['ZonaLat'],
         'zonaLng' => (float) $c['ZonaLng'],
         'requiereInscripcion' => $requiereInscripcion,
@@ -61,11 +62,40 @@ function rh_campania_publico(mysqli $conn, array $c, int $viewerUserId): array
         'createdAt' => $c['CreatedAt'],
     ];
 
+    $data['mensajeAviso'] = $c['MensajeAviso'] ?? null;
+    $data['bajaLimiteHoras'] = isset($c['BajaLimiteHoras']) && $c['BajaLimiteHoras'] !== null
+        ? (int) $c['BajaLimiteHoras']
+        : null;
+
     if ($requiereInscripcion) {
-        $totalInscriptos = rh_campania_total_inscriptos($conn, $campaniaId);
-        $data['totalInscriptos'] = $totalInscriptos;
-        $data['cupoDisponible'] = $cupoMaximo !== null ? max(0, $cupoMaximo - $totalInscriptos) : null;
-        $data['estoyInscripto'] = rh_campania_estoy_inscripto($conn, $campaniaId, $viewerUserId);
+        require_once __DIR__ . '/campania_inscripcion.php';
+
+        // Los lugares se cuentan sobre las confirmadas, no sobre el total de
+        // filas: las canceladas y la lista de espera no ocupan lugar, y contarlas
+        // haría que la campaña se vea llena cuando no lo está.
+        $confirmadas = rh_campania_confirmadas($conn, $campaniaId);
+        $data['totalInscriptos'] = $confirmadas;
+        $data['cupoDisponible'] = $cupoMaximo !== null ? max(0, $cupoMaximo - $confirmadas) : null;
+        $data['preguntas'] = rh_campania_preguntas($conn, $campaniaId);
+
+        // Estado de MI inscripción: la pantalla necesita saber si mostrar
+        // "Inscribirme", "Estás en lista de espera" o "Darte de baja".
+        $stmt = $conn->prepare(
+            "SELECT CampaniaInscripcionId, Estado, Posicion FROM CampaniaInscripcion
+             WHERE CampaniaId = ? AND UserId = ? AND Estado <> 'cancelada' LIMIT 1"
+        );
+        $stmt->bind_param('ii', $campaniaId, $viewerUserId);
+        $stmt->execute();
+        $mia = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        $data['estoyInscripto'] = $mia !== null;
+        $data['miInscripcion'] = $mia ? [
+            'campaniaInscripcionId' => (int) $mia['CampaniaInscripcionId'],
+            'estado' => $mia['Estado'],
+            'posicion' => (int) $mia['Posicion'],
+            'puedeDarseBaja' => rh_campania_puede_darse_baja($conn, $c),
+        ] : null;
     }
 
     return $data;

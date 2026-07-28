@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 require_once __DIR__ . '/../../funciones/privacidad.php';
+require_once __DIR__ . '/../../funciones/suscripcion.php';
 
 $viewerUserId = rh_require_auth($conn);
 
@@ -79,4 +80,5 @@ json_success([
     'puedeVerContenido' => $puedeVer,
     'estadoSeguimiento' => $estadoSeguimiento,
     'mensajePersonal' => $usuario['MensajePersonal'] ?? null,
+    'planCodigo' => rh_usuario_plan_codigo_activo($conn, $targetUserId),
 ]);

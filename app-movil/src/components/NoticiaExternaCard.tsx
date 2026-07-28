@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as Linking from 'expo-linking';
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -9,6 +8,7 @@ import { NoticiaExterna } from '../types';
 import { elevation, radii } from '../theme/elevation';
 import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
+import { openExternalUrl } from '../utils/openExternalUrl';
 import { Badge } from './ui/Badge';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -18,29 +18,43 @@ interface NoticiaExternaCardProps {
   index?: number;
 }
 
+/** Umbral: si el dedo se movió más que esto, no es un tap (es swipe de solapa). */
+const MAX_MOVE = 12;
+
 /**
- * Card de noticia externa.
- *
- * Vive en la misma lista que `PostCard`, así que tiene que compartir su
- * lenguaje: mismo radio, misma elevación, misma tipografía. Antes eran dos
- * estilos distintos alternándose en la tab de Noticias.
+ * Card de noticia externa. Solo abre el link si el gesto fue un tap limpio
+ * (no un deslizamiento horizontal de cambio de solapa).
  */
 export function NoticiaExternaCard({ noticia, index = 0 }: NoticiaExternaCardProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const moved = useRef(false);
+
+  const abrir = () => {
+    if (moved.current) return;
+    void openExternalUrl(noticia.urlOriginal);
+  };
 
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).springify()}>
       <AnimatedPressable
-        onPress={() => Linking.openURL(noticia.urlOriginal)}
-        onPressIn={() => {
+        onPressIn={(e) => {
+          startX.current = e.nativeEvent.pageX;
+          startY.current = e.nativeEvent.pageY;
+          moved.current = false;
           scale.value = withSpring(0.985, { damping: 18, stiffness: 340 });
         }}
-        onPressOut={() => {
+        onPressOut={(e) => {
+          const dx = Math.abs(e.nativeEvent.pageX - startX.current);
+          const dy = Math.abs(e.nativeEvent.pageY - startY.current);
+          if (dx > MAX_MOVE || dy > MAX_MOVE) moved.current = true;
           scale.value = withSpring(1, { damping: 14, stiffness: 240 });
         }}
+        onPress={abrir}
         style={[
           styles.card,
           elevation.sm,

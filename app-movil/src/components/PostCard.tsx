@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -22,6 +22,8 @@ import { rhMediaUrl } from '../utils/media';
 import { hapticMedio } from '../utils/haptics';
 import { DenunciaButtonStub } from './DenunciaButtonStub';
 import { LogoSiluetaNegra } from './LogoImage';
+import { MediaLightbox } from './MediaLightbox';
+import { ReactionsBar } from './ReactionsBar';
 
 interface PostCardProps {
   post: Post;
@@ -30,8 +32,6 @@ interface PostCardProps {
 }
 
 const MEDIA_W = Math.min(Dimensions.get('window').width - 32, 448);
-
-/** Ventana para que dos toques cuenten como doble-tap. */
 const DOBLE_TAP_MS = 280;
 
 export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
@@ -51,42 +51,54 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
     onEliminar,
   } = usePostActions(post, onEliminado);
 
-  // Corazón grande que aparece sobre la foto al hacer doble tap.
   const corazonEscala = useSharedValue(0);
   const corazonOpacidad = useSharedValue(0);
   const ultimoTap = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lightbox, setLightbox] = useState<{ uris: string[]; index: number } | null>(null);
 
   const corazonStyle = useAnimatedStyle(() => ({
     opacity: corazonOpacidad.value,
     transform: [{ scale: corazonEscala.value }],
   }));
 
-  const onTapFoto = () => {
+  const mostrarCorazon = () => {
+    corazonOpacidad.value = withSequence(
+      withTiming(1, { duration: 90 }),
+      withTiming(1, { duration: 380 }),
+      withTiming(0, { duration: 220 })
+    );
+    corazonEscala.value = withSequence(
+      withSpring(1.15, { damping: 9, stiffness: 220 }),
+      withSpring(0.95, { damping: 12 }),
+      withTiming(0, { duration: 220 })
+    );
+  };
+
+  const onTapFoto = (fotoIndex: number) => {
     const ahora = Date.now();
+    const uris = post.fotos.map((f) => rhMediaUrl(f.path));
+
     if (ahora - ultimoTap.current < DOBLE_TAP_MS) {
       ultimoTap.current = 0;
-
-      // El corazón se muestra siempre que el gesto se reconoce, aunque el
-      // post ya tuviera "me gusta": si no, un doble tap sobre algo ya
-      // likeado parecería que la app no registró nada.
-      corazonOpacidad.value = withSequence(
-        withTiming(1, { duration: 90 }),
-        withTiming(1, { duration: 380 }),
-        withTiming(0, { duration: 220 })
-      );
-      corazonEscala.value = withSequence(
-        withSpring(1.15, { damping: 9, stiffness: 220 }),
-        withSpring(0.95, { damping: 12 }),
-        withTiming(0, { duration: 220 })
-      );
-
+      if (tapTimer.current) {
+        clearTimeout(tapTimer.current);
+        tapTimer.current = null;
+      }
+      mostrarCorazon();
       hapticMedio();
       if (miReaccion !== 'like' && !reaccionBusy) {
         onReaccionar('like');
       }
       return;
     }
+
     ultimoTap.current = ahora;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => {
+      tapTimer.current = null;
+      setLightbox({ uris, index: fotoIndex });
+    }, DOBLE_TAP_MS);
   };
 
   return (
@@ -126,11 +138,12 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
               styles.followBadge,
               {
                 borderColor: colors.primary,
-                backgroundColor: siguiendo ? 'transparent' : colors.primary,
+                backgroundColor: siguiendo ? colors.primarySoft : colors.primary,
               },
             ]}
             onPress={onToggleSeguir}
             disabled={siguiendoBusy}
+            hitSlop={6}
           >
             <Text
               style={{
@@ -163,8 +176,8 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
           horizontal
           data={post.fotos}
           keyExtractor={(f) => String(f.postFotoId)}
-          renderItem={({ item }) => (
-            <Pressable style={styles.fotoWrap} onPress={onTapFoto}>
+          renderItem={({ item, index: fotoIndex }) => (
+            <Pressable style={styles.fotoWrap} onPress={() => onTapFoto(fotoIndex)}>
               <Image
                 source={{ uri: rhMediaUrl(item.path) }}
                 style={styles.foto}
@@ -187,30 +200,12 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
       ) : null}
 
       <View style={styles.actions}>
-        <Pressable style={styles.actionButton} onPress={() => onReaccionar('like')} disabled={reaccionBusy}>
-          <Ionicons
-            name={miReaccion === 'like' ? 'heart' : 'heart-outline'}
-            size={22}
-            color={miReaccion === 'like' ? colors.primary : colors.textMuted}
-          />
-          {conteos.like > 0 ? (
-            <Text style={[styles.actionCount, { color: colors.textMuted }]}>{conteos.like}</Text>
-          ) : null}
-        </Pressable>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => onReaccionar('me_divierte')}
-          disabled={reaccionBusy}
-        >
-          <Ionicons
-            name={miReaccion === 'me_divierte' ? 'happy' : 'happy-outline'}
-            size={22}
-            color={miReaccion === 'me_divierte' ? colors.accent : colors.textMuted}
-          />
-          {conteos.meDivierte > 0 ? (
-            <Text style={[styles.actionCount, { color: colors.textMuted }]}>{conteos.meDivierte}</Text>
-          ) : null}
-        </Pressable>
+        <ReactionsBar
+          miReaccion={miReaccion}
+          conteos={conteos}
+          busy={reaccionBusy}
+          onReaccionar={onReaccionar}
+        />
         <Pressable style={styles.actionButton} onPress={onCompartir}>
           <Ionicons name="paper-plane-outline" size={21} color={colors.textMuted} />
         </Pressable>
@@ -225,6 +220,13 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
           <DenunciaButtonStub userId={post.autor.userId} postId={post.postId} />
         ) : null}
       </View>
+
+      <MediaLightbox
+        visible={lightbox != null}
+        uris={lightbox?.uris ?? []}
+        initialIndex={lightbox?.index ?? 0}
+        onClose={() => setLightbox(null)}
+      />
     </Animated.View>
   );
 }
@@ -254,6 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingVertical: 6,
     paddingHorizontal: 12,
+    flexShrink: 0,
   },
   reco: {
     alignSelf: 'flex-start',
@@ -296,5 +299,4 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
-  actionCount: { fontFamily: fonts.bodySemi, fontSize: 13 },
 });

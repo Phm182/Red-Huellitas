@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/transito.php';
@@ -41,8 +42,8 @@ if ($zonaLat === null || $zonaLng === null) {
 if ($duracionDias !== null && $duracionDias <= 0) {
     json_error('duracionDias debe ser mayor a 0');
 }
-if ($especie !== null && !in_array($especie, ['perro', 'gato', 'otro'], true)) {
-    json_error("La especie debe ser 'perro', 'gato' u 'otro'");
+if ($especie !== null && !in_array($especie, rh_especies_validas(), true)) {
+    json_error("Especie no válida");
 }
 
 $fotos = [];

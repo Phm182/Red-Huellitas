@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/producto.php';
 
 const RH_PRODUCTO_RADIOS_VALIDOS = [20, 50, 100];
@@ -54,7 +55,7 @@ if ($radioKm !== null) {
         $types .= 'i';
         $params[] = $categoriaId;
     }
-    if (in_array($especie, ['perro', 'gato', 'otro'], true)) {
+    if (in_array($especie, rh_especies_validas(), true)) {
         $sql .= ' AND Producto.Especie = ?';
         $types .= 's';
         $params[] = $especie;
@@ -95,7 +96,7 @@ if ($categoriaId !== null) {
     $types .= 'i';
     $params[] = $categoriaId;
 }
-if (in_array($especie, ['perro', 'gato', 'otro'], true)) {
+if (in_array($especie, rh_especies_validas(), true)) {
     $sql .= ' AND Producto.Especie = ?';
     $types .= 's';
     $params[] = $especie;

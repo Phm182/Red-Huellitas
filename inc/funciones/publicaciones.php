@@ -27,7 +27,7 @@ function rh_post_fotos(mysqli $conn, int $postId): array
 }
 
 /**
- * Conteos de reacciones por tipo para un post: {like: n, meDivierte: n}.
+ * Conteos de reacciones por tipo para un post.
  */
 function rh_post_conteos(mysqli $conn, int $postId): array
 {
@@ -36,12 +36,34 @@ function rh_post_conteos(mysqli $conn, int $postId): array
     $stmt->execute();
     $result = $stmt->get_result();
 
-    $conteos = ['like' => 0, 'meDivierte' => 0];
+    $conteos = [
+        'like' => 0,
+        'meDivierte' => 0,
+        'amor' => 0,
+        'asombro' => 0,
+        'triste' => 0,
+        'abrazo' => 0,
+        'huella' => 0,
+        'apoyo' => 0,
+        'guau' => 0,
+        'michi' => 0,
+    ];
+    $map = [
+        'like' => 'like',
+        'me_divierte' => 'meDivierte',
+        'amor' => 'amor',
+        'asombro' => 'asombro',
+        'triste' => 'triste',
+        'abrazo' => 'abrazo',
+        'huella' => 'huella',
+        'apoyo' => 'apoyo',
+        'guau' => 'guau',
+        'michi' => 'michi',
+    ];
     while ($row = $result->fetch_assoc()) {
-        if ($row['Tipo'] === 'like') {
-            $conteos['like'] = (int) $row['total'];
-        } elseif ($row['Tipo'] === 'me_divierte') {
-            $conteos['meDivierte'] = (int) $row['total'];
+        $tipo = $row['Tipo'];
+        if (isset($map[$tipo])) {
+            $conteos[$map[$tipo]] = (int) $row['total'];
         }
     }
     $stmt->close();

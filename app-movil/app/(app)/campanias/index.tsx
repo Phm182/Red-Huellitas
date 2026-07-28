@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { campaniaApi } from '../../../src/api/campaniaApi';
@@ -8,11 +8,13 @@ import { Campania, TipoCampania } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { Badge } from '../../../src/components/ui/Badge';
 import { ChipOption, ChipRow } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** El nombre de icono que acepta ChipOption (Ionicons). */
@@ -31,6 +33,7 @@ export default function CampaniasListaScreen() {
 
   const [tipo, setTipo] = useState<TipoCampania | null>(null);
   const [campanias, setCampanias] = useState<Campania[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
@@ -83,6 +86,21 @@ export default function CampaniasListaScreen() {
     })),
   ];
 
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(campanias, busqueda, (c) => [
+        c.titulo,
+        c.descripcion,
+        c.zonaDescripcion,
+        t(`campanias.tipo.${c.tipo}`),
+        c.autor.nombreCompleto,
+        c.autor.username,
+      ]),
+    [campanias, busqueda, t]
+  );
+
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={styles.atajos}>
@@ -96,12 +114,14 @@ export default function CampaniasListaScreen() {
         <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
       </View>
 
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+
       {loading ? (
         <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
-          data={campanias}
+          data={filtrados}
           keyExtractor={(c) => String(c.campaniaId)}
           refreshing={refrescando}
           onRefresh={onRefrescar}
@@ -125,16 +145,16 @@ export default function CampaniasListaScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="megaphone-outline"
-              titulo={t('campanias.emptyLista')}
-              accionLabel={t('campanias.tituloNueva')}
-              onAccion={() => router.push('/(app)/campanias/nueva')}
+              titulo={buscando ? t('common.sinResultadosBusqueda') : t('campanias.emptyLista')}
+              accionLabel={buscando ? undefined : t('campanias.tituloNueva')}
+              onAccion={buscando ? undefined : () => router.push('/(app)/campanias/nueva')}
             />
           }
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             <>
-              {campanias.length > 0 ? (
+              {filtrados.length > 0 ? (
                 <ListEndAddButton
                   label={t('campanias.tituloNueva')}
                   onPress={() => router.push('/(app)/campanias/nueva')}

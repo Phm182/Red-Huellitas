@@ -49,6 +49,9 @@ function rh_veterinaria_publico(mysqli $conn, array $v, int $viewerUserId, ?floa
         'horario' => $v['Horario'],
         'fotos' => rh_veterinaria_fotos($conn, $veterinariaId),
         'zonaDescripcion' => $v['ZonaDescripcion'],
+        // Calle y número: es lo que hace falta para llegar. Va aparte del
+        // barrio porque los dos se muestran juntos y dicen cosas distintas.
+        'direccion' => $v['Direccion'] ?? null,
         'zonaLat' => (float) $v['ZonaLat'],
         'zonaLng' => (float) $v['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,

@@ -7,10 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { APP_HEADER_HEIGHT, isAppTabRoot, tabIconForPath } from '../../navigation/chrome';
 import { titleForPath } from '../../navigation/routeTitles';
+import { useTituloHeader } from '../../navigation/tituloHeaderStore';
 import { fonts, type } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAvatarDisplay } from '../../utils/avatarDisplayStore';
 import { rhAvatarUrl } from '../../utils/media';
+import { LogoImage } from '../LogoImage';
 import { AccountSwitcherModal } from './AccountSwitcherModal';
 
 type Props = {
@@ -26,7 +28,10 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const tabRoot = isAppTabRoot(pathname);
-  const title = titleForPath(pathname, t);
+  // El título que pone la pantalla (p. ej. el nombre de la mascota) gana sobre
+  // el deducido de la ruta, que no puede saberlo.
+  const tituloPantalla = useTituloHeader(pathname);
+  const title = tituloPantalla ?? titleForPath(pathname, t);
   // Ícono del hub en raíz y en rutas hijas (p. ej. /juego/[id] también lleva joystick).
   const tabIcon = tabIconForPath(pathname);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -34,6 +39,10 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
   const displayName = user?.username
     ? `@${user.username}`
     : user?.nombreCompleto?.split(' ')[0] || t('perfil.myProfile');
+
+  const irInicio = () => {
+    router.replace('/(app)/(tabs)');
+  };
 
   const positionStyle =
     Platform.OS === 'web'
@@ -73,38 +82,50 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
             )}
 
             {tabIcon ? (
-              <Ionicons name={tabIcon} size={22} color={colors.primary} style={styles.tabIcon} />
+              <Ionicons name={tabIcon} size={20} color={colors.primary} style={styles.tabIcon} />
             ) : null}
 
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {title}
             </Text>
           </View>
 
-          <View style={styles.right}>
-            {/* La configuración salió de la barra inferior: no es navegación,
-                es una salida. Acá está siempre a mano sin gastar un lugar de
-                los 6 hubs. */}
-            <Pressable
-              onPress={() => router.push('/(app)/configuracion' as never)}
-              style={styles.iconBtn}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel={t('nav.configuracion')}
-            >
-              <Ionicons name="settings-outline" size={21} color={colors.textMuted} />
-            </Pressable>
+          <Pressable
+            onPress={irInicio}
+            style={styles.logoCenter}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t('nav.huelligram')}
+          >
+            <LogoImage variant="icon" style={styles.logoIcon} />
+          </Pressable>
 
+          <View style={styles.right}>
             <Pressable
               onPress={() => setSwitcherOpen(true)}
               style={styles.userBtn}
               accessibilityRole="button"
               accessibilityLabel={t('home.switchAccountTitle')}
             >
-              <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+              <Text
+                style={[styles.userName, { color: colors.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
                 {displayName}
               </Text>
               <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/(app)/configuracion' as never)}
+              style={styles.configBtn}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t('nav.configuracion')}
+            >
+              <Ionicons name="settings-outline" size={20} color={colors.textMuted} />
             </Pressable>
 
             <Pressable
@@ -147,62 +168,83 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 12,
+    paddingLeft: 8,
     paddingRight: 8,
-    gap: 8,
+    paddingVertical: 4,
+    gap: 4,
   },
   left: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
-  backBtn: {
-    width: 36,
-    height: 44,
-    marginLeft: -8,
+  logoCenter: {
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    width: 54,
+  },
+  logoIcon: {
+    width: 54,
+    height: 54,
+  },
+  backBtn: {
+    width: 32,
+    height: 44,
+    marginLeft: -4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   tabIcon: {
     marginTop: 1,
+    flexShrink: 0,
   },
   title: {
+    flex: 1,
     flexShrink: 1,
     textAlign: 'left',
     fontFamily: fonts.displaySemi,
-    fontSize: 17,
+    fontSize: 15,
+    lineHeight: 18,
   },
   right: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 6,
-    flexShrink: 0,
-  },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   userBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    maxWidth: 120,
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: '100%',
     paddingVertical: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   userName: {
     ...type.label,
     fontSize: 13,
     flexShrink: 1,
   },
+  configBtn: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   avatarBtn: {
     borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   avatar: {
     width: 34,

@@ -42,11 +42,22 @@ $motivoFinal = $estado === 'aprobado' ? null : $motivo;
 
 $stmt = $conn->prepare(
     'UPDATE UsuarioVerificacion
-     SET EstadoRevision = ?, MotivoRechazo = ?, RevisadoPor = ?, RevisadoEn = NOW()
+     SET EstadoRevision = ?, MotivoRechazo = ?, RevisadoPor = ?, RevisadoEn = NOW(),
+         AutoMetodo = \'manual\', AutoReintentoEn = NULL
      WHERE UserId = ?'
 );
 $stmt->bind_param('ssii', $estado, $motivoFinal, $adminId, $userId);
-$stmt->execute();
+if (!$stmt->execute()) {
+    $stmt->close();
+    // Sin columnas Auto*: update mínimo.
+    $stmt = $conn->prepare(
+        'UPDATE UsuarioVerificacion
+         SET EstadoRevision = ?, MotivoRechazo = ?, RevisadoPor = ?, RevisadoEn = NOW()
+         WHERE UserId = ?'
+    );
+    $stmt->bind_param('ssii', $estado, $motivoFinal, $adminId, $userId);
+    $stmt->execute();
+}
 $stmt->close();
 
 json_success(['userId' => $userId, 'estadoRevision' => $estado], 'Verificación actualizada');

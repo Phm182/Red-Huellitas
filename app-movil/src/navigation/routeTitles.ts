@@ -24,6 +24,9 @@ export function titleForPath(pathname: string, t: TFunction): string {
     { test: (x) => x.includes('/mascotas/nueva'), title: t('mascotas.addPet') },
     { test: (x) => x.includes('/editar'), title: t('mascotas.editButton') },
     { test: (x) => x.includes('/mascotas'), title: t('mascotas.title') },
+    // Detalle de una mascota (singular). El nombre del animal lo pone la
+    // pantalla vía tituloHeaderStore; esto es lo que se ve mientras carga.
+    { test: (x) => x.includes('/mascota/'), title: t('mascotas.title') },
     { test: (x) => x.includes('/publicaciones/nueva_video'), title: t('shorts.createTitle') },
     { test: (x) => x.includes('/publicaciones/nueva'), title: t('feed.createTitle') },
     { test: (x) => x.includes('/historia-vistas') || x.includes('/vistas'), title: t('historias.vistasTitulo') },
@@ -34,6 +37,7 @@ export function titleForPath(pathname: string, t: TFunction): string {
     { test: (x) => x.includes('/postulaciones') && x.includes('/mis-'), title: t('adopcion.misPostulaciones') },
     { test: (x) => x.includes('/postulaciones'), title: t('adopcion.verPostulaciones') },
     { test: (x) => x.includes('/adopcion/favoritos'), title: t('adopcion.misFavoritos') },
+    { test: (x) => x.includes('/adopcion/mis-publicaciones'), title: t('adopcion.misPublicaciones') },
     { test: (x) => x.includes('/adopcion/mis-postulaciones'), title: t('adopcion.misPostulaciones') },
     { test: (x) => x.includes('/adopcion'), title: t('adopcion.tituloLista') },
     { test: (x) => x.includes('/campanias/nueva'), title: t('campanias.tituloNueva') },
@@ -66,7 +70,10 @@ export function titleForPath(pathname: string, t: TFunction): string {
     { test: (x) => x.includes('/perfil'), title: t('perfil.myProfile') },
     { test: (x) => x.includes('/noticias'), title: t('noticias.tabTitle') },
     { test: (x) => x.includes('/shorts'), title: t('shorts.tabTitle') },
-    { test: (x) => x.includes('/mas'), title: t('home.masTabTitle') },
+    // Ojo: NO poner una regla `includes('/mas')` para la vieja solapa "Más".
+    // Cazaba también `/mascota/12` —"mascota" contiene "mas"— y el detalle de
+    // una mascota terminaba titulado "Configuración". La pantalla ya no existe
+    // (se mudó a /configuracion), así que la regla se fue con ella.
   ];
 
   for (const rule of rules) {

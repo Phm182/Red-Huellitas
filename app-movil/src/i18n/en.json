@@ -11,7 +11,17 @@
         "yes": "Yes",
         "no": "No",
         "close": "Close",
-        "seeAll": "See all"
+        "seeAll": "See all",
+        "buscarEnLista": "Search…",
+        "sinResultadosBusqueda": "No results for that search",
+        "clear": "Clear",
+        "distancia": "Distance",
+        "tipo": "Type",
+        "especie": "Species",
+        "categoria": "Category",
+        "sexo": "Sex",
+        "edad": "Age",
+        "mascota": "Pet"
     },
     "auth": {
         "loginTitle": "Log in",
@@ -127,6 +137,18 @@
         "especiePerro": "Dog",
         "especieGato": "Cat",
         "especieOtro": "Other",
+        "especieNombre": {
+            "perro": "Dog",
+            "gato": "Cat",
+            "conejo": "Rabbit",
+            "ave": "Bird",
+            "pez": "Fish",
+            "hamster": "Hamster",
+            "cobayo": "Guinea pig",
+            "tortuga": "Turtle",
+            "huron": "Ferret",
+            "otro": "Other"
+        },
         "raza": "Breed",
         "razaOtra": "Other, specify",
         "razaOtraPlaceholder": "Type the breed",
@@ -217,6 +239,20 @@
         "publishButton": "Post",
         "like": "Like",
         "meDivierte": "Made me laugh",
+        "masReacciones": "More reactions",
+        "elegirReaccion": "Pick a reaction",
+        "reaccion": {
+            "like": "Like",
+            "meDivierte": "Funny",
+            "amor": "Love",
+            "asombro": "Wow",
+            "triste": "Sad",
+            "abrazo": "Hug",
+            "huella": "Paw",
+            "apoyo": "Support",
+            "guau": "Woof!",
+            "michi": "Meow"
+        },
         "share": "Share",
         "seguir": "Follow",
         "siguiendo": "Following",
@@ -234,14 +270,18 @@
     },
     "tipoUsuario": {
         "selectorLabel": "What type of account are you?",
-        "individual": "Individual",
+        "individual": "Person / individual",
         "refugio": "Shelter / Rescue"
     },
     "noticias": {
         "tabTitle": "News",
         "subtabGeneral": "General",
+        "subtabCampanias": "Campaigns",
+        "subtabRefugios": "Shelters",
         "emptyGeneral": "No news right now",
         "emptyTipo": "No posts of this type yet",
+        "emptyCampanias": "No campaigns yet. Shelters, clinics and health centers can publish them.",
+        "emptyRefugio": "Posts from shelters and rescues appear here.",
         "readMore": "Read more"
     },
     "shorts": {
@@ -335,9 +375,14 @@
         "enviarPostulacion": "Send application",
         "emptyPostulaciones": "No applications received yet",
         "emptyMisPostulaciones": "You haven't applied to any adoption yet",
+        "emptyMisPublicaciones": "You haven't published any adoption listing yet",
         "emptyFavoritos": "You haven't saved any listing yet",
         "misPostulaciones": "My applications",
+        "misPublicaciones": "My listings",
         "misFavoritos": "My favorites",
+        "postulacionesCount_one": "{{count}} application",
+        "postulacionesCount_other": "{{count}} applications",
+        "postulacionesCount": "{{count}} applications",
         "estadoRevision": {
             "pendiente": "Under review",
             "aceptada": "Accepted",
@@ -346,6 +391,28 @@
     },
     "campanias": {
         "tituloLista": "Campaigns",
+        "administrar": "Manage campaign",
+        "anotarmeEnEspera": "Join the waiting list",
+        "enListaEspera": "On the waiting list · position {{posicion}}",
+        "darmeDeBaja": "Cancel my spot",
+        "avisarNoVoy": "Let them know I can't make it",
+        "bajaConfirmTitle": "Cancel your spot",
+        "bajaConfirmBody": "Are you sure you want to cancel your spot?",
+        "ausenciaConfirmTitle": "Let them know",
+        "ausenciaConfirmBody": "We'll tell the organising team you can't make it.",
+        "confirmarInscripcion": "Confirm sign-up",
+        "faltanRespuestas": "{{cantidad}} required answers missing",
+        "avisoListaEspera": "The campaign is full: you'll join the waiting list and we'll tell you if a spot opens up.",
+        "mensajeAviso": "Important notice",
+        "ocupacion": "Occupancy",
+        "cupoIlimitado": "no limit",
+        "inscriptos": "Sign-ups",
+        "sinInscriptos": "Nobody has signed up yet",
+        "darDeBaja": "Remove",
+        "estadoConfirmada": "Confirmed",
+        "estadoListaEspera": "Waiting",
+        "estadoAusente": "Can't make it",
+        "estadoCancelada": "Cancelled",
         "tituloNueva": "New campaign",
         "misInscripciones": "My registrations",
         "todas": "All",
@@ -362,6 +429,8 @@
         "esRangoLabel": "Spans several days",
         "fechaHastaLabel": "Until",
         "zonaLabel": "Zone / address",
+        "direccionLabel": "Address (optional)",
+        "direccionPlaceholder": "123 Main St",
         "zonaPlaceholder": "E.g. San Martín Square",
         "requiereInscripcionLabel": "Requires prior registration",
         "cupoMaximoLabel": "Max capacity (optional)",
@@ -379,6 +448,9 @@
     },
     "perdidos": {
         "tituloLista": "Lost & Found",
+        "descripcionTitulo": "Description",
+        "viAEsteAnimal": "I saw this animal",
+        "avistamientoEnviado": "Already reported · open chat",
         "tituloNueva": "New report",
         "todas": "All",
         "emptyLista": "No reports published yet",
@@ -409,6 +481,13 @@
         "tituloNueva": "New transit post",
         "todas": "All",
         "emptyLista": "No transit posts published yet",
+        "emptyOfertas": "No one is offering transit nearby yet",
+        "emptyMisOfertas": "You haven't published a transit offer yet",
+        "solapaBuscar": "Search",
+        "solapaOfrecer": "Offer",
+        "publicarNecesito": "Post that I need transit",
+        "publicarOfrezco": "Post that I offer transit",
+        "mia": "Mine",
         "tipo": {
             "necesito": "Need transit",
             "ofrezco": "Offering transit"
@@ -432,6 +511,11 @@
         "tituloNueva": "New donation post",
         "todas": "All",
         "emptyLista": "No donation posts published yet",
+        "emptyOfertas": "No donation offers nearby yet",
+        "emptyMisOfertas": "You haven't published anything to donate yet",
+        "publicarNecesito": "Post that I need",
+        "publicarOfrezco": "Post that I offer",
+        "mia": "Mine",
         "tipo": {
             "necesito": "Need donation",
             "ofrezco": "Offering donation"
@@ -439,7 +523,8 @@
         "tipoLabel": "Post type",
         "categoria": {
             "alimento": "Food",
-            "insumo": "Supplies"
+            "insumo": "Supplies",
+            "ropa": "Clothes/Comfort"
         },
         "categoriaLabel": "Category",
         "especieLabel": "Species (optional)",
@@ -526,6 +611,9 @@
     },
     "productos": {
         "tituloLista": "Products and Services",
+        "consultarServicio": "Ask about this service",
+        "agregarFavorito": "Add to favourites",
+        "quitarFavorito": "Remove from favourites",
         "tituloNueva": "New listing",
         "misFavoritos": "My Favorites",
         "todos": "All",
@@ -750,6 +838,8 @@
         "hueplay": "HuePlay",
         "configuracion": "Settings",
         "atajosHint": "Press and hold to see the shortcuts",
+        "ocultarBotones": "Hide buttons",
+        "mostrarBotones": "Show buttons",
         "rescateDesc": "Find, foster and rehome",
         "tiendaDesc": "Buy, sell and your orders",
         "saludDesc": "Care, vets and shelters"
@@ -773,6 +863,13 @@
         "especie": {
             "perro": "Dog",
             "gato": "Cat",
+            "conejo": "Rabbit",
+            "ave": "Bird",
+            "pez": "Fish",
+            "hamster": "Hamster",
+            "cobayo": "Guinea pig",
+            "tortuga": "Turtle",
+            "huron": "Ferret",
             "otro": "Other"
         },
         "categoria": {
@@ -785,6 +882,7 @@
     },
     "notificaciones": {
         "titulo": "Notifications",
+        "limpiarAlEntrar": "Clear on open",
         "vacio": "No notifications",
         "vacioDesc": "Updates about your posts, pets and campaigns will show up here.",
         "marcarLeidas": "Mark all as read",
@@ -817,5 +915,28 @@
         "cuentaPrivada": "Private account",
         "cuentaPrivadaDesc": "Only your followers see your posts, Huellitas and pets. New ones have to ask you first.",
         "solicitudes": "Follow requests"
+    },
+    "edicion": {
+        "titulo": "Edit post",
+        "noEditableTitulo": "Can't be edited",
+        "noEditable": "This post is connected to another user.",
+        "guardando": "Saving...",
+        "marcarAcordado": "Mark as agreed",
+        "marcarDisponible": "Mark as available",
+        "badgeAcordado": "Agreed"
+    },
+    "mapa": {
+        "titulo": "Map",
+        "verEnMapa": "View on map",
+        "todasLasPublicaciones": "All posts",
+        "gpsDenegado": "We need location permission to show where you are",
+        "gpsError": "We couldn't get your location",
+        "buscando": "Searching...",
+        "resultados": "{{cantidad}} nearby",
+        "enEstePunto": "At this spot ({{cantidad}})",
+        "ubicacionAproximada": "approximate location",
+        "avisoSinCupo": "Premium map quota reached: you're still seeing everything on the fallback map.",
+        "nativoPendienteTitulo": "The map isn't in the native app yet",
+        "nativoPendienteCuerpo": "We found {{cantidad}} posts nearby. For now the map works in the browser."
     }
 }

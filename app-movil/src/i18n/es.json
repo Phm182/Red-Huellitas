@@ -11,7 +11,17 @@
         "yes": "Sí",
         "no": "No",
         "close": "Cerrar",
-        "seeAll": "Ver todo"
+        "seeAll": "Ver todo",
+        "buscarEnLista": "Buscar…",
+        "sinResultadosBusqueda": "No hay resultados para esa búsqueda",
+        "clear": "Limpiar",
+        "distancia": "Distancia",
+        "tipo": "Tipo",
+        "especie": "Especie",
+        "categoria": "Categoría",
+        "sexo": "Sexo",
+        "edad": "Edad",
+        "mascota": "Mascota"
     },
     "auth": {
         "loginTitle": "Iniciar sesión",
@@ -130,6 +140,18 @@
         "especiePerro": "Perro",
         "especieGato": "Gato",
         "especieOtro": "Otro",
+        "especieNombre": {
+            "perro": "Perro",
+            "gato": "Gato",
+            "conejo": "Conejo",
+            "ave": "Ave",
+            "pez": "Pez",
+            "hamster": "Hámster",
+            "cobayo": "Cobayo",
+            "tortuga": "Tortuga",
+            "huron": "Hurón",
+            "otro": "Otro"
+        },
         "raza": "Raza",
         "razaOtra": "Otra, especificar",
         "razaOtraPlaceholder": "Escribí la raza",
@@ -226,6 +248,20 @@
         "publishButton": "Publicar",
         "like": "Me gusta",
         "meDivierte": "Me divierte",
+        "masReacciones": "Más reacciones",
+        "elegirReaccion": "Elegí una reacción",
+        "reaccion": {
+            "like": "Me gusta",
+            "meDivierte": "Me divierte",
+            "amor": "Amor",
+            "asombro": "Asombro",
+            "triste": "Triste",
+            "abrazo": "Abrazo",
+            "huella": "Huella",
+            "apoyo": "Te apoyo",
+            "guau": "¡Guau!",
+            "michi": "Michi"
+        },
         "share": "Compartir",
         "seguir": "Seguir",
         "siguiendo": "Siguiendo",
@@ -243,14 +279,18 @@
     },
     "tipoUsuario": {
         "selectorLabel": "¿Qué tipo de cuenta sos?",
-        "individual": "Individual",
+        "individual": "Persona / particular",
         "refugio": "Refugio / Protectora"
     },
     "noticias": {
         "tabTitle": "Noticias",
         "subtabGeneral": "General",
+        "subtabCampanias": "Campañas",
+        "subtabRefugios": "Refugios",
         "emptyGeneral": "No hay noticias por el momento",
         "emptyTipo": "Todavía no hay publicaciones de este tipo",
+        "emptyCampanias": "Todavía no hay campañas. Refugios, veterinarias y centros de salud pueden publicarlas.",
+        "emptyRefugio": "Acá aparecen las publicaciones de refugios y protectoras.",
         "readMore": "Leer más"
     },
     "shorts": {
@@ -344,9 +384,14 @@
         "enviarPostulacion": "Enviar postulación",
         "emptyPostulaciones": "Todavía no recibiste postulaciones",
         "emptyMisPostulaciones": "Todavía no te postulaste a ninguna adopción",
+        "emptyMisPublicaciones": "Todavía no publicaste ninguna adopción",
         "emptyFavoritos": "Todavía no guardaste ninguna publicación",
         "misPostulaciones": "Mis postulaciones",
+        "misPublicaciones": "Mis publicaciones",
         "misFavoritos": "Mis favoritos",
+        "postulacionesCount_one": "{{count}} postulación",
+        "postulacionesCount_other": "{{count}} postulaciones",
+        "postulacionesCount": "{{count}} postulaciones",
         "editar": "Editar publicación",
         "fotos": "Fotos",
         "noEditableTitulo": "No se puede editar",
@@ -360,6 +405,28 @@
     },
     "campanias": {
         "tituloLista": "Campañas",
+        "administrar": "Administrar campaña",
+        "anotarmeEnEspera": "Anotarme en lista de espera",
+        "enListaEspera": "En lista de espera · puesto {{posicion}}",
+        "darmeDeBaja": "Darme de baja",
+        "avisarNoVoy": "Avisar que no voy a ir",
+        "bajaConfirmTitle": "Darte de baja",
+        "bajaConfirmBody": "¿Seguro que querés darte de baja de esta campaña?",
+        "ausenciaConfirmTitle": "Avisar que no vas",
+        "ausenciaConfirmBody": "Le vamos a avisar al equipo que organiza que no vas a poder ir.",
+        "confirmarInscripcion": "Confirmar inscripción",
+        "faltanRespuestas": "Faltan {{cantidad}} respuestas obligatorias",
+        "avisoListaEspera": "El cupo está completo: vas a quedar en lista de espera y te avisamos si se libera un lugar.",
+        "mensajeAviso": "Aviso importante",
+        "ocupacion": "Ocupación",
+        "cupoIlimitado": "sin límite",
+        "inscriptos": "Inscriptos",
+        "sinInscriptos": "Todavía no se anotó nadie",
+        "darDeBaja": "Dar de baja",
+        "estadoConfirmada": "Confirmada",
+        "estadoListaEspera": "En espera",
+        "estadoAusente": "Avisó que no va",
+        "estadoCancelada": "Cancelada",
         "tituloNueva": "Nueva campaña",
         "misInscripciones": "Mis inscripciones",
         "todas": "Todas",
@@ -376,6 +443,8 @@
         "esRangoLabel": "Dura varios días",
         "fechaHastaLabel": "Hasta",
         "zonaLabel": "Zona / dirección",
+        "direccionLabel": "Dirección (opcional)",
+        "direccionPlaceholder": "Av. Rivadavia 1234",
         "zonaPlaceholder": "Ej: Plaza San Martín",
         "requiereInscripcionLabel": "Requiere inscripción previa",
         "cupoMaximoLabel": "Cupo máximo (opcional)",
@@ -393,6 +462,9 @@
     },
     "perdidos": {
         "tituloLista": "Perdidos y Reencontrados",
+        "descripcionTitulo": "Descripción",
+        "viAEsteAnimal": "Vi a este animal",
+        "avistamientoEnviado": "Ya avisaste · abrir chat",
         "tituloNueva": "Nuevo reporte",
         "todas": "Todos",
         "emptyLista": "Todavía no hay reportes publicados",
@@ -423,6 +495,13 @@
         "tituloNueva": "Nueva publicación de tránsito",
         "todas": "Todos",
         "emptyLista": "Todavía no hay publicaciones de tránsito",
+        "emptyOfertas": "Todavía nadie ofrece tránsito cerca",
+        "emptyMisOfertas": "Todavía no publicaste que ofrecés tránsito",
+        "solapaBuscar": "Buscar",
+        "solapaOfrecer": "Ofrecer",
+        "publicarNecesito": "Publicar que necesito tránsito",
+        "publicarOfrezco": "Publicar que ofrezco tránsito",
+        "mia": "Mía",
         "tipo": {
             "necesito": "Necesito tránsito",
             "ofrezco": "Ofrezco tránsito"
@@ -446,6 +525,11 @@
         "tituloNueva": "Nueva publicación de donación",
         "todas": "Todos",
         "emptyLista": "Todavía no hay publicaciones de donación",
+        "emptyOfertas": "Todavía no hay donaciones ofrecidas cerca",
+        "emptyMisOfertas": "Todavía no publicaste nada para donar",
+        "publicarNecesito": "Publicar que necesito",
+        "publicarOfrezco": "Publicar que ofrezco",
+        "mia": "Mía",
         "tipo": {
             "necesito": "Necesito donación",
             "ofrezco": "Ofrezco donación"
@@ -453,7 +537,8 @@
         "tipoLabel": "Tipo de publicación",
         "categoria": {
             "alimento": "Alimento",
-            "insumo": "Insumo"
+            "insumo": "Insumo",
+            "ropa": "Ropa/Comodidades"
         },
         "categoriaLabel": "Categoría",
         "especieLabel": "Especie (opcional)",
@@ -540,6 +625,9 @@
     },
     "productos": {
         "tituloLista": "Productos y Servicios",
+        "consultarServicio": "Consultar por este servicio",
+        "agregarFavorito": "Agregar a favoritos",
+        "quitarFavorito": "Quitar de favoritos",
         "tituloNueva": "Nueva publicación",
         "misFavoritos": "Mis Favoritos",
         "todos": "Todos",
@@ -764,6 +852,8 @@
         "hueplay": "HuePlay",
         "configuracion": "Configuración",
         "atajosHint": "Mantené apretado para ver los atajos",
+        "ocultarBotones": "Ocultar botones",
+        "mostrarBotones": "Mostrar botones",
         "rescateDesc": "Encontrar, dar y buscar hogar",
         "tiendaDesc": "Comprar, vender y tus pedidos",
         "saludDesc": "Cuidados, veterinarias y refugios"
@@ -787,6 +877,13 @@
         "especie": {
             "perro": "Perro",
             "gato": "Gato",
+            "conejo": "Conejo",
+            "ave": "Ave",
+            "pez": "Pez",
+            "hamster": "Hámster",
+            "cobayo": "Cobayo",
+            "tortuga": "Tortuga",
+            "huron": "Hurón",
             "otro": "Otros"
         },
         "categoria": {
@@ -799,6 +896,7 @@
     },
     "notificaciones": {
         "titulo": "Notificaciones",
+        "limpiarAlEntrar": "Limpiar al entrar",
         "vacio": "No tenés notificaciones",
         "vacioDesc": "Acá te van a llegar los avisos de tus publicaciones, mascotas y campañas.",
         "marcarLeidas": "Marcar todas como leídas",
@@ -831,5 +929,28 @@
         "cuentaPrivada": "Cuenta privada",
         "cuentaPrivadaDesc": "Sólo quienes te siguen ven tus publicaciones, Huellitas y mascotas. Los nuevos tienen que pedirte permiso.",
         "solicitudes": "Solicitudes de seguimiento"
+    },
+    "edicion": {
+        "titulo": "Editar publicación",
+        "noEditableTitulo": "No se puede editar",
+        "noEditable": "Esta publicación está en conexión con otro usuario.",
+        "guardando": "Guardando...",
+        "marcarAcordado": "Marcar como acordado",
+        "marcarDisponible": "Marcar como disponible",
+        "badgeAcordado": "Acordado"
+    },
+    "mapa": {
+        "titulo": "Mapa",
+        "verEnMapa": "Ver en mapa",
+        "todasLasPublicaciones": "Todas las publicaciones",
+        "gpsDenegado": "Necesitamos el permiso de ubicación para marcar dónde estás",
+        "gpsError": "No pudimos obtener tu ubicación",
+        "buscando": "Buscando...",
+        "resultados": "{{cantidad}} cerca",
+        "enEstePunto": "En este punto ({{cantidad}})",
+        "ubicacionAproximada": "ubicación aproximada",
+        "avisoSinCupo": "Se alcanzó el cupo del mapa premium: seguís viendo todo con el mapa alternativo.",
+        "nativoPendienteTitulo": "El mapa todavía no está en la app nativa",
+        "nativoPendienteCuerpo": "Encontramos {{cantidad}} publicaciones cerca. Por ahora el mapa se ve desde el navegador."
     }
 }

@@ -8,6 +8,8 @@ import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { Veterinaria } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { CarruselFotos } from '../../../src/components/CarruselFotos';
+import { DireccionConMapa } from '../../../src/components/DireccionConMapa';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
@@ -59,24 +61,24 @@ export default function VeterinariaDetalleScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
       {veterinaria.fotos.length > 0 ? (
-        <FlatList
-          horizontal
-          data={veterinaria.fotos}
-          keyExtractor={(f) => String(f.veterinariaFotoId)}
-          renderItem={({ item }) => <Image source={{ uri: rhMediaUrl(item.path) }} style={styles.foto} />}
-          showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: 12 }}
-        />
+        <View style={{ marginBottom: 14 }}>
+          <CarruselFotos paths={veterinaria.fotos.map((f) => f.path)} />
+        </View>
       ) : null}
 
       <Text style={{ color: colors.text, fontWeight: '700', fontSize: 20, marginBottom: 6 }}>{veterinaria.nombre}</Text>
       {veterinaria.horario ? (
         <Text style={{ color: colors.textMuted, marginBottom: 4 }}>{veterinaria.horario}</Text>
       ) : null}
-      <Text style={{ color: colors.textMuted, marginBottom: 12 }}>
-        {veterinaria.zonaDescripcion}
-        {veterinaria.distanciaKm !== null ? ` · ${veterinaria.distanciaKm}km` : ''}
-      </Text>
+      <DireccionConMapa
+        direccion={veterinaria.direccion}
+        zonaDescripcion={
+          veterinaria.zonaDescripcion +
+          (veterinaria.distanciaKm !== null ? ` · ${veterinaria.distanciaKm} km` : '')
+        }
+        lat={veterinaria.zonaLat}
+        lng={veterinaria.zonaLng}
+      />
 
       {veterinaria.descripcion ? (
         <Text style={{ color: colors.text, marginBottom: 16 }}>{veterinaria.descripcion}</Text>

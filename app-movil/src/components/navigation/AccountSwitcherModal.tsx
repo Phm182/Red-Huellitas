@@ -116,8 +116,19 @@ export function AccountSwitcherModal({ visible, onClose }: Props) {
           </ScrollView>
 
           <Pressable
+            onPress={() => {
+              onClose();
+              router.push('/(app)/configuracion' as never);
+            }}
+            style={[styles.footerBtn, { borderColor: colors.border }]}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.text} />
+            <Text style={[type.label, { color: colors.text }]}>{t('nav.configuracion')}</Text>
+          </Pressable>
+
+          <Pressable
             onPress={onAdd}
-            style={[styles.addBtn, { borderColor: colors.border }]}
+            style={[styles.footerBtn, styles.addBtn, { borderColor: colors.border }]}
           >
             <Ionicons name="person-add-outline" size={20} color={colors.primary} />
             <Text style={[type.label, { color: colors.primary }]}>{t('home.addAccount')}</Text>
@@ -170,13 +181,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   meta: { flex: 1, minWidth: 0 },
-  addBtn: {
+  footerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 8,
+    marginTop: 4,
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  addBtn: {
+    marginTop: 0,
   },
 });

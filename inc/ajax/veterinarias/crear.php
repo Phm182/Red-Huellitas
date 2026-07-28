@@ -17,6 +17,9 @@ $descripcion = trim($_POST['descripcion'] ?? '') ?: null;
 $telefono = trim($_POST['telefono'] ?? '') ?: null;
 $whatsappNumero = trim($_POST['whatsappNumero'] ?? '') ?: null;
 $horario = trim($_POST['horario'] ?? '') ?: null;
+// Una veterinaria tiene puerta a la calle: la dirección se publica exacta
+// (a diferencia de las publicaciones de personas, que van difuminadas).
+$direccion = trim($_POST['direccion'] ?? '') ?: null;
 $zonaDescripcion = trim($_POST['zonaDescripcion'] ?? '');
 $zonaLat = isset($_POST['zonaLat']) ? (float) $_POST['zonaLat'] : null;
 $zonaLng = isset($_POST['zonaLng']) ? (float) $_POST['zonaLng'] : null;
@@ -26,6 +29,9 @@ if ($nombre === '' || mb_strlen($nombre) > 150) {
 }
 if ($telefono === null && $whatsappNumero === null) {
     json_error('Indicá al menos un teléfono o número de WhatsApp para contactar');
+}
+if ($direccion !== null && mb_strlen($direccion) > 200) {
+    json_error('La dirección no puede superar los 200 caracteres');
 }
 if ($zonaDescripcion === '' || mb_strlen($zonaDescripcion) > 150) {
     json_error('La zona es obligatoria (máx 150 caracteres)');
@@ -46,17 +52,18 @@ foreach ($fotos as $foto) {
 }
 
 $stmt = $conn->prepare(
-    'INSERT INTO Veterinaria (UserId, Nombre, Descripcion, Telefono, WhatsappNumero, Horario, ZonaDescripcion, ZonaLat, ZonaLng)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO Veterinaria (UserId, Nombre, Descripcion, Telefono, WhatsappNumero, Horario, Direccion, ZonaDescripcion, ZonaLat, ZonaLng)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 $stmt->bind_param(
-    'issssssdd',
+    'isssssssdd',
     $userId,
     $nombre,
     $descripcion,
     $telefono,
     $whatsappNumero,
     $horario,
+    $direccion,
     $zonaDescripcion,
     $zonaLat,
     $zonaLng

@@ -7,11 +7,11 @@ const RH_PEDIDO_PORCENTAJE_COMISION = 10.0;
 
 /**
  * Calcula la retención de la plataforma sobre un monto: 0% si el vendedor
- * tiene suscripción activa (Fase 6a), 10% si no.
+ * tiene HuePlus Comercial (SinComision), 10% si no.
  */
-function rh_pedido_calcular_comision(float $monto, bool $tieneSuscripcionActiva): array
+function rh_pedido_calcular_comision(float $monto, bool $sinComision): array
 {
-    $porcentaje = $tieneSuscripcionActiva ? 0.0 : RH_PEDIDO_PORCENTAJE_COMISION;
+    $porcentaje = $sinComision ? 0.0 : RH_PEDIDO_PORCENTAJE_COMISION;
     $montoComision = round($monto * $porcentaje / 100, 2);
     $montoVendedor = round($monto - $montoComision, 2);
 

@@ -13,6 +13,8 @@ export interface CrearVeterinariaParams {
   telefono?: string;
   whatsappNumero?: string;
   horario?: string;
+  /** Calle y numero: en una veterinaria se publica exacta. */
+  direccion?: string;
   zonaDescripcion: string;
   zonaLat: number;
   zonaLng: number;
@@ -33,6 +35,9 @@ async function construirFormVeterinaria(params: CrearVeterinariaParams): Promise
   }
   if (params.whatsappNumero) {
     form.append('whatsappNumero', params.whatsappNumero);
+  }
+  if (params.direccion) {
+    form.append('direccion', params.direccion);
   }
   if (params.horario) {
     form.append('horario', params.horario);

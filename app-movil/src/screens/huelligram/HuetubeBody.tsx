@@ -1,41 +1,49 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import { FlatList, LayoutChangeEvent, StyleSheet, View, ViewToken } from 'react-native';
 import { shortsApi } from '../../api/shortsApi';
 import { ShortCard } from '../../components/ShortCard';
 import { EmptyState, useContentAreaHeight } from '../../components/ui/EmptyState';
+import { ListSearchBar } from '../../components/ui/ListSearchBar';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { Post } from '../../types';
 import { useTheme } from '../../theme/ThemeProvider';
+import { filtrarPorTexto } from '../../utils/filtrarPorTexto';
 
 type Props = {
   /** Lo que ocupa el bloque de Huellitas + solapas por encima de este feed. */
   alturaExtra?: number;
 };
 
+/**
+ * Soft-refresh: no pone loading=true si ya hay videos (evita parpadeo al swipe).
+ */
 export function HuetubeBody({ alturaExtra = 0 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  // Sin descontar el encabezado de Huelligram cada video mediría de más y el
-  // snap dejaría al siguiente cortado a mitad de pantalla.
-  const itemHeight = useContentAreaHeight(alturaExtra);
+  const [searchH, setSearchH] = useState(48);
+  const itemHeight = useContentAreaHeight(alturaExtra + searchH);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [busqueda, setBusqueda] = useState('');
+  const tieneDatos = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       let activo = true;
-      setLoading(true);
+      const soft = tieneDatos.current;
+      if (!soft) setLoading(true);
       shortsApi.feed().then((res) => {
         if (!activo) return;
         if (res.success && res.data) {
           setPosts(res.data.posts);
           setNextCursor(res.data.nextCursor);
+          tieneDatos.current = true;
         }
         setLoading(false);
       });
@@ -45,8 +53,13 @@ export function HuetubeBody({ alturaExtra = 0 }: Props) {
     }, [])
   );
 
+  const onSearchLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    if (h > 0 && h !== searchH) setSearchH(h);
+  }, [searchH]);
+
   const cargarMas = async () => {
-    if (cargandoMas || nextCursor === null) return;
+    if (cargandoMas || nextCursor === null || busqueda.trim()) return;
     setCargandoMas(true);
     const res = await shortsApi.feed(nextCursor);
     if (res.success && res.data) {
@@ -68,38 +81,74 @@ export function HuetubeBody({ alturaExtra = 0 }: Props) {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
-  if (loading) {
+  const postsFiltrados = useMemo(
+    () =>
+      filtrarPorTexto(posts, busqueda, (p) => [p.texto, p.autor?.username, p.autor?.nombreCompleto]),
+    [posts, busqueda]
+  );
+
+  if (loading && posts.length === 0) {
     return <SkeletonList />;
   }
 
+  const buscando = busqueda.trim().length > 0;
+
   return (
-    <View style={[styles.list, { backgroundColor: posts.length === 0 ? colors.background : '#000' }]}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: postsFiltrados.length === 0 || buscando ? colors.background : '#000' },
+      ]}
+    >
+      <View onLayout={onSearchLayout}>
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      </View>
       <FlatList
-        data={posts}
+        style={styles.lista}
+        data={postsFiltrados}
         keyExtractor={(p) => String(p.postId)}
-        renderItem={({ item, index }) => (
-          <ShortCard
-            post={item}
-            onEliminado={onEliminado}
-            activo={index === activeIndex}
-            height={itemHeight}
-          />
-        )}
-        pagingEnabled
+        renderItem={({ item, index }) =>
+          buscando ? (
+            <View style={{ minHeight: 120, justifyContent: 'center' }}>
+              <ShortCard
+                post={item}
+                onEliminado={onEliminado}
+                activo={false}
+                height={Math.min(itemHeight, 280)}
+              />
+            </View>
+          ) : (
+            <ShortCard
+              post={item}
+              onEliminado={onEliminado}
+              activo={index === activeIndex}
+              height={itemHeight}
+            />
+          )
+        }
+        pagingEnabled={!buscando}
         showsVerticalScrollIndicator={false}
-        snapToInterval={itemHeight}
+        snapToInterval={buscando ? undefined : itemHeight}
         decelerationRate="fast"
         onEndReached={cargarMas}
         onEndReachedThreshold={0.5}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        contentContainerStyle={posts.length === 0 ? { flexGrow: 1 } : undefined}
-        ListEmptyComponent={<EmptyState icon="play-circle-outline" titulo={t('shorts.empty')} />}
+        contentContainerStyle={postsFiltrados.length === 0 ? { flexGrow: 1 } : undefined}
+        ListEmptyComponent={
+          <EmptyState
+            icon="play-circle-outline"
+            titulo={buscando ? t('common.sinResultadosBusqueda') : t('shorts.empty')}
+            accionLabel={buscando ? undefined : t('feed.createTitle')}
+            onAccion={buscando ? undefined : () => router.push('/(app)/publicaciones/nueva_video')}
+          />
+        }
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1 },
+  wrap: { flex: 1, width: '100%' },
+  lista: { flex: 1, width: '100%' },
 });

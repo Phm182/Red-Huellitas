@@ -1,3 +1,4 @@
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -5,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { carritoApi } from '../../../src/api/carritoApi';
 import { productosApi } from '../../../src/api/productosApi';
+import { BotonEditarPublicacion } from '../../../src/components/BotonEditarPublicacion';
+import { CarruselFotos } from '../../../src/components/CarruselFotos';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { Producto } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -88,20 +91,15 @@ export default function ProductoDetalleScreen() {
   }
 
   const especieLabel = producto.especie
-    ? t(`mascotas.especie${producto.especie.charAt(0).toUpperCase()}${producto.especie.slice(1)}`)
+    ? t(especieI18nKey(producto.especie))
     : null;
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
       {producto.fotos.length > 0 ? (
-        <FlatList
-          horizontal
-          data={producto.fotos}
-          keyExtractor={(f) => String(f.productoFotoId)}
-          renderItem={({ item }) => <Image source={{ uri: rhMediaUrl(item.path) }} style={styles.foto} />}
-          showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: 12 }}
-        />
+        <View style={{ marginBottom: 14 }}>
+          <CarruselFotos paths={producto.fotos.map((f) => f.path)} />
+        </View>
       ) : null}
 
       <View style={styles.headerRow}>
@@ -124,6 +122,19 @@ export default function ProductoDetalleScreen() {
 
       {producto.descripcion ? (
         <Text style={{ color: colors.text, marginBottom: 16 }}>{producto.descripcion}</Text>
+      ) : null}
+
+      {/* Los servicios no van al carrito (no hay stock que reservar), pero sí
+          tienen que poder contactarse: antes se quedaban sin ninguna acción. */}
+      {!producto.esDueno && producto.tipoListado === 'servicio' ? (
+        <Pressable
+          style={[styles.whatsappButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
+          onPress={() => router.push(`/(app)/usuario/${producto.autor.username}` as never)}
+        >
+          <Text style={{ color: colors.primaryText, fontWeight: '700' }}>
+            {t('productos.consultarServicio')}
+          </Text>
+        </Pressable>
       ) : null}
 
       {!producto.esDueno && producto.tipoListado === 'producto' ? (
@@ -181,9 +192,17 @@ export default function ProductoDetalleScreen() {
       ) : null}
 
       {producto.esDueno ? (
-        <Pressable onPress={onEliminar} style={styles.eliminarLink}>
-          <Text style={{ color: colors.danger, fontSize: 12 }}>{t('productos.eliminarButton')}</Text>
-        </Pressable>
+        <>
+          <BotonEditarPublicacion
+            ruta="/(app)/productos/[id]/editar"
+            id={producto.productoId}
+            editable={producto.editable}
+            motivoNoEditable={producto.motivoNoEditable}
+          />
+          <Pressable onPress={onEliminar} style={styles.eliminarLink}>
+            <Text style={{ color: colors.danger, fontSize: 12 }}>{t('productos.eliminarButton')}</Text>
+          </Pressable>
+        </>
       ) : (
         <View style={styles.denunciaRow}>
           <DenunciaButtonStub userId={producto.autor.userId} productoId={producto.productoId} />
@@ -195,7 +214,9 @@ export default function ProductoDetalleScreen() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flexGrow: 1, padding: 20 },
+  // Sin flexGrow: estiraba el contenedor y dejaba un hueco enorme entre las
+  // fotos y la descripción cuando la publicación tiene poco texto.
+  container: { padding: 20, paddingBottom: 32 },
   foto: { width: 260, height: 220, borderRadius: 12, marginRight: 8 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   whatsappButton: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 16 },

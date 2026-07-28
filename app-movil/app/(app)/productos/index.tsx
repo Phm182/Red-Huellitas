@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { productosApi } from '../../../src/api/productosApi';
@@ -8,18 +8,22 @@ import { Especie, Producto, ProductoCategoriaItem, TipoListado } from '../../../
 import { centeredContent } from '../../../src/theme/layout';
 import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
+import { hapticLeve } from '../../../src/utils/haptics';
 import { rhMediaUrl } from '../../../src/utils/media';
-import { ChipOption, ChipRow, RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
+import { ChipOption, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { FilterSelect } from '../../../src/components/ui/FilterSelect';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** El nombre de icono que acepta ChipOption (Ionicons). */
 type IconoChip = ChipOption<never>['icon'];
 
 const TIPOS: TipoListado[] = ['producto', 'servicio'];
-const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 
 const ICONO_TIPO: Record<TipoListado, IconoChip> = {
   producto: 'cube-outline',
@@ -37,6 +41,7 @@ export default function ProductosListaScreen() {
   const [radioKm, setRadioKm] = useState<RadioKm>(null);
 
   const [listados, setListados] = useState<Producto[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
@@ -120,9 +125,48 @@ export default function ProductosListaScreen() {
     { valor: null, label: t('productos.todos') },
     ...ESPECIES.map((e) => ({
       valor: e,
-      label: t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`),
+      label: t(especieI18nKey(e)),
     })),
   ];
+
+  /**
+   * Favorito desde la lista, sin entrar a la publicación.
+   *
+   * Se actualiza el estado local antes de que conteste el servidor: esperar la
+   * respuesta para pintar el corazón hace que el toque se sienta roto. Si falla,
+   * se vuelve atrás.
+   */
+  const alternarFavorito = useCallback(async (item: Producto) => {
+    hapticLeve();
+    const eraFavorito = item.esFavorito;
+    setListados((prev) =>
+      prev.map((p) => (p.productoId === item.productoId ? { ...p, esFavorito: !eraFavorito } : p))
+    );
+    const res = eraFavorito
+      ? await productosApi.favoritoQuitar(item.productoId)
+      : await productosApi.favoritoAgregar(item.productoId);
+    if (!res.success) {
+      setListados((prev) =>
+        prev.map((p) => (p.productoId === item.productoId ? { ...p, esFavorito: eraFavorito } : p))
+      );
+    }
+  }, []);
+
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(listados, busqueda, (item) => [
+        item.nombre,
+        item.descripcion,
+        item.categoria?.nombre,
+        item.zonaDescripcion,
+        t(`productos.tipoListado.${item.tipoListado}`),
+        item.autor.nombreCompleto,
+        item.autor.username,
+      ]),
+    [listados, busqueda, t]
+  );
+
+  const buscando = busqueda.trim().length > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -134,20 +178,47 @@ export default function ProductosListaScreen() {
       </View>
 
       <View style={styles.filtros}>
-        <ChipRow opciones={opcionesTipo} seleccionado={tipoListado} onSelect={setTipoListado} />
+        <FilterSelect
+          label={t('common.tipo')}
+          opciones={opcionesTipo}
+          seleccionado={tipoListado}
+          onSelect={setTipoListado}
+        />
         {categorias.length > 0 ? (
-          <ChipRow opciones={opcionesCategoria} seleccionado={categoriaId} onSelect={setCategoriaId} />
+          <FilterSelect
+            label={t('common.categoria')}
+            opciones={opcionesCategoria}
+            seleccionado={categoriaId}
+            onSelect={setCategoriaId}
+          />
         ) : null}
-        <ChipRow opciones={opcionesEspecie} seleccionado={especie} onSelect={setEspecie} />
-        <RadioChips valor={radioKm} onSelect={setRadioKm} labelTodos={t('productos.todos')} />
+        <FilterSelect
+          label={t('common.especie')}
+          opciones={opcionesEspecie}
+          seleccionado={especie}
+          onSelect={setEspecie}
+        />
+        <FilterSelect
+          label={t('common.distancia')}
+          opciones={[
+            { valor: 20 as RadioKm, label: '20 km', icon: 'location-outline' },
+            { valor: 50 as RadioKm, label: '50 km', icon: 'location-outline' },
+            { valor: 100 as RadioKm, label: '100 km', icon: 'location-outline' },
+            { valor: null as RadioKm, label: t('productos.todos'), icon: 'globe-outline' },
+          ]}
+          seleccionado={radioKm}
+          onSelect={setRadioKm}
+        />
       </View>
+
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
 
       {loading ? (
         <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
-          data={listados}
+          data={filtrados}
           keyExtractor={(item) => String(item.productoId)}
           refreshing={refrescando}
           onRefresh={onRefrescar}
@@ -156,10 +227,27 @@ export default function ProductosListaScreen() {
               index={index}
               titulo={item.nombre}
               subtitulo={`$${item.precio.toLocaleString()}`}
-              meta={`${item.categoria?.nombre ?? ''}${item.distanciaKm !== null ? ` · ${item.distanciaKm} km` : ''}`}
+              // El tipo va primero: sin él, un servicio y un producto se ven
+              // igual en la lista y el precio se lee distinto en cada caso.
+              meta={`${t(`productos.tipoListado.${item.tipoListado}`)} · ${item.categoria?.nombre ?? ''}${
+                item.distanciaKm !== null ? ` · ${item.distanciaKm} km` : ''
+              }`}
               fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
               iconoFallback={ICONO_TIPO[item.tipoListado]}
-              badge={item.esFavorito ? <Ionicons name="heart" size={18} color={colors.primary} /> : undefined}
+              badge={
+                <Pressable
+                  onPress={() => alternarFavorito(item)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(item.esFavorito ? 'productos.quitarFavorito' : 'productos.agregarFavorito')}
+                >
+                  <Ionicons
+                    name={item.esFavorito ? 'heart' : 'heart-outline'}
+                    size={20}
+                    color={item.esFavorito ? colors.primary : colors.textMuted}
+                  />
+                </Pressable>
+              }
               onPress={() =>
                 router.push({ pathname: '/(app)/productos/[id]', params: { id: item.productoId } })
               }
@@ -168,16 +256,16 @@ export default function ProductosListaScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="storefront-outline"
-              titulo={t('productos.emptyLista')}
-              accionLabel={t('productos.tituloNueva')}
-              onAccion={() => router.push('/(app)/productos/nueva')}
+              titulo={buscando ? t('common.sinResultadosBusqueda') : t('productos.emptyLista')}
+              accionLabel={buscando ? undefined : t('productos.tituloNueva')}
+              onAccion={buscando ? undefined : () => router.push('/(app)/productos/nueva')}
             />
           }
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             <>
-              {listados.length > 0 ? (
+              {filtrados.length > 0 ? (
                 <ListEndAddButton
                   label={t('productos.tituloNueva')}
                   onPress={() => router.push('/(app)/productos/nueva')}
@@ -197,6 +285,12 @@ export default function ProductosListaScreen() {
 const styles = StyleSheet.create({
   atajos: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 12 },
   atajo: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  filtros: { paddingVertical: 6, gap: 4 },
+  filtros: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   list: { padding: 16, paddingTop: 4, flexGrow: 1 },
 });

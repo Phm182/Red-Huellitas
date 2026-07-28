@@ -27,14 +27,52 @@ function rh_mp_configurado(): bool
 }
 
 /**
- * true si además de las credenciales simples (suscripción, Fase 6a) también
- * está registrada la app "Marketplace" (Client ID/Secret) necesaria para que
- * un vendedor vincule su propia cuenta vía OAuth (Fase 6c).
+ * true si además del Access Token también hay Client ID + Secret + redirect
+ * para OAuth de vendedores (“Conectar cuenta”).
+ *
+ * Si MP_CLIENT_ID viene vacío, se intenta sacar del Access Token
+ * (APP_USR-{clientId}-… / TEST-{clientId}-…), que es el ID de la misma app
+ * que ya configuraste — sirve igual en prueba o producción.
  */
+function rh_mp_client_id(): string
+{
+    $config = rh_mp_config();
+    $id = trim((string) ($config['MP_CLIENT_ID'] ?? ''));
+    if ($id !== '') {
+        return $id;
+    }
+
+    $token = (string) ($config['MP_ACCESS_TOKEN'] ?? '');
+    // APP_USR-5120…-072714-…-user  ó  TEST-5120…-…
+    if (preg_match('/^(?:APP_USR|TEST)-(\d+)-/', $token, $m)) {
+        return $m[1];
+    }
+
+    return '';
+}
+
+/**
+ * Redirect URI de Marketplace sin doble-encode.
+ * Si en el .local.php quedó con %20, http_build_query lo convertiría en %2520
+ * y Mercado Pago rechaza la vinculación.
+ */
+function rh_mp_marketplace_redirect_uri(): string
+{
+    $config = rh_mp_config();
+    $uri = trim((string) ($config['MP_MARKETPLACE_REDIRECT_URI'] ?? ''));
+    if ($uri === '') {
+        return '';
+    }
+    return str_replace('%20', ' ', $uri);
+}
+
 function rh_mp_marketplace_configurado(): bool
 {
     $config = rh_mp_config();
-    return !empty($config['MP_CLIENT_ID']) && !empty($config['MP_CLIENT_SECRET']) && !empty($config['MP_MARKETPLACE_REDIRECT_URI']);
+    $clientId = rh_mp_client_id();
+    return $clientId !== ''
+        && !empty($config['MP_CLIENT_SECRET'])
+        && rh_mp_marketplace_redirect_uri() !== '';
 }
 
 /**
@@ -134,32 +172,136 @@ function rh_mp_parse_pedido_reference(?string $ref): ?int
 }
 
 /**
- * URL de autorización OAuth para que un vendedor vincule su propia cuenta de
- * Mercado Pago (app "Marketplace" — MP_CLIENT_ID, distinto del access token
- * simple usado para la suscripción de la plataforma).
+ * Extrae nombre, email y teléfono del /users/me de Mercado Pago.
+ *
+ * @return array{nombre: ?string, email: ?string, telefono: ?string}
  */
-function rh_mp_oauth_authorize_url(string $state): string
+function rh_mp_perfil_desde_api(array $data): array
 {
-    $config = rh_mp_config();
-    $params = http_build_query([
-        'client_id' => $config['MP_CLIENT_ID'] ?? '',
-        'response_type' => 'code',
-        'platform_id' => 'mp',
-        'redirect_uri' => $config['MP_MARKETPLACE_REDIRECT_URI'] ?? '',
-        'state' => $state,
-    ]);
-    return 'https://auth.mercadopago.com/authorization?' . $params;
+    $first = trim((string) ($data['first_name'] ?? $data['firstName'] ?? ''));
+    $last = trim((string) ($data['last_name'] ?? $data['lastName'] ?? ''));
+    $nombre = trim($first . ' ' . $last);
+
+    if ($nombre === '' && !empty($data['company']) && is_array($data['company'])) {
+        $nombre = trim((string) (
+            $data['company']['corporate_name']
+            ?? $data['company']['brand_name']
+            ?? $data['company']['business_name']
+            ?? ''
+        ));
+    }
+
+    if ($nombre === '') {
+        $nick = trim((string) ($data['nickname'] ?? ''));
+        // Evitar usar el email como “nombre”.
+        if ($nick !== '' && strpos($nick, '@') === false) {
+            $nombre = $nick;
+        }
+    }
+
+    $email = trim((string) ($data['email'] ?? ''));
+    $email = $email !== '' ? $email : null;
+
+    $telefono = rh_mp_formatear_telefono($data['phone'] ?? null);
+    if ($telefono === null) {
+        $telefono = rh_mp_formatear_telefono($data['alternative_phone'] ?? null);
+    }
+
+    return [
+        'nombre' => $nombre !== '' ? $nombre : null,
+        'email' => $email,
+        'telefono' => $telefono,
+    ];
+}
+
+/**
+ * @param mixed $phone
+ */
+function rh_mp_formatear_telefono($phone): ?string
+{
+    if (!is_array($phone)) {
+        return null;
+    }
+    $area = trim((string) ($phone['area_code'] ?? ''));
+    $number = trim((string) ($phone['number'] ?? ''));
+    if ($number === '') {
+        return null;
+    }
+    return trim($area . ' ' . $number);
+}
+
+/**
+ * URL de la pantalla intermedia “cambiar cuenta” (mismo host que el redirect OAuth).
+ */
+function rh_mp_oauth_switch_base_url(): string
+{
+    $redirect = rh_mp_marketplace_redirect_uri();
+    if ($redirect === '') {
+        return '';
+    }
+    $switched = preg_replace('#/[^/]*$#', '/mp-rh-oauth-switch.php', $redirect);
+    return is_string($switched) ? $switched : '';
+}
+
+/**
+ * Solo la URL de autorización OAuth (sin logout).
+ */
+function rh_mp_oauth_authorize_url_direct(string $state): string
+{
+    $params = http_build_query(
+        [
+            'client_id' => rh_mp_client_id(),
+            'response_type' => 'code',
+            'platform_id' => 'mp',
+            'state' => $state,
+            'redirect_uri' => rh_mp_marketplace_redirect_uri(),
+        ],
+        '',
+        '&',
+        PHP_QUERY_RFC3986
+    );
+    return 'https://auth.mercadopago.com.ar/authorization?' . $params;
+}
+
+/**
+ * URL de autorización OAuth para que un vendedor vincule su propia cuenta.
+ * .com.ar para cuentas de Argentina (el .com genérico a veces rechaza la app).
+ *
+ * Si $forzarSelectorCuenta es true, abre una pantalla intermedia que cierra la
+ * sesión de Mercado Libre/Pago y recién después pide login (para poder elegir
+ * otra cuenta). Sin eso, MP reusa la sesión abierta y salta al callback.
+ */
+function rh_mp_oauth_authorize_url(string $state, bool $forzarSelectorCuenta = false): string
+{
+    $authorizeUrl = rh_mp_oauth_authorize_url_direct($state);
+
+    if (!$forzarSelectorCuenta) {
+        return $authorizeUrl;
+    }
+
+    $switchBase = rh_mp_oauth_switch_base_url();
+    if ($switchBase !== '') {
+        return $switchBase . '?' . http_build_query(
+            ['state' => $state],
+            '',
+            '&',
+            PHP_QUERY_RFC3986
+        );
+    }
+
+    // Sin URL pública de switch: al menos ir al authorize de Mercado Pago.
+    return $authorizeUrl;
 }
 
 function rh_mp_oauth_exchange_code(string $code): array
 {
     $config = rh_mp_config();
     return rh_mp_oauth_token_request([
-        'client_id' => $config['MP_CLIENT_ID'] ?? '',
+        'client_id' => rh_mp_client_id(),
         'client_secret' => $config['MP_CLIENT_SECRET'] ?? '',
         'grant_type' => 'authorization_code',
         'code' => $code,
-        'redirect_uri' => $config['MP_MARKETPLACE_REDIRECT_URI'] ?? '',
+        'redirect_uri' => rh_mp_marketplace_redirect_uri(),
     ]);
 }
 
@@ -167,7 +309,7 @@ function rh_mp_oauth_refresh(string $refreshToken): array
 {
     $config = rh_mp_config();
     return rh_mp_oauth_token_request([
-        'client_id' => $config['MP_CLIENT_ID'] ?? '',
+        'client_id' => rh_mp_client_id(),
         'client_secret' => $config['MP_CLIENT_SECRET'] ?? '',
         'grant_type' => 'refresh_token',
         'refresh_token' => $refreshToken,

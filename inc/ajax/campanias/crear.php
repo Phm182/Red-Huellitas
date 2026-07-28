@@ -21,6 +21,9 @@ $descripcion = trim($_POST['descripcion'] ?? '') ?: null;
 $fechaDesde = trim($_POST['fechaDesde'] ?? '');
 $fechaHasta = trim($_POST['fechaHasta'] ?? '') ?: null;
 $zonaDescripcion = trim($_POST['zonaDescripcion'] ?? '');
+// La calle y el número son opcionales: una campaña en una plaza puede no
+// tener dirección postal, pero cuando la hay es lo que la gente busca.
+$direccion = trim($_POST['direccion'] ?? '') ?: null;
 $zonaLat = isset($_POST['zonaLat']) ? (float) $_POST['zonaLat'] : null;
 $zonaLng = isset($_POST['zonaLng']) ? (float) $_POST['zonaLng'] : null;
 $requiereInscripcion = filter_var($_POST['requiereInscripcion'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -43,6 +46,9 @@ if ($fechaHasta !== null) {
         json_error('fechaHasta no puede ser anterior a fechaDesde');
     }
 }
+if ($direccion !== null && mb_strlen($direccion) > 200) {
+    json_error('La dirección no puede superar los 200 caracteres');
+}
 if ($zonaDescripcion === '') {
     json_error('La zona/dirección es obligatoria');
 }
@@ -57,12 +63,12 @@ if (!$requiereInscripcion) {
 
 $stmt = $conn->prepare(
     'INSERT INTO Campania
-        (UserId, Tipo, Titulo, Descripcion, FechaDesde, FechaHasta, ZonaDescripcion, ZonaLat, ZonaLng, RequiereInscripcion, CupoMaximo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        (UserId, Tipo, Titulo, Descripcion, FechaDesde, FechaHasta, ZonaDescripcion, Direccion, ZonaLat, ZonaLng, RequiereInscripcion, CupoMaximo)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 $requiereInt = $requiereInscripcion ? 1 : 0;
 $stmt->bind_param(
-    'issssssddii',
+    'isssssssddii',
     $userId,
     $tipo,
     $titulo,
@@ -70,6 +76,7 @@ $stmt->bind_param(
     $fechaDesde,
     $fechaHasta,
     $zonaDescripcion,
+    $direccion,
     $zonaLat,
     $zonaLng,
     $requiereInt,

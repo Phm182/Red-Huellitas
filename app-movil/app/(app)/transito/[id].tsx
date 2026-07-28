@@ -1,9 +1,11 @@
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { transitoApi } from '../../../src/api/transitoApi';
+import { BotonEditarPublicacion } from '../../../src/components/BotonEditarPublicacion';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { Transito } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -18,6 +20,7 @@ export default function TransitoDetalleScreen() {
 
   const [transito, setTransito] = useState<Transito | null>(null);
   const [loading, setLoading] = useState(true);
+  const [estadoBusy, setEstadoBusy] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +37,23 @@ export default function TransitoDetalleScreen() {
       };
     }, [id])
   );
+
+  /**
+   * Al acordar se pierde la edición y al liberar se recupera, así que hay que
+   * releer del server en vez de parchear el estado local: `editable` y
+   * `motivoNoEditable` los decide el backend.
+   */
+  const onToggleAcordado = async () => {
+    if (!transito || estadoBusy) return;
+    const nuevo = transito.estadoTransito === 'acordado' ? 'disponible' : 'acordado';
+    setEstadoBusy(true);
+    const res = await transitoApi.marcarEstado(transito.transitoId, nuevo);
+    if (res.success) {
+      const fresco = await transitoApi.obtener(transito.transitoId);
+      if (fresco.success && fresco.data) setTransito(fresco.data.transito);
+    }
+    setEstadoBusy(false);
+  };
 
   const onEliminar = () => {
     if (!transito) return;
@@ -57,7 +77,7 @@ export default function TransitoDetalleScreen() {
   }
 
   const especieLabel = transito.especie
-    ? t(`mascotas.especie${transito.especie.charAt(0).toUpperCase()}${transito.especie.slice(1)}`)
+    ? t(especieI18nKey(transito.especie))
     : null;
 
   return (
@@ -75,6 +95,7 @@ export default function TransitoDetalleScreen() {
 
       <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 6 }}>
         {t(`transito.tipo.${transito.tipo}`).toUpperCase()}
+        {transito.estadoTransito === 'acordado' ? ` · ${t('edicion.badgeAcordado')}` : ''}
       </Text>
       {transito.nombre ? <Text style={[styles.nombre, { color: colors.text }]}>{transito.nombre}</Text> : null}
       {transito.raza || especieLabel ? (
@@ -100,9 +121,32 @@ export default function TransitoDetalleScreen() {
       ) : null}
 
       {transito.esDueno ? (
-        <Pressable onPress={onEliminar} style={styles.eliminarLink}>
-          <Text style={{ color: colors.danger, fontSize: 12 }}>{t('transito.eliminarButton')}</Text>
-        </Pressable>
+        <>
+          <Pressable
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={onToggleAcordado}
+            disabled={estadoBusy}
+          >
+            {estadoBusy ? (
+              <ActivityIndicator color={colors.primaryText} />
+            ) : (
+              <Text style={{ color: colors.primaryText, fontWeight: '600' }}>
+                {transito.estadoTransito === 'acordado'
+                  ? t('edicion.marcarDisponible')
+                  : t('edicion.marcarAcordado')}
+              </Text>
+            )}
+          </Pressable>
+          <BotonEditarPublicacion
+            ruta="/(app)/transito/[id]/editar"
+            id={transito.transitoId}
+            editable={transito.editable}
+            motivoNoEditable={transito.motivoNoEditable}
+          />
+          <Pressable onPress={onEliminar} style={styles.eliminarLink}>
+            <Text style={{ color: colors.danger, fontSize: 12 }}>{t('transito.eliminarButton')}</Text>
+          </Pressable>
+        </>
       ) : (
         <View style={styles.denunciaRow}>
           <DenunciaButtonStub userId={transito.autor.userId} transitoId={transito.transitoId} />
@@ -118,6 +162,7 @@ const styles = StyleSheet.create({
   foto: { width: 260, height: 220, borderRadius: 12, marginRight: 8 },
   nombre: { fontSize: 22, fontWeight: '700' },
   whatsappButton: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 16 },
+  button: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 12 },
   eliminarLink: { marginTop: 4, alignItems: 'center' },
   denunciaRow: { marginTop: 16, alignItems: 'center' },
 });

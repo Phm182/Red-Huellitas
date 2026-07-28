@@ -52,6 +52,12 @@ if ($radioKm !== null) {
         $types .= 's';
         $params[] = $tipo;
     }
+    $soloMias = isset($_GET['soloMias']) && ($_GET['soloMias'] === '1' || $_GET['soloMias'] === 'true');
+    if ($soloMias) {
+        $sql .= ' AND Transito.UserId = ?';
+        $types .= 'i';
+        $params[] = $viewerUserId;
+    }
     $sql .= ' HAVING DistanciaKm <= ? ORDER BY DistanciaKm ASC LIMIT 50';
     $types .= 'd';
     $params[] = $radioKm;
@@ -82,6 +88,12 @@ if (in_array($tipo, ['necesito', 'ofrezco'], true)) {
     $sql .= ' AND Transito.Tipo = ?';
     $types .= 's';
     $params[] = $tipo;
+}
+$soloMias = isset($_GET['soloMias']) && ($_GET['soloMias'] === '1' || $_GET['soloMias'] === 'true');
+if ($soloMias) {
+    $sql .= ' AND Transito.UserId = ?';
+    $types .= 'i';
+    $params[] = $viewerUserId;
 }
 if ($cursor !== null) {
     $sql .= ' AND Transito.TransitoId < ?';

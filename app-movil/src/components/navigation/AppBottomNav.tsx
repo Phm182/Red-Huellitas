@@ -11,6 +11,7 @@ import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
 import { hapticMedio } from '../../utils/haptics';
 import { NavHubMenu } from './NavHubMenu';
+import { PLANETA_HUECO, PlanetaFab } from './PlanetaFab';
 
 type Props = {
   columnWidth: number;
@@ -38,7 +39,9 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
       ? { position: 'fixed' as const, left: columnLeft, width: columnWidth }
       : { position: 'absolute' as const, left: 0, right: 0 };
 
-  const anchoItem = columnWidth > 0 ? columnWidth / HUBS.length : 0;
+  // El hueco del planeta se descuenta antes de repartir: si no, el menú de
+  // mantener apretado se ancla corrido respecto del ítem que se tocó.
+  const anchoItem = columnWidth > 0 ? (columnWidth - PLANETA_HUECO) / HUBS.length : 0;
   const alturaBarra = APP_TAB_BAR_HEIGHT + bottomPad;
 
   return (
@@ -57,11 +60,16 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
       >
         <View style={[styles.row, { height: APP_TAB_BAR_HEIGHT - 8 }]}>
           {HUBS.map((hub, i) => {
+            // El planeta va en el centro exacto de la barra, que con 6 hubs cae
+            // entre el 3° y el 4°. Este hueco corre esos dos hacia afuera para
+            // que el botón no les tape la etiqueta.
+            const hueco = i === HUBS.length / 2 ? <View key="hueco-planeta" style={styles.hueco} /> : null;
             const focused = hub.match(pathname);
             const color = focused ? colors.primary : colors.textMuted;
             return (
+              <React.Fragment key={hub.key}>
+              {hueco}
               <Pressable
-                key={hub.key}
                 onPress={() => {
                   // Huelligram es la raíz del stack: `navigate` vuelve a ella
                   // sin apilar copias. Los otros hubs son pantallas normales y
@@ -72,7 +80,8 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                 }}
                 onLongPress={() => {
                   hapticMedio();
-                  setMenu({ hub, x: columnLeft + anchoItem * (i + 0.5) });
+                  const corrimiento = i >= HUBS.length / 2 ? PLANETA_HUECO : 0;
+                  setMenu({ hub, x: columnLeft + corrimiento + anchoItem * (i + 0.5) });
                 }}
                 delayLongPress={320}
                 style={styles.tab}
@@ -87,10 +96,19 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                   {t(hub.labelKey)}
                 </Text>
               </Pressable>
+              </React.Fragment>
             );
           })}
         </View>
       </View>
+
+      <PlanetaFab
+        positionStyle={positionStyle}
+        // Apenas asoma la parte de arriba del disco: sobresalir más se comía
+        // el contenido de las pantallas y molestaba al scrollear.
+        bottom={alturaBarra - 58}
+        activo={pathname.includes('/mapa')}
+      />
 
       <NavHubMenu
         hub={menu?.hub ?? null}
@@ -129,4 +147,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemi,
     fontSize: 10,
   },
+  hueco: { width: PLANETA_HUECO },
 });

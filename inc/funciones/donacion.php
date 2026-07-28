@@ -42,7 +42,7 @@ function rh_donacion_publico(mysqli $conn, array $d, int $viewerUserId, ?float $
 
     $whatsappVisible = $esDueno || ($d['WhatsappVisibilidad'] ?? null) === 'publica';
 
-    return [
+    $data = [
         'donacionId' => $donacionId,
         'tipo' => $d['Tipo'],
         'categoria' => $d['Categoria'],
@@ -61,7 +61,17 @@ function rh_donacion_publico(mysqli $conn, array $d, int $viewerUserId, ?float $
         'zonaLng' => (float) $d['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,
         'esDueno' => $esDueno,
+        'estadoDonacion' => $d['EstadoDonacion'] ?? 'disponible',
         'estado' => $d['Estado'],
         'createdAt' => $d['CreatedAt'],
     ];
+
+    if ($esDueno) {
+        require_once __DIR__ . '/edicion.php';
+        $bloqueo = rh_donacion_motivo_bloqueo_edicion($d);
+        $data['editable'] = $bloqueo === null;
+        $data['motivoNoEditable'] = $bloqueo;
+    }
+
+    return $data;
 }

@@ -7,11 +7,13 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { refugiosApi } from '../../../src/api/saludApi';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { RefugioResumen } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { hapticLeve } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
 
@@ -26,6 +28,7 @@ export default function RefugiosScreen() {
   const { colors } = useTheme();
 
   const [items, setItems] = useState<RefugioResumen[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [cargandoMas, setCargandoMas] = useState(false);
@@ -67,17 +70,25 @@ export default function RefugiosScreen() {
     );
   }
 
+  const filtrados = filtrarPorTexto(items, busqueda, (r) => [
+    r.nombreCompleto,
+    r.username,
+    r.zonaDescripcion,
+  ]);
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <Atmosphere>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
       <FlatList
-        data={items}
+        data={filtrados}
         keyExtractor={(r) => String(r.userId)}
-        contentContainerStyle={[styles.lista, centeredContent, items.length === 0 && styles.vacia]}
+        contentContainerStyle={[styles.lista, centeredContent, filtrados.length === 0 && styles.vacia]}
         ListEmptyComponent={
           <EmptyState
             icon="business-outline"
-            titulo={t('refugios.emptyLista')}
-            descripcion={t('refugios.emptyDesc')}
+            titulo={buscando ? t('common.sinResultadosBusqueda') : t('refugios.emptyLista')}
+            descripcion={buscando ? undefined : t('refugios.emptyDesc')}
           />
         }
         renderItem={({ item }) => (
@@ -126,8 +137,8 @@ export default function RefugiosScreen() {
 
 const styles = StyleSheet.create({
   centrado: { alignItems: 'center', justifyContent: 'center' },
-  lista: { padding: 14, gap: 8, paddingBottom: 28 },
-  vacia: { flexGrow: 1, justifyContent: 'center' },
+  lista: { padding: 14, gap: 8, paddingBottom: 28, flexGrow: 1 },
+  vacia: { justifyContent: 'center' },
   fila: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radii.lg, padding: 12 },
   avatar: { width: 48, height: 48, borderRadius: radii.pill },
   avatarVacio: { alignItems: 'center', justifyContent: 'center' },

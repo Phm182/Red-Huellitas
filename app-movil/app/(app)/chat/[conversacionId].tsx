@@ -59,13 +59,17 @@ export default function ConversacionScreen() {
 
   const dispararZumbido = useCallback(() => {
     hapticMedio();
-    sacudir.value = withRepeat(
-      withSequence(withTiming(-10, { duration: 45 }), withTiming(10, { duration: 45 })),
-      6,
-      true,
-      () => {
-        sacudir.value = withTiming(0, { duration: 60 });
-      }
+    // El vuelta-a-cero va encadenado con withSequence, NO en la callback de
+    // withRepeat: asignarle un valor nuevo a `sacudir` desde su propia callback
+    // de fin se retroalimenta y revienta con "Maximum call stack size
+    // exceeded". Encadenado, la animación termina sola en 0.
+    sacudir.value = withSequence(
+      withRepeat(
+        withSequence(withTiming(-10, { duration: 45 }), withTiming(10, { duration: 45 })),
+        6,
+        true
+      ),
+      withTiming(0, { duration: 60 })
     );
   }, [sacudir]);
 

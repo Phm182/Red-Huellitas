@@ -103,6 +103,7 @@ export function ChipRow<T>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={[styles.fila, style]}
     >
       {contenido}
@@ -139,11 +140,13 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     borderWidth: 1,
     borderRadius: radii.pill,
     paddingVertical: 9,
     paddingHorizontal: 14,
   },
-  fila: { gap: 8, paddingHorizontal: 16, paddingVertical: 4 },
+  scroll: { flexGrow: 0, flexShrink: 0 },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 4 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 });

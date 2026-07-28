@@ -14,6 +14,7 @@ import { type } from '../theme/typography';
 import { rhMediaUrl } from '../utils/media';
 import { hapticMedio } from '../utils/haptics';
 import { DenunciaButtonStub } from './DenunciaButtonStub';
+import { ReactionsBar } from './ReactionsBar';
 
 interface ShortCardProps {
   post: Post;
@@ -109,19 +110,32 @@ export function ShortCard({ post, onEliminado, activo, height = ALTURA_PANTALLA 
       />
 
       <View style={styles.overlayBottom}>
-        <Pressable
-          onPress={() => post.autor && router.push(`/(app)/usuario/${post.autor.username}`)}
-          style={styles.autorFila}
-        >
-          <Text style={[type.section, styles.autor]}>@{post.autor?.username}</Text>
+        <View style={styles.autorFila}>
+          <Pressable
+            onPress={() => post.autor && router.push(`/(app)/usuario/${post.autor.username}`)}
+            style={styles.autorNombre}
+          >
+            <Text style={[type.section, styles.autor]} numberOfLines={1}>
+              @{post.autor?.username}
+            </Text>
+          </Pressable>
           {!esDueno && post.autor ? (
-            <Pressable onPress={onToggleSeguir} disabled={siguiendoBusy} style={styles.seguirChip}>
-              <Text style={[type.caption, { color: '#fff' }]}>
+            <Pressable
+              onPress={onToggleSeguir}
+              disabled={siguiendoBusy}
+              style={[
+                styles.seguirChip,
+                siguiendo
+                  ? { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.75)' }
+                  : { backgroundColor: '#E23B4A', borderColor: '#E23B4A' },
+              ]}
+            >
+              <Text style={[type.caption, { color: '#fff', fontWeight: '700' }]}>
                 {siguiendo ? t('feed.siguiendo') : t('feed.seguir')}
               </Text>
             </Pressable>
           ) : null}
-        </Pressable>
+        </View>
 
         {post.texto ? (
           <Text style={[type.bodySm, styles.texto]} numberOfLines={2}>
@@ -131,19 +145,13 @@ export function ShortCard({ post, onEliminado, activo, height = ALTURA_PANTALLA 
       </View>
 
       <View style={styles.overlaySide}>
-        <BotonLateral
-          icon={miReaccion === 'like' ? 'heart' : 'heart-outline'}
-          activo={miReaccion === 'like'}
-          label={conteos.like}
-          onPress={() => onReaccionar('like')}
-          disabled={reaccionBusy}
-        />
-        <BotonLateral
-          icon={miReaccion === 'me_divierte' ? 'happy' : 'happy-outline'}
-          activo={miReaccion === 'me_divierte'}
-          label={conteos.meDivierte}
-          onPress={() => onReaccionar('me_divierte')}
-          disabled={reaccionBusy}
+        <ReactionsBar
+          miReaccion={miReaccion}
+          conteos={conteos}
+          busy={reaccionBusy}
+          onReaccionar={onReaccionar}
+          oscuro
+          vertical
         />
         <BotonLateral icon="paper-plane-outline" onPress={onCompartir} />
 
@@ -163,14 +171,21 @@ const styles = StyleSheet.create({
   container: { width: '100%', backgroundColor: '#000' },
   degradado: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   overlayBottom: { position: 'absolute', left: 16, right: 92, bottom: 40 },
-  autorFila: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  autorFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 6,
+  },
+  autorNombre: { flex: 1, minWidth: 0 },
   autor: { color: '#fff' },
   seguirChip: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
     borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    flexShrink: 0,
   },
   texto: { color: '#fff' },
   overlaySide: { position: 'absolute', right: 12, bottom: 40, alignItems: 'center', gap: 22 },

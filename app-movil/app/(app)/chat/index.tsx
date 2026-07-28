@@ -1,17 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { chatApi } from '../../../src/api/chatApi';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { ChatConversacion } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { hapticLeve } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
 
@@ -38,6 +40,7 @@ export default function ChatScreen() {
 
   const [solapa, setSolapa] = useState<Solapa>('activa');
   const [items, setItems] = useState<ChatConversacion[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [pendientes, setPendientes] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +63,19 @@ export default function ChatScreen() {
     }, [cargar, solapa])
   );
 
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(items, busqueda, (c) => [
+        c.otro.nombreCompleto,
+        c.otro.username,
+        c.otro.mensajePersonal,
+        c.ultimoTexto,
+      ]),
+    [items, busqueda]
+  );
+
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <Atmosphere>
       <View style={[styles.solapas, { borderBottomColor: colors.border }]}>
@@ -71,6 +87,7 @@ export default function ChatScreen() {
               onPress={() => {
                 hapticLeve();
                 setSolapa(s);
+                setBusqueda('');
               }}
               style={[styles.solapa, activa && { borderBottomColor: colors.primary }]}
             >
@@ -89,18 +106,26 @@ export default function ChatScreen() {
         })}
       </View>
 
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+
       {loading ? (
         <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={items}
+          data={filtrados}
           keyExtractor={(c) => String(c.conversacionId)}
-          contentContainerStyle={[styles.lista, centeredContent, items.length === 0 && styles.vacia]}
+          contentContainerStyle={[styles.lista, centeredContent, filtrados.length === 0 && styles.vacia]}
           ListEmptyComponent={
             <EmptyState
               icon="chatbubble-ellipses-outline"
-              titulo={solapa === 'activa' ? t('chat.vacio') : t('chat.sinSolicitudes')}
-              descripcion={solapa === 'activa' ? t('chat.vacioDesc') : undefined}
+              titulo={
+                buscando
+                  ? t('common.sinResultadosBusqueda')
+                  : solapa === 'activa'
+                    ? t('chat.vacio')
+                    : t('chat.sinSolicitudes')
+              }
+              descripcion={!buscando && solapa === 'activa' ? t('chat.vacioDesc') : undefined}
             />
           }
           renderItem={({ item }) => (
@@ -167,8 +192,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   solapaLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
-  lista: { padding: 12, gap: 8, paddingBottom: 28 },
-  vacia: { flexGrow: 1, justifyContent: 'center' },
+  lista: { padding: 12, gap: 8, paddingBottom: 28, flexGrow: 1 },
+  vacia: { justifyContent: 'center' },
   fila: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radii.lg, padding: 12 },
   avatar: { width: 48, height: 48, borderRadius: radii.pill },
   avatarVacio: { alignItems: 'center', justifyContent: 'center' },

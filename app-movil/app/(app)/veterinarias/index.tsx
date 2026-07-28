@@ -1,16 +1,18 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { veterinariasApi } from '../../../src/api/veterinariasApi';
 import { Veterinaria } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { RadioChips, RadioKm } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function VeterinariasListaScreen() {
@@ -19,6 +21,7 @@ export default function VeterinariasListaScreen() {
 
   const [radioKm, setRadioKm] = useState<RadioKm>(20);
   const [listados, setListados] = useState<Veterinaria[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
@@ -62,18 +65,34 @@ export default function VeterinariasListaScreen() {
     setRefrescando(false);
   };
 
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(listados, busqueda, (item) => [
+        item.nombre,
+        item.descripcion,
+        item.zonaDescripcion,
+        item.telefono,
+        item.horario,
+      ]),
+    [listados, busqueda]
+  );
+
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={styles.filtros}>
         <RadioChips valor={radioKm} onSelect={setRadioKm} labelTodos={t('veterinarias.todas')} />
       </View>
 
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+
       {loading ? (
         <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
-          data={listados}
+          data={filtrados}
           keyExtractor={(item) => String(item.veterinariaId)}
           refreshing={refrescando}
           onRefresh={onRefrescar}
@@ -93,16 +112,16 @@ export default function VeterinariasListaScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="medkit-outline"
-              titulo={t('veterinarias.emptyLista')}
-              accionLabel={t('veterinarias.tituloNueva')}
-              onAccion={() => router.push('/(app)/veterinarias/nueva')}
+              titulo={buscando ? t('common.sinResultadosBusqueda') : t('veterinarias.emptyLista')}
+              accionLabel={buscando ? undefined : t('veterinarias.tituloNueva')}
+              onAccion={buscando ? undefined : () => router.push('/(app)/veterinarias/nueva')}
             />
           }
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             <>
-              {listados.length > 0 ? (
+              {filtrados.length > 0 ? (
                 <ListEndAddButton
                   label={t('veterinarias.tituloNueva')}
                   onPress={() => router.push('/(app)/veterinarias/nueva')}

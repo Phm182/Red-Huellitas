@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/match.php';
 
@@ -71,7 +72,7 @@ $sql = "SELECT Mascota.*,
 $types = 'dddii';
 $params = [$viewerLat, $viewerLng, $viewerLat, $userId, $mascotaIdOrigen];
 
-if (in_array($especie, ['perro', 'gato', 'otro'], true)) {
+if (in_array($especie, rh_especies_validas(), true)) {
     $sql .= ' AND Mascota.Especie = ?';
     $types .= 's';
     $params[] = $especie;

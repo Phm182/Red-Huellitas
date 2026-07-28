@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/adopcion.php';
 
 $viewerUserId = rh_require_auth($conn);
@@ -17,7 +18,7 @@ $sql = "SELECT Adopcion.*, Usuario.Username, Usuario.NombreCompleto, Usuario.Ava
 $types = '';
 $params = [];
 
-if (in_array($especie, ['perro', 'gato', 'otro'], true)) {
+if (in_array($especie, rh_especies_validas(), true)) {
     $sql .= ' AND Adopcion.Especie = ?';
     $types .= 's';
     $params[] = $especie;

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 require_once __DIR__ . '/../../funciones/producto.php';
 
@@ -35,8 +36,8 @@ if ($precio === null || $precio <= 0) {
 if ($cantidad < 1) {
     json_error('La cantidad debe ser al menos 1');
 }
-if ($especie !== null && !in_array($especie, ['perro', 'gato', 'otro'], true)) {
-    json_error("La especie debe ser 'perro', 'gato' u 'otro'");
+if ($especie !== null && !in_array($especie, rh_especies_validas(), true)) {
+    json_error("Especie no válida");
 }
 if ($zonaDescripcion === '' || mb_strlen($zonaDescripcion) > 150) {
     json_error('La zona es obligatoria (máx 150 caracteres)');

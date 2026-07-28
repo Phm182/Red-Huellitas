@@ -202,7 +202,7 @@ function rh_guardar_avatar(array $file, int $userId): ?string
         @unlink($viejo);
     }
 
-    return 'avatares/' . $filename;
+    return rh_despues_guardar_imagen_publica('avatares/' . $filename);
 }
 
 /** mtime del archivo de avatar para cache-bust en el cliente. */
@@ -220,6 +220,17 @@ function rh_avatar_bust(?string $avatarPath): ?int
         return null;
     }
     return (int) filemtime($archivo);
+}
+
+/**
+ * Tras guardar una imagen pública, corre el filtro NSFW (Gemini). Si la
+ * rechaza, borra el archivo y corta el request con 422.
+ */
+function rh_despues_guardar_imagen_publica(string $rutaRelativa): string
+{
+    require_once __DIR__ . '/media_moderacion.php';
+    rh_exigir_imagen_permitida($rutaRelativa);
+    return $rutaRelativa;
 }
 
 function rh_dir_fotos_mascota(int $mascotaId): string
@@ -246,7 +257,29 @@ function rh_guardar_foto_mascota(array $file, int $mascotaId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'mascotas/' . $mascotaId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('mascotas/' . $mascotaId . '/' . $filename);
+}
+
+/**
+ * Guarda el banner apaisado de una mascota (el de la tarjeta del listado).
+ *
+ * Va en la misma carpeta que sus fotos pero con nombre nuevo en cada guardado,
+ * no con uno fijo tipo "banner.jpg": reusar el nombre haría que el navegador
+ * siga mostrando el anterior desde su caché, que es exactamente el síntoma de
+ * "lo cambié y sigue apareciendo el viejo".
+ */
+function rh_guardar_banner_mascota(array $file, int $mascotaId): string
+{
+    $dir = rh_dir_fotos_mascota($mascotaId);
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    $filename = 'banner_' . rh_nombre_archivo_random($mime);
+    move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
+
+    return rh_despues_guardar_imagen_publica('mascotas/' . $mascotaId . '/' . $filename);
 }
 
 function rh_dir_fotos_post(int $postId): string
@@ -273,7 +306,7 @@ function rh_guardar_foto_post(array $file, int $postId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'publicaciones/' . $postId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('publicaciones/' . $postId . '/' . $filename);
 }
 
 function rh_dir_videos_post(int $postId): string
@@ -330,7 +363,8 @@ function rh_guardar_media_historia(array $file, int $userId, string $tipoMedia):
         : rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'historias/' . $userId . '/' . $filename;
+    $ruta = 'historias/' . $userId . '/' . $filename;
+    return $tipoMedia === 'video' ? $ruta : rh_despues_guardar_imagen_publica($ruta);
 }
 
 function rh_dir_fotos_adopcion(int $adopcionId): string
@@ -357,7 +391,7 @@ function rh_guardar_foto_adopcion(array $file, int $adopcionId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'adopciones/' . $adopcionId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('adopciones/' . $adopcionId . '/' . $filename);
 }
 
 function rh_dir_fotos_perdido(int $perdidoId): string
@@ -384,7 +418,7 @@ function rh_guardar_foto_perdido(array $file, int $perdidoId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'perdidos/' . $perdidoId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('perdidos/' . $perdidoId . '/' . $filename);
 }
 
 function rh_dir_fotos_transito(int $transitoId): string
@@ -411,7 +445,7 @@ function rh_guardar_foto_transito(array $file, int $transitoId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'transito/' . $transitoId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('transito/' . $transitoId . '/' . $filename);
 }
 
 function rh_dir_fotos_donacion(int $donacionId): string
@@ -438,7 +472,7 @@ function rh_guardar_foto_donacion(array $file, int $donacionId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'donaciones/' . $donacionId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('donaciones/' . $donacionId . '/' . $filename);
 }
 
 function rh_dir_fotos_veterinaria(int $veterinariaId): string
@@ -465,7 +499,7 @@ function rh_guardar_foto_veterinaria(array $file, int $veterinariaId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'veterinarias/' . $veterinariaId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('veterinarias/' . $veterinariaId . '/' . $filename);
 }
 
 function rh_dir_fotos_producto(int $productoId): string
@@ -492,7 +526,7 @@ function rh_guardar_foto_producto(array $file, int $productoId): string
     $filename = rh_nombre_archivo_random($mime);
     move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
 
-    return 'productos/' . $productoId . '/' . $filename;
+    return rh_despues_guardar_imagen_publica('productos/' . $productoId . '/' . $filename);
 }
 
 function rh_dir_carnet_mascota(int $mascotaId): string

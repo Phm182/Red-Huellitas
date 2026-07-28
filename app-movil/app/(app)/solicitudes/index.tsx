@@ -7,11 +7,13 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { solicitudesApi } from '../../../src/api/notificacionesApi';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SolicitudSeguimiento } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { hapticExito, hapticLeve } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
 
@@ -21,6 +23,7 @@ export default function SolicitudesScreen() {
   const { colors } = useTheme();
 
   const [items, setItems] = useState<SolicitudSeguimiento[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [resolviendo, setResolviendo] = useState<number | null>(null);
 
@@ -60,14 +63,25 @@ export default function SolicitudesScreen() {
     );
   }
 
+  const filtrados = filtrarPorTexto(items, busqueda, (s) => [
+    s.usuario.nombreCompleto,
+    s.usuario.username,
+    s.usuario.zonaDescripcion,
+  ]);
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <Atmosphere>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
       <FlatList
-        data={items}
+        data={filtrados}
         keyExtractor={(s) => String(s.solicitudId)}
-        contentContainerStyle={[styles.lista, centeredContent, items.length === 0 && styles.vacia]}
+        contentContainerStyle={[styles.lista, centeredContent, filtrados.length === 0 && styles.vacia]}
         ListEmptyComponent={
-          <EmptyState icon="person-add-outline" titulo={t('chat.sinSolicitudes')} />
+          <EmptyState
+            icon="person-add-outline"
+            titulo={buscando ? t('common.sinResultadosBusqueda') : t('chat.sinSolicitudes')}
+          />
         }
         renderItem={({ item }) => (
           <View style={[styles.fila, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -123,8 +137,8 @@ export default function SolicitudesScreen() {
 
 const styles = StyleSheet.create({
   centrado: { alignItems: 'center', justifyContent: 'center' },
-  lista: { padding: 14, gap: 10, paddingBottom: 28 },
-  vacia: { flexGrow: 1, justifyContent: 'center' },
+  lista: { padding: 14, gap: 10, paddingBottom: 28, flexGrow: 1 },
+  vacia: { justifyContent: 'center' },
   fila: { borderWidth: 1, borderRadius: radii.lg, padding: 12, gap: 10 },
   usuario: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 44, height: 44, borderRadius: radii.pill },

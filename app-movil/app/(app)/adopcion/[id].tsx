@@ -1,3 +1,4 @@
+import { especieI18nKey } from '../../../src/constants/especies';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -86,7 +87,7 @@ export default function AdopcionDetalleScreen() {
       </View>
 
       <Text style={{ color: colors.textMuted, marginBottom: 4 }}>
-        {adopcion.raza ?? t(`mascotas.especie${adopcion.especie.charAt(0).toUpperCase()}${adopcion.especie.slice(1)}`)}
+        {adopcion.raza ?? t(especieI18nKey(adopcion.especie))}
         {adopcion.edadAnios !== null ? ` · ${adopcion.edadAnios} ${t('mascotas.edadAnios').toLowerCase()}` : ''}
       </Text>
       <Text style={{ color: colors.textMuted, marginBottom: 12 }}>@{adopcion.autor.username}</Text>

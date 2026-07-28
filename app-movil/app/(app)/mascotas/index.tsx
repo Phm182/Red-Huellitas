@@ -12,9 +12,11 @@ import { elevation, radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function MisMascotasScreen() {
@@ -25,6 +27,7 @@ export default function MisMascotasScreen() {
   const [refrescando, setRefrescando] = useState(false);
   const [verificacion, setVerificacion] = useState<VerificacionEstado | null>(null);
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
+  const [busqueda, setBusqueda] = useState('');
 
   const cargar = useCallback(async (activo: () => boolean) => {
     const resVer = await perfilApi.estadoVerificacion();
@@ -77,26 +80,36 @@ export default function MisMascotasScreen() {
     );
   }
 
+  const filtrados = filtrarPorTexto(mascotas, busqueda, (m) => [
+    m.nombre,
+    m.raza,
+    m.razaTexto,
+    m.especie,
+    m.descripcion,
+  ]);
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
       <FlatList
         contentContainerStyle={[styles.list, centeredContent]}
-        data={mascotas}
+        data={filtrados}
         keyExtractor={(m) => String(m.mascotaId)}
         numColumns={2}
-        columnWrapperStyle={{ gap: 12 }}
+        columnWrapperStyle={filtrados.length > 0 ? { gap: 12 } : undefined}
         refreshing={refrescando}
         onRefresh={onRefrescar}
         ListEmptyComponent={
           <EmptyState
             icon="paw-outline"
-            titulo={t('mascotas.emptyState')}
-            accionLabel={t('mascotas.addPet')}
-            onAccion={() => router.push('/(app)/mascotas/nueva')}
+            titulo={buscando ? t('common.sinResultadosBusqueda') : t('mascotas.emptyState')}
+            accionLabel={buscando ? undefined : t('mascotas.addPet')}
+            onAccion={buscando ? undefined : () => router.push('/(app)/mascotas/nueva')}
           />
         }
         ListFooterComponent={
-          mascotas.length > 0 ? (
+          filtrados.length > 0 ? (
             <ListEndAddButton
               label={t('mascotas.addPet')}
               onPress={() => router.push('/(app)/mascotas/nueva')}

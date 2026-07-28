@@ -82,7 +82,7 @@ function rh_perdido_publico(mysqli $conn, array $p, int $viewerUserId): array
 
     $whatsappVisible = $esDueno || ($p['WhatsappVisibilidad'] ?? null) === 'publica';
 
-    return [
+    $data = [
         'perdidoId' => $perdidoId,
         'tipo' => $p['Tipo'],
         'autor' => rh_usuario_resumen([
@@ -110,4 +110,13 @@ function rh_perdido_publico(mysqli $conn, array $p, int $viewerUserId): array
         'estado' => $p['Estado'],
         'createdAt' => $p['CreatedAt'],
     ];
+
+    if ($esDueno) {
+        require_once __DIR__ . '/edicion.php';
+        $bloqueo = rh_perdido_motivo_bloqueo_edicion($p);
+        $data['editable'] = $bloqueo === null;
+        $data['motivoNoEditable'] = $bloqueo;
+    }
+
+    return $data;
 }

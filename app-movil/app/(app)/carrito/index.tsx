@@ -1,14 +1,16 @@
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { carritoApi } from '../../../src/api/carritoApi';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
-import { CarritoPublico, Pedido } from '../../../src/types';
+import { CarritoGrupo, CarritoPublico, Pedido } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 
 export default function CarritoScreen() {
@@ -16,6 +18,7 @@ export default function CarritoScreen() {
   const { colors } = useTheme();
 
   const [carrito, setCarrito] = useState<CarritoPublico | null>(null);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyItemId, setBusyItemId] = useState<number | null>(null);
   const [comprando, setComprando] = useState(false);
@@ -37,6 +40,27 @@ export default function CarritoScreen() {
       cargar();
     }, [cargar])
   );
+
+  const gruposFiltrados = useMemo((): CarritoGrupo[] => {
+    if (!carrito) return [];
+    if (!busqueda.trim()) return carrito.grupos;
+    return carrito.grupos
+      .map((grupo) => {
+        const items = filtrarPorTexto(grupo.items, busqueda, (item) => [
+          item.producto.nombre,
+          item.producto.descripcion,
+          item.producto.categoria?.nombre,
+          item.producto.autor.nombreCompleto,
+          item.producto.autor.username,
+        ]);
+        return {
+          ...grupo,
+          items,
+          subtotal: items.reduce((acc, item) => acc + item.subtotal, 0),
+        };
+      })
+      .filter((grupo) => grupo.items.length > 0);
+  }, [carrito, busqueda]);
 
   const onActualizarCantidad = async (carritoItemId: number, cantidad: number) => {
     if (cantidad < 1 || busyItemId !== null) return;
@@ -139,75 +163,95 @@ export default function CarritoScreen() {
   if (!carrito || carrito.grupos.length === 0) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <EmptyState icon="cart-outline" titulo={t('carrito.empty')} />
+        <EmptyState
+          icon="cart-outline"
+          titulo={t('carrito.empty')}
+          accionLabel={t('productos.tituloLista')}
+          onAccion={() => router.push('/(app)/productos')}
+        />
       </View>
     );
   }
 
+  const buscando = busqueda.trim().length > 0;
+
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
-      {carrito.grupos.map((grupo) => (
-        <View
-          key={grupo.vendedorUserId}
-          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          {grupo.items.map((item) => (
-            <View key={item.carritoItemId} style={styles.itemRow}>
-              {item.producto.fotos[0] ? (
-                <View style={styles.thumbWrap}>
-                  <Image source={{ uri: rhMediaUrl(item.producto.fotos[0].path) }} style={styles.thumb} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      {gruposFiltrados.length === 0 ? (
+        <View style={styles.centered}>
+          <EmptyState icon="cart-outline" titulo={t('common.sinResultadosBusqueda')} />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={[styles.container, centeredContent]}>
+          {gruposFiltrados.map((grupo) => (
+            <View
+              key={grupo.vendedorUserId}
+              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              {grupo.items.map((item) => (
+                <View key={item.carritoItemId} style={styles.itemRow}>
+                  {item.producto.fotos[0] ? (
+                    <View style={styles.thumbWrap}>
+                      <Image source={{ uri: rhMediaUrl(item.producto.fotos[0].path) }} style={styles.thumb} />
+                    </View>
+                  ) : null}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>{item.producto.nombre}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                      ${item.producto.precio.toLocaleString()} x {item.cantidad} = ${item.subtotal.toLocaleString()}
+                    </Text>
+                    <View style={styles.stepperRow}>
+                      <Pressable
+                        style={[styles.stepperButton, { borderColor: colors.border }]}
+                        onPress={() => onActualizarCantidad(item.carritoItemId, item.cantidad - 1)}
+                        disabled={busyItemId === item.carritoItemId}
+                      >
+                        <Text style={{ color: colors.text }}>-</Text>
+                      </Pressable>
+                      <Text style={{ color: colors.text, marginHorizontal: 10 }}>{item.cantidad}</Text>
+                      <Pressable
+                        style={[styles.stepperButton, { borderColor: colors.border }]}
+                        onPress={() => onActualizarCantidad(item.carritoItemId, item.cantidad + 1)}
+                        disabled={busyItemId === item.carritoItemId}
+                      >
+                        <Text style={{ color: colors.text }}>+</Text>
+                      </Pressable>
+                      <Pressable onPress={() => onQuitar(item.carritoItemId)} disabled={busyItemId === item.carritoItemId}>
+                        <Text style={{ color: colors.danger, marginLeft: 16, fontSize: 12 }}>{t('carrito.quitarButton')}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
-              ) : null}
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontWeight: '600' }}>{item.producto.nombre}</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  ${item.producto.precio.toLocaleString()} x {item.cantidad} = ${item.subtotal.toLocaleString()}
-                </Text>
-                <View style={styles.stepperRow}>
-                  <Pressable
-                    style={[styles.stepperButton, { borderColor: colors.border }]}
-                    onPress={() => onActualizarCantidad(item.carritoItemId, item.cantidad - 1)}
-                    disabled={busyItemId === item.carritoItemId}
-                  >
-                    <Text style={{ color: colors.text }}>-</Text>
-                  </Pressable>
-                  <Text style={{ color: colors.text, marginHorizontal: 10 }}>{item.cantidad}</Text>
-                  <Pressable
-                    style={[styles.stepperButton, { borderColor: colors.border }]}
-                    onPress={() => onActualizarCantidad(item.carritoItemId, item.cantidad + 1)}
-                    disabled={busyItemId === item.carritoItemId}
-                  >
-                    <Text style={{ color: colors.text }}>+</Text>
-                  </Pressable>
-                  <Pressable onPress={() => onQuitar(item.carritoItemId)} disabled={busyItemId === item.carritoItemId}>
-                    <Text style={{ color: colors.danger, marginLeft: 16, fontSize: 12 }}>{t('carrito.quitarButton')}</Text>
-                  </Pressable>
-                </View>
-              </View>
+              ))}
+              <Text style={{ color: colors.text, fontWeight: '700', textAlign: 'right', marginTop: 8 }}>
+                {t('carrito.subtotal')}: ${grupo.subtotal.toLocaleString()}
+              </Text>
             </View>
           ))}
-          <Text style={{ color: colors.text, fontWeight: '700', textAlign: 'right', marginTop: 8 }}>
-            {t('carrito.subtotal')}: ${grupo.subtotal.toLocaleString()}
-          </Text>
-        </View>
-      ))}
 
-      <Text style={[styles.totalText, { color: colors.text }]}>
-        {t('carrito.total')}: ${carrito.total.toLocaleString()}
-      </Text>
+          {!buscando ? (
+            <>
+              <Text style={[styles.totalText, { color: colors.text }]}>
+                {t('carrito.total')}: ${carrito.total.toLocaleString()}
+              </Text>
 
-      <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={onComprar} disabled={comprando}>
-        {comprando ? (
-          <ActivityIndicator color={colors.primaryText} />
-        ) : (
-          <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('carrito.comprarButton')}</Text>
-        )}
-      </Pressable>
+              <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={onComprar} disabled={comprando}>
+                {comprando ? (
+                  <ActivityIndicator color={colors.primaryText} />
+                ) : (
+                  <Text style={{ color: colors.primaryText, fontWeight: '600' }}>{t('carrito.comprarButton')}</Text>
+                )}
+              </Pressable>
 
-      <Pressable style={styles.vaciarLink} onPress={onVaciar}>
-        <Text style={{ color: colors.danger, fontSize: 12 }}>{t('carrito.vaciarButton')}</Text>
-      </Pressable>
-    </ScrollView>
+              <Pressable style={styles.vaciarLink} onPress={onVaciar}>
+                <Text style={{ color: colors.danger, fontSize: 12 }}>{t('carrito.vaciarButton')}</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </ScrollView>
+      )}
+    </View>
   );
 }
 

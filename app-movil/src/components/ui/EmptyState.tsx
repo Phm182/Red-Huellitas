@@ -61,13 +61,15 @@ export function EmptyState({
   fillScreen = true,
 }: EmptyStateProps) {
   const { colors } = useTheme();
-  const areaHeight = useContentAreaHeight();
 
   return (
     <View
       style={[
         styles.contenedor,
-        fillScreen ? { minHeight: areaHeight, justifyContent: 'center' } : styles.inline,
+        // flexGrow (no minHeight de pantalla completa): si usamos la altura
+        // de la ventana dentro de un FlatList/ScrollView que ya tiene filtros
+        // arriba, el vacío queda empujado hacia abajo y se ve “muy abajo”.
+        fillScreen ? styles.fill : styles.inline,
         style,
       ]}
     >
@@ -92,6 +94,7 @@ export function EmptyState({
 
 const styles = StyleSheet.create({
   contenedor: { alignItems: 'center', paddingHorizontal: 32 },
+  fill: { flexGrow: 1, justifyContent: 'center', paddingVertical: 32 },
   inline: { paddingVertical: 48 },
   iconoCaja: {
     width: 68,

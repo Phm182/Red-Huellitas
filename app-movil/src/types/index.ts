@@ -46,7 +46,20 @@ export interface SolicitudSeguimiento {
   usuario: UsuarioResumen & { zonaDescripcion: string | null; avatarBust?: number | null };
 }
 
-export type EspecieCuidado = 'perro' | 'gato' | 'otro';
+export type Especie =
+  | 'perro'
+  | 'gato'
+  | 'conejo'
+  | 'ave'
+  | 'pez'
+  | 'hamster'
+  | 'cobayo'
+  | 'tortuga'
+  | 'huron'
+  | 'otro';
+
+/** Alias histórico: Cuidados usa el mismo catálogo que el resto. */
+export type EspecieCuidado = Especie;
 export type CategoriaCuidado =
   | 'alimentacion'
   | 'higiene'
@@ -148,7 +161,6 @@ export interface VerificacionEstado {
 
 export type ReporteTipo = 'mejora' | 'falla';
 
-export type Especie = 'perro' | 'gato' | 'otro';
 export type Sexo = 'macho' | 'hembra';
 
 export interface RazaCatalogoItem {
@@ -216,7 +228,17 @@ export interface BusquedaResultado {
   mascotas: Mascota[];
 }
 
-export type ReaccionTipo = 'like' | 'me_divierte';
+export type ReaccionTipo =
+  | 'like'
+  | 'me_divierte'
+  | 'amor'
+  | 'asombro'
+  | 'triste'
+  | 'abrazo'
+  | 'huella'
+  | 'apoyo'
+  | 'guau'
+  | 'michi';
 
 export interface PostFoto {
   postFotoId: number;
@@ -227,6 +249,14 @@ export interface PostFoto {
 export interface PostConteos {
   like: number;
   meDivierte: number;
+  amor: number;
+  asombro: number;
+  triste: number;
+  abrazo: number;
+  huella: number;
+  apoyo: number;
+  guau: number;
+  michi: number;
 }
 
 export interface Post {
@@ -449,6 +479,8 @@ export interface Campania {
   descripcion: string | null;
   fechaDesde: string;
   fechaHasta: string | null;
+  /** Calle y numero del lugar del evento; puede faltar (una plaza, un parque). */
+  direccion: string | null;
   zonaDescripcion: string;
   zonaLat: number;
   zonaLng: number;
@@ -458,8 +490,83 @@ export interface Campania {
   estado: 'A' | 'I';
   createdAt: string;
   totalInscriptos?: number;
+  /** null = cupo ilimitado. */
   cupoDisponible?: number | null;
   estoyInscripto?: boolean;
+  /** Lo que hay que llevar, avisos de último momento, etc. */
+  mensajeAviso?: string | null;
+  /** Horas antes del comienzo hasta las que se admite la baja. null = siempre. */
+  bajaLimiteHoras?: number | null;
+  preguntas?: CampaniaPregunta[];
+  miInscripcion?: MiInscripcionCampania | null;
+}
+
+export type EstadoInscripcion = 'confirmada' | 'lista_espera' | 'cancelada' | 'ausente';
+
+export interface MiInscripcionCampania {
+  campaniaInscripcionId: number;
+  estado: EstadoInscripcion;
+  posicion: number;
+  puedeDarseBaja: boolean;
+}
+
+export type TipoPreguntaCampania = 'texto' | 'si_no' | 'opcion_multiple';
+
+export interface CampaniaPreguntaOpcion {
+  campaniaPreguntaOpcionId: number;
+  texto: string;
+}
+
+export interface CampaniaPregunta {
+  campaniaPreguntaId: number;
+  tipo: TipoPreguntaCampania;
+  texto: string;
+  obligatoria: boolean;
+  orden: number;
+  opciones: CampaniaPreguntaOpcion[];
+}
+
+/** Una respuesta del formulario, tal como la manda la pantalla. */
+export interface RespuestaCampania {
+  campaniaPreguntaId: number;
+  texto?: string;
+  campaniaPreguntaOpcionId?: number;
+}
+
+export interface CampaniaInscripcionAdmin {
+  campaniaInscripcionId: number;
+  estado: EstadoInscripcion;
+  posicion: number;
+  createdAt: string;
+  canceladaEn: string | null;
+  avisoAusenciaEn: string | null;
+  notaAusencia: string | null;
+  usuario: UsuarioResumen & { whatsappNumero: string | null };
+  respuestas: { pregunta: string; respuesta: string | null }[];
+}
+
+export interface CampaniaPanel {
+  campania: {
+    campaniaId: number;
+    titulo: string;
+    tipo: TipoCampania;
+    fechaDesde: string;
+    fechaHasta: string | null;
+    mensajeAviso: string | null;
+    cupoMaximo: number | null;
+    bajaLimiteHoras: number | null;
+    requiereInscripcion: boolean;
+  };
+  resumen: {
+    confirmadas: number;
+    listaEspera: number;
+    ausentes: number;
+    canceladas: number;
+    cupoMaximo: number | null;
+    lugaresLibres: number | null;
+  };
+  preguntas: CampaniaPregunta[];
+  inscripciones: CampaniaInscripcionAdmin[];
 }
 
 export interface CampaniaInscripcionPropia {
@@ -510,9 +617,14 @@ export interface Perdido {
   esDueno: boolean;
   estado: 'A' | 'I';
   createdAt: string;
+  /** Sólo viene si esDueno: false cuando ya está marcado como reencontrado. */
+  editable?: boolean;
+  motivoNoEditable?: string | null;
 }
 
 export type TipoTransito = 'necesito' | 'ofrezco';
+/** Lo marca el dueño a mano; 'acordado' bloquea la edición. */
+export type EstadoTransito = 'disponible' | 'acordado';
 
 export interface TransitoFoto {
   transitoFotoId: number;
@@ -540,12 +652,18 @@ export interface Transito {
   zonaLng: number;
   distanciaKm: number | null;
   esDueno: boolean;
+  estadoTransito: EstadoTransito;
   estado: 'A' | 'I';
   createdAt: string;
+  /** Sólo viene si esDueno: false cuando está marcado como acordado. */
+  editable?: boolean;
+  motivoNoEditable?: string | null;
 }
 
 export type TipoDonacion = 'necesito' | 'ofrezco';
-export type CategoriaDonacion = 'alimento' | 'insumo';
+/** Lo marca el dueño a mano; 'acordado' bloquea la edición. */
+export type EstadoDonacion = 'disponible' | 'acordado';
+export type CategoriaDonacion = 'alimento' | 'insumo' | 'ropa';
 
 export interface DonacionFoto {
   donacionFotoId: number;
@@ -567,8 +685,12 @@ export interface Donacion {
   zonaLng: number;
   distanciaKm: number | null;
   esDueno: boolean;
+  estadoDonacion: EstadoDonacion;
   estado: 'A' | 'I';
   createdAt: string;
+  /** Sólo viene si esDueno: false cuando está marcada como acordada. */
+  editable?: boolean;
+  motivoNoEditable?: string | null;
 }
 
 export interface VeterinariaFoto {
@@ -586,6 +708,8 @@ export interface Veterinaria {
   whatsappNumero: string | null;
   horario: string | null;
   fotos: VeterinariaFoto[];
+  /** Calle y número. Los lugares públicos sí la muestran exacta. */
+  direccion: string | null;
   zonaDescripcion: string;
   zonaLat: number;
   zonaLng: number;
@@ -668,6 +792,8 @@ export interface ProductoFoto {
 export interface Producto {
   productoId: number;
   tipoListado: TipoListado;
+  /** Suelto además del objeto `categoria`, para preseleccionar el picker al editar. */
+  categoriaId: number;
   categoria: ProductoCategoriaItem | null;
   autor: UsuarioResumen;
   whatsappNumero: string | null;
@@ -685,6 +811,12 @@ export interface Producto {
   esFavorito: boolean;
   estado: 'A' | 'I';
   createdAt: string;
+  /**
+   * Sólo viene si esDueno. Hoy Productos nunca se bloquea: los pedidos guardan
+   * su propia copia del nombre y el precio, así que editar no los afecta.
+   */
+  editable?: boolean;
+  motivoNoEditable?: string | null;
 }
 
 export interface CarritoItemDto {

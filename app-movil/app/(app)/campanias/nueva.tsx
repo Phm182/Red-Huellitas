@@ -27,6 +27,7 @@ export default function NuevaCampaniaScreen() {
   const [esRango, setEsRango] = useState(false);
   const [fechaHasta, setFechaHasta] = useState('');
   const [zonaDescripcion, setZonaDescripcion] = useState('');
+  const [direccion, setDireccion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export default function NuevaCampaniaScreen() {
       fechaDesde,
       fechaHasta: esRango ? fechaHasta : null,
       zonaDescripcion: zonaDescripcion.trim(),
+      direccion: direccion.trim() || undefined,
       zonaLat: coords.lat,
       zonaLng: coords.lng,
       requiereInscripcion,
@@ -172,6 +174,13 @@ export default function NuevaCampaniaScreen() {
         onChangeText={setZonaDescripcion}
         placeholder={t('campanias.zonaPlaceholder')}
       />
+
+      <Text style={[styles.label, { color: colors.text }]}>{t('campanias.direccionLabel')}</Text>
+      <AppInput
+        value={direccion}
+        onChangeText={setDireccion}
+        placeholder={t('campanias.direccionPlaceholder')}
+      />
       <Pressable
         style={[styles.locationButton, { borderColor: colors.primary }]}
         onPress={obtenerUbicacion}
@@ -227,8 +236,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  segmented: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center' },
+  segmented: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  segment: { borderWidth: 1, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

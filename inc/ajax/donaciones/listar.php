@@ -48,10 +48,16 @@ if ($radioKm !== null) {
         $types .= 's';
         $params[] = $tipo;
     }
-    if (in_array($categoria, ['alimento', 'insumo'], true)) {
+    if (in_array($categoria, ['alimento', 'insumo', 'ropa'], true)) {
         $sql .= ' AND Donacion.Categoria = ?';
         $types .= 's';
         $params[] = $categoria;
+    }
+    $soloMias = isset($_GET['soloMias']) && ($_GET['soloMias'] === '1' || $_GET['soloMias'] === 'true');
+    if ($soloMias) {
+        $sql .= ' AND Donacion.UserId = ?';
+        $types .= 'i';
+        $params[] = $viewerUserId;
     }
     $sql .= ' HAVING DistanciaKm <= ? ORDER BY DistanciaKm ASC LIMIT 50';
     $types .= 'd';
@@ -84,10 +90,16 @@ if (in_array($tipo, ['necesito', 'ofrezco'], true)) {
     $types .= 's';
     $params[] = $tipo;
 }
-if (in_array($categoria, ['alimento', 'insumo'], true)) {
+if (in_array($categoria, ['alimento', 'insumo', 'ropa'], true)) {
     $sql .= ' AND Donacion.Categoria = ?';
     $types .= 's';
     $params[] = $categoria;
+}
+$soloMias = isset($_GET['soloMias']) && ($_GET['soloMias'] === '1' || $_GET['soloMias'] === 'true');
+if ($soloMias) {
+    $sql .= ' AND Donacion.UserId = ?';
+    $types .= 'i';
+    $params[] = $viewerUserId;
 }
 if ($cursor !== null) {
     $sql .= ' AND Donacion.DonacionId < ?';

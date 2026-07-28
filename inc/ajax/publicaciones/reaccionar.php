@@ -12,8 +12,9 @@ $tipo = $_POST['tipo'] ?? '';
 if ($postId <= 0) {
     json_error('Falta postId');
 }
-if (!in_array($tipo, ['like', 'me_divierte'], true)) {
-    json_error("tipo debe ser 'like' o 'me_divierte'");
+$tiposValidos = ['like', 'me_divierte', 'amor', 'asombro', 'triste', 'abrazo', 'huella', 'apoyo', 'guau', 'michi'];
+if (!in_array($tipo, $tiposValidos, true)) {
+    json_error('tipo de reacción no válido');
 }
 
 $stmt = $conn->prepare("SELECT PostId FROM Post WHERE PostId = ? AND Estado = 'A'");

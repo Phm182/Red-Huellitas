@@ -1,0 +1,37 @@
+<?php
+/**
+ * Copiar este archivo a mapa.local.php (gitignored) y completar el token.
+ *
+ * El token público de Mapbox se saca de https://account.mapbox.com/ →
+ * "Default public token" (empieza con `pk.`). La cuenta gratuita da 50.000
+ * cargas de mapa por mes sin pedir tarjeta.
+ *
+ * Sin este archivo — o con el token vacío — el mapa NO se rompe: usa MapLibre,
+ * que es el fork libre de Mapbox y no necesita cuenta ni token. Mismo criterio
+ * que Gemini y Mercado Pago: la funcionalidad degrada, no desaparece.
+ *
+ * ⚠️ El token viaja al navegador (es inevitable: el mapa se dibuja del lado del
+ *    cliente, y para eso Mapbox usa tokens públicos). Por eso conviene además
+ *    restringirlo por dominio desde el panel de Mapbox — "URL restrictions" en
+ *    la pantalla del token — así aunque alguien lo copie no le sirve fuera de
+ *    tu sitio.
+ */
+return [
+    'MAPBOX_TOKEN' => '',
+
+    // Topes propios, por debajo de la cuota gratuita real (50.000/mes), para
+    // que nunca se llegue a facturar. Al agotarse, el mapa pasa a MapLibre.
+    //
+    // El margen del 10% no es capricho: la app cuenta cuándo entrega el token,
+    // y Mapbox cuenta cuándo el navegador crea el mapa. Son casi lo mismo pero
+    // no exactamente, y el colchón cubre la diferencia.
+    'LIMITE_MENSUAL_GLOBAL' => 45000,
+
+    // Por usuario y por día. Frena que uno solo, recargando la pantalla, se
+    // lleve puesto el cupo mensual de todos.
+    'LIMITE_DIARIO_USUARIO' => 60,
+
+    // Estilos. El claro y el oscuro se eligen solos según el tema de la app.
+    'MAPBOX_ESTILO_OSCURO' => 'mapbox://styles/mapbox/dark-v11',
+    'MAPBOX_ESTILO_CLARO'  => 'mapbox://styles/mapbox/light-v11',
+];

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 
@@ -29,8 +30,8 @@ if ($nombre === '' || mb_strlen($nombre) > 60) {
 if (!in_array($sexo, ['macho', 'hembra'], true)) {
     json_error("El sexo debe ser 'macho' o 'hembra'");
 }
-if (!in_array($especie, ['perro', 'gato', 'otro'], true)) {
-    json_error("La especie debe ser 'perro', 'gato' u 'otro'");
+if (!in_array($especie, rh_especies_validas(), true)) {
+    json_error("Especie no válida");
 }
 if (!$razaId && !$razaTexto) {
     json_error('Debés indicar una raza (del catálogo o a texto libre)');

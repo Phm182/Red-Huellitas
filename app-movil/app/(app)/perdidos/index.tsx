@@ -1,17 +1,19 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { perdidosApi } from '../../../src/api/perdidosApi';
 import { Perdido, TipoPerdido } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { Badge } from '../../../src/components/ui/Badge';
 import { ChipOption, ChipRow } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListCard } from '../../../src/components/ui/ListCard';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** El nombre de icono que acepta ChipOption (Ionicons). */
@@ -30,6 +32,7 @@ export default function PerdidosListaScreen() {
 
   const [tipo, setTipo] = useState<TipoPerdido | null>(null);
   const [reportes, setReportes] = useState<Perdido[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
@@ -82,18 +85,38 @@ export default function PerdidosListaScreen() {
     })),
   ];
 
+  const filtrados = useMemo(
+    () =>
+      filtrarPorTexto(reportes, busqueda, (p) => [
+        p.nombre,
+        p.raza,
+        p.razaTexto,
+        p.especie,
+        p.descripcion,
+        p.ultimoLugarDescripcion,
+        t(`perdidos.tipo.${p.tipo}`),
+        p.autor.nombreCompleto,
+        p.autor.username,
+      ]),
+    [reportes, busqueda, t]
+  );
+
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={styles.filtros}>
         <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
       </View>
 
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+
       {loading ? (
         <SkeletonList />
       ) : (
         <FlatList
           contentContainerStyle={[styles.list, centeredContent]}
-          data={reportes}
+          data={filtrados}
           keyExtractor={(p) => String(p.perdidoId)}
           refreshing={refrescando}
           onRefresh={onRefrescar}
@@ -118,16 +141,16 @@ export default function PerdidosListaScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="search-outline"
-              titulo={t('perdidos.emptyLista')}
-              accionLabel={t('perdidos.tituloNueva')}
-              onAccion={() => router.push('/(app)/perdidos/nueva')}
+              titulo={buscando ? t('common.sinResultadosBusqueda') : t('perdidos.emptyLista')}
+              accionLabel={buscando ? undefined : t('perdidos.tituloNueva')}
+              onAccion={buscando ? undefined : () => router.push('/(app)/perdidos/nueva')}
             />
           }
           onEndReached={cargarMas}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             <>
-              {reportes.length > 0 ? (
+              {filtrados.length > 0 ? (
                 <ListEndAddButton
                   label={t('perdidos.tituloNueva')}
                   onPress={() => router.push('/(app)/perdidos/nueva')}

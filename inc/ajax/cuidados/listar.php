@@ -2,11 +2,12 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 
 $userId = rh_require_auth($conn);
 
 $especie = $_GET['especie'] ?? '';
-if (!in_array($especie, ['perro', 'gato', 'otro'], true)) {
+if (!in_array($especie, rh_especies_validas(), true)) {
     // Sin especie pedida, arranca por la de las mascotas del usuario: para
     // alguien que sólo tiene gatos, abrir en "perro" es ruido.
     $stmt = $conn->prepare(

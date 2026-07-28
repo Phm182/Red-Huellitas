@@ -2,12 +2,13 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 
 rh_require_auth($conn);
 
 $especie = $_GET['especie'] ?? '';
-if (!in_array($especie, ['perro', 'gato', 'otro'], true)) {
-    json_error("especie debe ser 'perro', 'gato' u 'otro'");
+if (!in_array($especie, rh_especies_validas(), true)) {
+    json_error("especie no válida");
 }
 
 $stmt = $conn->prepare('SELECT RazaId, Nombre FROM RazaCatalogo WHERE Especie = ? ORDER BY Nombre ASC');

@@ -107,10 +107,15 @@ export const adopcionApi = {
     return apiPost<{ adopcion: Adopcion }>('ajax/adopcion/actualizar.php', form, true);
   },
 
-  listar: (especie?: Especie, cursor?: number | null, limit = 15) =>
+  listar: (especie?: Especie, cursor?: number | null, limit = 15, soloMias = false) =>
     apiGet<AdopcionListaResultado>(
       'ajax/adopcion/listar.php',
-      { ...(especie ? { especie } : {}), ...(cursor ? { cursor } : {}), limit },
+      {
+        ...(especie ? { especie } : {}),
+        ...(cursor ? { cursor } : {}),
+        ...(soloMias ? { soloMias: 1 } : {}),
+        limit,
+      },
       true
     ),
 

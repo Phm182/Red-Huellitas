@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
 require_once __DIR__ . '/../../funciones/donacion.php';
 
@@ -29,8 +30,8 @@ if (!in_array($categoria, ['alimento', 'insumo'], true)) {
 if ($descripcion === '') {
     json_error('La descripción es obligatoria');
 }
-if ($especie !== null && !in_array($especie, ['perro', 'gato', 'otro'], true)) {
-    json_error("La especie debe ser 'perro', 'gato' u 'otro'");
+if ($especie !== null && !in_array($especie, rh_especies_validas(), true)) {
+    json_error("Especie no válida");
 }
 if ($zonaDescripcion === '' || mb_strlen($zonaDescripcion) > 150) {
     json_error('La zona es obligatoria (máx 150 caracteres)');

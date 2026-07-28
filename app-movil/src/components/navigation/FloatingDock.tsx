@@ -1,13 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useGlobalSearchParams, usePathname } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContadores } from '../../hooks/useContadores';
 import { accionCrearPara } from '../../navigation/accionCrear';
-import { APP_TAB_BAR_HEIGHT, chromeForPath } from '../../navigation/chrome';
+import { APP_COMPOSER_HEIGHT, APP_TAB_BAR_HEIGHT, chromeForPath } from '../../navigation/chrome';
 import { elevation, radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -103,6 +109,7 @@ type Props = {
  */
 export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const chrome = chromeForPath(pathname);
@@ -113,10 +120,36 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
   const { solapa } = useGlobalSearchParams<{ solapa?: string }>();
   const crear = accionCrearPara(pathname, solapa);
 
+  // Ocultar el dock: hay pantallas cuyo contenido llega hasta abajo y estos
+  // botones le quedan encima. En vez de adivinar en cuáles, se le da al usuario
+  // la manija — que además es reversible de un toque.
+  const [oculto, setOculto] = useState(false);
+  const corrimiento = useSharedValue(0);
+
+  const estiloColumna = useAnimatedStyle(() => ({
+    transform: [{ translateX: corrimiento.value }],
+    opacity: 1 - corrimiento.value / 120,
+  }));
+
   if (!chrome.dock) return null;
 
+  const alternar = () => {
+    hapticLeve();
+    const proximo = !oculto;
+    setOculto(proximo);
+    // Se van hacia afuera por la derecha, que es de donde vinieron.
+    corrimiento.value = withTiming(proximo ? 110 : 0, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+  };
+
   const bottom =
-    (tabBarVisible ? APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0) : Math.max(insets.bottom, 8)) + 14;
+    (tabBarVisible ? APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0) : Math.max(insets.bottom, 8)) +
+    14 +
+    // En el chat la barra de escribir vive pegada abajo: sin este corrimiento
+    // el dock le queda encima y tapa el botón de enviar.
+    (chrome.composer ? APP_COMPOSER_HEIGHT : 0);
 
   const hostStyle =
     Platform.OS === 'web'
@@ -126,6 +159,7 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
   return (
     <View pointerEvents="box-none" style={[styles.host, hostStyle]}>
       <View style={[styles.columna, { bottom, right: 14 }]} pointerEvents="box-none">
+        <Animated.View style={[styles.grupo, estiloColumna]} pointerEvents={oculto ? 'none' : 'auto'}>
         <BotonFlotante
           icon="notifications-outline"
           label={t('notificaciones.titulo')}
@@ -153,6 +187,23 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
           onPress={() => router.push(crear.route as never)}
           principal
         />
+        </Animated.View>
+
+        {/* Manija: apunta hacia afuera cuando puede esconderlos, y hacia
+            adentro cuando puede traerlos de vuelta. */}
+        <Pressable
+          onPress={alternar}
+          style={[styles.manija, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t(oculto ? 'nav.mostrarBotones' : 'nav.ocultarBotones')}
+        >
+          <Ionicons
+            name={oculto ? 'chevron-back' : 'chevron-forward'}
+            size={18}
+            color={colors.textMuted}
+          />
+        </Pressable>
       </View>
     </View>
   );
@@ -161,6 +212,15 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
 const styles = StyleSheet.create({
   host: { zIndex: 35 },
   columna: { position: 'absolute', alignItems: 'center', gap: 10 },
+  grupo: { alignItems: 'center', gap: 10 },
+  manija: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   boton: {
     alignItems: 'center',
     justifyContent: 'center',

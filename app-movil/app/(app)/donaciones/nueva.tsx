@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -13,17 +13,20 @@ import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoDonacion[] = ['necesito', 'ofrezco'];
-const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo'];
-const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
+const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo', 'ropa'];
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 
 export default function NuevaDonacionScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const params = useLocalSearchParams<{ tipo?: string }>();
+  const tipoInicial: TipoDonacion =
+    params.tipo === 'necesito' || params.tipo === 'ofrezco' ? params.tipo : 'ofrezco';
 
   const [verificacion, setVerificacion] = useState<VerificacionEstado | null>(null);
   const [loadingGate, setLoadingGate] = useState(true);
 
-  const [tipo, setTipo] = useState<TipoDonacion>('ofrezco');
+  const [tipo, setTipo] = useState<TipoDonacion>(tipoInicial);
   const [categoria, setCategoria] = useState<CategoriaDonacion>('alimento');
   const [especie, setEspecie] = useState<Especie | null>(null);
   const [descripcion, setDescripcion] = useState('');
@@ -154,7 +157,7 @@ export default function NuevaDonacionScreen() {
             style={[styles.segment, { borderColor: colors.primary, backgroundColor: especie === e ? colors.primary : 'transparent' }]}
           >
             <Text style={{ color: especie === e ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-              {t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`)}
+              {t(especieI18nKey(e))}
             </Text>
           </Pressable>
         ))}
@@ -215,8 +218,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12, fontSize: 16 },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  segmented: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  segment: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: 'center' },
+  segmented: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  segment: { borderWidth: 1, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   locationButton: { borderWidth: 1, borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 8 },
 });

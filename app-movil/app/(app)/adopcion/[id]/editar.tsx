@@ -8,6 +8,8 @@ import { MultiImagePickerField } from '../../../../src/components/MultiImagePick
 import { RazaPicker } from '../../../../src/components/RazaPicker';
 import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 import { Especie, Sexo } from '../../../../src/types';
+import { ESPECIES, especieI18nKey } from '../../../../src/constants/especies';
+
 import { centeredContent } from '../../../../src/theme/layout';
 import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
@@ -146,7 +148,7 @@ export default function EditarAdopcionScreen() {
 
       <Text style={[styles.label, { color: colors.textMuted }]}>{t('mascotas.especie')}</Text>
       <View style={styles.row}>
-        {(['perro', 'gato', 'otro'] as Especie[]).map((e) => (
+        {ESPECIES.map((e) => (
           <Pressable
             key={e}
             onPress={() => {
@@ -160,7 +162,7 @@ export default function EditarAdopcionScreen() {
             ]}
           >
             <Text style={{ color: especie === e ? colors.primaryText : colors.primary }}>
-              {t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`)}
+              {t(especieI18nKey(e))}
             </Text>
           </Pressable>
         ))}

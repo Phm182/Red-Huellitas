@@ -2,7 +2,7 @@ import type { Ionicons } from '@expo/vector-icons';
 import { HUBS } from './hubs';
 
 /** Altura del header de app (sin safe area). */
-export const APP_HEADER_HEIGHT = 56;
+export const APP_HEADER_HEIGHT = 64;
 
 /** Altura del menú inferior (sin safe area). */
 export const APP_TAB_BAR_HEIGHT = 64;
@@ -14,7 +14,18 @@ export type Chrome = {
   tabBar: boolean;
   /** Los 3 flotantes (chat, animales, notificaciones). */
   dock: boolean;
+  /**
+   * ¿La pantalla tiene una barra de escribir pegada abajo?
+   *
+   * El dock se apoya en el borde inferior, así que en el chat le quedaba
+   * justo encima del campo de texto y tapaba el botón de enviar. Con esto sube
+   * lo suficiente para despejarlo.
+   */
+  composer: boolean;
 };
+
+/** Alto aproximado de una barra de escribir, para correr el dock por encima. */
+export const APP_COMPOSER_HEIGHT = 62;
 
 /** Rutas inmersivas: la Huellita a pantalla completa se come todo el chrome. */
 function esInmersiva(pathname: string): boolean {
@@ -34,8 +45,19 @@ function esInmersiva(pathname: string): boolean {
  */
 export function chromeForPath(pathname: string): Chrome {
   if (esInmersiva(pathname)) {
-    return { header: false, tabBar: false, dock: false };
+    return { header: false, tabBar: false, dock: false, composer: false };
   }
+
+  // El mapa se dibuja a pantalla completa y trae sus propios controles arriba
+  // (volver, filtros, radio), así que el header duplicaría la fila. La barra de
+  // abajo sí queda: es desde donde se entra y salta a otro hub sin volver.
+  if (pathname.includes('/mapa')) {
+    return { header: false, tabBar: true, dock: false, composer: false };
+  }
+
+  // Pantallas con campo de texto pegado abajo. El dock tiene que subir por
+  // encima o queda tapando el botón de enviar.
+  const conComposer = pathname.includes('/chat/') || pathname.includes('/match/matches/');
 
   const sinDock =
     pathname.includes('/publicaciones/nueva') ||
@@ -44,7 +66,7 @@ export function chromeForPath(pathname: string): Chrome {
     pathname.includes('/mascota/') ||
     pathname.includes('/historia-vistas');
 
-  return { header: true, tabBar: true, dock: !sinDock };
+  return { header: true, tabBar: true, dock: !sinDock, composer: conComposer };
 }
 
 /** ¿Estamos en la raíz de un hub? (sin flecha de volver en el header) */

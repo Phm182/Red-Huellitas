@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from './client';
-import { appendImageFile } from '../utils/upload';
+import { appendImageFile, appendOrdenFotos } from '../utils/upload';
 import { Especie, Producto, ProductoCategoriaItem, TipoListado } from '../types';
 
 interface ProductoListaResultado {
@@ -54,6 +54,33 @@ export const productosApi = {
   crear: async (params: CrearProductoParams) => {
     const form = await construirFormProducto(params);
     return apiPost<{ producto: Producto }>('ajax/productos/crear.php', form, true);
+  },
+
+  /**
+   * `tipoListado` no se manda: pasar de producto a servicio cambia las reglas
+   * de la publicación. Devuelve 409 si hay un pedido en curso.
+   */
+  actualizar: async (
+    productoId: number,
+    params: Omit<CrearProductoParams, 'tipoListado'> & { fotosExistentesIds?: (number | null)[] }
+  ) => {
+    const form = new FormData();
+    form.append('productoId', String(productoId));
+    form.append('categoriaId', String(params.categoriaId));
+    form.append('nombre', params.nombre);
+    form.append('precio', String(params.precio));
+    form.append('zonaDescripcion', params.zonaDescripcion);
+    form.append('zonaLat', String(params.zonaLat));
+    form.append('zonaLng', String(params.zonaLng));
+    if (params.descripcion) form.append('descripcion', params.descripcion);
+    if (params.cantidad) form.append('cantidad', String(params.cantidad));
+    if (params.especie) form.append('especie', params.especie);
+
+    if (params.fotosExistentesIds) {
+      await appendOrdenFotos(form, params.fotos ?? [], params.fotosExistentesIds);
+    }
+
+    return apiPost<{ producto: Producto }>('ajax/productos/actualizar.php', form, true);
   },
 
   listar: (

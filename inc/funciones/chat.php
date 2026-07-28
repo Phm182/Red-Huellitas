@@ -54,6 +54,23 @@ function rh_chat_hay_relacion(mysqli $conn, int $a, int $b): bool
     $stmt->execute();
     $hay = (bool) $stmt->get_result()->fetch_row();
     $stmt->close();
+    if ($hay) {
+        return true;
+    }
+
+    // Postulación de adopción: aunque el perfil sea privado, el contacto
+    // queda habilitado mientras exista el vínculo (publicación activa).
+    $stmt = $conn->prepare(
+        'SELECT 1
+         FROM AdopcionPostulacion p
+         JOIN Adopcion a ON a.AdopcionId = p.AdopcionId AND a.Estado = \'A\'
+         WHERE (a.UserId = ? AND p.UserId = ?) OR (a.UserId = ? AND p.UserId = ?)
+         LIMIT 1'
+    );
+    $stmt->bind_param('iiii', $a, $b, $b, $a);
+    $stmt->execute();
+    $hay = (bool) $stmt->get_result()->fetch_row();
+    $stmt->close();
 
     return $hay;
 }

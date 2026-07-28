@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { perdidosApi } from '../../../src/api/perdidosApi';
+import { BotonEditarPublicacion } from '../../../src/components/BotonEditarPublicacion';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
 import { Perdido } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -19,6 +20,8 @@ export default function PerdidoDetalleScreen() {
   const [perdido, setPerdido] = useState<Perdido | null>(null);
   const [loading, setLoading] = useState(true);
   const [marcandoBusy, setMarcandoBusy] = useState(false);
+  const [avisando, setAvisando] = useState(false);
+  const [avisado, setAvisado] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,6 +56,19 @@ export default function PerdidoDetalleScreen() {
         },
       },
     ]);
+  };
+
+  const onViAEsteAnimal = async () => {
+    if (!perdido || avisando) return;
+    setAvisando(true);
+    const res = await perdidosApi.avisarAvistamiento(perdido.perdidoId);
+    setAvisando(false);
+    if (res.success && res.data) {
+      setAvisado(true);
+      // Directo al chat: en un caso donde importan los minutos, hacerlo buscar
+      // la conversación por su cuenta es perder el hilo.
+      router.push(`/(app)/chat/${res.data.conversacionId}` as never);
+    }
   };
 
   const onEliminar = () => {
@@ -100,7 +116,14 @@ export default function PerdidoDetalleScreen() {
       </Text>
       <Text style={{ color: colors.textMuted, marginBottom: 12 }}>@{perdido.autor.username}</Text>
 
-      {perdido.descripcion ? <Text style={{ color: colors.text, marginBottom: 16 }}>{perdido.descripcion}</Text> : null}
+      {perdido.descripcion ? (
+        <View style={[styles.descripcionCaja, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.descripcionTitulo, { color: colors.textMuted }]}>
+            {t('perdidos.descripcionTitulo')}
+          </Text>
+          <Text style={[styles.descripcionTexto, { color: colors.text }]}>{perdido.descripcion}</Text>
+        </View>
+      ) : null}
 
       {perdido.whatsappNumero ? (
         <Pressable
@@ -128,14 +151,38 @@ export default function PerdidoDetalleScreen() {
               )}
             </Pressable>
           ) : null}
+          <BotonEditarPublicacion
+            ruta="/(app)/perdidos/[id]/editar"
+            id={perdido.perdidoId}
+            editable={perdido.editable}
+            motivoNoEditable={perdido.motivoNoEditable}
+          />
           <Pressable onPress={onEliminar} style={styles.eliminarLink}>
             <Text style={{ color: colors.danger, fontSize: 12 }}>{t('perdidos.eliminarButton')}</Text>
           </Pressable>
         </>
       ) : (
-        <View style={styles.denunciaRow}>
-          <DenunciaButtonStub userId={perdido.autor.userId} perdidoId={perdido.perdidoId} />
-        </View>
+        <>
+          {perdido.estadoPerdido === 'activo' ? (
+            <Pressable
+              style={[styles.button, { backgroundColor: avisado ? colors.surface : colors.primary }]}
+              onPress={onViAEsteAnimal}
+              disabled={avisando}
+            >
+              {avisando ? (
+                <ActivityIndicator color={colors.primaryText} />
+              ) : (
+                <Text style={{ color: avisado ? colors.primary : colors.primaryText, fontWeight: '700' }}>
+                  {t(avisado ? 'perdidos.avistamientoEnviado' : 'perdidos.viAEsteAnimal')}
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+
+          <View style={styles.denunciaRow}>
+            <DenunciaButtonStub userId={perdido.autor.userId} perdidoId={perdido.perdidoId} />
+          </View>
+        </>
       )}
     </ScrollView>
   );
@@ -150,4 +197,7 @@ const styles = StyleSheet.create({
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 12 },
   eliminarLink: { marginTop: 4, alignItems: 'center' },
   denunciaRow: { marginTop: 16, alignItems: 'center' },
+  descripcionCaja: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 14, marginBottom: 16 },
+  descripcionTitulo: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginBottom: 5 },
+  descripcionTexto: { fontSize: 15, lineHeight: 22 },
 });

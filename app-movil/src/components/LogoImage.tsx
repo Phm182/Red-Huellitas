@@ -2,34 +2,32 @@ import React from 'react';
 import { Image, ImageStyle, StyleProp } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
-const logoColor = require('../../assets/logo/logo.png');
-const iconColor = require('../../assets/logo/icono.png');
-const siluetaBlanca = require('../../assets/logo/rh-siluetas-blancas.png');
-const siluetaNegra = require('../../assets/logo/rh-siluetas-negro.png');
+/** Siluetas v2: contraste correcto en claro / oscuro (login, header, auth). */
+const siluetaBlanca = require('../../assets/logo/rh-siluetas-blancas-2.png');
+const siluetaNegra = require('../../assets/logo/rh-siluetas-negro-2.png');
 
 interface LogoImageProps {
+  /** `icon` = tamaño compacto (header); misma asset según tema. */
   variant?: 'full' | 'icon';
   style?: StyleProp<ImageStyle>;
 }
 
 /**
- * Logo a color en fondos claros; en fondos oscuros usa la silueta blanca
- * para mantener contraste (no hay versión a color para dark mode todavía).
+ * Logo por tema: silueta negra en claro, blanca en oscuro.
  */
-export function LogoImage({ variant = 'full', style }: LogoImageProps) {
+export function LogoImage({ style }: LogoImageProps) {
   const { theme } = useTheme();
-
-  let source = logoColor;
-  if (variant === 'icon') {
-    source = iconColor;
-  } else if (theme === 'dark') {
-    source = siluetaBlanca;
-  }
+  const source = theme === 'dark' ? siluetaBlanca : siluetaNegra;
 
   return <Image source={source} style={style} resizeMode="contain" />;
 }
 
-/** Silueta en negro, útil para textos/iconos sobre fondos claros e independiente del theme. */
+/** Silueta negra fija (chips / avatares de fallback sobre fondos claros). */
 export function LogoSiluetaNegra({ style }: { style?: StyleProp<ImageStyle> }) {
   return <Image source={siluetaNegra} style={style} resizeMode="contain" />;
+}
+
+/** Silueta blanca fija (sobre fondos oscuros / media). */
+export function LogoSiluetaBlanca({ style }: { style?: StyleProp<ImageStyle> }) {
+  return <Image source={siluetaBlanca} style={style} resizeMode="contain" />;
 }

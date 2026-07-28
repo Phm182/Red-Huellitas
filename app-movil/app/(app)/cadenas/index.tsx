@@ -11,9 +11,11 @@ import { elevation, radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { filtrarPorTexto } from '../../../src/utils/filtrarPorTexto';
 import { rhMediaUrl } from '../../../src/utils/media';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListEndAddButton } from '../../../src/components/ui/ListEndAddButton';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 /** Avatares apilados de los últimos que se sumaron. */
@@ -68,6 +70,7 @@ export default function CadenasScreen() {
   const { colors } = useTheme();
 
   const [cadenas, setCadenas] = useState<Cadena[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
@@ -110,11 +113,20 @@ export default function CadenasScreen() {
 
   if (loading) return <SkeletonList />;
 
+  const filtrados = filtrarPorTexto(cadenas, busqueda, (c) => [
+    c.tema,
+    c.descripcion,
+    c.creador?.nombreCompleto,
+    c.creador?.username,
+  ]);
+  const buscando = busqueda.trim().length > 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
       <FlatList
         contentContainerStyle={[styles.lista, centeredContent]}
-        data={cadenas}
+        data={filtrados}
         keyExtractor={(c) => String(c.cadenaId)}
         refreshing={refrescando}
         onRefresh={onRefrescar}
@@ -123,14 +135,18 @@ export default function CadenasScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="link-outline"
-            titulo="Todavía no hay cadenas"
-            descripcion="Una cadena es un tema que alguien propone y el resto continúa con su propia historia. Creá la primera."
-            accionLabel="Crear una cadena"
-            onAccion={() => router.push('/(app)/cadenas/nueva')}
+            titulo={buscando ? t('common.sinResultadosBusqueda') : 'Todavía no hay cadenas'}
+            descripcion={
+              buscando
+                ? undefined
+                : 'Una cadena es un tema que alguien propone y el resto continúa con su propia historia. Creá la primera.'
+            }
+            accionLabel={buscando ? undefined : 'Crear una cadena'}
+            onAccion={buscando ? undefined : () => router.push('/(app)/cadenas/nueva')}
           />
         }
         ListFooterComponent={
-          cadenas.length > 0 ? (
+          filtrados.length > 0 ? (
             <ListEndAddButton
               label={t('cadenas.tituloNueva')}
               onPress={() => router.push('/(app)/cadenas/nueva')}

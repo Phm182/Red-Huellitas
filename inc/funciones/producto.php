@@ -72,9 +72,12 @@ function rh_producto_publico(mysqli $conn, array $p, int $viewerUserId, ?float $
 
     $whatsappVisible = $esDueno || ($p['WhatsappVisibilidad'] ?? null) === 'publica';
 
-    return [
+    $data = [
         'productoId' => $productoId,
         'tipoListado' => $p['TipoListado'],
+        // categoriaId suelto además del objeto: la pantalla de edición necesita
+        // el id para preseleccionar el picker.
+        'categoriaId' => (int) $p['CategoriaId'],
         'categoria' => rh_producto_categoria($conn, (int) $p['CategoriaId']),
         'autor' => rh_usuario_resumen([
             'UserId' => $p['UserId'],
@@ -98,4 +101,15 @@ function rh_producto_publico(mysqli $conn, array $p, int $viewerUserId, ?float $
         'estado' => $p['Estado'],
         'createdAt' => $p['CreatedAt'],
     ];
+
+    // Sólo para el dueño: en un listado ajeno no vale pagar la consulta de
+    // pedidos por cada fila.
+    if ($esDueno) {
+        require_once __DIR__ . '/edicion.php';
+        $bloqueo = rh_producto_motivo_bloqueo_edicion($conn, $productoId);
+        $data['editable'] = $bloqueo === null;
+        $data['motivoNoEditable'] = $bloqueo;
+    }
+
+    return $data;
 }

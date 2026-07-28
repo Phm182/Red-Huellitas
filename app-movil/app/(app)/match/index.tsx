@@ -1,19 +1,21 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { matchApi } from '../../../src/api/matchApi';
 import { mascotasApi } from '../../../src/api/mascotasApi';
 import { perfilApi } from '../../../src/api/perfilApi';
 import { RazaPicker } from '../../../src/components/RazaPicker';
+import { ChipOption } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { FilterSelect } from '../../../src/components/ui/FilterSelect';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { Especie, Mascota, MatchCandidato, Sexo, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../src/utils/media';
 
-const ESPECIES: Especie[] = ['perro', 'gato', 'otro'];
+import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
 const SEXOS: Sexo[] = ['macho', 'hembra'];
 const RADIOS: Array<20 | 50 | 100> = [20, 50, 100];
 
@@ -170,49 +172,78 @@ export default function MatchScreen() {
       </View>
 
       {disponibles.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-          {disponibles.map((m) => {
-            const activo = m.mascotaId === mascotaOrigenId;
-            return (
-              <Pressable
-                key={m.mascotaId}
-                onPress={() => setMascotaOrigenId(m.mascotaId)}
-                style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-              >
-                <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>{m.nombre}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.filtros}>
+          <FilterSelect
+            label={t('common.mascota')}
+            opciones={disponibles.map((m) => ({
+              valor: m.mascotaId,
+              label: m.nombre,
+              icon: 'paw-outline' as const,
+            }))}
+            seleccionado={mascotaOrigenId ?? disponibles[0].mascotaId}
+            onSelect={setMascotaOrigenId}
+          />
+        </View>
       ) : null}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-        <Pressable
-          onPress={() => onEspecieChange(null)}
-          style={[styles.chip, { borderColor: colors.primary, backgroundColor: especieFiltro === null ? colors.primary : 'transparent' }]}
-        >
-          <Text style={{ color: especieFiltro === null ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('match.cualquiera')}
-          </Text>
-        </Pressable>
-        {ESPECIES.map((e) => {
-          const activo = especieFiltro === e;
-          return (
-            <Pressable
-              key={e}
-              onPress={() => onEspecieChange(e)}
-              style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-            >
-              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                {t(`mascotas.especie${e.charAt(0).toUpperCase()}${e.slice(1)}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filtros}>
+        <FilterSelect
+          label={t('common.especie')}
+          opciones={
+            [
+              { valor: null, label: t('match.cualquiera'), icon: 'apps-outline' },
+              ...ESPECIES.map((e) => ({
+                valor: e,
+                label: t(especieI18nKey(e)),
+                icon: 'paw-outline' as const,
+              })),
+            ] as ChipOption<Especie | null>[]
+          }
+          seleccionado={especieFiltro}
+          onSelect={onEspecieChange}
+        />
+        <FilterSelect
+          label={t('common.sexo')}
+          opciones={
+            [
+              { valor: null, label: t('match.cualquiera') },
+              ...SEXOS.map((s) => ({
+                valor: s,
+                label: t(`match.sexo.${s}`),
+              })),
+            ] as ChipOption<Sexo | null>[]
+          }
+          seleccionado={sexoFiltro}
+          onSelect={setSexoFiltro}
+        />
+        <FilterSelect
+          label={t('common.edad')}
+          opciones={EDAD_BUCKETS.map((b) => ({
+            valor: b.key,
+            label: t(`match.edadBucket.${b.key}`),
+          }))}
+          seleccionado={edadBucketKey}
+          onSelect={setEdadBucketKey}
+        />
+        <FilterSelect
+          label={t('common.distancia')}
+          opciones={
+            [
+              ...RADIOS.map((r) => ({
+                valor: r,
+                label: `${r} km`,
+                icon: 'location-outline' as const,
+              })),
+              { valor: null, label: t('match.sinLimite'), icon: 'globe-outline' as const },
+            ] as ChipOption<20 | 50 | 100 | null>[]
+          }
+          seleccionado={radioKm}
+          onSelect={setRadioKm}
+        />
+      </View>
 
       {especieFiltro ? (
-        <View style={{ paddingHorizontal: 12 }}>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
           <RazaPicker
             especie={especieFiltro}
             razaId={razaId}
@@ -224,69 +255,6 @@ export default function MatchScreen() {
           />
         </View>
       ) : null}
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-        <Pressable
-          onPress={() => setSexoFiltro(null)}
-          style={[styles.chip, { borderColor: colors.primary, backgroundColor: sexoFiltro === null ? colors.primary : 'transparent' }]}
-        >
-          <Text style={{ color: sexoFiltro === null ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('match.cualquiera')}
-          </Text>
-        </Pressable>
-        {SEXOS.map((s) => {
-          const activo = sexoFiltro === s;
-          return (
-            <Pressable
-              key={s}
-              onPress={() => setSexoFiltro(s)}
-              style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-            >
-              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>{t(`match.sexo.${s}`)}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-        {EDAD_BUCKETS.map((b) => {
-          const activo = edadBucketKey === b.key;
-          return (
-            <Pressable
-              key={b.key}
-              onPress={() => setEdadBucketKey(b.key)}
-              style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-            >
-              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-                {t(`match.edadBucket.${b.key}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtros}>
-        {RADIOS.map((r) => {
-          const activo = radioKm === r;
-          return (
-            <Pressable
-              key={r}
-              onPress={() => setRadioKm(r)}
-              style={[styles.chip, { borderColor: colors.primary, backgroundColor: activo ? colors.primary : 'transparent' }]}
-            >
-              <Text style={{ color: activo ? colors.primaryText : colors.primary, fontWeight: '600' }}>{r}km</Text>
-            </Pressable>
-          );
-        })}
-        <Pressable
-          onPress={() => setRadioKm(null)}
-          style={[styles.chip, { borderColor: colors.primary, backgroundColor: radioKm === null ? colors.primary : 'transparent' }]}
-        >
-          <Text style={{ color: radioKm === null ? colors.primaryText : colors.primary, fontWeight: '600' }}>
-            {t('match.sinLimite')}
-          </Text>
-        </Pressable>
-      </ScrollView>
 
       <View style={[styles.deck, centeredContent]}>
         {loadingDeck ? (
@@ -301,7 +269,7 @@ export default function MatchScreen() {
             <Text style={{ color: colors.text, fontWeight: '700', fontSize: 20, marginTop: 12 }}>{candidatoActual.nombre}</Text>
             <Text style={{ color: colors.textMuted, marginTop: 4 }}>
               {candidatoActual.raza ??
-                t(`mascotas.especie${candidatoActual.especie.charAt(0).toUpperCase()}${candidatoActual.especie.slice(1)}`)}
+                t(especieI18nKey(candidatoActual.especie))}
               {candidatoActual.edadAnios !== null ? ` · ${candidatoActual.edadAnios} años` : ''}
             </Text>
             <Text style={{ color: colors.textMuted }}>{t(`match.sexo.${candidatoActual.sexo}`)}</Text>
@@ -375,8 +343,13 @@ const styles = StyleSheet.create({
   gateTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 8 },
   atajos: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 12 },
-  filtros: { flexGrow: 0, paddingHorizontal: 12, paddingVertical: 6 },
-  chip: { borderWidth: 1, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginRight: 8 },
+  filtros: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   deck: { flex: 1, padding: 16 },
   card: { width: '100%', maxWidth: 360, borderWidth: 1, borderRadius: 16, padding: 20, alignItems: 'center' },
   foto: { width: 220, height: 220, borderRadius: 14 },

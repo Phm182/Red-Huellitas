@@ -74,6 +74,7 @@ export default function AppLayout() {
         <Stack.Screen name="adopcion/[id]/postular" />
         <Stack.Screen name="adopcion/[id]/postulaciones" />
         <Stack.Screen name="adopcion/mis-postulaciones" />
+        <Stack.Screen name="adopcion/mis-publicaciones" />
         <Stack.Screen name="adopcion/favoritos" />
         <Stack.Screen name="campanias/index" />
         <Stack.Screen name="campanias/nueva" />

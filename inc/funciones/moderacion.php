@@ -37,6 +37,40 @@ const RH_DENUNCIA_CONTENIDOS = [
 ];
 
 /**
+ * Soft-delete del contenido asociado a una denuncia (Estado = 'I').
+ * Devuelve true si se actualizó alguna fila.
+ */
+function rh_moderacion_bajar_contenido(mysqli $conn, array $denuncia): bool
+{
+    $map = [
+        'PostId' => ['Post', 'PostId'],
+        'HistoriaId' => ['Historia', 'HistoriaId'],
+        'AdopcionId' => ['Adopcion', 'AdopcionId'],
+        'CampaniaId' => ['Campania', 'CampaniaId'],
+        'PerdidoId' => ['Perdido', 'PerdidoId'],
+        'TransitoId' => ['Transito', 'TransitoId'],
+        'DonacionId' => ['Donacion', 'DonacionId'],
+        'VeterinariaId' => ['Veterinaria', 'VeterinariaId'],
+        'ProductoId' => ['Producto', 'ProductoId'],
+    ];
+
+    foreach ($map as $col => [$tabla, $pk]) {
+        if (empty($denuncia[$col])) {
+            continue;
+        }
+        $id = (int) $denuncia[$col];
+        $stmt = $conn->prepare("UPDATE {$tabla} SET Estado = 'I' WHERE {$pk} = ? AND Estado = 'A'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $afectadas = $stmt->affected_rows;
+        $stmt->close();
+        return $afectadas > 0;
+    }
+
+    return false;
+}
+
+/**
  * Lee ?cursor= y ?limit= con los mismos topes que el resto del proyecto.
  * @return array{0: ?int, 1: int}
  */
