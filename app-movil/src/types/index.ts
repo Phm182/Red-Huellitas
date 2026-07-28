@@ -1,3 +1,5 @@
+import { Asistencias, Reputacion, TipoEquipo } from './equipo';
+
 export type Visibilidad = 'publica' | 'privada';
 
 export interface Usuario {
@@ -499,6 +501,26 @@ export interface Campania {
   bajaLimiteHoras?: number | null;
   preguntas?: CampaniaPregunta[];
   miInscripcion?: MiInscripcionCampania | null;
+  /** El equipo que la organiza, o null si la organiza una persona. */
+  equipo?: CampaniaEquipo | null;
+  /** A quién se califica al terminar: el equipo o la persona que la cargó. */
+  organizador?: {
+    tipo: 'usuario' | 'equipo';
+    id: number;
+    reputacion: Reputacion;
+  };
+  termino?: boolean;
+  /** Los admins del equipo administran la campaña aunque no la hayan cargado. */
+  puedoAdministrar?: boolean;
+}
+
+/** Resumen del equipo organizador, tal como viaja dentro de una campaña. */
+export interface CampaniaEquipo {
+  equipoId: number;
+  nombre: string;
+  avatarPath: string | null;
+  verificado: boolean;
+  tipo: TipoEquipo;
 }
 
 export type EstadoInscripcion = 'confirmada' | 'lista_espera' | 'cancelada' | 'ausente';
@@ -541,8 +563,14 @@ export interface CampaniaInscripcionAdmin {
   canceladaEn: string | null;
   avisoAusenciaEn: string | null;
   notaAusencia: string | null;
-  usuario: UsuarioResumen & { whatsappNumero: string | null };
+  usuario: UsuarioResumen & { whatsappNumero: string | null; avatarBust?: number | null };
   respuestas: { pregunta: string; respuesta: string | null }[];
+  /** null = todavia no se paso lista. No es lo mismo que "no vino". */
+  asistio: 'si' | 'no' | null;
+  reputacion: Reputacion;
+  asistencias: Asistencias;
+  /** Lo que el organizador ya le puso, si le puso algo. */
+  miCalificacion: { puntaje: number; comentario: string | null } | null;
 }
 
 export interface CampaniaPanel {

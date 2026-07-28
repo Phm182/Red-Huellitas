@@ -313,6 +313,8 @@
         "esRangoLabel": "Длится несколько дней",
         "fechaHastaLabel": "До",
         "zonaLabel": "Зона / адрес",
+        "organizaLabel": "Организует",
+        "organizaYo": "Я",
         "direccionLabel": "Адрес (необязательно)",
         "direccionPlaceholder": "ул. Главная, 12",
         "zonaPlaceholder": "Например: Центральная площадь",
@@ -810,5 +812,44 @@
         "avisoSinCupo": "Лимит премиум-карты исчерпан: вы по-прежнему видите всё на резервной карте.",
         "nativoPendienteTitulo": "Карты пока нет в нативном приложении",
         "nativoPendienteCuerpo": "Рядом найдено {{cantidad}}. Пока карта доступна в браузере."
+    },
+    "equipos": {
+        "tituloLista": "Команды",
+        "emptyLista": "Команд пока нет",
+        "emptyDesc": "Приюты, зоозащитники, ветклиники и госорганы работают как команды.",
+        "crear": "Создать команду",
+        "editar": "Изменить команду",
+        "nombreLabel": "Название команды",
+        "nombrePlaceholder": "Приют «Лапки»",
+        "tipoLabel": "Тип",
+        "descripcionLabel": "Описание",
+        "descripcionPlaceholder": "Чем занимаетесь, с какого года, как помогаете…",
+        "contactoLabel": "Контакты",
+        "miembros": "Участники",
+        "miembrosCount": "участников: {{count}}",
+        "solicitudes": "Заявки на вступление",
+        "pedirUnirme": "Подать заявку",
+        "pendienteAprobacion": "Ваша заявка ждёт подтверждения.",
+        "salir": "Покинуть команду",
+        "salirConfirm": "Вы больше не сможете публиковать от имени команды.",
+        "campanias": "Кампании команды",
+        "sinCalificaciones": "Оценок пока нет",
+        "duplicadoTitulo": "Такая команда уже есть",
+        "verElQueExiste": "Открыть существующую",
+        "rol": {
+            "dueno": "Владелец",
+            "admin": "Админ",
+            "miembro": "Участник"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Оценки",
+        "calificar": "Оценить",
+        "editarCalificacion": "Изменить мою оценку",
+        "calificarA": "Оценить: {{nombre}}",
+        "calificarOrganizador": "Оценить организатора",
+        "comentarioPlaceholder": "Как всё прошло? (необязательно)",
+        "vino": "Пришёл?",
+        "faltasSinAviso": "Не пришёл {{count}} раз без предупреждения"
     }
 }

@@ -4,6 +4,9 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { campaniaApi } from '../../../src/api/campaniaApi';
+import { equiposApi } from '../../../src/api/equiposApi';
+import { ChipRow } from '../../../src/components/ui/ChipRow';
+import { Equipo } from '../../../src/types/equipo';
 import { perfilApi } from '../../../src/api/perfilApi';
 import { TipoCampania, VerificacionEstado } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -28,6 +31,10 @@ export default function NuevaCampaniaScreen() {
   const [fechaHasta, setFechaHasta] = useState('');
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [direccion, setDireccion] = useState('');
+  // Equipos donde soy dueño o admin: son los únicos en cuyo nombre puedo
+  // publicar. Si no pertenezco a ninguno, el selector directamente no aparece.
+  const [misEquipos, setMisEquipos] = useState<Equipo[]>([]);
+  const [equipoId, setEquipoId] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -46,6 +53,12 @@ export default function NuevaCampaniaScreen() {
         }
         if (activo) setLoadingGate(false);
       });
+
+      equiposApi.mis().then((res) => {
+        if (!activo || !res.success || !res.data) return;
+        setMisEquipos(res.data.equipos.filter((e) => e.puedoAdministrar));
+      });
+
       return () => {
         activo = false;
       };
@@ -82,6 +95,7 @@ export default function NuevaCampaniaScreen() {
       fechaHasta: esRango ? fechaHasta : null,
       zonaDescripcion: zonaDescripcion.trim(),
       direccion: direccion.trim() || undefined,
+      equipoId: equipoId ?? undefined,
       zonaLat: coords.lat,
       zonaLng: coords.lng,
       requiereInscripcion,
@@ -174,6 +188,20 @@ export default function NuevaCampaniaScreen() {
         onChangeText={setZonaDescripcion}
         placeholder={t('campanias.zonaPlaceholder')}
       />
+
+      {misEquipos.length > 0 ? (
+        <>
+          <Text style={[styles.label, { color: colors.text }]}>{t('campanias.organizaLabel')}</Text>
+          <ChipRow
+            opciones={[
+              { valor: 0, label: t('campanias.organizaYo') },
+              ...misEquipos.map((e) => ({ valor: e.equipoId, label: e.nombre })),
+            ]}
+            seleccionado={equipoId ?? 0}
+            onSelect={(v) => setEquipoId(v === 0 ? null : v)}
+          />
+        </>
+      ) : null}
 
       <Text style={[styles.label, { color: colors.text }]}>{t('campanias.direccionLabel')}</Text>
       <AppInput

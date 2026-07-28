@@ -443,6 +443,8 @@
         "esRangoLabel": "Dura varios días",
         "fechaHastaLabel": "Hasta",
         "zonaLabel": "Zona / dirección",
+        "organizaLabel": "Organiza",
+        "organizaYo": "Yo",
         "direccionLabel": "Dirección (opcional)",
         "direccionPlaceholder": "Av. Rivadavia 1234",
         "zonaPlaceholder": "Ej: Plaza San Martín",
@@ -952,5 +954,48 @@
         "avisoSinCupo": "Se alcanzó el cupo del mapa premium: seguís viendo todo con el mapa alternativo.",
         "nativoPendienteTitulo": "El mapa todavía no está en la app nativa",
         "nativoPendienteCuerpo": "Encontramos {{cantidad}} publicaciones cerca. Por ahora el mapa se ve desde el navegador."
+    },
+    "equipos": {
+        "tituloLista": "Equipos",
+        "emptyLista": "Todavía no hay equipos",
+        "emptyDesc": "Los refugios, protectoras, veterinarias y organismos públicos se organizan en equipos.",
+        "crear": "Crear equipo",
+        "editar": "Editar equipo",
+        "nombreLabel": "Nombre del equipo",
+        "nombrePlaceholder": "Refugio Patitas",
+        "tipoLabel": "Tipo",
+        "descripcionLabel": "Descripción",
+        "descripcionPlaceholder": "Qué hacen, desde cuándo, cómo ayudan…",
+        "contactoLabel": "Contacto",
+        "miembros": "Miembros",
+        "miembrosCount": "{{count}} miembros",
+        "miembrosCount_one": "1 miembro",
+        "miembrosCount_other": "{{count}} miembros",
+        "solicitudes": "Pedidos para entrar",
+        "pedirUnirme": "Pedir unirme",
+        "pendienteAprobacion": "Tu pedido está esperando que lo aprueben.",
+        "salir": "Salir del equipo",
+        "salirConfirm": "Vas a dejar de publicar en nombre de este equipo.",
+        "campanias": "Campañas del equipo",
+        "sinCalificaciones": "Sin calificaciones",
+        "duplicadoTitulo": "Ese equipo ya existe",
+        "verElQueExiste": "Ver el que existe",
+        "rol": {
+            "dueno": "Dueño",
+            "admin": "Administra",
+            "miembro": "Miembro"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Calificaciones",
+        "calificar": "Calificar",
+        "editarCalificacion": "Cambiar mi calificación",
+        "calificarA": "Calificar a {{nombre}}",
+        "calificarOrganizador": "Calificar al organizador",
+        "comentarioPlaceholder": "¿Cómo te fue? (opcional)",
+        "vino": "¿Vino?",
+        "faltasSinAviso": "Faltó {{count}} veces sin avisar",
+        "faltasSinAviso_one": "Faltó 1 vez sin avisar",
+        "faltasSinAviso_other": "Faltó {{count}} veces sin avisar"
     }
 }

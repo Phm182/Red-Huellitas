@@ -313,6 +313,8 @@
         "esRangoLabel": "複数日にわたる",
         "fechaHastaLabel": "まで",
         "zonaLabel": "地域 / 住所",
+        "organizaLabel": "主催",
+        "organizaYo": "自分",
         "direccionLabel": "住所（任意）",
         "direccionPlaceholder": "中央通り1-2-3",
         "zonaPlaceholder": "例：中央広場",
@@ -808,5 +810,44 @@
         "avisoSinCupo": "プレミアムマップの上限に達しました。代替マップで引き続きすべて表示できます。",
         "nativoPendienteTitulo": "ネイティブアプリではマップはまだ利用できません",
         "nativoPendienteCuerpo": "近くで{{cantidad}}件見つかりました。今のところマップはブラウザで表示できます。"
+    },
+    "equipos": {
+        "tituloLista": "チーム",
+        "emptyLista": "まだチームがありません",
+        "emptyDesc": "保護施設、保護団体、動物病院、公的機関はチームとして活動します。",
+        "crear": "チームを作る",
+        "editar": "チームを編集",
+        "nombreLabel": "チーム名",
+        "nombrePlaceholder": "あしあとシェルター",
+        "tipoLabel": "種類",
+        "descripcionLabel": "説明",
+        "descripcionPlaceholder": "活動内容、いつから、どう支援しているか…",
+        "contactoLabel": "連絡先",
+        "miembros": "メンバー",
+        "miembrosCount": "メンバー {{count}} 人",
+        "solicitudes": "参加申請",
+        "pedirUnirme": "参加を申請",
+        "pendienteAprobacion": "申請は承認待ちです。",
+        "salir": "チームを抜ける",
+        "salirConfirm": "このチーム名義で投稿できなくなります。",
+        "campanias": "チームのキャンペーン",
+        "sinCalificaciones": "評価はまだありません",
+        "duplicadoTitulo": "そのチームは既にあります",
+        "verElQueExiste": "既存のチームを見る",
+        "rol": {
+            "dueno": "オーナー",
+            "admin": "管理者",
+            "miembro": "メンバー"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "評価",
+        "calificar": "評価する",
+        "editarCalificacion": "評価を変更",
+        "calificarA": "{{nombre}} を評価",
+        "calificarOrganizador": "主催者を評価",
+        "comentarioPlaceholder": "どうでしたか？（任意）",
+        "vino": "来ましたか？",
+        "faltasSinAviso": "無断欠席 {{count}} 回"
     }
 }

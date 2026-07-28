@@ -313,6 +313,8 @@
         "esRangoLabel": "Dure plusieurs jours",
         "fechaHastaLabel": "Jusqu'au",
         "zonaLabel": "Zone / adresse",
+        "organizaLabel": "Organisé par",
+        "organizaYo": "Moi",
         "direccionLabel": "Adresse (facultatif)",
         "direccionPlaceholder": "12 rue Principale",
         "zonaPlaceholder": "Ex : Place Saint-Martin",
@@ -810,5 +812,48 @@
         "avisoSinCupo": "Quota de la carte premium atteint : tout reste visible sur la carte de secours.",
         "nativoPendienteTitulo": "La carte n'est pas encore dans l'app native",
         "nativoPendienteCuerpo": "Nous avons trouvé {{cantidad}} annonces à proximité. Pour l'instant la carte s'affiche dans le navigateur."
+    },
+    "equipos": {
+        "tituloLista": "Équipes",
+        "emptyLista": "Pas encore d'équipes",
+        "emptyDesc": "Refuges, associations, vétérinaires et organismes publics s'organisent en équipes.",
+        "crear": "Créer une équipe",
+        "editar": "Modifier l'équipe",
+        "nombreLabel": "Nom de l'équipe",
+        "nombrePlaceholder": "Refuge Pattes",
+        "tipoLabel": "Type",
+        "descripcionLabel": "Description",
+        "descripcionPlaceholder": "Ce que vous faites, depuis quand, comment vous aidez…",
+        "contactoLabel": "Contact",
+        "miembros": "Membres",
+        "miembrosCount": "{{count}} membres",
+        "miembrosCount_one": "1 membre",
+        "miembrosCount_other": "{{count}} membres",
+        "solicitudes": "Demandes d'adhésion",
+        "pedirUnirme": "Demander à rejoindre",
+        "pendienteAprobacion": "Votre demande attend une validation.",
+        "salir": "Quitter l'équipe",
+        "salirConfirm": "Vous ne publierez plus au nom de cette équipe.",
+        "campanias": "Campagnes de l'équipe",
+        "sinCalificaciones": "Pas encore d'avis",
+        "duplicadoTitulo": "Cette équipe existe déjà",
+        "verElQueExiste": "Voir celle qui existe",
+        "rol": {
+            "dueno": "Propriétaire",
+            "admin": "Admin",
+            "miembro": "Membre"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Avis",
+        "calificar": "Évaluer",
+        "editarCalificacion": "Modifier mon avis",
+        "calificarA": "Évaluer {{nombre}}",
+        "calificarOrganizador": "Évaluer l'organisateur",
+        "comentarioPlaceholder": "Comment ça s'est passé ? (facultatif)",
+        "vino": "Présent ?",
+        "faltasSinAviso": "Absent {{count}} fois sans prévenir",
+        "faltasSinAviso_one": "Absent 1 fois sans prévenir",
+        "faltasSinAviso_other": "Absent {{count}} fois sans prévenir"
     }
 }

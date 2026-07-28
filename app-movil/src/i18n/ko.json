@@ -313,6 +313,8 @@
         "esRangoLabel": "여러 날 동안 진행",
         "fechaHastaLabel": "까지",
         "zonaLabel": "지역 / 주소",
+        "organizaLabel": "주최",
+        "organizaYo": "나",
         "direccionLabel": "주소(선택)",
         "direccionPlaceholder": "중앙대로 123",
         "zonaPlaceholder": "예: 중앙 광장",
@@ -808,5 +810,44 @@
         "avisoSinCupo": "프리미엄 지도 한도에 도달했습니다. 대체 지도로 계속 모두 볼 수 있습니다.",
         "nativoPendienteTitulo": "네이티브 앱에는 아직 지도가 없습니다",
         "nativoPendienteCuerpo": "근처에서 {{cantidad}}개를 찾았습니다. 지금은 브라우저에서 지도를 볼 수 있습니다."
+    },
+    "equipos": {
+        "tituloLista": "팀",
+        "emptyLista": "아직 팀이 없습니다",
+        "emptyDesc": "보호소, 보호단체, 동물병원, 공공기관이 팀으로 활동합니다.",
+        "crear": "팀 만들기",
+        "editar": "팀 수정",
+        "nombreLabel": "팀 이름",
+        "nombrePlaceholder": "발자국 보호소",
+        "tipoLabel": "유형",
+        "descripcionLabel": "소개",
+        "descripcionPlaceholder": "무엇을, 언제부터, 어떻게 돕는지…",
+        "contactoLabel": "연락처",
+        "miembros": "구성원",
+        "miembrosCount": "구성원 {{count}}명",
+        "solicitudes": "가입 요청",
+        "pedirUnirme": "가입 요청",
+        "pendienteAprobacion": "요청이 승인 대기 중입니다.",
+        "salir": "팀 나가기",
+        "salirConfirm": "이 팀 이름으로 게시할 수 없게 됩니다.",
+        "campanias": "팀의 캠페인",
+        "sinCalificaciones": "평가 없음",
+        "duplicadoTitulo": "이미 있는 팀입니다",
+        "verElQueExiste": "기존 팀 보기",
+        "rol": {
+            "dueno": "소유자",
+            "admin": "관리자",
+            "miembro": "구성원"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "평가",
+        "calificar": "평가하기",
+        "editarCalificacion": "내 평가 수정",
+        "calificarA": "{{nombre}} 평가",
+        "calificarOrganizador": "주최자 평가",
+        "comentarioPlaceholder": "어떠셨나요? (선택)",
+        "vino": "참석했나요?",
+        "faltasSinAviso": "연락 없이 {{count}}회 불참"
     }
 }

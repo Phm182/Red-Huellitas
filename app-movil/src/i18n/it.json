@@ -313,6 +313,8 @@
         "esRangoLabel": "Dura più giorni",
         "fechaHastaLabel": "Fino al",
         "zonaLabel": "Zona / indirizzo",
+        "organizaLabel": "Organizza",
+        "organizaYo": "Io",
         "direccionLabel": "Indirizzo (facoltativo)",
         "direccionPlaceholder": "Via Roma 12",
         "zonaPlaceholder": "Es: Piazza San Marco",
@@ -810,5 +812,48 @@
         "avisoSinCupo": "Quota della mappa premium esaurita: continui a vedere tutto sulla mappa alternativa.",
         "nativoPendienteTitulo": "La mappa non è ancora nell'app nativa",
         "nativoPendienteCuerpo": "Abbiamo trovato {{cantidad}} annunci nei dintorni. Per ora la mappa funziona nel browser."
+    },
+    "equipos": {
+        "tituloLista": "Squadre",
+        "emptyLista": "Ancora nessuna squadra",
+        "emptyDesc": "Rifugi, associazioni, veterinari ed enti pubblici si organizzano in squadre.",
+        "crear": "Crea squadra",
+        "editar": "Modifica squadra",
+        "nombreLabel": "Nome della squadra",
+        "nombrePlaceholder": "Rifugio Zampette",
+        "tipoLabel": "Tipo",
+        "descripcionLabel": "Descrizione",
+        "descripcionPlaceholder": "Cosa fate, da quando, come aiutate…",
+        "contactoLabel": "Contatti",
+        "miembros": "Membri",
+        "miembrosCount": "{{count}} membri",
+        "miembrosCount_one": "1 membro",
+        "miembrosCount_other": "{{count}} membri",
+        "solicitudes": "Richieste di ingresso",
+        "pedirUnirme": "Chiedi di unirti",
+        "pendienteAprobacion": "La tua richiesta attende approvazione.",
+        "salir": "Esci dalla squadra",
+        "salirConfirm": "Non pubblicherai più a nome di questa squadra.",
+        "campanias": "Campagne della squadra",
+        "sinCalificaciones": "Nessuna valutazione",
+        "duplicadoTitulo": "Questa squadra esiste già",
+        "verElQueExiste": "Vedi quella esistente",
+        "rol": {
+            "dueno": "Proprietario",
+            "admin": "Admin",
+            "miembro": "Membro"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Valutazioni",
+        "calificar": "Valuta",
+        "editarCalificacion": "Cambia la mia valutazione",
+        "calificarA": "Valuta {{nombre}}",
+        "calificarOrganizador": "Valuta l'organizzatore",
+        "comentarioPlaceholder": "Com'è andata? (facoltativo)",
+        "vino": "Si è presentato?",
+        "faltasSinAviso": "Assente {{count}} volte senza avvisare",
+        "faltasSinAviso_one": "Assente 1 volta senza avvisare",
+        "faltasSinAviso_other": "Assente {{count}} volte senza avvisare"
     }
 }

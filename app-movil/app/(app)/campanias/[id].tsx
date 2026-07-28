@@ -5,12 +5,15 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { campaniaApi } from '../../../src/api/campaniaApi';
+import { CalificarModal } from '../../../src/components/CalificarModal';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
+import { ReputacionLinea } from '../../../src/components/Estrellas';
 import { DireccionConMapa } from '../../../src/components/DireccionConMapa';
 import { Campania } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { compartirPost } from '../../../src/utils/compartir';
+import { hapticLeve } from '../../../src/utils/haptics';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 
 export default function CampaniaDetalleScreen() {
@@ -20,6 +23,7 @@ export default function CampaniaDetalleScreen() {
 
   const [campania, setCampania] = useState<Campania | null>(null);
   const [loading, setLoading] = useState(true);
+  const [calificando, setCalificando] = useState(false);
   const [inscribiendo, setInscribiendo] = useState(false);
   const [inscribiError, setInscribiError] = useState<string | null>(null);
   // El backend contesta distinto según si entró o quedó en lista de espera; se
@@ -165,7 +169,48 @@ export default function CampaniaDetalleScreen() {
         lat={campania.zonaLat}
         lng={campania.zonaLng}
       />
-      <Text style={{ color: colors.textMuted, marginBottom: 12 }}>@{campania.autor.username}</Text>
+      {campania.equipo ? (
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: '/(app)/equipos/[id]', params: { id: campania.equipo!.equipoId } })
+          }
+          style={[styles.organizador, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <Ionicons
+            name={campania.equipo.tipo.icono as never}
+            size={20}
+            color={campania.equipo.tipo.color}
+          />
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }} numberOfLines={1}>
+              {campania.equipo.nombre}
+            </Text>
+            <ReputacionLinea
+              reputacion={campania.organizador?.reputacion}
+              sinDatosLabel={t('equipos.sinCalificaciones')}
+            />
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </Pressable>
+      ) : (
+        <Text style={{ color: colors.textMuted, marginBottom: 12 }}>@{campania.autor.username}</Text>
+      )}
+
+      {/* Calificar recién cuando terminó: antes es opinar sobre algo que no
+          pasó, y el backend lo rechaza igual. */}
+      {campania.termino && campania.organizador && !campania.puedoAdministrar ? (
+        <Pressable
+          style={[styles.button, styles.buttonOutline, { borderColor: colors.primary }]}
+          onPress={() => {
+            hapticLeve();
+            setCalificando(true);
+          }}
+        >
+          <Text style={{ color: colors.primary, fontWeight: '700' }}>
+            ★ {t('calificaciones.calificarOrganizador')}
+          </Text>
+        </Pressable>
+      ) : null}
 
       {campania.descripcion ? <Text style={{ color: colors.text, marginBottom: 16 }}>{campania.descripcion}</Text> : null}
 
@@ -181,7 +226,7 @@ export default function CampaniaDetalleScreen() {
       ) : null}
 
       {campania.requiereInscripcion ? (
-        campania.esDueno ? (
+        campania.puedoAdministrar ?? campania.esDueno ? (
           <Pressable
             style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={() =>
@@ -266,7 +311,19 @@ export default function CampaniaDetalleScreen() {
         </Pressable>
       ) : (
         <View style={styles.denunciaRow}>
-          <DenunciaButtonStub userId={campania.autor.userId} campaniaId={campania.campaniaId} />
+          {campania.organizador ? (
+        <CalificarModal
+          visible={calificando}
+          onClose={() => setCalificando(false)}
+          campaniaId={campania.campaniaId}
+          paraTipo={campania.organizador.tipo}
+          paraId={campania.organizador.id}
+          nombre={campania.equipo?.nombre ?? campania.autor.nombreCompleto}
+          onListo={recargar}
+        />
+      ) : null}
+
+      <DenunciaButtonStub userId={campania.autor.userId} campaniaId={campania.campaniaId} />
         </View>
       )}
     </ScrollView>
@@ -275,6 +332,15 @@ export default function CampaniaDetalleScreen() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  organizador: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
   container: { padding: 20, paddingBottom: 40 },
   avisoCaja: {
     flexDirection: 'row',

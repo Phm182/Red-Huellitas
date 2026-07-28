@@ -313,6 +313,8 @@
         "esRangoLabel": "Dauert mehrere Tage",
         "fechaHastaLabel": "Bis",
         "zonaLabel": "Zone / Adresse",
+        "organizaLabel": "Organisiert von",
+        "organizaYo": "Ich",
         "direccionLabel": "Adresse (optional)",
         "direccionPlaceholder": "Hauptstraße 12",
         "zonaPlaceholder": "Z.B. Hauptplatz",
@@ -810,5 +812,48 @@
         "avisoSinCupo": "Kontingent der Premium-Karte erreicht: Du siehst weiterhin alles auf der Ersatzkarte.",
         "nativoPendienteTitulo": "Die Karte ist noch nicht in der nativen App",
         "nativoPendienteCuerpo": "Wir haben {{cantidad}} Beiträge in der Nähe gefunden. Vorerst läuft die Karte im Browser."
+    },
+    "equipos": {
+        "tituloLista": "Teams",
+        "emptyLista": "Noch keine Teams",
+        "emptyDesc": "Tierheime, Schutzvereine, Tierärzte und Behörden organisieren sich in Teams.",
+        "crear": "Team erstellen",
+        "editar": "Team bearbeiten",
+        "nombreLabel": "Teamname",
+        "nombrePlaceholder": "Tierheim Pfoten",
+        "tipoLabel": "Typ",
+        "descripcionLabel": "Beschreibung",
+        "descripcionPlaceholder": "Was ihr macht, seit wann, wie ihr helft…",
+        "contactoLabel": "Kontakt",
+        "miembros": "Mitglieder",
+        "miembrosCount": "{{count}} Mitglieder",
+        "miembrosCount_one": "1 Mitglied",
+        "miembrosCount_other": "{{count}} Mitglieder",
+        "solicitudes": "Beitrittsanfragen",
+        "pedirUnirme": "Beitritt anfragen",
+        "pendienteAprobacion": "Deine Anfrage wartet auf Freigabe.",
+        "salir": "Team verlassen",
+        "salirConfirm": "Du kannst dann nicht mehr im Namen des Teams posten.",
+        "campanias": "Kampagnen des Teams",
+        "sinCalificaciones": "Noch keine Bewertungen",
+        "duplicadoTitulo": "Dieses Team gibt es schon",
+        "verElQueExiste": "Bestehendes ansehen",
+        "rol": {
+            "dueno": "Inhaber",
+            "admin": "Admin",
+            "miembro": "Mitglied"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Bewertungen",
+        "calificar": "Bewerten",
+        "editarCalificacion": "Bewertung ändern",
+        "calificarA": "{{nombre}} bewerten",
+        "calificarOrganizador": "Veranstalter bewerten",
+        "comentarioPlaceholder": "Wie war es? (optional)",
+        "vino": "Erschienen?",
+        "faltasSinAviso": "{{count}}-mal unentschuldigt gefehlt",
+        "faltasSinAviso_one": "1-mal unentschuldigt gefehlt",
+        "faltasSinAviso_other": "{{count}}-mal unentschuldigt gefehlt"
     }
 }

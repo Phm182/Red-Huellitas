@@ -115,10 +115,11 @@ export const HUBS: Hub[] = [
     route: '/(app)/salud',
     icon: 'medkit-outline',
     iconActive: 'medkit',
-    match: (p) => /\/(salud|veterinarias|refugios|cuidados|campanias)(\/|$)/.test(p),
+    match: (p) => /\/(salud|veterinarias|refugios|cuidados|campanias|equipos)(\/|$)/.test(p),
     items: [
       { key: 'veterinarias', labelKey: 'veterinarias.tituloLista', route: '/(app)/veterinarias', icon: 'medkit-outline' },
       { key: 'refugios', labelKey: 'refugios.tituloLista', route: '/(app)/refugios', icon: 'business-outline' },
+      { key: 'equipos', labelKey: 'equipos.tituloLista', route: '/(app)/equipos', icon: 'people-outline' },
       { key: 'cuidados', labelKey: 'cuidados.tituloLista', route: '/(app)/cuidados', icon: 'book-outline' },
       { key: 'campanias', labelKey: 'campanias.tituloLista', route: '/(app)/campanias', icon: 'megaphone-outline' },
       { key: 'donaciones', labelKey: 'donaciones.tituloLista', route: '/(app)/donaciones', icon: 'gift-outline' },

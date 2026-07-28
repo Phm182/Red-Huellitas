@@ -29,6 +29,8 @@ export interface CrearCampaniaParams {
   zonaLng: number;
   requiereInscripcion: boolean;
   cupoMaximo?: number | null;
+  /** Publicar a nombre de un equipo. Sin esto la organiza la persona. */
+  equipoId?: number;
 }
 
 export const campaniaApi = {
@@ -43,6 +45,7 @@ export const campaniaApi = {
         ...(params.fechaHasta ? { fechaHasta: params.fechaHasta } : {}),
         zonaDescripcion: params.zonaDescripcion,
         ...(params.direccion ? { direccion: params.direccion } : {}),
+        ...(params.equipoId ? { equipoId: params.equipoId } : {}),
         zonaLat: params.zonaLat,
         zonaLng: params.zonaLng,
         requiereInscripcion: params.requiereInscripcion ? '1' : '0',

@@ -408,6 +408,88 @@ UI que lo llame — hoy las preguntas se cargan por API).
 
 ---
 
+## 4quater. Direccion exacta, Equipos y calificaciones (2026-07-28)
+
+### Direccion exacta en los lugares con puerta a la calle (`sql/044`)
+
+`ZonaDescripcion` es el barrio ("Palermo") y sirve para filtrar; para llegar
+hace falta la calle y el numero. Columna `Direccion` nueva en `Veterinaria`,
+`Campania` y `Usuario`, con el componente `DireccionConMapa` que las muestra
+juntas y agrega **"Ver en mapa"**: abre `/(app)/mapa?lat=&lng=` y el mapa vuela
+al punto exacto al montarse.
+
+**Solo para lugares publicos.** Las publicaciones de personas siguen
+difuminadas (`rh_geo_difuminar`); poner ahi un boton de "ver en mapa" sugeriria
+una precision que a proposito no existe.
+
+De paso, `inc/ajax/mapa/listar.php` dejo de reventar con un fatal de PHP cuando
+el cliente manda `tipos[]=a&tipos[]=b` en vez de `tipos=a,b`.
+
+### Equipos (`sql/045`)
+
+Hasta ahora "refugio" era un **tipo de cuenta**, y eso no alcanza: el gobierno
+de la ciudad no es ni veterinaria ni refugio pero hace campañas, y una
+organizacion tiene mas de una persona. Un equipo es una entidad aparte con
+miembros; cada persona conserva su usuario y **se une a un equipo existente**
+en vez de duplicar la misma organizacion cinco veces.
+
+- `TipoEquipoCatalogo` decide **icono y color** de cada insignia, asi que sumar
+  un tipo nuevo es una fila en la base y no un deploy de la app.
+- `EquipoMiembro` con `Estado` (`pendiente`/`activo`/`rechazado`/`salio`) y
+  `Rol` (`dueno`/`admin`/`miembro`). El pedido de entrar lo aprueba alguien de
+  adentro; sin eso cualquiera se colgaria del nombre de una ONG conocida.
+- Publicar en nombre del equipo lo pueden **solo dueño y admins**: si alcanzara
+  con ser miembro, sumarse daria permiso para hablar por la organizacion el
+  mismo dia.
+- `Campania.EquipoId` (NULL = la organiza una persona). Los admins del equipo
+  administran la campaña aunque no la hayan cargado ellos: el que la cargo se
+  puede ir de vacaciones.
+- `Equipo.Verificado` lo pone **moderacion**, nunca el propio equipo.
+
+Todo el "quien puede que" pasa por `rh_equipo_rol()` / `rh_equipo_puede_administrar()`
+en `inc/funciones/equipo.php`, y por `rh_campania_puede_administrar()` para las
+campañas. Estan concentrados a proposito: la membresia se chequea en una docena
+de endpoints y alcanza con olvidarse de uno.
+
+### Calificaciones cruzadas
+
+Terminada la campaña se califican **los dos lados**: el participante al
+organizador (equipo o persona) y el organizador a cada participante, con
+comentario. Una sola tabla `Calificacion` para ambos sentidos porque es el mismo
+dato; `DeTipo`/`ParaTipo` resuelven que un extremo pueda ser persona o equipo.
+
+- Una UNIQUE por `(contexto, contextoId, de, para)`: volver a calificar
+  **actualiza** la propia nota en vez de sumar otra fila. Si no, el promedio se
+  infla votando muchas veces lo mismo.
+- Solo califica **el que estuvo**: hay que tener inscripcion confirmada y la
+  campaña tiene que haber terminado. Sin eso la reputacion se llena de gente
+  que nunca piso el lugar.
+- `promedio` es `null` y no `0` cuando no hay ninguna: un equipo nuevo no tiene
+  cero estrellas, no tiene estrellas todavia.
+
+**Asistencia**, aparte de las calificaciones: `CampaniaInscripcion.Asistio`
+(`si`/`no`/NULL) la marca el organizador **despues** de la campaña. Es distinto
+de `Estado='ausente'`, que es el aviso previo del propio usuario. La diferencia
+es justamente lo que responde *"¿este se anoto cinco veces y no vino ninguna?"*,
+y aparece como alerta roja en el panel del organizador. NULL = todavia no se
+paso lista: usar 0 por defecto convertiria en faltador a todo el que participo
+de una campaña donde nadie tomo asistencia.
+
+**Verificado con curl y en browser**: crear equipo (y el rechazo del nombre
+duplicado, que ofrece el que ya existe), pedir/aprobar/rechazar membresia,
+publicar campaña a nombre del equipo, pasar lista, calificar de los dos lados,
+y los 403 de cada intento indebido.
+
+**Datos de prueba que quedaron en la base** (a pedido, para poder mirarlo):
+equipo *Gobierno de la Ciudad TEST*, campaña *TEST equipo castracion* con dos
+inscriptos —uno que fue y otro marcado como faltador sin aviso—, y las
+calificaciones de ida y vuelta.
+
+**Falta**: subir el avatar del equipo desde la app (el endpoint ya acepta
+`$_FILES['avatar']`, no hay UI), y el tab por equipo en el chat.
+
+---
+
 ## 5. Convenciones técnicas a mantener
 
 - **`sql/000_todo_schema.sql` es generado**: tras tocar `sql/`, correr

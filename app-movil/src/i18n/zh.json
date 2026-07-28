@@ -313,6 +313,8 @@
         "esRangoLabel": "持续多天",
         "fechaHastaLabel": "截止",
         "zonaLabel": "地区/地址",
+        "organizaLabel": "主办",
+        "organizaYo": "我",
         "direccionLabel": "地址（可选）",
         "direccionPlaceholder": "主街 123 号",
         "zonaPlaceholder": "例如：中心广场",
@@ -808,5 +810,44 @@
         "avisoSinCupo": "高级地图配额已用完：你仍可在备用地图上查看全部内容。",
         "nativoPendienteTitulo": "原生应用中还没有地图",
         "nativoPendienteCuerpo": "在附近找到 {{cantidad}} 条发布。目前地图可在浏览器中查看。"
+    },
+    "equipos": {
+        "tituloLista": "团队",
+        "emptyLista": "暂无团队",
+        "emptyDesc": "收容所、保护组织、兽医和公共机构以团队形式组织。",
+        "crear": "创建团队",
+        "editar": "编辑团队",
+        "nombreLabel": "团队名称",
+        "nombrePlaceholder": "小爪收容所",
+        "tipoLabel": "类型",
+        "descripcionLabel": "简介",
+        "descripcionPlaceholder": "你们做什么、从何时开始、如何帮助…",
+        "contactoLabel": "联系方式",
+        "miembros": "成员",
+        "miembrosCount": "{{count}} 位成员",
+        "solicitudes": "加入申请",
+        "pedirUnirme": "申请加入",
+        "pendienteAprobacion": "你的申请正在等待批准。",
+        "salir": "退出团队",
+        "salirConfirm": "你将不能再以该团队名义发布。",
+        "campanias": "团队的活动",
+        "sinCalificaciones": "暂无评价",
+        "duplicadoTitulo": "该团队已存在",
+        "verElQueExiste": "查看已有团队",
+        "rol": {
+            "dueno": "所有者",
+            "admin": "管理员",
+            "miembro": "成员"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "评价",
+        "calificar": "评价",
+        "editarCalificacion": "修改我的评价",
+        "calificarA": "评价 {{nombre}}",
+        "calificarOrganizador": "评价主办方",
+        "comentarioPlaceholder": "体验如何？（可选）",
+        "vino": "到场了吗？",
+        "faltasSinAviso": "{{count}} 次未到且未告知"
     }
 }

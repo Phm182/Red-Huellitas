@@ -429,6 +429,8 @@
         "esRangoLabel": "Spans several days",
         "fechaHastaLabel": "Until",
         "zonaLabel": "Zone / address",
+        "organizaLabel": "Organised by",
+        "organizaYo": "Me",
         "direccionLabel": "Address (optional)",
         "direccionPlaceholder": "123 Main St",
         "zonaPlaceholder": "E.g. San Martín Square",
@@ -938,5 +940,48 @@
         "avisoSinCupo": "Premium map quota reached: you're still seeing everything on the fallback map.",
         "nativoPendienteTitulo": "The map isn't in the native app yet",
         "nativoPendienteCuerpo": "We found {{cantidad}} posts nearby. For now the map works in the browser."
+    },
+    "equipos": {
+        "tituloLista": "Teams",
+        "emptyLista": "No teams yet",
+        "emptyDesc": "Shelters, rescue groups, vets and public bodies organise as teams.",
+        "crear": "Create team",
+        "editar": "Edit team",
+        "nombreLabel": "Team name",
+        "nombrePlaceholder": "Paws Shelter",
+        "tipoLabel": "Type",
+        "descripcionLabel": "Description",
+        "descripcionPlaceholder": "What you do, since when, how you help…",
+        "contactoLabel": "Contact",
+        "miembros": "Members",
+        "miembrosCount": "{{count}} members",
+        "miembrosCount_one": "1 member",
+        "miembrosCount_other": "{{count}} members",
+        "solicitudes": "Join requests",
+        "pedirUnirme": "Ask to join",
+        "pendienteAprobacion": "Your request is waiting for approval.",
+        "salir": "Leave team",
+        "salirConfirm": "You will stop posting on behalf of this team.",
+        "campanias": "Team campaigns",
+        "sinCalificaciones": "No ratings yet",
+        "duplicadoTitulo": "That team already exists",
+        "verElQueExiste": "See the existing one",
+        "rol": {
+            "dueno": "Owner",
+            "admin": "Admin",
+            "miembro": "Member"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Ratings",
+        "calificar": "Rate",
+        "editarCalificacion": "Change my rating",
+        "calificarA": "Rate {{nombre}}",
+        "calificarOrganizador": "Rate the organiser",
+        "comentarioPlaceholder": "How did it go? (optional)",
+        "vino": "Showed up?",
+        "faltasSinAviso": "No-showed {{count}} times",
+        "faltasSinAviso_one": "No-showed once",
+        "faltasSinAviso_other": "No-showed {{count}} times"
     }
 }

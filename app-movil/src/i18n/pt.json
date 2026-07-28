@@ -313,6 +313,8 @@
         "esRangoLabel": "Dura vários dias",
         "fechaHastaLabel": "Até",
         "zonaLabel": "Zona / endereço",
+        "organizaLabel": "Organiza",
+        "organizaYo": "Eu",
         "direccionLabel": "Endereço (opcional)",
         "direccionPlaceholder": "Rua Principal 123",
         "zonaPlaceholder": "Ex: Praça da Sé",
@@ -810,5 +812,48 @@
         "avisoSinCupo": "A cota do mapa premium acabou: você continua vendo tudo no mapa alternativo.",
         "nativoPendienteTitulo": "O mapa ainda não está no app nativo",
         "nativoPendienteCuerpo": "Encontramos {{cantidad}} publicações por perto. Por enquanto o mapa funciona no navegador."
+    },
+    "equipos": {
+        "tituloLista": "Equipes",
+        "emptyLista": "Ainda não há equipes",
+        "emptyDesc": "Abrigos, protetoras, veterinárias e órgãos públicos se organizam em equipes.",
+        "crear": "Criar equipe",
+        "editar": "Editar equipe",
+        "nombreLabel": "Nome da equipe",
+        "nombrePlaceholder": "Abrigo Patinhas",
+        "tipoLabel": "Tipo",
+        "descripcionLabel": "Descrição",
+        "descripcionPlaceholder": "O que fazem, desde quando, como ajudam…",
+        "contactoLabel": "Contato",
+        "miembros": "Membros",
+        "miembrosCount": "{{count}} membros",
+        "miembrosCount_one": "1 membro",
+        "miembrosCount_other": "{{count}} membros",
+        "solicitudes": "Pedidos para entrar",
+        "pedirUnirme": "Pedir para entrar",
+        "pendienteAprobacion": "Seu pedido aguarda aprovação.",
+        "salir": "Sair da equipe",
+        "salirConfirm": "Você deixará de publicar em nome desta equipe.",
+        "campanias": "Campanhas da equipe",
+        "sinCalificaciones": "Sem avaliações",
+        "duplicadoTitulo": "Essa equipe já existe",
+        "verElQueExiste": "Ver a existente",
+        "rol": {
+            "dueno": "Dono",
+            "admin": "Administra",
+            "miembro": "Membro"
+        }
+    },
+    "calificaciones": {
+        "recibidas": "Avaliações",
+        "calificar": "Avaliar",
+        "editarCalificacion": "Mudar minha avaliação",
+        "calificarA": "Avaliar {{nombre}}",
+        "calificarOrganizador": "Avaliar o organizador",
+        "comentarioPlaceholder": "Como foi? (opcional)",
+        "vino": "Compareceu?",
+        "faltasSinAviso": "Faltou {{count}} vezes sem avisar",
+        "faltasSinAviso_one": "Faltou 1 vez sem avisar",
+        "faltasSinAviso_other": "Faltou {{count}} vezes sem avisar"
     }
 }
