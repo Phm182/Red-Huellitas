@@ -47,6 +47,8 @@ type Props = {
   miUbicacion?: { lat: number; lng: number } | null;
   /** Radio de incerteza del GPS en metros; dibuja el halo de precisión. */
   precisionM?: number | null;
+  /** Sólo nativo: la cámara sigue al usuario. En web se ignora. */
+  seguirme?: boolean;
   /**
    * Pedido de centrar el mapa en un punto. El `nonce` existe para poder pedir
    * dos veces el MISMO punto: sin él, tocar "centrarme" estando ya ahí no
@@ -273,12 +275,19 @@ export function MapaLienzo({
         mapa.on('load', () => {
           if (!activo) return;
 
-          // Edificios en 3D: es lo que más cambia la percepción de "futurista",
-          // y sale del propio estilo, sin datos extra. Sólo existe en los
-          // estilos de Mapbox; en MapLibre/Carto la capa no está y se saltea.
+          // Edificios en 3D: es lo que más cambia la percepción de
+          // "futurista", y sale del propio estilo, sin datos extra.
+          //
+          // Las dos fuentes se arman distinto y por eso hay dos ramas: Mapbox
+          // usa la fuente `composite` con `height`/`min_height`, y los estilos
+          // de Carto (OpenMapTiles) usan la fuente `carto` con `render_height`
+          // y `render_min_height`. Hasta que esto estuvo, MapLibre se veía
+          // plano al lado de Mapbox y de ahí venía la diferencia.
           try {
             const capas = mapa.getStyle()?.layers ?? [];
             const etiqueta = capas.find((c: any) => c.type === 'symbol' && c.layout?.['text-field']);
+            const color = oscuro ? '#1b2540' : '#c9d4e8';
+
             if (mapa.getSource('composite')) {
               mapa.addLayer(
                 {
@@ -289,7 +298,7 @@ export function MapaLienzo({
                   type: 'fill-extrusion',
                   minzoom: 14,
                   paint: {
-                    'fill-extrusion-color': oscuro ? '#1b2540' : '#c9d4e8',
+                    'fill-extrusion-color': color,
                     'fill-extrusion-height': ['get', 'height'],
                     'fill-extrusion-base': ['get', 'min_height'],
                     'fill-extrusion-opacity': 0.65,
@@ -297,6 +306,42 @@ export function MapaLienzo({
                 },
                 etiqueta?.id
               );
+            } else {
+              // Se busca la fuente vectorial que tenga la capa `building`, en
+              // vez de asumir su nombre: Carto la llama `carto`, otros
+              // proveedores de OpenMapTiles la llaman `openmaptiles`.
+              const estilo = mapa.getStyle();
+              const fuente = Object.keys(estilo?.sources ?? {}).find(
+                (k) => (estilo!.sources as any)[k]?.type === 'vector'
+              );
+              if (fuente) {
+                mapa.addLayer(
+                  {
+                    id: 'rh-edificios',
+                    source: fuente,
+                    'source-layer': 'building',
+                    type: 'fill-extrusion',
+                    minzoom: 14,
+                    paint: {
+                      'fill-extrusion-color': color,
+                      'fill-extrusion-height': [
+                        'coalesce',
+                        ['get', 'render_height'],
+                        ['get', 'height'],
+                        6,
+                      ],
+                      'fill-extrusion-base': [
+                        'coalesce',
+                        ['get', 'render_min_height'],
+                        ['get', 'min_height'],
+                        0,
+                      ],
+                      'fill-extrusion-opacity': 0.6,
+                    },
+                  },
+                  etiqueta?.id
+                );
+              }
             }
           } catch {
             // Un estilo sin capa de edificios no es un error: el mapa va igual.

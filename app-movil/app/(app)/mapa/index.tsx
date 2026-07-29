@@ -76,6 +76,9 @@ export default function MapaScreen() {
   const [irA, setIrA] = useState<{ lat: number; lng: number; nonce: number } | null>(null);
   const [avisoGps, setAvisoGps] = useState<string | null>(null);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  // La cámara acompaña al usuario recién cuando él lo pide; arrastrar el mapa
+  // lo apaga, porque en ese momento está mirando otra cosa a propósito.
+  const [seguirme, setSeguirme] = useState(false);
 
   // El centro con el que se pidieron los puntos, para no volver a pedir por un
   // arrastre de dos cuadras.
@@ -249,6 +252,10 @@ export default function MapaScreen() {
   /** Al soltar el mapa, sólo recargar si se alejó de verdad del último pedido. */
   const onMover = useCallback(
     (c: { lat: number; lng: number }) => {
+      // Si el mapa se movió porque el usuario lo arrastró, deja de seguirlo:
+      // insistir en volver a centrarlo sería pelearle el control.
+      setSeguirme(false);
+
       const previo = centroPedido.current;
       if (!previo) return;
       const dLat = Math.abs(c.lat - previo.lat);
@@ -271,6 +278,7 @@ export default function MapaScreen() {
   const centrarEnMi = useCallback(async () => {
     hapticLeve();
     setAvisoGps(null);
+    setSeguirme(true);
 
     // Si ya sabemos dónde estás, se vuela ahí en el acto y recién después se
     // pide una lectura mejor: esperar el GPS con la pantalla quieta hacía
@@ -290,8 +298,10 @@ export default function MapaScreen() {
   // permiso dejaba el botón mudo.
   useEffect(() => {
     if (estadoGps === 'denegada') setAvisoGps(t('mapa.gpsDenegado'));
+    else if (estadoGps === 'servicios_apagados') setAvisoGps(t('mapa.gpsApagado'));
+    else if (estadoGps === 'solo_aproximada') setAvisoGps(t('mapa.gpsAproximado'));
     else if (estadoGps === 'error') setAvisoGps(t('mapa.gpsError'));
-    else if (estadoGps === 'lista') setAvisoGps(null);
+    else if (estadoGps === 'siguiendo') setAvisoGps(null);
   }, [estadoGps, t]);
 
   /**
@@ -364,6 +374,7 @@ export default function MapaScreen() {
             centro={centro}
             miUbicacion={miUbicacion}
             precisionM={fijacion?.precisionM ?? null}
+            seguirme={seguirme}
             irA={irA}
             oscuro={esOscuro}
             onSeleccion={setSeleccion}
@@ -406,7 +417,11 @@ export default function MapaScreen() {
               {estadoGps === 'buscando' ? (
                 <ActivityIndicator size="small" color="#4CC9F0" />
               ) : (
-                <Ionicons name="locate" size={18} color={miUbicacion ? '#4CC9F0' : '#fff'} />
+                <Ionicons
+                  name={estadoGps === 'siguiendo' ? 'locate' : 'locate-outline'}
+                  size={18}
+                  color={miUbicacion ? '#4CC9F0' : '#fff'}
+                />
               )}
             </Pressable>
             <Pressable
@@ -607,7 +622,9 @@ const styles = StyleSheet.create({
   pastillaTexto: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   inferior: { position: 'absolute', left: 0, right: 0, gap: 8 },
-  todasWrap: { borderRadius: 20, overflow: 'hidden' },
+  // `alignSelf` para que la píldora mida lo que mide su texto: estirada a todo
+  // el ancho parecía una barra de estado y no un botón que se toca.
+  todasWrap: { borderRadius: 20, overflow: 'hidden', alignSelf: 'flex-start' },
   todas: {
     flexDirection: 'row',
     alignItems: 'center',

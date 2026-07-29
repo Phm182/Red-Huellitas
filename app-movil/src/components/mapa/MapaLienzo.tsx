@@ -3,6 +3,7 @@ import {
   type CameraRef,
   GeoJSONSource,
   type GeoJSONSourceRef,
+  Images,
   Layer,
   Map,
   UserLocation,
@@ -11,6 +12,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MAPA_TIPO_POR_CLAVE } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
+import { rhMediaUrl } from '../../utils/media';
 
 type Props = {
   sesion: MapaSesion;
@@ -22,6 +24,8 @@ type Props = {
   oscuro: boolean;
   onSeleccion: (puntos: MapaPunto[]) => void;
   onMover?: (centro: { lat: number; lng: number }) => void;
+  /** Con esto la cámara acompaña al usuario mientras camina (sólo nativo). */
+  seguirme?: boolean;
 };
 
 /**
@@ -59,14 +63,29 @@ export function sesionMapaViva(_oscuro: boolean): MapaSesion | null {
 export function MapaLienzo({
   puntos,
   centro,
-  miUbicacion,
   irA,
   oscuro,
+  seguirme = false,
   onSeleccion,
   onMover,
 }: Props) {
   const camara = useRef<CameraRef>(null);
   const fuente = useRef<GeoJSONSourceRef>(null);
+
+  /**
+   * Las fotos de las publicaciones, cargadas como imágenes del estilo.
+   *
+   * Es lo que hace que el mapa nativo se vea como el de la web: un círculo de
+   * color dice "acá hay algo", una carita dice *qué* hay. MapLibre las baja y
+   * las cachea solo; nosotros sólo declaramos el diccionario.
+   */
+  const imagenes = useMemo(() => {
+    const dic: Record<string, string> = {};
+    puntos.forEach((p) => {
+      if (p.fotoPath) dic[`foto-${p.tipo}-${p.id}`] = rhMediaUrl(p.fotoPath);
+    });
+    return dic;
+  }, [puntos]);
 
   const coleccion = useMemo(
     () => ({
@@ -80,6 +99,9 @@ export function MapaLienzo({
           // nativo sólo aceptan valores planos.
           punto: JSON.stringify(p),
           color: MAPA_TIPO_POR_CLAVE[p.tipo]?.color ?? '#4CC9F0',
+          // Cadena vacía y no null: las expresiones del estilo comparan
+          // contra '' para decidir si hay foto.
+          foto: p.fotoPath ? `foto-${p.tipo}-${p.id}` : '',
         },
         geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
       })),
@@ -110,11 +132,18 @@ export function MapaLienzo({
         <Camera
           ref={camara}
           initialViewState={{ center: [centro.lng, centro.lat], zoom: 12.4, pitch: 45 }}
+          // Seguir al usuario mientras camina: el pedido fue "si se mueve, que
+          // se mueva también". Se apaga en cuanto arrastra el mapa a mano —lo
+          // hace el propio motor— para no pelearle el control.
+          trackUserLocation={seguirme ? 'default' : undefined}
         />
 
-        {/* El punto azul lo maneja el sistema: se actualiza solo y con la
-            precisión real del GPS, sin que tengamos que re-renderizar. */}
-        {miUbicacion ? <UserLocation animated accuracy heading /> : null}
+        {/* El punto azul lo maneja el sistema: se actualiza solo, con la
+            precisión real del GPS y el cono de orientación. `accuracy` dibuja
+            el halo de incerteza, que es más honesto que un punto nítido. */}
+        <UserLocation animated accuracy heading minDisplacement={3} />
+
+        <Images images={imagenes} />
 
         <GeoJSONSource
           ref={fuente}
@@ -178,14 +207,52 @@ export function MapaLienzo({
             paint={{ 'text-color': '#06202E' }}
           />
           <Layer
+            id="rh-grupos-halo"
+            type="circle"
+            filter={['has', 'point_count']}
+            beforeId="rh-grupos"
+            paint={{
+              'circle-color': '#4CC9F0',
+              'circle-radius': ['step', ['get', 'point_count'], 30, 10, 38, 50, 46],
+              'circle-blur': 1,
+              'circle-opacity': 0.45,
+            }}
+          />
+          {/* Tres capas por punto, como en la web: el resplandor de color, el
+              disco, y encima la foto. Separadas porque el halo tiene que
+              quedar debajo de la foto de los vecinos, no sólo de la propia. */}
+          <Layer
+            id="rh-sueltos-halo"
+            type="circle"
+            filter={['!', ['has', 'point_count']]}
+            paint={{
+              'circle-color': ['get', 'color'],
+              'circle-radius': 21,
+              'circle-blur': 1,
+              'circle-opacity': 0.55,
+            }}
+          />
+          <Layer
             id="rh-sueltos"
             type="circle"
             filter={['!', ['has', 'point_count']]}
             paint={{
               'circle-color': ['get', 'color'],
-              'circle-radius': 9,
+              // Con foto el disco es el marco; sin foto, el pin entero.
+              'circle-radius': ['case', ['==', ['get', 'foto'], ''], 9, 15],
               'circle-stroke-width': 2.5,
               'circle-stroke-color': 'rgba(255,255,255,.92)',
+            }}
+          />
+          <Layer
+            id="rh-sueltos-foto"
+            type="symbol"
+            filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'foto'], '']]}
+            layout={{
+              'icon-image': ['get', 'foto'],
+              // 52 px de foto reducidos al diámetro del disco.
+              'icon-size': 0.52,
+              'icon-allow-overlap': true,
             }}
           />
         </GeoJSONSource>
