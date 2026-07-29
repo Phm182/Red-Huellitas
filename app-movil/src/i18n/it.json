@@ -808,6 +808,8 @@
         "gpsApagado": "Attiva la posizione del telefono per vedere dove sei.",
         "gpsVago": "Posizione approssimativa: il telefono non vede ancora i satelliti. Esci all'aperto o attendi.",
         "gpsFaltaAceptar": "Tocca il pulsante di posizione e accetta il permesso: il browser lo chiede per ogni sito.",
+        "mostrandoZona": "Mostra la tua zona salvata: {{zona}}. Non è la tua posizione esatta.",
+        "mostrandoZonaSinNombre": "Mostra la tua zona salvata, non la tua posizione esatta.",
         "gpsAproximado": "Android ha dato la posizione approssimativa. Attiva “Posizione precisa” nei permessi dell'app.",
         "forzadoEnEspera": "La mappa è già scaricata. Potrai scaricarne una nuova tra {{dias}} giorni, o allontanandoti più di 50 km.",
         "todasLasPublicaciones": "Tutte le pubblicazioni",

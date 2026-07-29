@@ -3,6 +3,13 @@ import type { MapaPunto, MapaSesion, MapaTipo } from '../types/mapa';
 
 interface MapaResultado {
   centro: { lat: number; lng: number };
+  /**
+   * true = el centro NO es dónde estás: es el barrio que cargaste al
+   * registrarte, porque no hubo GPS. Se muestra en pantalla para que no se
+   * confunda una cosa con la otra.
+   */
+  centroEsZonaGuardada: boolean;
+  zonaDescripcion: string | null;
   radioKm: number;
   puntos: MapaPunto[];
   total: number;

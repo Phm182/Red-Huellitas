@@ -23,8 +23,17 @@ $lng = isset($_GET['lng']) && $_GET['lng'] !== '' ? (float) $_GET['lng'] : null;
 
 // Sin coordenadas se cae a la zona guardada del usuario, así que el mapa abre
 // en algún lado razonable aunque el permiso de ubicación esté denegado.
+//
+// Que eso pasó viaja en la respuesta (`centroEsZonaGuardada`). Sin avisarlo,
+// el mapa mostraba el barrio del onboarding como si fuera el GPS, y desde
+// afuera se ve idéntico a "la ubicación es imprecisa": el usuario compara su
+// esquina contra el centro de su barrio y concluye que el mapa está mal.
+$zonaGuardada = false;
+$zonaDescripcion = null;
+
 if ($lat === null || $lng === null) {
-    $stmt = $conn->prepare('SELECT ZonaLat, ZonaLng FROM Usuario WHERE UserId = ?');
+    $zonaGuardada = true;
+    $stmt = $conn->prepare('SELECT ZonaLat, ZonaLng, ZonaDescripcion FROM Usuario WHERE UserId = ?');
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $u = $stmt->get_result()->fetch_assoc();
@@ -35,6 +44,7 @@ if ($lat === null || $lng === null) {
     }
     $lat = (float) $u['ZonaLat'];
     $lng = (float) $u['ZonaLng'];
+    $zonaDescripcion = $u['ZonaDescripcion'] ?? null;
 }
 
 if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
@@ -79,6 +89,9 @@ usort($puntos, static fn(array $a, array $b) => $a['distanciaKm'] <=> $b['distan
 
 json_success([
     'centro' => ['lat' => $lat, 'lng' => $lng],
+    // true = esto NO es dónde estás, es el barrio que cargaste al registrarte.
+    'centroEsZonaGuardada' => $zonaGuardada,
+    'zonaDescripcion' => $zonaDescripcion,
     'radioKm' => $radioKm,
     'puntos' => $puntos,
     'total' => count($puntos),

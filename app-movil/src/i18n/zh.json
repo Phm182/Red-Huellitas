@@ -806,6 +806,8 @@
         "gpsApagado": "请打开手机定位以查看你的位置。",
         "gpsVago": "位置为大致范围：手机尚未搜到卫星。请到室外或稍等片刻。",
         "gpsFaltaAceptar": "点击定位按钮并允许权限：浏览器按站点分别询问。",
+        "mostrandoZona": "显示你保存的区域：{{zona}}。这不是你的精确位置。",
+        "mostrandoZonaSinNombre": "显示你保存的区域，不是精确位置。",
         "gpsAproximado": "Android 只授予了大致位置。请在应用权限中开启“精确位置”。",
         "forzadoEnEspera": "地图已下载。{{dias}} 天后可下载新地图，或在移动超过 50 公里后。",
         "todasLasPublicaciones": "全部发布",

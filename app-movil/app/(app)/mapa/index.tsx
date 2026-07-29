@@ -79,6 +79,9 @@ export default function MapaScreen() {
   // La cámara acompaña al usuario recién cuando él lo pide; arrastrar el mapa
   // lo apaga, porque en ese momento está mirando otra cosa a propósito.
   const [seguirme, setSeguirme] = useState(false);
+  // Cuando el mapa abre sin GPS muestra la zona del perfil. Decirlo evita la
+  // confusión de mirar el centro del barrio y pensar que es tu posición.
+  const [zonaGuardada, setZonaGuardada] = useState<string | null>(null);
 
   // El centro con el que se pidieron los puntos, para no volver a pedir por un
   // arrastre de dos cuadras.
@@ -192,6 +195,9 @@ export default function MapaScreen() {
         setPuntos(res.data.puntos);
         setPorTipo(res.data.porTipo);
         setCentro(res.data.centro);
+        setZonaGuardada(
+          res.data.centroEsZonaGuardada ? res.data.zonaDescripcion ?? '' : null
+        );
         centroPedido.current = res.data.centro;
         void guardarCacheMapa(claveMapa(res.data.centro, radioKm, tipos), {
           centro: res.data.centro,
@@ -492,12 +498,30 @@ export default function MapaScreen() {
         </ScrollView>
       </View>
 
+      {/* Qué estás mirando cuando no hay GPS. Sin esto, el mapa centrado en el
+          barrio del onboarding se lee como "mi ubicación, mal puesta". */}
+      {zonaGuardada !== null && !miUbicacion ? (
+        <View style={[styles.aviso, { top: insets.top + 108, backgroundColor: 'rgba(20,60,90,.92)' }]}>
+          <Text style={styles.avisoTexto}>
+            {zonaGuardada
+              ? t('mapa.mostrandoZona', { zona: zonaGuardada })
+              : t('mapa.mostrandoZonaSinNombre')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* El aviso del GPS. Existe porque sin esto negar el permiso dejaba el
           botón de centrar sin ninguna respuesta visible. */}
       {avisoGps ? (
         <Pressable
           onPress={() => setAvisoGps(null)}
-          style={[styles.aviso, { top: insets.top + 108, backgroundColor: 'rgba(200,120,20,.92)' }]}
+          style={[
+            styles.aviso,
+            {
+              top: insets.top + (zonaGuardada !== null && !miUbicacion ? 150 : 108),
+              backgroundColor: 'rgba(200,120,20,.92)',
+            },
+          ]}
         >
           <Text style={styles.avisoTexto}>{avisoGps}</Text>
         </Pressable>

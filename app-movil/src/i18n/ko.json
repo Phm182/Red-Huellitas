@@ -806,6 +806,8 @@
         "gpsApagado": "현재 위치를 보려면 휴대폰 위치를 켜세요.",
         "gpsVago": "대략적인 위치입니다. 위성을 아직 잡지 못했습니다. 야외로 나가거나 잠시 기다려 주세요.",
         "gpsFaltaAceptar": "위치 버튼을 누르고 권한을 허용하세요. 브라우저는 사이트별로 묻습니다.",
+        "mostrandoZona": "저장된 지역을 표시 중: {{zona}}. 정확한 현재 위치가 아닙니다.",
+        "mostrandoZonaSinNombre": "저장된 지역을 표시 중입니다. 정확한 위치가 아닙니다.",
         "gpsAproximado": "Android가 대략적인 위치만 허용했습니다. 앱 권한에서 ‘정확한 위치’를 켜세요.",
         "forzadoEnEspera": "지도가 이미 내려받아져 있습니다. {{dias}}일 후 또는 50km 이상 이동하면 새로 받을 수 있습니다.",
         "todasLasPublicaciones": "모든 게시물",
