@@ -720,7 +720,7 @@
         "noSePudoDesconectar": "No se pudo desconectar la cuenta de Mercado Pago."
     },
     "juego": {
-        "titulo": "HuePlay",
+        "titulo": "HueGotchi",
         "sinMascotas": "Primero cargá una mascota para poder cuidarla acá.",
         "sinEmpezar": "Todavía no la cuidaste",
         "nivel": "Nivel {{nivel}}",
@@ -851,7 +851,7 @@
         "rescate": "Rescate",
         "tienda": "Tienda",
         "salud": "Salud",
-        "hueplay": "HuePlay",
+        "hueplay": "HueGotchi",
         "configuracion": "Configuración",
         "atajosHint": "Mantené apretado para ver los atajos",
         "ocultarBotones": "Ocultar botones",

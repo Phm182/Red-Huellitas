@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "product": "HueGotchi",
+  "artboard": "Pet",
+  "stateMachine": "PetLife",
+  "files": {
+    "gato": "assets/juego/rive/gato_base.riv",
+    "perro": "assets/juego/rive/perro_base.riv"
+  },
+  "triggers": ["poke", "feed", "play", "bath", "sleep"],
+  "numbers": {
+    "lookX": { "min": -1, "max": 1 },
+    "lookY": { "min": -1, "max": 1 },
+    "squash": { "min": 0.85, "max": 1.15 },
+    "stretch": { "min": 0.85, "max": 1.15 },
+    "mood": { "min": 0, "max": 1 },
+    "bodyScale": { "min": 0.7, "max": 1.4 },
+    "weight": { "min": 0.6, "max": 1.6 },
+    "length": { "min": 0.85, "max": 1.25 }
+  },
+  "booleans": ["isSleeping", "isDragging"],
+  "states": ["idle", "happy", "sad", "eating", "playing", "bathing", "sleeping", "poke"],
+  "coats": [
+    "coat_default",
+    "coat_orange",
+    "coat_gray",
+    "coat_black",
+    "coat_white",
+    "coat_cream",
+    "coat_tabby",
+    "coat_calico",
+    "coat_spotted"
+  ],
+  "patterns": ["pattern_none", "pattern_stripes", "pattern_spots", "pattern_mask"],
+  "accessories": ["acc_collar", "acc_bow", "acc_hat", "acc_glasses", "acc_bandana"],
+  "accionToTrigger": {
+    "alimentar": "feed",
+    "jugar": "play",
+    "banar": "bath",
+    "dormir": "sleep"
+  }
+}

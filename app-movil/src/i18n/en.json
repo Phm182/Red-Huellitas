@@ -706,7 +706,7 @@
         "noSePudoDesconectar": "Could not disconnect the Mercado Pago account."
     },
     "juego": {
-        "titulo": "HuePlay",
+        "titulo": "HueGotchi",
         "sinMascotas": "Add a pet first so you can care for it here.",
         "sinEmpezar": "You haven't cared for them yet",
         "nivel": "Level {{nivel}}",
@@ -837,7 +837,7 @@
         "rescate": "Rescue",
         "tienda": "Shop",
         "salud": "Health",
-        "hueplay": "HuePlay",
+        "hueplay": "HueGotchi",
         "configuracion": "Settings",
         "atajosHint": "Press and hold to see the shortcuts",
         "ocultarBotones": "Hide buttons",
