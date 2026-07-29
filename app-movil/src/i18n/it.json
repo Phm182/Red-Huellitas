@@ -802,6 +802,8 @@
     "mapa": {
         "titulo": "Mappa",
         "verEnMapa": "Vedi sulla mappa",
+        "centrarEnMi": "Centra sulla mia posizione",
+        "forzadoEnEspera": "La mappa è già scaricata. Potrai scaricarne una nuova tra {{dias}} giorni, o allontanandoti più di 50 km.",
         "todasLasPublicaciones": "Tutte le pubblicazioni",
         "gpsDenegado": "Serve il permesso di localizzazione per segnare dove sei",
         "gpsError": "Non è stato possibile ottenere la tua posizione",

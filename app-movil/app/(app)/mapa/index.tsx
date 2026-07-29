@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,8 +19,20 @@ import { MAPA_TIPOS, MAPA_TIPO_POR_CLAVE } from '../../../src/types/mapa';
 import type { MapaPunto, MapaSesion, MapaTipo } from '../../../src/types/mapa';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useTheme } from '../../../src/theme/ThemeProvider';
+import { useMiUbicacion } from '../../../src/hooks/useMiUbicacion';
 import { hapticLeve } from '../../../src/utils/haptics';
-import { claveMapa, guardarCacheMapa, leerCacheMapa, limpiarCacheMapa } from '../../../src/utils/mapaCache';
+import {
+  anclarSesion,
+  claveMapa,
+  decidirSesion,
+  guardarCacheMapa,
+  guardarSesionCache,
+  leerCacheMapa,
+  leerSesionCache,
+  limpiarCacheMapa,
+  marcarForzado,
+  proximoForzado,
+} from '../../../src/utils/mapaCache';
 import { rhMediaUrl } from '../../../src/utils/media';
 
 const RADIOS = [2, 5, 10, 25, 50];
@@ -51,7 +62,10 @@ export default function MapaScreen() {
   const [centro, setCentro] = useState<{ lat: number; lng: number } | null>(null);
   // Posición real del GPS, separada del centro: el centro se mueve al
   // arrastrar el mapa, y "vos estás acá" no debe moverse con él.
-  const [miUbicacion, setMiUbicacion] = useState<{ lat: number; lng: number } | null>(null);
+  // El hook escucha el GPS y se queda con la lectura más precisa; una sola
+  // llamada devolvía la de red, con cuadras de error (ver useMiUbicacion).
+  const { fijacion, estado: estadoGps, buscar: buscarUbicacion } = useMiUbicacion();
+  const miUbicacion = fijacion ? { lat: fijacion.lat, lng: fijacion.lng } : null;
   const [puntos, setPuntos] = useState<MapaPunto[]>([]);
   const [porTipo, setPorTipo] = useState<Partial<Record<MapaTipo, number>>>({});
   const [radioKm, setRadioKm] = useState(10);
@@ -61,7 +75,6 @@ export default function MapaScreen() {
   const [seleccion, setSeleccion] = useState<MapaPunto[] | null>(null);
   const [irA, setIrA] = useState<{ lat: number; lng: number; nonce: number } | null>(null);
   const [avisoGps, setAvisoGps] = useState<string | null>(null);
-  const [buscandoGps, setBuscandoGps] = useState(false);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   // El centro con el que se pidieron los puntos, para no volver a pedir por un
@@ -73,18 +86,28 @@ export default function MapaScreen() {
     let vivo = true;
 
     (async () => {
-      // Si el mapa de una visita anterior sigue montado, se reusa su sesión y
-      // NO se le pide otra al servidor: pedirla descontaría una carga del
-      // presupuesto de Mapbox por algo que Mapbox no va a cobrar, porque no se
-      // crea ningún mapa nuevo.
-      const yaViva = sesionMapaViva(esOscuro);
-      if (yaViva) {
-        setSesion(yaViva);
-      } else {
-        const resSesion = await mapaApi.sesion(esOscuro ? 'oscuro' : 'claro');
+      const modo = esOscuro ? 'oscuro' : 'claro';
+
+      // 1) Si el mapa de una visita anterior sigue montado, se reusa su sesión
+      //    y NO se le pide otra al servidor: pedirla descontaría una carga del
+      //    presupuesto por algo que el proveedor no va a cobrar, porque no se
+      //    crea ningún mapa nuevo.
+      let sesionUsada = sesionMapaViva(esOscuro);
+
+      // 2) Si no, la que quedó guardada del ancla. Mientras el usuario siga
+      //    dentro del radio no se baja mapa nuevo nunca (ver mapaCache).
+      if (!sesionUsada) {
+        const guardada = await leerSesionCache<MapaSesion>(modo);
+        if (guardada) sesionUsada = guardada;
+      }
+
+      // 3) Recién si no hay nada, se gasta una carga.
+      if (!sesionUsada) {
+        const resSesion = await mapaApi.sesion(modo);
         if (!vivo) return;
         if (resSesion.success && resSesion.data) {
-          setSesion(resSesion.data);
+          sesionUsada = resSesion.data;
+          await guardarSesionCache(modo, resSesion.data);
         } else {
           setError(resSesion.message);
           setCargando(false);
@@ -92,24 +115,31 @@ export default function MapaScreen() {
         }
       }
 
+      if (!vivo) return;
+      setSesion(sesionUsada);
+
       // Ubicación: si la deniegan, el backend cae a la zona guardada del
       // usuario, así que el mapa igual abre en algún lugar con sentido.
-      let coords: { lat: number; lng: number } | null = null;
-      try {
-        const permiso = await Location.requestForegroundPermissionsAsync();
-        if (permiso.granted) {
-          // Alta precisión: con la exactitud por defecto el punto cae a varias
-          // cuadras, y acá justamente se pide que marque dónde estás parado.
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-          coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setMiUbicacion(coords);
-        }
-      } catch {
-        // Sin ubicación no es un error: se sigue con la zona del perfil.
-      }
+      const fix = await buscarUbicacion();
+      const coords = fix ? { lat: fix.lat, lng: fix.lng } : null;
       if (!vivo) return;
+
+      // Con la ubicación ya en mano se revisa el ancla. Si el usuario se mudó
+      // de ciudad —más de 50 km— ahí sí vale bajar un mapa nuevo; si no, el
+      // ancla se planta acá la primera vez y no se vuelve a gastar.
+      const decision = await decidirSesion(coords);
+      if (!vivo) return;
+      if (decision.pedir && decision.motivo === 'lejos') {
+        const resSesion = await mapaApi.sesion(modo);
+        if (vivo && resSesion.success && resSesion.data) {
+          setSesion(resSesion.data);
+          await guardarSesionCache(modo, resSesion.data);
+          await anclarSesion(coords);
+        }
+      } else if (decision.motivo === 'sin_ancla') {
+        await anclarSesion(coords);
+      }
+
       // Un destino explícito gana sobre el GPS: si te mandaron a ver una
       // veterinaria puntual, centrar en vos sería perderla de vista.
       if (destino) {
@@ -171,10 +201,42 @@ export default function MapaScreen() {
   );
 
   /** Tirar el caché y volver a pedir. Para el botón de actualizar. */
+  /**
+   * Actualizar.
+   *
+   * Los puntos se refrescan siempre: salen del servidor propio y no cuestan
+   * nada. El **mapa** en cambio sólo se vuelve a bajar una vez por semana,
+   * aunque se apriete el botón todos los días: sin ese tope, alguien apretando
+   * por costumbre se comería el presupuesto mensual de todos en una tarde.
+   */
   const refrescar = useCallback(async () => {
+    hapticLeve();
     await limpiarCacheMapa();
     await cargarPuntos(centro, true);
-  }, [cargarPuntos, centro]);
+
+    const modo = esOscuro ? 'oscuro' : 'claro';
+    const decision = await decidirSesion(miUbicacion, true);
+    if (decision.pedir) {
+      const res = await mapaApi.sesion(modo);
+      if (res.success && res.data) {
+        setSesion(res.data);
+        await guardarSesionCache(modo, res.data);
+        await anclarSesion(miUbicacion);
+        if (decision.motivo === 'forzado') await marcarForzado();
+      }
+      return;
+    }
+
+    // No se bajó mapa nuevo: se dice por qué, así el botón no parece roto.
+    const cuando = await proximoForzado();
+    if (cuando) {
+      setAvisoGps(
+        t('mapa.forzadoEnEspera', {
+          dias: Math.max(1, Math.ceil((cuando - Date.now()) / 86400000)),
+        })
+      );
+    }
+  }, [cargarPuntos, centro, esOscuro, miUbicacion, t]);
 
   useEffect(() => {
     if (!sesion) return;
@@ -207,26 +269,30 @@ export default function MapaScreen() {
    * hace que muchos lo nieguen sin entender para qué era.
    */
   const centrarEnMi = useCallback(async () => {
+    hapticLeve();
     setAvisoGps(null);
-    setBuscandoGps(true);
-    try {
-      const permiso = await Location.requestForegroundPermissionsAsync();
-      if (!permiso.granted) {
-        setAvisoGps(t('mapa.gpsDenegado'));
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setMiUbicacion(c);
-      setIrA({ ...c, nonce: Date.now() });
-    } catch {
-      setAvisoGps(t('mapa.gpsError'));
-    } finally {
-      setBuscandoGps(false);
+
+    // Si ya sabemos dónde estás, se vuela ahí en el acto y recién después se
+    // pide una lectura mejor: esperar el GPS con la pantalla quieta hacía
+    // parecer que el botón no hacía nada.
+    if (fijacion) {
+      setIrA({ lat: fijacion.lat, lng: fijacion.lng, nonce: Date.now() });
     }
-  }, [t]);
+
+    const fix = await buscarUbicacion();
+    if (fix) {
+      setIrA({ lat: fix.lat, lng: fix.lng, nonce: Date.now() });
+    }
+  }, [buscarUbicacion, fijacion]);
+
+  // El aviso sale del estado del hook y no de un catch suelto: antes se
+  // guardaba en `avisoGps` y no se dibujaba en ningún lado, así que negar el
+  // permiso dejaba el botón mudo.
+  useEffect(() => {
+    if (estadoGps === 'denegada') setAvisoGps(t('mapa.gpsDenegado'));
+    else if (estadoGps === 'error') setAvisoGps(t('mapa.gpsError'));
+    else if (estadoGps === 'lista') setAvisoGps(null);
+  }, [estadoGps, t]);
 
   /**
    * "Todas las publicaciones": abre el detalle de capas la primera vez, y si ya
@@ -297,6 +363,7 @@ export default function MapaScreen() {
             puntos={puntos}
             centro={centro}
             miUbicacion={miUbicacion}
+            precisionM={fijacion?.precisionM ?? null}
             irA={irA}
             oscuro={esOscuro}
             onSeleccion={setSeleccion}
@@ -324,8 +391,13 @@ export default function MapaScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', gap: 6 }}>
-            <Pressable onPress={centrarEnMi} style={styles.botonRedondo} disabled={buscandoGps}>
-              {buscandoGps ? (
+            <Pressable
+              onPress={centrarEnMi}
+              style={styles.botonRedondo}
+              disabled={estadoGps === 'buscando'}
+              accessibilityLabel={t('mapa.centrarEnMi')}
+            >
+              {estadoGps === 'buscando' ? (
                 <ActivityIndicator size="small" color="#4CC9F0" />
               ) : (
                 <Ionicons name="locate" size={18} color={miUbicacion ? '#4CC9F0' : '#fff'} />
@@ -336,17 +408,9 @@ export default function MapaScreen() {
             </Pressable>
           </View>
         </View>
-      </View>
 
-      {/* --- Abajo: filtros y radio, donde llega el pulgar --- */}
-      <View style={[styles.inferior, { bottom: APP_TAB_BAR_HEIGHT + insets.bottom + 10 }]} pointerEvents="box-none">
-        {filtrosAbiertos ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsFila}>
-            {chips}
-          </ScrollView>
-        ) : null}
-
-        {/* Una sola pastilla arcoíris que resume todo y abre el resto. */}
+        {/* Qué capas se ven. Va arriba: es lo que define qué estás mirando,
+            y abajo competía con los chips de radio y con la barra. */}
         <View style={styles.chipsFila}>
           <Pressable onPress={alternarTodas} style={styles.todasWrap}>
             <LinearGradient
@@ -355,7 +419,7 @@ export default function MapaScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.todas}
             >
-              <Ionicons name={filtrosAbiertos ? 'chevron-down' : 'chevron-up'} size={14} color="#fff" />
+              <Ionicons name={filtrosAbiertos ? 'chevron-up' : 'chevron-down'} size={14} color="#fff" />
               <Text style={styles.todasTexto}>{t('mapa.todasLasPublicaciones')}</Text>
               <View style={styles.todasBadge}>
                 <Text style={styles.todasBadgeTexto}>{totalVisible}</Text>
@@ -364,6 +428,15 @@ export default function MapaScreen() {
           </Pressable>
         </View>
 
+        {filtrosAbiertos ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsFila}>
+            {chips}
+          </ScrollView>
+        ) : null}
+      </View>
+
+      {/* --- Abajo: sólo el radio, donde llega el pulgar --- */}
+      <View style={[styles.inferior, { bottom: APP_TAB_BAR_HEIGHT + insets.bottom + 10 }]} pointerEvents="box-none">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsFila}>
           {RADIOS.map((r) => (
             <Pressable
@@ -387,6 +460,17 @@ export default function MapaScreen() {
           ))}
         </ScrollView>
       </View>
+
+      {/* El aviso del GPS. Existe porque sin esto negar el permiso dejaba el
+          botón de centrar sin ninguna respuesta visible. */}
+      {avisoGps ? (
+        <Pressable
+          onPress={() => setAvisoGps(null)}
+          style={[styles.aviso, { top: insets.top + 108, backgroundColor: 'rgba(200,120,20,.92)' }]}
+        >
+          <Text style={styles.avisoTexto}>{avisoGps}</Text>
+        </Pressable>
+      ) : null}
 
       {/* Aviso de que se está usando el motor de respaldo */}
       {sesion?.motor === 'maplibre' && sesion.motivo === 'sin_cupo' ? (

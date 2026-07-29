@@ -944,6 +944,8 @@
     "mapa": {
         "titulo": "Mapa",
         "verEnMapa": "Ver en mapa",
+        "centrarEnMi": "Centrar en mi ubicación",
+        "forzadoEnEspera": "El mapa ya está descargado. Vas a poder bajar uno nuevo en {{dias}} días, o cuando te alejes más de 50 km.",
         "todasLasPublicaciones": "Todas las publicaciones",
         "gpsDenegado": "Necesitamos el permiso de ubicación para marcar dónde estás",
         "gpsError": "No pudimos obtener tu ubicación",

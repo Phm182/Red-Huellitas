@@ -800,6 +800,8 @@
     "mapa": {
         "titulo": "マップ",
         "verEnMapa": "地図で見る",
+        "centrarEnMi": "現在地を中心に表示",
+        "forzadoEnEspera": "地図はダウンロード済みです。新しい地図は {{dias}} 日後、または 50 km 以上移動したときに取得できます。",
         "todasLasPublicaciones": "すべての投稿",
         "gpsDenegado": "現在地を表示するには位置情報の許可が必要です",
         "gpsError": "現在地を取得できませんでした",

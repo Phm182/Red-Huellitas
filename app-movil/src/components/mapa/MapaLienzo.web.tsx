@@ -45,6 +45,8 @@ type Props = {
    * dibuja nada — mejor ningún punto que uno que miente.
    */
   miUbicacion?: { lat: number; lng: number } | null;
+  /** Radio de incerteza del GPS en metros; dibuja el halo de precisión. */
+  precisionM?: number | null;
   /**
    * Pedido de centrar el mapa en un punto. El `nonce` existe para poder pedir
    * dos veces el MISMO punto: sin él, tocar "centrarme" estando ya ahí no
@@ -148,20 +150,50 @@ function inyectarEstilos() {
 }
 
 /* Marcador de "vos estás acá". */
-.rh-yo { width:18px; height:18px; border-radius:50%; background:#4CC9F0;
+.rh-yo { width:18px; height:18px; border-radius:50%; background:#4CC9F0; position:relative;
   border:3px solid #fff; box-shadow:0 0 0 2px rgba(76,201,240,.5), 0 0 22px #4CC9F0; }
+/* Latido: distingue "esta es tu posicion, en vivo" de un pin cualquiera. */
+.rh-yo::after {
+  content:''; position:absolute; inset:-5px; border-radius:50%;
+  border:2px solid #4CC9F0; animation:rh-latido 2s ease-out infinite;
+}
 
 /* La marca de agua de Mapbox/MapLibre tapa la hoja inferior. */
 .maplibregl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-left { display:none; }
-.maplibregl-ctrl-bottom-right, .mapboxgl-ctrl-bottom-right { opacity:.35; transform:scale(.8); transform-origin:bottom right; }
+
+/* La atribucion se achica y se apaga; los controles de zoom viven en la misma
+   esquina y tienen que quedar legibles y tocables, asi que se estilan aparte. */
+.maplibregl-ctrl-attrib, .mapboxgl-ctrl-attrib { opacity:.3; transform:scale(.75); transform-origin:bottom right; }
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group,
+.mapboxgl-ctrl-bottom-right .mapboxgl-ctrl-group {
+  /* Levantado para no quedar debajo de los chips de radio ni de la barra. */
+  margin-bottom:150px; border-radius:14px; overflow:hidden;
+  background:rgba(10,14,20,.72); backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.14); box-shadow:0 6px 20px rgba(0,0,0,.45);
+}
+.maplibregl-ctrl-bottom-right button, .mapboxgl-ctrl-bottom-right button { background:transparent; }
+.maplibregl-ctrl-bottom-right button + button,
+.mapboxgl-ctrl-bottom-right button + button { border-top:1px solid rgba(255,255,255,.12); }
+.maplibregl-ctrl-bottom-right button span, .mapboxgl-ctrl-bottom-right button span { filter:invert(1); }
 `;
   document.head.appendChild(el);
 }
 
-export function MapaLienzo({ sesion, puntos, centro, miUbicacion, irA, oscuro, onSeleccion, onMover }: Props) {
+export function MapaLienzo({
+  sesion,
+  puntos,
+  centro,
+  miUbicacion,
+  precisionM,
+  irA,
+  oscuro,
+  onSeleccion,
+  onMover,
+}: Props) {
   const contenedor = useRef<HTMLDivElement | null>(null);
   const mapaRef = useRef<any>(null);
   const marcadoresRef = useRef<any[]>([]);
+  const marcadorYoRef = useRef<any>(null);
   const glRef = useRef<any>(null);
   const [listo, setListo] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,7 +266,9 @@ export function MapaLienzo({ sesion, puntos, centro, miUbicacion, irA, oscuro, o
           attributionControl: true,
         });
 
-        mapa.addControl(new gl.NavigationControl({ visualizePitch: true }), 'top-right');
+        // Abajo a la derecha: arriba chocaban con el contador y los filtros, y
+        // ademas alla no llega el pulgar.
+        mapa.addControl(new gl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
         mapa.on('load', () => {
           if (!activo) return;
@@ -372,16 +406,95 @@ export function MapaLienzo({ sesion, puntos, centro, miUbicacion, irA, oscuro, o
       );
     }
 
-    // "Vos estás acá": sólo si hay GPS de verdad. Anclado al centro del
-    // elemento (el default) porque es una posición, no un pin con punta.
-    if (miUbicacion) {
-      const yo = document.createElement('div');
-      yo.className = 'rh-yo';
-      marcadoresRef.current.push(
-        new gl.Marker({ element: yo }).setLngLat([miUbicacion.lng, miUbicacion.lat]).addTo(mapa)
-      );
+  }, [puntos]);
+
+  /**
+   * "Vos estás acá", en su propio marcador y su propio efecto.
+   *
+   * Antes vivía dentro de `redibujar()`, que arranca con
+   * `if (puntos.length === 0) return`: en una zona sin publicaciones el punto
+   * azul simplemente no se dibujaba, que es justo cuando más se lo busca.
+   * Además se borraba y recreaba en cada `moveend`, así que parpadeaba al
+   * arrastrar el mapa.
+   *
+   * El círculo de precisión va aparte del punto: si el GPS dice "estás en
+   * algún lugar de estas 3 cuadras", dibujar un punto chiquito y nítido
+   * miente sobre lo que el teléfono realmente sabe.
+   */
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    const gl = glRef.current;
+    if (!listo || !mapa || !gl) return;
+
+    if (marcadorYoRef.current) {
+      marcadorYoRef.current.remove();
+      marcadorYoRef.current = null;
     }
-  }, [puntos, miUbicacion?.lat, miUbicacion?.lng]);
+    if (!miUbicacion) return;
+
+    const yo = document.createElement('div');
+    yo.className = 'rh-yo';
+    marcadorYoRef.current = new gl.Marker({ element: yo })
+      .setLngLat([miUbicacion.lng, miUbicacion.lat])
+      .addTo(mapa);
+
+    return () => {
+      marcadorYoRef.current?.remove();
+      marcadorYoRef.current = null;
+    };
+  }, [listo, miUbicacion?.lat, miUbicacion?.lng]);
+
+  // El círculo de precisión se dibuja como capa del mapa y no como marcador
+  // HTML porque tiene que escalar con el zoom: son metros en el terreno, no
+  // píxeles en la pantalla.
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!listo || !mapa) return;
+
+    const datos = {
+      type: 'FeatureCollection' as const,
+      features:
+        miUbicacion && precisionM && precisionM > 25
+          ? [
+              {
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'Point' as const, coordinates: [miUbicacion.lng, miUbicacion.lat] },
+              },
+            ]
+          : [],
+    };
+
+    const fuente = mapa.getSource('rh-precision');
+    if (fuente) {
+      fuente.setData(datos);
+      return;
+    }
+
+    try {
+      mapa.addSource('rh-precision', { type: 'geojson', data: datos });
+      mapa.addLayer({
+        id: 'rh-precision',
+        type: 'circle',
+        source: 'rh-precision',
+        paint: {
+          // El radio en metros se convierte a píxeles con la escala del zoom.
+          'circle-radius': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            10, ['/', ['literal', precisionM ?? 0], 100],
+            20, ['/', ['literal', precisionM ?? 0], 0.1],
+          ],
+          'circle-color': '#4CC9F0',
+          'circle-opacity': 0.12,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#4CC9F0',
+          'circle-stroke-opacity': 0.35,
+        },
+      });
+    } catch {
+      // Si el estilo todavía no cargó, el próximo cambio de ubicación reintenta.
+    }
+  }, [listo, miUbicacion?.lat, miUbicacion?.lng, precisionM]);
 
   useEffect(() => {
     if (!listo) return;

@@ -800,6 +800,8 @@
     "mapa": {
         "titulo": "地图",
         "verEnMapa": "在地图查看",
+        "centrarEnMi": "定位到我的位置",
+        "forzadoEnEspera": "地图已下载。{{dias}} 天后可下载新地图，或在移动超过 50 公里后。",
         "todasLasPublicaciones": "全部发布",
         "gpsDenegado": "需要定位权限才能标出你的位置",
         "gpsError": "无法获取你的位置",

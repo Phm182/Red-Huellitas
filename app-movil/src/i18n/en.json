@@ -930,6 +930,8 @@
     "mapa": {
         "titulo": "Map",
         "verEnMapa": "View on map",
+        "centrarEnMi": "Center on my location",
+        "forzadoEnEspera": "The map is already downloaded. You can fetch a new one in {{dias}} days, or once you move more than 50 km away.",
         "todasLasPublicaciones": "All posts",
         "gpsDenegado": "We need location permission to show where you are",
         "gpsError": "We couldn't get your location",
