@@ -148,7 +148,10 @@ export default function MapaScreen() {
       if (destino) {
         setCentro(destino);
         setIrA({ ...destino, nonce: Date.now() });
-      } else {
+      } else if (coords) {
+        // Sólo si hubo GPS. Poner `null` acá desmontaba el mapa que ya estaba
+        // dibujado con la zona del perfil: se veía aparecer y, unos segundos
+        // más tarde —cuando la búsqueda de ubicación se rendía—, desaparecer.
         setCentro(coords);
       }
     })();
@@ -301,6 +304,7 @@ export default function MapaScreen() {
     else if (estadoGps === 'servicios_apagados') setAvisoGps(t('mapa.gpsApagado'));
     else if (estadoGps === 'solo_aproximada') setAvisoGps(t('mapa.gpsAproximado'));
     else if (estadoGps === 'error') setAvisoGps(t('mapa.gpsError'));
+    else if (estadoGps === 'vaga') setAvisoGps(t('mapa.gpsVago'));
     else if (estadoGps === 'siguiendo') setAvisoGps(null);
   }, [estadoGps, t]);
 
@@ -418,7 +422,7 @@ export default function MapaScreen() {
                 <ActivityIndicator size="small" color="#4CC9F0" />
               ) : (
                 <Ionicons
-                  name={estadoGps === 'siguiendo' ? 'locate' : 'locate-outline'}
+                  name={estadoGps === 'siguiendo' || estadoGps === 'vaga' ? 'locate' : 'locate-outline'}
                   size={18}
                   color={miUbicacion ? '#4CC9F0' : '#fff'}
                 />

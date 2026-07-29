@@ -806,6 +806,7 @@
         "verEnMapa": "Auf der Karte",
         "centrarEnMi": "Auf meinen Standort zentrieren",
         "gpsApagado": "Aktiviere den Standort des Telefons, um zu sehen, wo du bist.",
+        "gpsVago": "Ungefährer Standort: Das Handy sieht noch keine Satelliten. Geh nach draußen oder warte kurz.",
         "gpsAproximado": "Android hat nur den ungefähren Standort erlaubt. Aktiviere „Genauer Standort“ in den App-Berechtigungen.",
         "forzadoEnEspera": "Die Karte ist bereits geladen. Eine neue gibt es in {{dias}} Tagen oder wenn du dich mehr als 50 km entfernst.",
         "todasLasPublicaciones": "Alle Beiträge",

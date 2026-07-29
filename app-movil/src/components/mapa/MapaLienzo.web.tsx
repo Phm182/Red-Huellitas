@@ -73,7 +73,25 @@ type Props = {
  * Se descarta y se rehace si cambió el motor o el estilo (tema claro/oscuro),
  * que son las dos cosas que no se pueden cambiar en caliente.
  */
-let vivo: { mapa: any; nodo: HTMLDivElement; clave: string; sesion: MapaSesion } | null = null;
+type MapaVivo = { mapa: any; nodo: HTMLDivElement; clave: string; sesion: MapaSesion };
+
+let vivo: MapaVivo | null = null;
+
+/**
+ * Creación en curso.
+ *
+ * React monta, desmonta y vuelve a montar en desarrollo, y el efecto de crear
+ * el mapa es asíncrono (espera el `import()` de la librería). Sin esta
+ * promesa compartida, los dos montajes veían `vivo === null` a la vez y
+ * **creaban dos mapas** sobre el mismo contenedor. El segundo tapaba al
+ * primero, la limpieza del primero le arrancaba el nodo al segundo, y un mapa
+ * despegado del DOM nunca termina de cargar: el evento `load` no llegaba
+ * nunca, `listo` se quedaba en false y no se dibujaba ni un marcador — ni los
+ * pines ni el punto de "vos estás acá".
+ *
+ * Y en producción, además, el segundo mapa sería una carga de cupo regalada.
+ */
+let creando: Promise<MapaVivo | null> | null = null;
 
 /** Clave de reuso: sólo el tema, que es lo único que obliga a rehacer el mapa. */
 export function claveMapaVivo(oscuro: boolean): string {
@@ -181,6 +199,76 @@ function inyectarEstilos() {
   document.head.appendChild(el);
 }
 
+/**
+ * Edificios en 3D.
+ *
+ * Es lo que más cambia la percepción de "futurista", y sale del propio estilo,
+ * sin datos extra. Las dos fuentes se arman distinto y por eso hay dos ramas:
+ * Mapbox usa la fuente `composite` con `height`/`min_height`, y los estilos de
+ * Carto (OpenMapTiles) usan una fuente vectorial con `render_height` y
+ * `render_min_height`. Hasta que esto estuvo, MapLibre se veía plano al lado
+ * de Mapbox y de ahí venía la diferencia.
+ */
+function agregarEdificios(mapa: any, oscuro: boolean): void {
+  try {
+    // Con el mapa reusado la capa ya está; agregarla dos veces tira error.
+    if (mapa.getLayer('rh-edificios')) return;
+
+    const estilo = mapa.getStyle();
+    const capas = estilo?.layers ?? [];
+    // Debajo de las etiquetas, para no taparlas con los volúmenes.
+    const etiqueta = capas.find((c: any) => c.type === 'symbol' && c.layout?.['text-field']);
+    const color = oscuro ? '#1b2540' : '#c9d4e8';
+
+    if (mapa.getSource('composite')) {
+      mapa.addLayer(
+        {
+          id: 'rh-edificios',
+          source: 'composite',
+          'source-layer': 'building',
+          filter: ['==', 'extrude', 'true'],
+          type: 'fill-extrusion',
+          minzoom: 14,
+          paint: {
+            'fill-extrusion-color': color,
+            'fill-extrusion-height': ['get', 'height'],
+            'fill-extrusion-base': ['get', 'min_height'],
+            'fill-extrusion-opacity': 0.65,
+          },
+        },
+        etiqueta?.id
+      );
+      return;
+    }
+
+    // Se busca la fuente vectorial en vez de asumir su nombre: Carto la llama
+    // `carto`, otros proveedores de OpenMapTiles la llaman `openmaptiles`.
+    const fuente = Object.keys(estilo?.sources ?? {}).find(
+      (k) => (estilo.sources as any)[k]?.type === 'vector'
+    );
+    if (!fuente) return;
+
+    mapa.addLayer(
+      {
+        id: 'rh-edificios',
+        source: fuente,
+        'source-layer': 'building',
+        type: 'fill-extrusion',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-color': color,
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 6],
+          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
+          'fill-extrusion-opacity': 0.6,
+        },
+      },
+      etiqueta?.id
+    );
+  } catch {
+    // Un estilo sin capa de edificios no es un error: el mapa va igual.
+  }
+}
+
 export function MapaLienzo({
   sesion,
   puntos,
@@ -223,27 +311,14 @@ export function MapaLienzo({
     };
 
     (async () => {
-      try {
-        const esMapbox = sesion.motor === 'mapbox' && !!sesion.token;
-        const gl: any = esMapbox ? mapboxgl : maplibregl;
-        const clave = claveMapaVivo(oscuro);
+      const clave = claveMapaVivo(oscuro);
+      const esMapbox = sesion.motor === 'mapbox' && !!sesion.token;
+      const gl: any = esMapbox ? mapboxgl : maplibregl;
+      glRef.current = gl;
 
-        if (!activo || !contenedor.current) return;
-        glRef.current = gl;
-
-        // ¿Hay un mapa de una visita anterior que sirva? Re-engancharlo no
-        // cuenta como carga nueva para Mapbox; crear uno sí.
-        if (vivo && vivo.clave === clave) {
-          contenedor.current.appendChild(vivo.nodo);
-          mapaRef.current = vivo.mapa;
-          vivo.mapa.resize();
-          vivo.mapa.jumpTo({ center: [centro.lng, centro.lat] });
-          vivo.mapa.on('moveend', avisarMovimiento);
-          setListo(true);
-          return;
-        }
-
-        // No sirve (cambió el tema o el motor): se descarta el anterior.
+      /** Crea el mapa de cero. Sólo la llama `obtener()`, y una sola vez. */
+      const crear = async (): Promise<MapaVivo | null> => {
+        // El anterior ya no sirve (cambió el tema o el motor).
         if (vivo) {
           vivo.mapa.remove();
           vivo.nodo.remove();
@@ -253,7 +328,11 @@ export function MapaLienzo({
         const nodo = document.createElement('div');
         nodo.style.position = 'absolute';
         nodo.style.inset = '0';
-        contenedor.current.appendChild(nodo);
+        // Se cuelga del body mientras carga: MapLibre necesita estar en el
+        // documento para medir y terminar de inicializar, y el contenedor de
+        // React puede no existir todavía.
+        nodo.style.visibility = 'hidden';
+        document.body.appendChild(nodo);
 
         if (esMapbox) gl.accessToken = sesion.token;
 
@@ -272,88 +351,46 @@ export function MapaLienzo({
         // ademas alla no llega el pulgar.
         mapa.addControl(new gl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
-        mapa.on('load', () => {
-          if (!activo) return;
-
-          // Edificios en 3D: es lo que más cambia la percepción de
-          // "futurista", y sale del propio estilo, sin datos extra.
-          //
-          // Las dos fuentes se arman distinto y por eso hay dos ramas: Mapbox
-          // usa la fuente `composite` con `height`/`min_height`, y los estilos
-          // de Carto (OpenMapTiles) usan la fuente `carto` con `render_height`
-          // y `render_min_height`. Hasta que esto estuvo, MapLibre se veía
-          // plano al lado de Mapbox y de ahí venía la diferencia.
-          try {
-            const capas = mapa.getStyle()?.layers ?? [];
-            const etiqueta = capas.find((c: any) => c.type === 'symbol' && c.layout?.['text-field']);
-            const color = oscuro ? '#1b2540' : '#c9d4e8';
-
-            if (mapa.getSource('composite')) {
-              mapa.addLayer(
-                {
-                  id: 'rh-edificios',
-                  source: 'composite',
-                  'source-layer': 'building',
-                  filter: ['==', 'extrude', 'true'],
-                  type: 'fill-extrusion',
-                  minzoom: 14,
-                  paint: {
-                    'fill-extrusion-color': color,
-                    'fill-extrusion-height': ['get', 'height'],
-                    'fill-extrusion-base': ['get', 'min_height'],
-                    'fill-extrusion-opacity': 0.65,
-                  },
-                },
-                etiqueta?.id
-              );
-            } else {
-              // Se busca la fuente vectorial que tenga la capa `building`, en
-              // vez de asumir su nombre: Carto la llama `carto`, otros
-              // proveedores de OpenMapTiles la llaman `openmaptiles`.
-              const estilo = mapa.getStyle();
-              const fuente = Object.keys(estilo?.sources ?? {}).find(
-                (k) => (estilo!.sources as any)[k]?.type === 'vector'
-              );
-              if (fuente) {
-                mapa.addLayer(
-                  {
-                    id: 'rh-edificios',
-                    source: fuente,
-                    'source-layer': 'building',
-                    type: 'fill-extrusion',
-                    minzoom: 14,
-                    paint: {
-                      'fill-extrusion-color': color,
-                      'fill-extrusion-height': [
-                        'coalesce',
-                        ['get', 'render_height'],
-                        ['get', 'height'],
-                        6,
-                      ],
-                      'fill-extrusion-base': [
-                        'coalesce',
-                        ['get', 'render_min_height'],
-                        ['get', 'min_height'],
-                        0,
-                      ],
-                      'fill-extrusion-opacity': 0.6,
-                    },
-                  },
-                  etiqueta?.id
-                );
-              }
-            }
-          } catch {
-            // Un estilo sin capa de edificios no es un error: el mapa va igual.
-          }
-
-          setListo(true);
-        });
-
-        mapa.on('moveend', avisarMovimiento);
-
-        mapaRef.current = mapa;
+        nodo.style.visibility = '';
         vivo = { mapa, nodo, clave, sesion };
+        return vivo;
+      };
+
+      /** Devuelve el mapa vivo, esperando al que ya se esté creando. */
+      const obtener = async (): Promise<MapaVivo | null> => {
+        if (vivo && vivo.clave === clave) return vivo;
+        if (creando) return creando;
+        creando = crear().finally(() => {
+          creando = null;
+        });
+        return creando;
+      };
+
+      try {
+        const v = await obtener();
+        if (!activo || !v || !contenedor.current) return;
+
+        contenedor.current.appendChild(v.nodo);
+        mapaRef.current = v.mapa;
+        v.mapa.resize();
+        v.mapa.jumpTo({ center: [centro.lng, centro.lat] });
+        v.mapa.on('moveend', avisarMovimiento);
+
+        // Ya se pueden dibujar los marcadores.
+        //
+        // **No se espera al evento `load`.** Los pines y el punto de "vos
+        // estás acá" son nodos HTML encima del lienzo: no necesitan que las
+        // baldosas del fondo hayan terminado de bajar. Atarlos a `load` los
+        // dejaba invisibles cuando el proveedor de mapas tardaba o fallaba
+        // —el mapa se veía vacío, sin una sola publicación— y, como ese evento
+        // dispara una sola vez por instancia y el mapa se reusa entre visitas,
+        // en la segunda visita no llegaba nunca.
+        setListo(true);
+
+        // Los edificios 3D sí son del estilo, así que esperan a que cargue.
+        // Si nunca carga, es sólo relieve que falta: el mapa sigue usable.
+        if (v.mapa.isStyleLoaded()) agregarEdificios(v.mapa, oscuro);
+        else v.mapa.once('styledata', () => agregarEdificios(v.mapa, oscuro));
       } catch (e: any) {
         if (activo) setError(e?.message ?? 'No se pudo cargar el mapa');
       }

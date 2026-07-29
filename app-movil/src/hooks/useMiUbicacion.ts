@@ -16,6 +16,8 @@ export type EstadoUbicacion =
   | 'buscando'
   /** Hay posición y el GPS se sigue escuchando. */
   | 'siguiendo'
+  /** Hay posición pero con mucho error: alcanza para la zona, no para la esquina. */
+  | 'vaga'
   | 'denegada'
   /** Android dio permiso pero sólo aproximado (el switch de "ubicación precisa"). */
   | 'solo_aproximada'
@@ -27,13 +29,16 @@ export type EstadoUbicacion =
 const PRECISION_BUENA_M = 30;
 
 /**
- * Peor precisión que se acepta para *mostrar* algo.
+ * A partir de acá el punto ya no dice "estás parado acá" sino "estás en esta
+ * zona", y hay que avisarlo.
  *
- * Un fix de 1500 m no es "tu posición con un poco de error": es el barrio, y
- * dibujarlo como si fuera dónde estás parado es exactamente lo que hacía que
- * el punto apareciera a cuadras de distancia.
+ * **No se descarta la lectura.** Se probó rechazarlas y el resultado fue peor:
+ * en una notebook la ubicación sale de wifi o de la IP, con kilómetros de
+ * error, así que el filtro dejaba la pantalla sin ningún punto para siempre.
+ * Mejor mostrar lo que hay con su halo de incerteza —que se ve enorme, y eso
+ * ya comunica el problema— y seguir buscando algo mejor.
  */
-const PRECISION_INUTIL_M = 200;
+const PRECISION_VAGA_M = 200;
 
 /** Un fix de hace más de 30 s no dice dónde estás ahora si venís caminando. */
 const ANTIGUEDAD_MAXIMA_MS = 30000;
@@ -47,10 +52,10 @@ const ANTIGUEDAD_MAXIMA_MS = 30000;
  * caía lejos: no era un problema de dibujo, era creerle a la primera
  * respuesta.
  *
- * Acá se **escucha** el flujo de posiciones con `BestForNavigation` y se
- * descarta todo lo que llegue peor que `PRECISION_INUTIL_M`. El GPS arranca
- * impreciso y va afinando a medida que engancha satélites; quedarse con la
- * mejor y seguir escuchando es lo que da un punto que se puede mirar.
+ * Acá se **escucha** el flujo de posiciones con `BestForNavigation`. El GPS
+ * arranca impreciso y va afinando a medida que engancha satélites: la regla es
+ * mostrar siempre lo mejor que llegó y no retroceder nunca a algo peor, que es
+ * lo que hacía saltar el punto de vuelta lejos.
  *
  * **Y después no se corta.** Mientras la pantalla esté abierta el watch sigue
  * vivo con `distanceInterval: 4`, así que si el usuario camina, el punto
@@ -125,13 +130,18 @@ export function useMiUbicacion() {
       }
     }
 
-    try {
-      if (!(await Location.hasServicesEnabledAsync())) {
-        setEstado('servicios_apagados');
-        return null;
+    // Sólo en el teléfono: en el navegador no existe el concepto de "servicios
+    // de ubicación del sistema", y preguntarlo devolvía `false` y cortaba la
+    // búsqueda antes de empezar.
+    if (Platform.OS !== 'web') {
+      try {
+        if (!(await Location.hasServicesEnabledAsync())) {
+          setEstado('servicios_apagados');
+          return null;
+        }
+      } catch {
+        // Si no se puede consultar, se intenta igual.
       }
-    } catch {
-      // Si no se puede consultar, se intenta igual.
     }
 
     return new Promise<Fijacion | null>((resolver) => {
@@ -163,27 +173,32 @@ export function useMiUbicacion() {
             tomadaEn: pos.timestamp ?? Date.now(),
           };
 
-          // El primer callback de Android suele ser la última posición
-          // conocida, que puede ser de otro barrio y de hace horas.
-          if (Date.now() - nueva.tomadaEn > ANTIGUEDAD_MAXIMA_MS) return;
-
-          // Basura directa: mejor no mostrar nada que mostrar mal.
-          if (nueva.precisionM > PRECISION_INUTIL_M) return;
-
           const mejor = mejorRef.current;
 
-          // Ya teniendo una buena, no se retrocede a una peor: si no, el punto
-          // salta de vuelta lejos en cuanto entra una lectura mala.
-          const empeoraMucho =
+          // El primer callback de Android suele ser la última posición
+          // conocida, que puede ser de otro barrio y de hace horas. Se ignora
+          // sólo si ya tenemos algo: si es lo único que hay, algo es mejor que
+          // nada y el halo va a mostrar cuánto no sabemos.
+          if (mejor && Date.now() - nueva.tomadaEn > ANTIGUEDAD_MAXIMA_MS) return;
+
+          // Teniendo ya una lectura buena no se retrocede a una peor: eso es
+          // lo que hacía saltar el punto de vuelta lejos. Pero si la que hay
+          // es mala, cualquier cosa nueva sirve —incluso otra mala, porque al
+          // menos es de ahora.
+          const retrocede =
             mejor !== null &&
             mejor.precisionM <= PRECISION_BUENA_M &&
             nueva.precisionM > mejor.precisionM * 2;
-          if (empeoraMucho) return;
+          if (retrocede) return;
 
           mejorRef.current = nueva;
           if (vivoRef.current) {
             setFijacion(nueva);
-            setEstado((prev) => (prev === 'solo_aproximada' ? prev : 'siguiendo'));
+            setEstado((prev) => {
+              // Un permiso aproximado no se "arregla" con una lectura buena.
+              if (prev === 'solo_aproximada') return prev;
+              return nueva.precisionM > PRECISION_VAGA_M ? 'vaga' : 'siguiendo';
+            });
           }
 
           if (!entregado) {

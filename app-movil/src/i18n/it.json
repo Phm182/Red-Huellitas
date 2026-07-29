@@ -806,6 +806,7 @@
         "verEnMapa": "Vedi sulla mappa",
         "centrarEnMi": "Centra sulla mia posizione",
         "gpsApagado": "Attiva la posizione del telefono per vedere dove sei.",
+        "gpsVago": "Posizione approssimativa: il telefono non vede ancora i satelliti. Esci all'aperto o attendi.",
         "gpsAproximado": "Android ha dato la posizione approssimativa. Attiva “Posizione precisa” nei permessi dell'app.",
         "forzadoEnEspera": "La mappa è già scaricata. Potrai scaricarne una nuova tra {{dias}} giorni, o allontanandoti più di 50 km.",
         "todasLasPublicaciones": "Tutte le pubblicazioni",

@@ -934,6 +934,7 @@
         "verEnMapa": "View on map",
         "centrarEnMi": "Center on my location",
         "gpsApagado": "Turn on your phone's location to see where you are.",
+        "gpsVago": "Approximate location: your phone isn't seeing satellites yet. Step outside or wait a few seconds.",
         "gpsAproximado": "Android granted approximate location. Turn on “Precise location” in the app permissions for an exact point.",
         "forzadoEnEspera": "The map is already downloaded. You can fetch a new one in {{dias}} days, or once you move more than 50 km away.",
         "todasLasPublicaciones": "All posts",
