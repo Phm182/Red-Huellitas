@@ -949,6 +949,7 @@
         "centrarEnMi": "Centrar en mi ubicación",
         "gpsApagado": "Prendé la ubicación del teléfono para ver dónde estás.",
         "gpsVago": "Ubicación aproximada: tu teléfono no está viendo satélites. Salí al aire libre o esperá unos segundos.",
+        "gpsVagoWeb": "Ubicación aproximada: esta computadora no tiene GPS ni Wi-Fi, así que el navegador sólo puede estimar por la conexión a internet. La precisión exacta necesita un dispositivo con GPS o Wi-Fi.",
         "gpsFaltaAceptar": "Tocá el botón de ubicación y aceptá el permiso: el navegador lo pide por sitio, aunque ya lo tengas dado en otras páginas.",
         "mostrandoZona": "Mostrando tu zona guardada: {{zona}}. No es tu ubicación exacta.",
         "mostrandoZonaSinNombre": "Mostrando tu zona guardada, no tu ubicación exacta.",

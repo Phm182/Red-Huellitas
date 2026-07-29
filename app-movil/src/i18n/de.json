@@ -807,6 +807,7 @@
         "centrarEnMi": "Auf meinen Standort zentrieren",
         "gpsApagado": "Aktiviere den Standort des Telefons, um zu sehen, wo du bist.",
         "gpsVago": "Ungefährer Standort: Das Handy sieht noch keine Satelliten. Geh nach draußen oder warte kurz.",
+        "gpsVagoWeb": "Ungefährer Standort: Dieser Computer hat weder GPS noch WLAN, der Browser kann nur anhand der Internetverbindung schätzen. Für eine genaue Position braucht es ein Gerät mit GPS oder WLAN.",
         "gpsFaltaAceptar": "Tippe auf den Standort-Button und erlaube den Zugriff: Der Browser fragt pro Website.",
         "mostrandoZona": "Zeigt dein gespeichertes Gebiet: {{zona}}. Das ist nicht dein genauer Standort.",
         "mostrandoZonaSinNombre": "Zeigt dein gespeichertes Gebiet, nicht deinen genauen Standort.",

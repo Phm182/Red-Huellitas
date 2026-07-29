@@ -807,6 +807,7 @@
         "centrarEnMi": "Centrer sur ma position",
         "gpsApagado": "Activez la localisation du téléphone pour voir où vous êtes.",
         "gpsVago": "Position approximative : le téléphone ne capte pas encore de satellites. Sortez ou patientez.",
+        "gpsVagoWeb": "Position approximative : cet ordinateur n'a ni GPS ni Wi-Fi, le navigateur ne peut qu'estimer via la connexion internet. Une position exacte nécessite un appareil avec GPS ou Wi-Fi.",
         "gpsFaltaAceptar": "Touchez le bouton de position et acceptez l'autorisation : le navigateur la demande par site.",
         "mostrandoZona": "Affichage de votre zone enregistrée : {{zona}}. Ce n'est pas votre position exacte.",
         "mostrandoZonaSinNombre": "Affichage de votre zone enregistrée, pas de votre position exacte.",

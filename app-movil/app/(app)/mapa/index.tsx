@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -310,7 +311,14 @@ export default function MapaScreen() {
     else if (estadoGps === 'servicios_apagados') setAvisoGps(t('mapa.gpsApagado'));
     else if (estadoGps === 'solo_aproximada') setAvisoGps(t('mapa.gpsAproximado'));
     else if (estadoGps === 'error') setAvisoGps(t('mapa.gpsError'));
-    else if (estadoGps === 'vaga') setAvisoGps(t('mapa.gpsVago'));
+    else if (estadoGps === 'vaga') {
+      // En el teléfono "salí al aire libre" tiene sentido porque hay GPS
+      // real esperando enganchar satélites. En la computadora no hay antena
+      // de GPS ni casi nunca de wifi: la posición sale de la IP del proveedor
+      // de internet, y ningún reintento la va a mejorar. Decir lo mismo en
+      // los dos casos manda a buscar una solución que no existe en el web.
+      setAvisoGps(Platform.OS === 'web' ? t('mapa.gpsVagoWeb') : t('mapa.gpsVago'));
+    }
     else if (estadoGps === 'falta_aceptar') setAvisoGps(t('mapa.gpsFaltaAceptar'));
     else if (estadoGps === 'siguiendo') setAvisoGps(null);
   }, [estadoGps, t]);

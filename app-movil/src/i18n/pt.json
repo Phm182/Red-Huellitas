@@ -807,6 +807,7 @@
         "centrarEnMi": "Centralizar na minha localização",
         "gpsApagado": "Ative a localização do celular para ver onde você está.",
         "gpsVago": "Localização aproximada: o celular ainda não vê satélites. Vá para fora ou aguarde alguns segundos.",
+        "gpsVagoWeb": "Localização aproximada: este computador não tem GPS nem Wi-Fi, então o navegador só consegue estimar pela conexão à internet. A precisão exata exige um dispositivo com GPS ou Wi-Fi.",
         "gpsFaltaAceptar": "Toque no botão de localização e aceite a permissão: o navegador pede por site, mesmo que já tenha permitido em outros.",
         "mostrandoZona": "Mostrando sua zona salva: {{zona}}. Não é sua localização exata.",
         "mostrandoZonaSinNombre": "Mostrando sua zona salva, não sua localização exata.",

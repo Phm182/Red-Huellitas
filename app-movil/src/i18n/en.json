@@ -935,6 +935,7 @@
         "centrarEnMi": "Center on my location",
         "gpsApagado": "Turn on your phone's location to see where you are.",
         "gpsVago": "Approximate location: your phone isn't seeing satellites yet. Step outside or wait a few seconds.",
+        "gpsVagoWeb": "Approximate location: this computer has no GPS or Wi-Fi, so the browser can only estimate from your internet connection. Exact precision needs a device with GPS or Wi-Fi.",
         "gpsFaltaAceptar": "Tap the location button and allow the permission: the browser asks per site, even if you granted it elsewhere.",
         "mostrandoZona": "Showing your saved area: {{zona}}. This is not your exact location.",
         "mostrandoZonaSinNombre": "Showing your saved area, not your exact location.",
