@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppInput } from './AppInput';
+import { ImagePickerField } from './ImagePickerField';
 import { ChipRow } from './ui/ChipRow';
 import { DatosEquipo } from '../api/equiposApi';
 import { TipoEquipo } from '../types/equipo';
@@ -15,6 +16,8 @@ import { hapticLeve } from '../utils/haptics';
 
 type Props = {
   tipos: TipoEquipo[];
+  /** El avatar que ya tiene, para que la edición lo muestre. */
+  avatarActual?: string | null;
   inicial?: Partial<DatosEquipo>;
   guardando: boolean;
   labelGuardar: string;
@@ -28,10 +31,18 @@ type Props = {
  * se corrigen después— así que vive en un componente y no duplicado en dos
  * pantallas que se irían separando con cada retoque.
  */
-export function EquipoForm({ tipos, inicial, guardando, labelGuardar, onSubmit }: Props) {
+export function EquipoForm({
+  tipos,
+  avatarActual,
+  inicial,
+  guardando,
+  labelGuardar,
+  onSubmit,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [nombre, setNombre] = useState(inicial?.nombre ?? '');
   const [tipo, setTipo] = useState(inicial?.tipo ?? '');
   const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? '');
@@ -62,6 +73,16 @@ export function EquipoForm({ tipos, inicial, guardando, labelGuardar, onSubmit }
 
   return (
     <ScrollView contentContainerStyle={[styles.container, centeredContent]}>
+      {/* El avatar es lo primero: es lo que después identifica al equipo en el
+          directorio, en la campaña y en el chat. */}
+      <ImagePickerField
+        label={t('equipos.avatarLabel')}
+        uri={avatarUri ?? avatarActual ?? null}
+        onChange={setAvatarUri}
+        uploadLabel={t('onboarding.uploadPhoto')}
+        retakeLabel={t('onboarding.retakePhoto')}
+      />
+
       <Text style={[styles.label, { color: colors.text }]}>{t('equipos.nombreLabel')}</Text>
       <AppInput
         value={nombre}
@@ -138,6 +159,7 @@ export function EquipoForm({ tipos, inicial, guardando, labelGuardar, onSubmit }
             zonaDescripcion: zonaDescripcion.trim() || undefined,
             zonaLat: coords?.lat ?? null,
             zonaLng: coords?.lng ?? null,
+            avatarUri,
           })
         }
         disabled={!puedeGuardar}

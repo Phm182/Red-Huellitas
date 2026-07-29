@@ -37,8 +37,18 @@ export default function ConversacionScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { conversacionId } = useLocalSearchParams<{ conversacionId: string }>();
-  const convId = Number(conversacionId);
+  // Se puede entrar por conversación existente o por usuario. Lo segundo lo
+  // usa el tab de equipos: ahí se sabe a quién escribirle, no si ya existe la
+  // charla, y `abrir.php` busca-o-crea.
+  const { conversacionId, userId } = useLocalSearchParams<{
+    conversacionId: string;
+    userId?: string;
+  }>();
+  const convIdParam = Number(conversacionId);
+  const userIdParam = userId ? Number(userId) : null;
+
+  // Cuando se entra por usuario, el id real llega en la respuesta de `abrir`.
+  const [convId, setConvId] = useState(Number.isFinite(convIdParam) ? convIdParam : 0);
 
   const [mensajes, setMensajes] = useState<ChatMensaje[]>([]);
   const [otro, setOtro] = useState<{ nombreCompleto: string; mensajePersonal: string | null } | null>(null);
@@ -95,9 +105,13 @@ export default function ConversacionScreen() {
     useCallback(() => {
       let activo = true;
       setLoading(true);
-      chatApi.abrir({ conversacionId: convId }).then((res) => {
+      const porUsuario = !Number.isFinite(convIdParam) || convIdParam <= 0;
+      chatApi
+        .abrir(porUsuario ? { userId: userIdParam ?? 0 } : { conversacionId: convIdParam })
+        .then((res) => {
         if (!activo) return;
         if (res.success && res.data) {
+          setConvId(res.data.conversacionId);
           setOtro(res.data.otro);
           setEstado(res.data.estado);
           // En la carga inicial no se sacude por zumbidos viejos.
@@ -106,14 +120,14 @@ export default function ConversacionScreen() {
             : 0;
           setMensajes(res.data.mensajes);
           ultimoIdRef.current = zumbidoVistoRef.current;
-          void chatApi.marcarLeida(convId);
+          void chatApi.marcarLeida(res.data.conversacionId);
         }
         setLoading(false);
       });
       return () => {
         activo = false;
       };
-    }, [convId])
+    }, [convIdParam, userIdParam])
   );
 
   /**
@@ -122,7 +136,7 @@ export default function ConversacionScreen() {
    * consulta barata. Se corta al salir de la pantalla.
    */
   useEffect(() => {
-    if (loading) return;
+    if (loading || convId <= 0) return;
     const id = setInterval(() => {
       chatApi.abrir({ conversacionId: convId, desdeMensajeId: ultimoIdRef.current }).then((res) => {
         if (res.success && res.data && res.data.mensajes.length > 0) {

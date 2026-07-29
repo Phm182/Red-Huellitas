@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from './client';
+import { appendImageFile } from '../utils/upload';
 import {
   Calificacion,
   CalificacionPendienteOrganizador,
@@ -22,6 +23,8 @@ export interface DatosEquipo {
   zonaDescripcion?: string;
   zonaLat?: number | null;
   zonaLng?: number | null;
+  /** URI local de la imagen elegida. Sin esto, el avatar queda como estaba. */
+  avatarUri?: string | null;
 }
 
 function cuerpoEquipo(d: DatosEquipo): Record<string, unknown> {
@@ -39,6 +42,22 @@ function cuerpoEquipo(d: DatosEquipo): Record<string, unknown> {
   };
 }
 
+/**
+ * Con avatar hay que mandar multipart; sin avatar alcanza con el objeto plano.
+ *
+ * Se decide acá y no en la pantalla porque las dos —alta y edición— tienen el
+ * mismo dilema, y en web `FormData` no entiende el shape `{uri,name,type}` de
+ * React Native (ver `appendImageFile`).
+ */
+async function cuerpoConAvatar(d: DatosEquipo): Promise<Record<string, unknown> | FormData> {
+  if (!d.avatarUri) return cuerpoEquipo(d);
+
+  const form = new FormData();
+  Object.entries(cuerpoEquipo(d)).forEach(([k, v]) => form.append(k, String(v ?? '')));
+  await appendImageFile(form, 'avatar', d.avatarUri, 'avatar.jpg');
+  return form;
+}
+
 export const equiposApi = {
   listar: (params?: { tipo?: string; q?: string }) =>
     apiGet<{ equipos: Equipo[] }>('ajax/equipos/listar.php', params ?? {}, true),
@@ -50,15 +69,21 @@ export const equiposApi = {
   mis: () =>
     apiGet<{ equipos: Equipo[]; tipos: TipoEquipo[] }>('ajax/equipos/mis_equipos.php', {}, true),
 
-  crear: (d: DatosEquipo) =>
-    apiPost<{ equipo: Equipo }>('ajax/equipos/crear.php', cuerpoEquipo(d), true),
+  crear: async (d: DatosEquipo) =>
+    apiPost<{ equipo: Equipo }>('ajax/equipos/crear.php', await cuerpoConAvatar(d), true),
 
-  actualizar: (equipoId: number, d: DatosEquipo) =>
-    apiPost<{ equipo: Equipo }>(
+  actualizar: async (equipoId: number, d: DatosEquipo) => {
+    const cuerpo = await cuerpoConAvatar(d);
+    if (cuerpo instanceof FormData) {
+      cuerpo.append('equipoId', String(equipoId));
+      return apiPost<{ equipo: Equipo }>('ajax/equipos/actualizar.php', cuerpo, true);
+    }
+    return apiPost<{ equipo: Equipo }>(
       'ajax/equipos/actualizar.php',
-      { equipoId, ...cuerpoEquipo(d) },
+      { equipoId, ...cuerpo },
       true
-    ),
+    );
+  },
 
   unirme: (equipoId: number, mensaje?: string) =>
     apiPost<null>('ajax/equipos/unirme.php', { equipoId, mensaje: mensaje ?? '' }, true),

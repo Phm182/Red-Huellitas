@@ -7,6 +7,7 @@ import { Atmosphere } from '../../../../src/components/Atmosphere';
 import { EquipoForm } from '../../../../src/components/EquipoForm';
 import { SkeletonList } from '../../../../src/components/ui/Skeleton';
 import { Equipo, TipoEquipo } from '../../../../src/types/equipo';
+import { rhMediaUrl } from '../../../../src/utils/media';
 
 export default function EquipoEditarScreen() {
   const { t } = useTranslation();
@@ -46,6 +47,7 @@ export default function EquipoEditarScreen() {
     <Atmosphere>
       <EquipoForm
         tipos={tipos}
+        avatarActual={equipo.avatarPath ? rhMediaUrl(equipo.avatarPath) : null}
         guardando={guardando}
         labelGuardar={t('common.save')}
         inicial={{

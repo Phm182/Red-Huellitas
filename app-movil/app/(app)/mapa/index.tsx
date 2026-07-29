@@ -379,7 +379,12 @@ export default function MapaScreen() {
       {/* --- Arriba: sólo volver, contador y acciones --- */}
       <View style={[styles.superior, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
         <View style={styles.filaTitulo} pointerEvents="box-none">
-          <Pressable onPress={() => router.back()} style={styles.botonRedondo}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.botonRedondo}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
 
@@ -395,6 +400,7 @@ export default function MapaScreen() {
               onPress={centrarEnMi}
               style={styles.botonRedondo}
               disabled={estadoGps === 'buscando'}
+              accessibilityRole="button"
               accessibilityLabel={t('mapa.centrarEnMi')}
             >
               {estadoGps === 'buscando' ? (
@@ -403,7 +409,12 @@ export default function MapaScreen() {
                 <Ionicons name="locate" size={18} color={miUbicacion ? '#4CC9F0' : '#fff'} />
               )}
             </Pressable>
-            <Pressable onPress={refrescar} style={styles.botonRedondo}>
+            <Pressable
+              onPress={refrescar}
+              style={styles.botonRedondo}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.retry')}
+            >
               <Ionicons name="refresh" size={18} color="#fff" />
             </Pressable>
           </View>
