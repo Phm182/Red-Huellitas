@@ -807,6 +807,7 @@
         "centrarEnMi": "Centrer sur ma position",
         "gpsApagado": "Activez la localisation du téléphone pour voir où vous êtes.",
         "gpsVago": "Position approximative : le téléphone ne capte pas encore de satellites. Sortez ou patientez.",
+        "gpsFaltaAceptar": "Touchez le bouton de position et acceptez l'autorisation : le navigateur la demande par site.",
         "gpsAproximado": "Android a donné une position approximative. Activez « Position précise » dans les autorisations de l'app.",
         "forzadoEnEspera": "La carte est déjà téléchargée. Vous pourrez en télécharger une nouvelle dans {{dias}} jours, ou en vous éloignant de plus de 50 km.",
         "todasLasPublicaciones": "Toutes les publications",

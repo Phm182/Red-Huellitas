@@ -290,7 +290,7 @@ export default function MapaScreen() {
       setIrA({ lat: fijacion.lat, lng: fijacion.lng, nonce: Date.now() });
     }
 
-    const fix = await buscarUbicacion();
+    const fix = await buscarUbicacion(true);
     if (fix) {
       setIrA({ lat: fix.lat, lng: fix.lng, nonce: Date.now() });
     }
@@ -305,6 +305,7 @@ export default function MapaScreen() {
     else if (estadoGps === 'solo_aproximada') setAvisoGps(t('mapa.gpsAproximado'));
     else if (estadoGps === 'error') setAvisoGps(t('mapa.gpsError'));
     else if (estadoGps === 'vaga') setAvisoGps(t('mapa.gpsVago'));
+    else if (estadoGps === 'falta_aceptar') setAvisoGps(t('mapa.gpsFaltaAceptar'));
     else if (estadoGps === 'siguiendo') setAvisoGps(null);
   }, [estadoGps, t]);
 

@@ -23,6 +23,8 @@ export type EstadoUbicacion =
   | 'solo_aproximada'
   /** El GPS del teléfono está apagado. */
   | 'servicios_apagados'
+  /** Web: el permiso está en "preguntar" y hace falta que el usuario acepte. */
+  | 'falta_aceptar'
   | 'error';
 
 /** Por debajo de esto ya podemos mostrar el punto sin aclarar nada. */
@@ -97,9 +99,34 @@ export function useMiUbicacion() {
    * Devuelve la primera fijación usable, para que quien llama pueda centrar el
    * mapa; después sigue actualizando por su cuenta.
    */
-  const buscar = useCallback(async (): Promise<Fijacion | null> => {
+  const buscar = useCallback(async (porGesto = false): Promise<Fijacion | null> => {
     cortar();
     setEstado('buscando');
+
+    // En el navegador el permiso es **por sitio**: que Chrome tenga la
+    // ubicación habilitada para Google Maps no se la da a esta app. Se
+    // consulta antes de pedir para poder decir exactamente qué falta, en vez
+    // de caer siempre en el genérico "no se pudo".
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.permissions) {
+      try {
+        const estadoPermiso = await navigator.permissions.query({
+          name: 'geolocation' as PermissionName,
+        });
+        if (estadoPermiso.state === 'denied') {
+          setEstado('denegada');
+          return null;
+        }
+        // Todavía no lo otorgó. Al abrir la pantalla no se dispara el cartel
+        // sin que lo haya pedido; se le avisa y el botón de ubicación es el
+        // que lo abre.
+        if (estadoPermiso.state === 'prompt' && !porGesto) {
+          setEstado('falta_aceptar');
+          return null;
+        }
+      } catch {
+        // Navegador viejo sin Permissions API: se sigue y se pide igual.
+      }
+    }
 
     let permiso: Location.LocationPermissionResponse;
     try {

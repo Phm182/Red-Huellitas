@@ -949,6 +949,7 @@
         "centrarEnMi": "Centrar en mi ubicación",
         "gpsApagado": "Prendé la ubicación del teléfono para ver dónde estás.",
         "gpsVago": "Ubicación aproximada: tu teléfono no está viendo satélites. Salí al aire libre o esperá unos segundos.",
+        "gpsFaltaAceptar": "Tocá el botón de ubicación y aceptá el permiso: el navegador lo pide por sitio, aunque ya lo tengas dado en otras páginas.",
         "gpsAproximado": "Android te dio ubicación aproximada. Activá «Ubicación precisa» en los permisos de la app para que el punto sea exacto.",
         "forzadoEnEspera": "El mapa ya está descargado. Vas a poder bajar uno nuevo en {{dias}} días, o cuando te alejes más de 50 km.",
         "todasLasPublicaciones": "Todas las publicaciones",
