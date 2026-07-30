@@ -735,9 +735,33 @@
     "tricks": {
       "title": "Train tricks",
       "darPata": "Shake paw",
+      "sentarse": "Sit",
       "darVuelta": "Spin",
       "hacerseMuerto": "Play dead",
       "hace": "Do:"
+    },
+    "view": {
+      "title": "View",
+      "perfil": "Side",
+      "frente": "Front",
+      "espalda": "Back"
+    },
+    "entertain": {
+      "title": "Play with",
+      "pet": "Pet",
+      "scratch": "Scratch",
+      "play": "Ball",
+      "speak": "Speak"
+    },
+    "stance": {
+      "title": "Stance",
+      "sit": "Sit",
+      "lie": "Lie down",
+      "stand": "Stand"
+    },
+    "sleep": {
+      "locked": "Sleeping… {{sec}}s",
+      "wake": "Wake up"
     },
     "visit": {
       "invite": "Invite friend",
@@ -785,6 +809,12 @@
     "coat": {
       "title": "Coat"
     },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
+    "orbitHint": "Drag sideways to spin · tap to greet",
+    "cambiarMascota": "Switch pet",
     "hub": {
       "bajada": "Pick a game to play with your pets.",
       "proximamente": "Coming soon",

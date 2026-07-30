@@ -749,9 +749,33 @@
     "tricks": {
       "title": "Entrenar trucos",
       "darPata": "Dar la pata",
+      "sentarse": "Sentarse",
       "darVuelta": "Dar una vuelta",
       "hacerseMuerto": "Hacerse el muerto",
       "hace": "Hacé:"
+    },
+    "view": {
+      "title": "Vista",
+      "perfil": "Perfil",
+      "frente": "Frente",
+      "espalda": "Espalda"
+    },
+    "entertain": {
+      "title": "Entretener",
+      "pet": "Acariciar",
+      "scratch": "Rascar",
+      "play": "Pelota",
+      "speak": "Hablar"
+    },
+    "stance": {
+      "title": "Postura",
+      "sit": "Sentar",
+      "lie": "Acostar",
+      "stand": "Levantar"
+    },
+    "sleep": {
+      "locked": "Durmiendo… {{sec}}s",
+      "wake": "Despertar"
     },
     "visit": {
       "invite": "Invitar amigo",
@@ -799,6 +823,12 @@
     "coat": {
       "title": "Pelaje"
     },
+    "panel": {
+      "place": "Lugar",
+      "social": "Social"
+    },
+    "orbitHint": "Arrastrá horizontal para girar · tocá para saludar",
+    "cambiarMascota": "Cambiar mascota",
     "hub": {
       "bajada": "Elegí un juego para jugar con tus mascotas.",
       "proximamente": "Próximamente",

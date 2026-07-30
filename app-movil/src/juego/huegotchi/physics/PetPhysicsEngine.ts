@@ -72,10 +72,11 @@ export class PetPhysicsEngine {
   }
 
   onTap() {
-    this.squash.impulse(-4.5);
-    this.stretch.impulse(4.2);
-    this.squash.setTarget(0.92);
-    this.stretch.setTarget(1.08);
+    // Impulsos más suaves: el squash extremo sacaba al animal del marco.
+    this.squash.impulse(-2.8);
+    this.stretch.impulse(2.6);
+    this.squash.setTarget(0.95);
+    this.stretch.setTarget(1.05);
     setTimeout(() => {
       this.squash.setTarget(1);
       this.stretch.setTarget(1);
@@ -84,20 +85,20 @@ export class PetPhysicsEngine {
 
   onDrag(dx: number, dy: number) {
     this.isDragging = true;
-    const mag = clamp(Math.hypot(dx, dy) / 140, 0, 1);
+    const mag = clamp(Math.hypot(dx, dy) / 160, 0, 1);
     if (Math.abs(dx) >= Math.abs(dy)) {
-      this.stretch.setTarget(1 + mag * 0.16);
-      this.squash.setTarget(1 - mag * 0.12);
+      this.stretch.setTarget(1 + mag * 0.09);
+      this.squash.setTarget(1 - mag * 0.07);
     } else {
-      this.squash.setTarget(1 + mag * 0.14);
-      this.stretch.setTarget(1 - mag * 0.1);
+      this.squash.setTarget(1 + mag * 0.08);
+      this.stretch.setTarget(1 - mag * 0.06);
     }
   }
 
   onDragEnd() {
     this.isDragging = false;
-    this.squash.impulse(-2.2);
-    this.stretch.impulse(2.5);
+    this.squash.impulse(-1.4);
+    this.stretch.impulse(1.5);
     this.squash.setTarget(1);
     this.stretch.setTarget(1);
   }
@@ -114,8 +115,8 @@ export class PetPhysicsEngine {
     return {
       lookX: this.look.x,
       lookY: this.look.y,
-      squash: clamp(this.squash.value, 0.82, 1.18),
-      stretch: clamp(this.stretch.value, 0.82, 1.18),
+      squash: clamp(this.squash.value, 0.9, 1.1),
+      stretch: clamp(this.stretch.value, 0.9, 1.1),
       isDragging: this.isDragging,
     };
   }

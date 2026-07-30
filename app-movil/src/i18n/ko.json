@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "continue": "계속",
     "cancel": "취소",
@@ -611,9 +611,70 @@
         "limite_global": "오늘의 생성 한도에 도달했어요. 내일 다시 오세요."
       }
     },
+        "catchFood": "Catch food",
+    "places": {
+      "living": "Living",
+      "cocina": "Kitchen",
+      "patio": "Yard",
+      "arbol": "Tree",
+      "plaza": "Plaza"
+    },
+    "traits": {
+      "hiperactivo": "Hyper",
+      "perezoso": "Lazy",
+      "gloton": "Foodie",
+      "curioso": "Curious",
+      "timido": "Shy"
+    },
+    "age": {
+      "cachorro": "Young",
+      "adulto": "Adult"
+    },
+    "tricks": {
+      "title": "Train tricks",
+      "darPata": "Shake paw",
+      "sentarse": "Sit",
+      "darVuelta": "Spin",
+      "hacerseMuerto": "Play dead",
+      "hace": "Do:"
+    },
+    "view": {
+      "title": "View",
+      "perfil": "Side",
+      "frente": "Front",
+      "espalda": "Back"
+    },
+    "entertain": {
+      "title": "Play with",
+      "pet": "Pet",
+      "scratch": "Scratch",
+      "play": "Ball",
+      "speak": "Bark / meow"
+    },
+    "stance": {
+      "title": "Stance",
+      "sit": "Sit",
+      "lie": "Lie down",
+      "stand": "Stand"
+    },
+    "sleep": {
+      "locked": "Sleeping… {{sec}}s",
+      "wake": "Wake up"
+    },
+    "visit": {
+      "invite": "Invite friend",
+      "clear": "End visit",
+      "guest": "{{name}} visiting · {{outcome}}"
+    },
+    "weather": {
+      "night": "Night time — heading to bed…",
+      "preferIndoors": "It's raining outside — better stay in."
+    },
     "coat": {
       "title": "털색"
     },
+    "panel": { "place": "Place", "social": "Social" },
+    "orbitHint": "Drag sideways to spin · tap to greet",
     "hub": {
       "bajada": "반려동물과 함께할 게임을 골라보세요.",
       "proximamente": "출시 예정",

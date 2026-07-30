@@ -14,6 +14,13 @@ export type TrickDef = {
 
 export const TRICKS: TrickDef[] = [
   {
+    id: 'sentarse',
+    labelKey: 'juego.tricks.sentarse',
+    pattern: ['down', 'tap'],
+    xpReward: 10,
+    riveTrigger: RIVE_TRIGGERS.trickSit,
+  },
+  {
     id: 'dar_pata',
     labelKey: 'juego.tricks.darPata',
     pattern: ['tap', 'up', 'tap'],
@@ -35,6 +42,13 @@ export const TRICKS: TrickDef[] = [
     riveTrigger: RIVE_TRIGGERS.trickPlayDead,
   },
 ];
+
+/** Trucos que dejan al animal en una postura hasta que se le diga otra cosa. */
+export const TRICKS_QUE_SOSTIENEN: Partial<Record<string, 'sit' | 'lie'>> = {
+  trickSit: 'sit',
+  trickPaw: 'sit',
+  trickPlayDead: 'lie',
+};
 
 export type ResultadoGesto = 'avanza' | 'completo' | 'falla' | null;
 

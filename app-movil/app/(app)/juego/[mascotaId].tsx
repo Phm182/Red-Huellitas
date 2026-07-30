@@ -129,10 +129,12 @@ export default function JuegoScreen() {
     setMensaje(null);
     setAccionEnCurso(tipo);
     setActuando(tipo);
-    // 'dormir' se queda hasta que el usuario haga otra cosa; el resto vuelve
-    // al reposo cuando termina el gesto.
-    if (tipo !== 'dormir') {
-      setTimeout(() => setActuando(null), 2600);
+    // Duraciones alineadas con las poses del motor HueGotchi.
+    // Dormir se mantiene hasta que el usuario despierte o expire el lock visual.
+    if (tipo === 'dormir') {
+      setTimeout(() => setActuando(null), 20000);
+    } else {
+      setTimeout(() => setActuando(null), 5200);
     }
     const res = await juegoApi.accion(Number(mascotaId), tipo);
     setAccionEnCurso(null);
@@ -252,7 +254,7 @@ export default function JuegoScreen() {
                 },
               ]}
               onPress={() => onAccion(tipo)}
-              disabled={bloqueada || accionEnCurso !== null}
+              disabled={bloqueada || accionEnCurso !== null || actuando === 'dormir'}
             >
               {accionEnCurso === tipo ? (
                 <ActivityIndicator color={bloqueada ? colors.textMuted : colors.primaryText} />

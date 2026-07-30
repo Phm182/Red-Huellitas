@@ -24,11 +24,18 @@ type Props = {
   stretch?: number;
   /** 1 = mira a la derecha, -1 = espejado (la visita mira al dueño). */
   facing?: 1 | -1;
+  /** Orientación de cámara: perfil (3/4), frente o espalda. */
+  viewMode?: 'perfil' | 'frente' | 'espalda';
   uid?: string;
   clock: number;
 };
 
 const GROUND_Y = 150;
+/**
+ * Escala interna del personaje dentro del viewBox. Deja margen para cola,
+ * saltos y squash/stretch sin que el overflow:hidden del stage lo recorte.
+ */
+const PET_FIT = 0.78;
 
 type Pt = [number, number];
 
@@ -52,6 +59,7 @@ export function ProceduralPet({
   squash = 0,
   stretch = 0,
   facing = 1,
+  viewMode = 'perfil',
   uid = 'p',
   clock,
 }: Props) {
@@ -63,8 +71,29 @@ export function ProceduralPet({
     return <Tortuga size={size} breed={b} pose={pose} uid={uid} facing={facing} lookX={lookX} />;
   }
 
+  if (viewMode === 'frente' || viewMode === 'espalda') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 200 200">
+        <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+          <VistaOrtogonal
+            breed={b}
+            pose={pose}
+            mode={viewMode}
+            lookX={lookX}
+            lookY={lookY}
+            squash={squash}
+            stretch={stretch}
+            uid={uid}
+            clock={clock}
+          />
+        </G>
+      </Svg>
+    );
+  }
+
   const esGato = b.species === 'gato';
   const sit = pose.sit;
+  const lie = pose.lie ?? 0;
 
   // ------------------------------------------------------- esqueleto
   const legH = (11 + 27 * b.legLength) * S;
@@ -78,9 +107,10 @@ export function ProceduralPet({
   const muzLen = headR * (0.22 + 1.0 * b.snoutLength);
   const muzDrop = headR * (0.24 + 0.1 * b.snoutLength);
 
-  // Sentado: se hunde la cadera y las patas traseras se plieganatural.
-  const sitDrop = sit * torsoH * 0.55;
-  const legHTras = legH * (1 - sit * 0.72);
+  // Sentado: se hunde la cadera y las patas traseras se pliegan.
+  // Acostado: se aplasta más hacia el piso.
+  const sitDrop = (sit * 0.55 + lie * 0.35) * torsoH;
+  const legHTras = legH * (1 - sit * 0.72) * (1 - lie * 0.55);
 
   const torsoBottom = GROUND_Y - legH;
   const torsoTop = torsoBottom - torsoH;
@@ -187,6 +217,8 @@ export function ProceduralPet({
         </ClipPath>
       </Defs>
 
+      {/* Margen interno: cola / saltos / stretch no tocan el borde del stage. */}
+      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
       {/* Sombra en el piso: no acompaña el salto, se achica. */}
       <Sombra pose={pose} rumpX={rumpX} chestX={chestX} S={S} />
 
@@ -195,8 +227,8 @@ export function ProceduralPet({
           `translate(${100 + pose.bodyX * facing} ${torsoTop + pose.bodyY}) ` +
           `scale(${facing} 1) ` +
           `rotate(${pose.bodyRot}) ` +
-          `scale(${pose.bodyScaleX * (1 + squash * 0.1 - stretch * 0.06)} ${
-            pose.bodyScaleY * (1 - squash * 0.12 + stretch * 0.09)
+          `scale(${pose.bodyScaleX * (1 + squash * 0.08 - stretch * 0.05)} ${
+            pose.bodyScaleY * (1 - squash * 0.1 + stretch * 0.07)
           }) ` +
           `translate(${-100} ${-torsoTop})`
         }
@@ -272,6 +304,7 @@ export function ProceduralPet({
       {pose.prop ? (
         <Utileria prop={pose.prop} t={pose.propT} nx={nx} ny={headCy + muzDrop} headR={headR} S={S} clock={clock} />
       ) : null}
+      </G>
     </Svg>
   );
 }
@@ -414,17 +447,18 @@ function Cola({
   if (b.tailLength < 0.18) {
     return <Ellipse cx={rumpX + 1} cy={y + 2} rx={5 * S} ry={4.4 * S} fill={shade(color, -20)} />;
   }
-  const len = 30 * b.tailLength * S;
+  const len = 26 * b.tailLength * S;
   const base = (5.5 + 7 * b.tailFluff) * S;
   const punta = (1.8 + 5.5 * b.tailFluff) * S;
-  const wag = Math.sin(clock * 6 * Math.max(0.2, pose.tailWag)) * (7 + 16 * Math.min(2, pose.tailWag));
-  // Los gatos la llevan alta y curva; los perros más tendida.
+  const wag = Math.sin(clock * 6 * Math.max(0.2, pose.tailWag)) * (6 + 12 * Math.min(2, pose.tailWag));
+  // Los gatos la llevan alta y curva; los perros más tendida — pero sin
+  // salirse del margen izquierdo (antes se cortaba contra el stage).
   const alta = b.species === 'gato';
   const x0 = rumpX + 2;
-  const cx1 = rumpX - len * (alta ? 0.2 : 0.42);
-  const cy1 = y - len * (alta ? 0.48 : 0.26);
-  const tx = rumpX + len * (alta ? 0.04 : -0.72);
-  const ty = y - len * (alta ? 0.82 : 0.42);
+  const cx1 = rumpX - len * (alta ? 0.12 : 0.28);
+  const cy1 = y - len * (alta ? 0.52 : 0.32);
+  const tx = rumpX + len * (alta ? 0.1 : -0.42);
+  const ty = y - len * (alta ? 0.88 : 0.5);
 
   // Silueta cónica en vez de un trazo de grosor fijo: una cola de espesor
   // constante se veía como una varilla clavada en la grupa.
@@ -814,6 +848,7 @@ function Tortuga({
           <Stop offset="100%" stopColor={dark} />
         </RadialGradient>
       </Defs>
+      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
       <Ellipse cx={cx} cy={GROUND_Y + 3} rx={rx * 1.05} ry={5 * S} fill="#101010" opacity={0.24} />
       <G transform={`translate(${100 + pose.bodyX * facing} ${pose.bodyY}) scale(${facing} 1) translate(${-100} 0)`}>
         {/* Patas */}
@@ -823,7 +858,7 @@ function Tortuga({
         {/* Cuello y cabeza */}
         <Path d={`M${cx + rx * 0.72} ${cy} Q${cx + rx * 1.05} ${cy - ry * 0.2}, ${cx + rx * 1.18} ${cy - ry * 0.55}`} stroke={shade(b.base, 12)} strokeWidth={13 * S} strokeLinecap="round" fill="none" />
         <Circle cx={cx + rx * 1.22} cy={cy - ry * 0.62} r={11 * S} fill={shade(b.base, 16)} />
-        <Circle cx={cx + rx * 1.3} cy={cy - ry * 0.78} r={2.1 * S} fill="#1C1A19" />
+        <Circle cx={cx + rx * 1.3 + lookX} cy={cy - ry * 0.78} r={2.1 * S} fill="#1C1A19" />
         {/* Caparazón */}
         <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={`url(#caparazon_${uid})`} stroke={shade(b.base, -60)} strokeWidth={1.4 * S} strokeOpacity={0.5} />
         <Ellipse cx={cx} cy={cy + ry * 0.1} rx={rx * 0.66} ry={ry * 0.6} fill={dark} opacity={0.3} />
@@ -831,9 +866,152 @@ function Tortuga({
           <Ellipse key={i} cx={cx + rx * (fx as number)} cy={cy + ry * (fy as number)} rx={rx * 0.15} ry={ry * 0.19} fill={b.accent} opacity={0.5} />
         ))}
       </G>
+      </G>
     </Svg>
   );
 }
+
+/**
+ * Vista frontal / espalda: silueta ortogonal simple para poder "girar" al animal.
+ * No es un modelo 3D — alcanza para leer perfil · frente · espalda en el juego.
+ */
+function VistaOrtogonal({
+  breed: b,
+  pose,
+  mode,
+  lookX,
+  lookY,
+  squash,
+  stretch,
+  uid,
+  clock,
+}: {
+  breed: ResolvedBreed;
+  pose: Pose;
+  mode: 'frente' | 'espalda';
+  lookX: number;
+  lookY: number;
+  squash: number;
+  stretch: number;
+  uid: string;
+  clock: number;
+}) {
+  const S = b.scale;
+  const sit = pose.sit;
+  const lie = pose.lie ?? 0;
+  const bodyW = 34 * b.bodyWidth * S;
+  const bodyH = (42 * b.bodyHeight * S) * (1 - sit * 0.28 - lie * 0.4);
+  const headR = 16 * b.headSize * S;
+  const legH = (18 + 20 * b.legLength) * S * (1 - sit * 0.55 - lie * 0.7);
+  const cy = GROUND_Y - legH - bodyH * 0.45 + pose.bodyY;
+  const cx = 100 + pose.bodyX;
+  const dark = shade(b.base, -34);
+  const light = shade(b.base, 28);
+  const contorno = shade(b.base, -72);
+  const sx = pose.bodyScaleX * (1 + squash * 0.08 - stretch * 0.05);
+  const sy = pose.bodyScaleY * (1 - squash * 0.1 + stretch * 0.07);
+  const wag = Math.sin(clock * 5 * Math.max(0.2, pose.tailWag)) * (8 + 10 * Math.min(2, pose.tailWag));
+  const eyeOpen = 1 - pose.eyeClose;
+  const mouth = pose.mouthOpen;
+
+  return (
+    <G transform={`translate(${cx} ${cy}) rotate(${pose.bodyRot * (mode === 'espalda' ? -1 : 1) * 0.15}) scale(${sx} ${sy}) translate(${-cx} ${-cy})`}>
+      {/* Sombra */}
+      <Ellipse cx={100} cy={GROUND_Y + 2} rx={bodyW * 0.9} ry={5 * S} fill="#101010" opacity={0.22} />
+
+      {mode === 'espalda' ? (
+        <>
+          {/* Cola centrada, visible */}
+          <Path
+            d={`M100 ${cy + bodyH * 0.1} Q${100 + wag * 0.4} ${cy - bodyH * 0.55}, ${100 + wag * 0.15} ${cy - bodyH * 0.95 - 18 * b.tailLength * S}`}
+            stroke={b.pattern === 'colorpoint' ? b.accent : b.base}
+            strokeWidth={(6 + 8 * b.tailFluff) * S}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Patas traseras */}
+          <Ellipse cx={100 - bodyW * 0.38} cy={GROUND_Y - 3} rx={6 * S} ry={4.5 * S} fill={dark} />
+          <Ellipse cx={100 + bodyW * 0.38} cy={GROUND_Y - 3} rx={6 * S} ry={4.5 * S} fill={dark} />
+          {/* Cuerpo */}
+          <Ellipse cx={100} cy={cy} rx={bodyW * 0.72} ry={bodyH * 0.55} fill={b.base} stroke={contorno} strokeWidth={1.2 * S} strokeOpacity={0.45} />
+          {/* Cabeza de espalda */}
+          <Circle cx={100} cy={cy - bodyH * 0.55 - headR * 0.35} r={headR * 0.92} fill={shade(b.base, -8)} />
+          {/* Orejas */}
+          <Path d={`M${100 - headR * 0.55} ${cy - bodyH * 0.55 - headR * 0.7} L${100 - headR * 0.85} ${cy - bodyH * 0.55 - headR * 1.35} L${100 - headR * 0.15} ${cy - bodyH * 0.55 - headR * 0.85} Z`} fill={dark} />
+          <Path d={`M${100 + headR * 0.55} ${cy - bodyH * 0.55 - headR * 0.7} L${100 + headR * 0.85} ${cy - bodyH * 0.55 - headR * 1.35} L${100 + headR * 0.15} ${cy - bodyH * 0.55 - headR * 0.85} Z`} fill={dark} />
+        </>
+      ) : (
+        <>
+          {/* Patas traseras (detrás) */}
+          <G opacity={0.65}>
+            <Ellipse cx={100 - bodyW * 0.42} cy={GROUND_Y - 2} rx={5.5 * S} ry={4 * S} fill={dark} />
+            <Ellipse cx={100 + bodyW * 0.42} cy={GROUND_Y - 2} rx={5.5 * S} ry={4 * S} fill={dark} />
+          </G>
+          {/* Cuerpo */}
+          <Ellipse cx={100} cy={cy} rx={bodyW * 0.7} ry={bodyH * 0.55} fill={light} stroke={contorno} strokeWidth={1.2 * S} strokeOpacity={0.45} />
+          <Ellipse cx={100} cy={cy + bodyH * 0.12} rx={bodyW * 0.42} ry={bodyH * 0.28} fill={b.belly} opacity={0.85} />
+          {/* Patas delanteras */}
+          <Ellipse cx={100 - bodyW * 0.28} cy={GROUND_Y - 2} rx={6 * S} ry={4.2 * S} fill={b.base} />
+          <Ellipse cx={100 + bodyW * 0.28 + pose.pawLift * 8} cy={GROUND_Y - 2 - pose.pawLift * 14} rx={6 * S} ry={4.2 * S} fill={b.base} />
+          {/* Cabeza */}
+          <Circle
+            cx={100 + pose.headX}
+            cy={cy - bodyH * 0.55 - headR * 0.4 + pose.headY}
+            r={headR}
+            fill={b.base}
+            stroke={contorno}
+            strokeWidth={1.2 * S}
+            strokeOpacity={0.45}
+          />
+          {/* Orejas */}
+          <Path
+            d={`M${100 - headR * 0.55 + pose.headX} ${cy - bodyH * 0.55 - headR * 0.85 + pose.headY} L${100 - headR * 0.9} ${cy - bodyH * 0.55 - headR * 1.45 + pose.earFlap * 0.05} L${100 - headR * 0.2} ${cy - bodyH * 0.55 - headR * 1.0} Z`}
+            fill={b.base}
+          />
+          <Path
+            d={`M${100 + headR * 0.55 + pose.headX} ${cy - bodyH * 0.55 - headR * 0.85 + pose.headY} L${100 + headR * 0.9} ${cy - bodyH * 0.55 - headR * 1.45 - pose.earFlap * 0.05} L${100 + headR * 0.2} ${cy - bodyH * 0.55 - headR * 1.0} Z`}
+            fill={b.base}
+          />
+          {/* Ojos */}
+          {eyeOpen > 0.15 ? (
+            <>
+              <Ellipse cx={100 - headR * 0.32 + lookX * 2 + pose.headX} cy={cy - bodyH * 0.55 - headR * 0.45 + lookY * 2 + pose.headY} rx={3.2 * S * eyeOpen} ry={3.6 * S * eyeOpen} fill="#1C1A19" />
+              <Ellipse cx={100 + headR * 0.32 + lookX * 2 + pose.headX} cy={cy - bodyH * 0.55 - headR * 0.45 + lookY * 2 + pose.headY} rx={3.2 * S * eyeOpen} ry={3.6 * S * eyeOpen} fill="#1C1A19" />
+            </>
+          ) : (
+            <>
+              <Path d={`M${100 - headR * 0.48} ${cy - bodyH * 0.55 - headR * 0.45} Q${100 - headR * 0.32} ${cy - bodyH * 0.55 - headR * 0.35}, ${100 - headR * 0.16} ${cy - bodyH * 0.55 - headR * 0.45}`} stroke="#1C1A19" strokeWidth={1.4 * S} fill="none" />
+              <Path d={`M${100 + headR * 0.16} ${cy - bodyH * 0.55 - headR * 0.45} Q${100 + headR * 0.32} ${cy - bodyH * 0.55 - headR * 0.35}, ${100 + headR * 0.48} ${cy - bodyH * 0.55 - headR * 0.45}`} stroke="#1C1A19" strokeWidth={1.4 * S} fill="none" />
+            </>
+          )}
+          {/* Nariz + boca */}
+          <Ellipse cx={100 + pose.headX} cy={cy - bodyH * 0.55 - headR * 0.12 + pose.headY} rx={2.4 * S} ry={1.8 * S} fill="#E8A0B0" />
+          <Path
+            d={`M${100 - 4 * S - mouth * 2} ${cy - bodyH * 0.55 + headR * 0.05 + pose.headY} Q${100} ${cy - bodyH * 0.55 + headR * (0.12 + mouth * 0.35) + pose.headY}, ${100 + 4 * S + mouth * 2} ${cy - bodyH * 0.55 + headR * 0.05 + pose.headY}`}
+            stroke="#1C1A19"
+            strokeWidth={1.3 * S}
+            fill={mouth > 0.25 ? '#3A2228' : 'none'}
+          />
+        </>
+      )}
+
+      {pose.prop === 'zzz' ? (
+        <G>
+          {[0, 1, 2].map((i) => {
+            const f = (pose.propT * 1.2 + i * 0.33) % 1;
+            const x = 100 + f * 12 * S;
+            const y = cy - bodyH - headR - f * 28 * S;
+            const s = (5 + i) * S;
+            return (
+              <Path key={`${uid}z${i}`} d={`M${x} ${y} L${x + s} ${y} L${x} ${y + s} L${x + s} ${y + s}`} stroke="#FFFFFF" strokeWidth={2 * S} fill="none" opacity={(1 - f) * 0.9} />
+            );
+          })}
+        </G>
+      ) : null}
+    </G>
+  );
+}
+
 
 /* --------------------------------------------------------------- utilería */
 function Utileria({

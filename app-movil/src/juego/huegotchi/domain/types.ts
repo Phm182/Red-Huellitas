@@ -21,7 +21,7 @@ export type DayPeriod = 'dawn' | 'day' | 'dusk' | 'night';
 
 export type PersonalityTrait = 'hiperactivo' | 'perezoso' | 'gloton' | 'curioso' | 'timido';
 
-export type TrickId = 'dar_pata' | 'dar_vuelta' | 'hacerse_muerto';
+export type TrickId = 'dar_pata' | 'sentarse' | 'dar_vuelta' | 'hacerse_muerto';
 
 export type MoodBucket = 'feliz' | 'neutro' | 'enojado';
 

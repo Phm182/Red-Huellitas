@@ -44,6 +44,7 @@ export const RIVE_TRIGGERS = {
   sleep: 'sleep',
   yawn: 'yawn',
   trickPaw: 'trickPaw',
+  trickSit: 'trickSit',
   trickSpin: 'trickSpin',
   trickPlayDead: 'trickPlayDead',
   trickSuccess: 'trickSuccess',
@@ -53,6 +54,12 @@ export const RIVE_TRIGGERS = {
   guestPlay: 'guestPlay',
   guestSniff: 'guestSniff',
   guestIgnore: 'guestIgnore',
+  pet: 'pet',
+  scratch: 'scratch',
+  speak: 'speak',
+  sitDown: 'sitDown',
+  lieDown: 'lieDown',
+  standUp: 'standUp',
 } as const;
 
 /**

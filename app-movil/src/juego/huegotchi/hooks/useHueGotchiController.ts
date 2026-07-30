@@ -9,6 +9,7 @@ import {
   identityFromJuego,
   PlaceId,
 } from '../domain/types';
+import { HeldStance, SLEEP_LOCK_MS, poseDuration } from '../domain/poses';
 import { PetPhysicsEngine } from '../physics/PetPhysicsEngine';
 import { riveModuleForSpecies, riveUrlForSpecies, hasRiveAsset } from '../rive/assets';
 import { RiveBridgeInputs, RIVE_TRIGGERS } from '../rive/contract';
@@ -19,7 +20,7 @@ import {
   fetchLocalWeather,
 } from '../systems/environment';
 import { createGuestVisit, DEMO_FRIENDS, visitTrigger } from '../systems/social';
-import { gestureFromSwipe, GestureToken, TrickTrainer, TRICKS } from '../systems/training';
+import { gestureFromSwipe, GestureToken, TrickTrainer, TRICKS, TRICKS_QUE_SOSTIENEN } from '../systems/training';
 import { TrickId } from '../domain/types';
 import { Platform } from 'react-native';
 
@@ -45,19 +46,19 @@ function moodNumber(animo: JuegoAnimo): number {
 
 type StageRect = { x: number; y: number; w: number; h: number };
 
+type VoiceMouth = { startedAt: number; durationMs: number };
+
 /**
- * Orquestador HueGotchi: físicas, entorno, Rive bridge, audio, trucos, visitas.
+ * Orquestador HueGotchi: físicas, entorno, audio, trucos, visitas,
+ * posturas sostenidas, orientación y sync de boca.
  */
 export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion | null) {
   const identity = useMemo(() => identityFromJuego(juego), [juego]);
-  /** Variante de pelaje elegida a mano (null = la primera del catálogo). */
   const [coatId, setCoatId] = useState<string | null>(null);
-  /** Morfología y colores reales de la raza: proporciones, peso, pelo, orejas. */
   const breed = useMemo(
     () => resolveBreedProfile(identity.species, identity.raza, identity.ageStage, coatId),
     [identity.species, identity.raza, identity.ageStage, coatId]
   );
-  /** Colorways disponibles para esta raza (un Labrador es dorado, chocolate o negro). */
   const coats = useMemo(
     () => variantesDeRaza(identity.species, identity.raza),
     [identity.species, identity.raza]
@@ -77,19 +78,84 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   const [activeTrick, setActiveTrick] = useState<TrickId | null>(null);
   const [trickMsg, setTrickMsg] = useState<string | null>(null);
   const [trickPasos, setTrickPasos] = useState(0);
-  const [, bump] = useState(0);
-  /**
-   * Animación en curso. El renderer calcula la pose a partir de
-   * `(now - startedAt) / poseDuration(trigger)`, así que acá sólo hace falta
-   * saber qué se disparó y cuándo.
-   */
-  const animRef = useRef<{ trigger: string; startedAt: number } | null>(null);
+  /** Feedback visual sobre el escenario: gesto ok / fallo / logro. */
+  const [trickFlash, setTrickFlash] = useState<'ok' | 'fail' | 'win' | null>(null);
+  const trickFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /** Dispara una animación de cuerpo (y el trigger Rive, si algún día hay un .riv real). */
+  const flashTrick = useCallback((kind: 'ok' | 'fail' | 'win') => {
+    if (trickFlashTimer.current) clearTimeout(trickFlashTimer.current);
+    setTrickFlash(kind);
+    trickFlashTimer.current = setTimeout(
+      () => setTrickFlash(null),
+      kind === 'win' ? 1600 : kind === 'fail' ? 1400 : 850
+    );
+  }, []);
+
+  const [heldStance, setHeldStance] = useState<HeldStance>('none');
+  const [yaw, setYaw] = useState(0); // frente a cámara (estilo ref)
+  const yawRef = useRef(0);
+  const yawDragStartRef = useRef(0);
+  const dragModeRef = useRef<'none' | 'orbit' | 'stretch'>('none');
+  const [sleepUntil, setSleepUntil] = useState(0);
+  const [voiceMouth, setVoiceMouth] = useState<VoiceMouth | null>(null);
+  const [, bump] = useState(0);
+  const animRef = useRef<{ trigger: string; startedAt: number } | null>(null);
+  const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const sleepLocked = sleepUntil > Date.now() && heldStance === 'sleep';
+
   const react = useCallback((trigger: string) => {
     handleRef.current?.react(trigger);
     animRef.current = { trigger, startedAt: performance.now() };
   }, []);
+
+  const playVoice = useCallback(async () => {
+    const res = await petVoice.play({
+      species: identity.species,
+      mood: animoToMood(juego.animo),
+    });
+    setVoiceMouth({ startedAt: performance.now(), durationMs: res.durationMs });
+    return res;
+  }, [identity.species, juego.animo]);
+
+  const speak = useCallback(async () => {
+    if (sleepLocked) return;
+    react('speak');
+    await playVoice();
+  }, [sleepLocked, react, playVoice]);
+
+  const setStance = useCallback(
+    (next: HeldStance) => {
+      if (sleepLocked && next !== 'sleep') return;
+      setHeldStance(next);
+      if (next === 'sit') react('sitDown');
+      else if (next === 'lie') react('lieDown');
+      else if (next === 'none') react('standUp');
+      else if (next === 'sleep') react('sleep');
+    },
+    [sleepLocked, react]
+  );
+
+  const entertain = useCallback(
+    (kind: 'pet' | 'scratch' | 'play' | 'speak') => {
+      if (sleepLocked) return;
+      if (kind === 'speak') {
+        void speak();
+        return;
+      }
+      // Cualquier entretenimiento saca de sentado/acostado salvo pet suave.
+      if (kind === 'play') {
+        setHeldStance('none');
+        react('play');
+      } else if (kind === 'scratch') {
+        react('scratch');
+      } else {
+        react('pet');
+      }
+      void playVoice();
+    },
+    [sleepLocked, react, playVoice, speak]
+  );
 
   const [weather, setWeather] = useState<'clear' | 'rain' | 'cloudy' | 'storm'>('clear');
 
@@ -125,7 +191,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       weatherId: envN.weatherId,
       periodId: envN.periodId,
       isDragging: phy.isDragging,
-      isSleeping: accion === 'dormir' || environment.isNight,
+      isSleeping: heldStance === 'sleep' || accion === 'dormir' || environment.isNight,
       isNight: envN.isNight,
       isRaining: envN.isRaining,
       preferIndoors: envN.preferIndoors,
@@ -133,11 +199,8 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       skinId: identity.skinId,
     };
     h.setInputs(inputs);
-  }, [accion, environment, guest, identity, juego.animo, physics]);
+  }, [accion, environment, guest, heldStance, identity, juego.animo, physics]);
 
-  // Físicas a 60fps, pero re-render a ~33fps: el personaje es un SVG de ~40
-  // nodos y redibujarlo 60 veces por segundo hace tironear el gesto en gama
-  // media sin que se note ninguna mejora de fluidez.
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
@@ -162,23 +225,41 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     };
   }, [physics, pushToRive]);
 
-  // Skin sin recargar
   useEffect(() => {
     handleRef.current?.setSkin(identity.skinId);
   }, [identity.skinId]);
 
-  // Acciones cuidado → reacciones Rive + voz
+  // Acciones de cuidado → animación + voz + posturas sostenidas.
   useEffect(() => {
     if (!accion) return;
-    react(ACCION_TRIGGER[accion]);
-    void petVoice.play({ species: identity.species, mood: animoToMood(juego.animo) });
-  }, [accion, identity.species, juego.animo, react]);
+    const trigger = ACCION_TRIGGER[accion];
+    react(trigger);
+
+    if (accion === 'dormir') {
+      setHeldStance('sleep');
+      const until = Date.now() + SLEEP_LOCK_MS;
+      setSleepUntil(until);
+      if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
+      // Al terminar el lock, sigue dormido hasta que lo despierten o haga otra acción.
+      sleepTimerRef.current = setTimeout(() => {
+        bump((n) => (n + 1) % 100000);
+      }, SLEEP_LOCK_MS + 50);
+    } else {
+      setHeldStance('none');
+      setSleepUntil(0);
+      void playVoice();
+    }
+
+    return () => {
+      /* no cancelar sleep al desmontar efecto de accion */
+    };
+  }, [accion, react, playVoice]);
 
   useEffect(() => {
-    if (environment.isNight && !accion) {
+    if (environment.isNight && !accion && heldStance !== 'sleep') {
       react(RIVE_TRIGGERS.yawn);
     }
-  }, [environment.isNight, accion, react]);
+  }, [environment.isNight, accion, react, heldStance]);
 
   const onRiveReady = useCallback(
     (h: RivePetHandle) => {
@@ -187,7 +268,6 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       setRiveError(null);
       h.setSkin(identity.skinId);
       pushToRive();
-      // Arranque vivo: pequeña reacción al montar
       react('poke');
     },
     [identity.skinId, pushToRive, react]
@@ -198,17 +278,19 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     setRiveReady(false);
   }, []);
 
-  // Micro-reacciones idle para que el personaje procedural no quede estatua.
+  // Micro-reacciones idle (no mientras duerme o entrena).
   useEffect(() => {
     const id = setInterval(() => {
+      if (sleepLocked || heldStance === 'sleep' || trainer.activo) return;
+      if (animRef.current) {
+        const dur = poseDuration(animRef.current.trigger);
+        if (performance.now() - animRef.current.startedAt < dur) return;
+      }
       react('poke');
-    }, 12000);
+    }, 14000);
     return () => clearInterval(id);
-  }, [react]);
+  }, [react, sleepLocked, heldStance, trainer]);
 
-  // El pelaje elegido se guarda por mascota. Vive en AsyncStorage y no en la
-  // base: no hay columna para esto todavía, así que la elección es local a este
-  // dispositivo hasta que se agregue al backend.
   const coatKey = `@red_huellitas/huegotchi/coat/${identity.mascotaId}`;
   useEffect(() => {
     let vivo = true;
@@ -235,12 +317,12 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
 
   const onPointerMove = useCallback(
     (pageX: number, pageY: number) => {
+      if (sleepLocked) return;
       physics.lookFromPage(pageX, pageY, stage.current);
     },
-    [physics]
+    [physics, sleepLocked]
   );
 
-  /** Un gesto (tap o swipe completo) contra el truco armado. */
   const evaluarGesto = useCallback(
     (token: GestureToken) => {
       if (!trainer.activo) return;
@@ -248,69 +330,144 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       const res = trainer.recibir(token);
       if (res === 'completo') {
         react(def.riveTrigger);
-        setTimeout(() => react(RIVE_TRIGGERS.trickSuccess), 700);
+        flashTrick('win');
+        if (def.riveTrigger === RIVE_TRIGGERS.trickSpin) {
+          // Giro real del modelo 3D (una vuelta).
+          const start = yawRef.current;
+          const t0 = performance.now();
+          const spin = () => {
+            const u = Math.min(1, (performance.now() - t0) / 900);
+            const next = start + u * Math.PI * 2;
+            yawRef.current = next;
+            setYaw(next);
+            if (u < 1) requestAnimationFrame(spin);
+          };
+          requestAnimationFrame(spin);
+        }
+        const hold = TRICKS_QUE_SOSTIENEN[def.riveTrigger];
+        if (hold) {
+          setHeldStance(hold);
+        } else {
+          setTimeout(() => react(RIVE_TRIGGERS.trickSuccess), 700);
+        }
         setTrickMsg(`¡Lo hizo! +${def.xpReward} XP`);
         setTrickPasos(def.pattern.length);
         trainer.cancelar();
         setActiveTrick(null);
+        void playVoice();
       } else if (res === 'avanza') {
+        flashTrick('ok');
         setTrickPasos(trainer.progreso);
         setTrickMsg(null);
       } else if (res === 'falla') {
+        flashTrick('fail');
         react(RIVE_TRIGGERS.trickFail);
         setTrickPasos(0);
         setTrickMsg('Casi… arrancá de nuevo la secuencia.');
       }
     },
-    [react, trainer]
+    [react, trainer, playVoice, flashTrick]
   );
+
+  const wakePet = useCallback(() => {
+    if (sleepLocked) return false;
+    if (heldStance !== 'sleep') return false;
+    setHeldStance('none');
+    setSleepUntil(0);
+    react('yawn');
+    void playVoice();
+    return true;
+  }, [sleepLocked, heldStance, react, playVoice]);
 
   const onTapPet = useCallback(
     (pageX: number, pageY: number) => {
+      if (heldStance === 'sleep') {
+        // Durante el lock no se despierta; después, un tap lo levanta.
+        if (!sleepLocked) wakePet();
+        return;
+      }
       physics.lookFromPage(pageX, pageY, stage.current);
       physics.onTap();
-      void petVoice.play({ species: identity.species, mood: animoToMood(juego.animo) });
       if (trainer.activo) {
         evaluarGesto('tap');
-      } else {
-        react(RIVE_TRIGGERS.poke);
+        return;
       }
+      // Tap = voz con boca sincronizada + poke de cuerpo.
+      void playVoice();
+      react(RIVE_TRIGGERS.poke);
     },
-    [identity.species, juego.animo, physics, trainer, react, evaluarGesto]
+    [heldStance, sleepLocked, wakePet, physics, trainer, evaluarGesto, playVoice, react]
   );
 
-  // Durante el arrastre sólo se mueve la física: nada de tokens acá, que es lo
-  // que rompía el entrenamiento (un token por frame).
   const onDragPet = useCallback(
     (dx: number, dy: number, pageX: number, pageY: number) => {
+      if (sleepLocked) return;
+      // Entrenando: el arrastre es gesto, no órbita.
+      if (trainer.activo) {
+        physics.onDrag(dx, dy);
+        physics.lookFromPage(pageX, pageY, stage.current);
+        return;
+      }
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+      if (dragModeRef.current === 'none') {
+        if (ax < 6 && ay < 6) return;
+        // Horizontal dominante → orbitar 360°. Vertical → squash clay.
+        dragModeRef.current = ax > ay * 1.15 ? 'orbit' : 'stretch';
+        if (dragModeRef.current === 'orbit') {
+          yawDragStartRef.current = yawRef.current;
+        }
+      }
+      if (dragModeRef.current === 'orbit') {
+        // dx es el desplazamiento total del gesto, no el delta por frame.
+        const next = yawDragStartRef.current + dx * 0.014;
+        yawRef.current = next;
+        setYaw(next);
+        return;
+      }
       physics.onDrag(dx, dy);
       physics.lookFromPage(pageX, pageY, stage.current);
     },
-    [physics]
+    [physics, sleepLocked, trainer]
   );
 
-  /** El token se emite una sola vez, al soltar, con el desplazamiento total. */
   const onDragEnd = useCallback(
     (dx = 0, dy = 0) => {
+      const mode = dragModeRef.current;
+      dragModeRef.current = 'none';
+      if (sleepLocked) {
+        physics.onDragEnd();
+        return;
+      }
       physics.onDragEnd();
+      if (trainer.activo) {
+        const g = gestureFromSwipe(dx, dy);
+        if (g) evaluarGesto(g);
+        return;
+      }
+      // Órbita no dispara trucos.
+      if (mode === 'orbit') return;
       const g = gestureFromSwipe(dx, dy);
       if (g) evaluarGesto(g);
     },
-    [physics, evaluarGesto]
+    [physics, evaluarGesto, sleepLocked, trainer]
   );
 
   const inviteFriend = useCallback(() => {
+    if (sleepLocked) return;
     const friend = DEMO_FRIENDS[Math.floor(Math.random() * DEMO_FRIENDS.length)]!;
     const visit = createGuestVisit(friend);
     setGuest(visit);
+    setHeldStance('none');
     react(RIVE_TRIGGERS.guestArrive);
     react(visitTrigger(visit.outcome));
-  }, [react]);
+  }, [react, sleepLocked]);
 
   const clearGuest = useCallback(() => setGuest(null), []);
 
   const startTrick = useCallback(
     (id: TrickId) => {
+      if (sleepLocked) return;
       const def = TRICKS.find((t) => t.id === id);
       if (!def) return;
       if (activeTrick === id) {
@@ -325,10 +482,9 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       setTrickPasos(0);
       setTrickMsg(null);
     },
-    [activeTrick, trainer]
+    [activeTrick, trainer, sleepLocked]
   );
 
-  // Si se queda a medias, se limpia solo en vez de dejar el truco colgado.
   useEffect(() => {
     if (!activeTrick) return;
     const id = setInterval(() => {
@@ -341,6 +497,19 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     }, 700);
     return () => clearInterval(id);
   }, [activeTrick, trainer]);
+
+  // Limpiar boca cuando termina el audio.
+  useEffect(() => {
+    if (!voiceMouth) return;
+    const id = setTimeout(() => setVoiceMouth(null), voiceMouth.durationMs + 80);
+    return () => clearTimeout(id);
+  }, [voiceMouth]);
+
+  useEffect(() => {
+    return () => {
+      if (trickFlashTimer.current) clearTimeout(trickFlashTimer.current);
+    };
+  }, []);
 
   return {
     identity,
@@ -368,13 +537,21 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     trickMsg,
     tricks: TRICKS,
     react,
-    /** Animación en curso (o null): el renderer la convierte en pose. */
     animation: animRef.current,
     coats,
     coatId,
     setCoat,
-    /** Pasos del patrón ya logrados, para dibujar el progreso del truco. */
     trickPasos,
     trickPatron: trainer.definicion?.pattern ?? null,
+    trickFlash,
+    heldStance,
+    setStance,
+    yaw,
+    sleepLocked,
+    sleepRemainingMs: Math.max(0, sleepUntil - Date.now()),
+    wakePet,
+    entertain,
+    speak,
+    voiceMouth,
   };
 }

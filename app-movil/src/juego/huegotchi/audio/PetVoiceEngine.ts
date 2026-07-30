@@ -13,18 +13,12 @@ const BY_MOOD: Record<MoodBucket, ClipId[]> = {
   enojado: ['v7', 'v8', 'v9', 'v10'],
 };
 
-/**
- * El sintetizador sonaba a pitido de consola vieja, no a un animal, así que
- * queda apagado: preferible el silencio a un ladrido falso. El código sigue
- * abajo para poder comparar, pero no se usa hasta que haya grabaciones reales
- * registradas en VOICE_ASSETS.
- */
 const PERMITIR_SINTETIZADOR = false;
 
-/**
- * Registrar los archivos reales acá:
- * VOICE_ASSETS.gato.feliz.v1 = require('../../../../assets/juego/audio/gato_feliz_1.m4a')
- */
+/** Fade-out al final del clip para que no corte a seco. */
+const FADE_MS = 220;
+const FADE_STEPS = 8;
+
 const A = {
   gatoMaullido1: require('../../../../assets/juego/audio/gato_maullido_1.mp3') as number,
   gatoMaullido2: require('../../../../assets/juego/audio/gato_maullido_2.mp3') as number,
@@ -47,9 +41,8 @@ const A = {
 };
 
 /**
- * Grabaciones reales (CC0, BigSoundBank). La tortuga y "otro" no tienen voz
- * propia grabada: quedan mudos a propósito, que es mejor que ponerle ladridos
- * a una tortuga.
+ * Grabaciones reales (CC0, BigSoundBank — meows de Emi / serie Meow Cat).
+ * Tortuga y "otro" quedan mudos a propósito.
  */
 const VOICE_ASSETS: Partial<
   Record<HueSpecies, Partial<Record<MoodBucket, Partial<Record<ClipId, number>>>>>
@@ -81,7 +74,15 @@ const SYNTH: Record<ClipId, { f0: number; f1: number; ms: number }> = {
   v10: { f0: 280, f1: 340, ms: 460 },
 };
 
+export type VoicePlayResult = {
+  clip: ClipId;
+  /** Duración real del audio (ms). Sirve para sincronizar la boca. */
+  durationMs: number;
+};
+
 let audioReady = false;
+let activeSound: Audio.Sound | null = null;
+let fadeTimer: ReturnType<typeof setInterval> | null = null;
 
 async function ensureMode() {
   if (audioReady) return;
@@ -102,40 +103,117 @@ function pickClip(mood: MoodBucket): ClipId {
   return pool[Math.floor(Math.random() * pool.length)]!;
 }
 
-function randomPitch(): number {
-  return 0.9 + Math.random() * 0.2;
+function randomPitch(species: HueSpecies): number {
+  // El pitch en gatos los deja irreconocibles; en perro un toque alcanza.
+  if (species === 'gato') return 1;
+  return 0.95 + Math.random() * 0.1;
+}
+
+function clearFade() {
+  if (fadeTimer) {
+    clearInterval(fadeTimer);
+    fadeTimer = null;
+  }
+}
+
+async function stopActive() {
+  clearFade();
+  const prev = activeSound;
+  activeSound = null;
+  if (!prev) return;
+  try {
+    await prev.stopAsync();
+    await prev.unloadAsync();
+  } catch {
+    /* ya descargado */
+  }
 }
 
 /**
- * Motor de voz: 10 variaciones × ánimo + pitch 0.9–1.1.
+ * Baja el volumen en escalones y descarga. Evita el corte seco al terminar
+ * (o al interrumpir un clip largo).
+ */
+function scheduleFadeOut(sound: Audio.Sound, durationMs: number, peakVol: number) {
+  clearFade();
+  const startAt = Math.max(40, durationMs - FADE_MS);
+  const stepMs = Math.max(20, Math.floor(FADE_MS / FADE_STEPS));
+  let step = 0;
+
+  const kick = setTimeout(() => {
+    fadeTimer = setInterval(() => {
+      step += 1;
+      const vol = peakVol * Math.max(0, 1 - step / FADE_STEPS);
+      void sound.setVolumeAsync(vol).catch(() => undefined);
+      if (step >= FADE_STEPS) {
+        clearFade();
+        void sound.unloadAsync().catch(() => undefined);
+        if (activeSound === sound) activeSound = null;
+      }
+    }, stepMs);
+  }, startAt);
+
+  // Guardar el timeout en el mismo slot mental: si llega didJustFinish antes,
+  // el status handler también limpia.
+  (sound as unknown as { _fadeKick?: ReturnType<typeof setTimeout> })._fadeKick = kick;
+}
+
+/**
+ * Motor de voz: grabaciones reales + fade-out + duración para sync de boca.
  */
 export class PetVoiceEngine {
-  async play(opts: { species: HueSpecies; mood: MoodBucket }): Promise<ClipId> {
+  async play(opts: { species: HueSpecies; mood: MoodBucket }): Promise<VoicePlayResult> {
     const clip = pickClip(opts.mood);
-    const pitch = randomPitch();
+    const pitch = randomPitch(opts.species);
     const asset = VOICE_ASSETS[opts.species]?.[opts.mood]?.[clip];
 
     if (asset != null) {
       try {
         await ensureMode();
+        await stopActive();
+        const peakVol = 0.92;
         const { sound } = await Audio.Sound.createAsync(asset, {
           shouldPlay: true,
-          volume: 0.95,
+          volume: peakVol,
           rate: pitch,
           shouldCorrectPitch: true,
         });
+        activeSound = sound;
+
+        // Pedir duración: a veces status no la trae al toque.
+        let durationMs = SYNTH[clip].ms;
+        try {
+          const st = (await sound.getStatusAsync()) as AVPlaybackStatusSuccess;
+          if (st.isLoaded && st.durationMillis && st.durationMillis > 0) {
+            durationMs = st.durationMillis / pitch;
+          }
+        } catch {
+          /* fallback synth estimate */
+        }
+
+        scheduleFadeOut(sound, durationMs, peakVol);
+
         sound.setOnPlaybackStatusUpdate((st) => {
           const s = st as AVPlaybackStatusSuccess;
-          if (s.isLoaded && s.didJustFinish) void sound.unloadAsync();
+          if (!s.isLoaded) return;
+          if (s.durationMillis && s.durationMillis > 0) {
+            // Recalcular fade si la duración real llega tarde.
+          }
+          if (s.didJustFinish) {
+            clearFade();
+            void sound.unloadAsync().catch(() => undefined);
+            if (activeSound === sound) activeSound = null;
+          }
         });
-        return clip;
+
+        return { clip, durationMs: Math.max(180, Math.round(durationMs)) };
       } catch {
         /* synth fallback */
       }
     }
 
+    const synthMs = SYNTH[clip].ms / pitch;
     this.playSynth(clip, opts.species, pitch);
-    return clip;
+    return { clip, durationMs: Math.round(synthMs) };
   }
 
   private playSynth(clip: ClipId, species: HueSpecies, pitch: number) {
@@ -160,7 +238,7 @@ export class PetVoiceEngine {
         if (s.isLoaded && s.didJustFinish) void sound.unloadAsync();
       });
     } catch {
-      /* dispositivo sin soporte para data URI de audio: se pierde el sonido, no la app */
+      /* dispositivo sin soporte */
     }
   }
 
@@ -200,12 +278,6 @@ export class PetVoiceEngine {
 
 export const petVoice = new PetVoiceEngine();
 
-/**
- * Síntesis PCM del "grito" (bark/meow) para reproducir vía data URI en
- * nativo, donde no existe Web Audio API. Mismo barrido de frecuencia que la
- * versión web, con timbre por especie (pulso/aserrado/seno) + textura de
- * ruido leve para especies sin voz definida.
- */
 function synthSamples(clip: ClipId, species: HueSpecies, pitch: number, sampleRate: number): Int16Array {
   const p = SYNTH[clip];
   const dur = (p.ms / 1000) / pitch;
@@ -288,3 +360,6 @@ function toBase64(bytes: Uint8Array): string {
   }
   return result;
 }
+
+// Silenciar unused CLIPS warning en builds estrictos
+void CLIPS;

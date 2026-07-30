@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "continue": "Continuer",
     "cancel": "Annuler",
@@ -613,9 +613,70 @@
         "limite_global": "La limite quotidienne d'avatars est atteinte. Revenez demain."
       }
     },
+        "catchFood": "Catch food",
+    "places": {
+      "living": "Living",
+      "cocina": "Kitchen",
+      "patio": "Yard",
+      "arbol": "Tree",
+      "plaza": "Plaza"
+    },
+    "traits": {
+      "hiperactivo": "Hyper",
+      "perezoso": "Lazy",
+      "gloton": "Foodie",
+      "curioso": "Curious",
+      "timido": "Shy"
+    },
+    "age": {
+      "cachorro": "Young",
+      "adulto": "Adult"
+    },
+    "tricks": {
+      "title": "Train tricks",
+      "darPata": "Shake paw",
+      "sentarse": "Sit",
+      "darVuelta": "Spin",
+      "hacerseMuerto": "Play dead",
+      "hace": "Do:"
+    },
+    "view": {
+      "title": "View",
+      "perfil": "Side",
+      "frente": "Front",
+      "espalda": "Back"
+    },
+    "entertain": {
+      "title": "Play with",
+      "pet": "Pet",
+      "scratch": "Scratch",
+      "play": "Ball",
+      "speak": "Bark / meow"
+    },
+    "stance": {
+      "title": "Stance",
+      "sit": "Sit",
+      "lie": "Lie down",
+      "stand": "Stand"
+    },
+    "sleep": {
+      "locked": "Sleeping… {{sec}}s",
+      "wake": "Wake up"
+    },
+    "visit": {
+      "invite": "Invite friend",
+      "clear": "End visit",
+      "guest": "{{name}} visiting · {{outcome}}"
+    },
+    "weather": {
+      "night": "Night time — heading to bed…",
+      "preferIndoors": "It's raining outside — better stay in."
+    },
     "coat": {
       "title": "Pelage"
     },
+    "panel": { "place": "Place", "social": "Social" },
+    "orbitHint": "Drag sideways to spin · tap to greet",
     "hub": {
       "bajada": "Choisissez un jeu pour jouer avec vos animaux.",
       "proximamente": "Bientôt",
