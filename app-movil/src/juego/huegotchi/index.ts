@@ -1,10 +1,17 @@
-export { buildAppearance, applyLayerPatch, normalizarEspecie } from './appearance';
-export { resolveHueGotchiState, RIVE_SM, animoToMoodNumber } from './PetStateMachine';
-export { playPetVoice } from './audio/PetVoice';
-export { screenToLookAt, lerp, LOOK_LERP } from './lookAt';
-export { AppearancePanel, HueGotchiStage } from './rive/HueGotchiStage';
-export { COATS, ACCESSORIES, hasRiveAsset } from './rive/registry';
-export type { PetAppearance, HueGotchiState, HueGotchiProps } from './types';
-
-/** Alias público del stage. */
-export { HueGotchiStage as HueGotchiCharacter } from './rive/HueGotchiStage';
+export type {
+  HueSpecies,
+  PetAgeStage,
+  PlaceId,
+  PersonalityTrait,
+  TrickId,
+  HuePetIdentity,
+  HueEnvironmentState,
+} from './domain/types';
+export { identityFromJuego, toHueSpecies, resolveSkinId } from './domain/types';
+export { RIVE_SM, RIVE_ARTBOARD, RIVE_NUMBERS, RIVE_BOOLEANS, RIVE_TRIGGERS, RIVE_SKIN_PROP } from './rive/contract';
+export { HueGotchiExperience } from './HueGotchiExperience';
+export { useHueGotchiController } from './hooks/useHueGotchiController';
+export { PetPhysicsEngine } from './physics/PetPhysicsEngine';
+export { petVoice } from './audio/PetVoiceEngine';
+export { TRICKS } from './systems/training';
+export { PLACES } from './systems/environment';

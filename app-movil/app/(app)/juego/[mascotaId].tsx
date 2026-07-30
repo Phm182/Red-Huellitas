@@ -6,7 +6,6 @@ import { juegoApi } from '../../../src/api/juegoApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { HuePlusBadge } from '../../../src/components/HuePlusBadge';
 import { MascotaAnimada } from '../../../src/components/juego/MascotaAnimada';
-import { AppearancePanel, PetAppearance } from '../../../src/juego/huegotchi';
 import { StatBar } from '../../../src/components/StatBar';
 import { JuegoAccion, JuegoAvatarEstado, MascotaJuego } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
@@ -51,7 +50,6 @@ export default function JuegoScreen() {
 
   const [avatar, setAvatar] = useState<JuegoAvatarEstado | null>(null);
   const [avatarBusy, setAvatarBusy] = useState<'generar' | 'quitar' | null>(null);
-  const [appearance, setAppearance] = useState<Partial<PetAppearance>>({});
 
   // Instante en que se leyó el estado: los cooldowns vienen en segundos desde
   // el servidor, así que se descuentan localmente contra este punto.
@@ -168,18 +166,7 @@ export default function JuegoScreen() {
   return (
     <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }, centeredContent]}>
       <View style={styles.avatarZona}>
-        <MascotaAnimada
-          especie={juego.especie}
-          animo={juego.animo}
-          accion={actuando}
-          disparo={celebrar}
-          tamano={280}
-          appearance={appearance}
-        />
-        <Text style={[styles.nombre, { color: colors.text }]}>{juego.nombre}</Text>
-        <Text style={{ color: colors.textMuted, textAlign: 'center' }}>{t(`juego.animo.${juego.animo}`)}</Text>
-
-        <AppearancePanel value={appearance} onChange={setAppearance} />
+        <MascotaAnimada juego={juego} accion={actuando} tamano={300} />
 
         {/* Avatar IA: sólo se muestra algo si hay una acción posible o un
             motivo que valga la pena explicar. Nunca un botón muerto. */}

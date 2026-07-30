@@ -79,7 +79,16 @@ function rh_juego_campos_tiempo(string $alias = 'MascotaJuego'): string
  */
 function rh_juego_obtener_o_crear(mysqli $conn, int $mascotaId, int $userId): ?array
 {
-    $stmt = $conn->prepare("SELECT * FROM Mascota WHERE MascotaId = ? AND Estado = 'A'");
+    // El nombre de la raza sale del catálogo cuando la eligieron de la lista, y
+    // de RazaTexto sólo cuando la escribieron a mano. Leer únicamente RazaTexto
+    // dejaba sin raza a todas las mascotas del catálogo, que son la mayoría, y
+    // el dibujo del juego terminaba usando las proporciones genéricas.
+    $stmt = $conn->prepare(
+        'SELECT Mascota.*, COALESCE(RazaCatalogo.Nombre, Mascota.RazaTexto) AS RazaNombre
+           FROM Mascota
+           LEFT JOIN RazaCatalogo ON RazaCatalogo.RazaId = Mascota.RazaId
+          WHERE Mascota.MascotaId = ? AND Mascota.Estado = \'A\''
+    );
     $stmt->bind_param('i', $mascotaId);
     $stmt->execute();
     $mascota = $stmt->get_result()->fetch_assoc();
@@ -275,7 +284,7 @@ function rh_juego_publico(mysqli $conn, array $juego, array $mascota): array
         'especie' => $mascota['Especie'],
         // La raza va al cliente para elegir el pelaje: un siamés tiene que
         // verse siamés y no del color de marca.
-        'raza' => $mascota['RazaTexto'] ?? null,
+        'raza' => $mascota['RazaNombre'] ?? $mascota['RazaTexto'] ?? null,
         'avatarPath' => $avatarPath,
         'avatarEsGenerado' => $juego['AvatarPath'] !== null,
         'stats' => $stats,
