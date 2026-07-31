@@ -132,6 +132,15 @@ function inyectarEstilos() {
   const el = document.createElement('style');
   el.id = CSS_ID;
   el.textContent = `
+/* Base MapLibre/Mapbox: sin esto (o sin el .css del export) el canvas queda en 0px. */
+.maplibregl-map, .mapboxgl-map {
+  position:relative; width:100%; height:100%; overflow:hidden;
+}
+.maplibregl-canvas-container, .mapboxgl-canvas-container,
+.maplibregl-canvas, .mapboxgl-canvas {
+  position:absolute; left:0; top:0; width:100%; height:100%;
+}
+
 .rh-pin { cursor:pointer; will-change:transform; transition:transform .18s cubic-bezier(.2,.8,.3,1); }
 .rh-pin:hover { transform:scale(1.12); z-index:5; }
 

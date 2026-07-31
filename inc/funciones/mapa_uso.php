@@ -50,6 +50,10 @@ function rh_mapa_reservar_carga(mysqli $conn, int $userId, array $cfg): bool
         'INSERT INTO MapaCargaUsuarioDia (UserId, Dia, Cargas) VALUES (?, ?, 0)
          ON DUPLICATE KEY UPDATE UserId = UserId'
     );
+    // Sin migración 038 el prepare falla: no romper el mapa, caer a MapLibre.
+    if (!$stmt) {
+        return false;
+    }
     $stmt->bind_param('is', $userId, $hoy);
     $stmt->execute();
     $stmt->close();
@@ -107,18 +111,24 @@ function rh_mapa_consumo(mysqli $conn, int $userId): array
 {
     $periodo = date('Y-m');
     $hoy = date('Y-m-d');
+    $mes = 0;
+    $dia = 0;
 
     $stmt = $conn->prepare('SELECT Cargas FROM MapaCargaMes WHERE Periodo = ?');
-    $stmt->bind_param('s', $periodo);
-    $stmt->execute();
-    $mes = (int) ($stmt->get_result()->fetch_row()[0] ?? 0);
-    $stmt->close();
+    if ($stmt) {
+        $stmt->bind_param('s', $periodo);
+        $stmt->execute();
+        $mes = (int) ($stmt->get_result()->fetch_row()[0] ?? 0);
+        $stmt->close();
+    }
 
     $stmt = $conn->prepare('SELECT Cargas FROM MapaCargaUsuarioDia WHERE UserId = ? AND Dia = ?');
-    $stmt->bind_param('is', $userId, $hoy);
-    $stmt->execute();
-    $dia = (int) ($stmt->get_result()->fetch_row()[0] ?? 0);
-    $stmt->close();
+    if ($stmt) {
+        $stmt->bind_param('is', $userId, $hoy);
+        $stmt->execute();
+        $dia = (int) ($stmt->get_result()->fetch_row()[0] ?? 0);
+        $stmt->close();
+    }
 
     return ['mes' => $mes, 'diaUsuario' => $dia];
 }

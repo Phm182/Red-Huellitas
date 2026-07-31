@@ -23,6 +23,31 @@ if ($html -notmatch 'src="([^"]+_expo/static/js/web/entry-[^"]+\.js)"') {
 }
 $scriptSrc = $Matches[1]
 
+# Conservar CSS del export (maplibre-gl / mapbox-gl). Sin eso el canvas del
+# mapa queda en altura 0 y se ve negro/vacío en el navegador.
+$cssSeen = New-Object 'System.Collections.Generic.HashSet[string]'
+$cssLinks = New-Object System.Collections.Generic.List[string]
+foreach ($m in [regex]::Matches($html, 'href="([^"]+_expo/static/css/[^"]+\.css)"')) {
+  $href = $m.Groups[1].Value
+  if (-not $href.StartsWith('/')) { $href = '/' + $href.TrimStart('./') }
+  if ($cssSeen.Add($href)) {
+    $cssLinks.Add("    <link rel=`"stylesheet`" href=`"$href`" />")
+  }
+}
+# Si el HTML ya venía parchado y perdió los link, buscar los CSS en disco.
+if ($cssLinks.Count -eq 0) {
+  $cssDir = Join-Path $DistDir '_expo\static\css'
+  if (Test-Path $cssDir) {
+    Get-ChildItem $cssDir -Filter '*.css' | ForEach-Object {
+      $href = "/_expo/static/css/$($_.Name)"
+      if ($cssSeen.Add($href)) {
+        $cssLinks.Add("    <link rel=`"stylesheet`" href=`"$href`" />")
+      }
+    }
+  }
+}
+$cssBlock = ($cssLinks -join "`n")
+
 $fixed = @"
 <!DOCTYPE html>
 <html lang="es">
@@ -37,10 +62,11 @@ $fixed = @"
       body { overflow: auto; overscroll-behavior-y: none; }
       input, textarea, select { font-size: 16px; }
     </style>
+$cssBlock
     <link rel="icon" href="/favicon.ico" />
   </head>
   <body>
-    <noscript>Necesitás JavaScript para usar Red Huellitas.</noscript>
+    <noscript>Necesitas JavaScript para usar Red Huellitas.</noscript>
     <div id="root"></div>
     <script src="$scriptSrc" defer></script>
   </body>
