@@ -738,7 +738,11 @@
       "sentarse": "Sit",
       "darVuelta": "Spin",
       "hacerseMuerto": "Play dead",
-      "hace": "Do:"
+      "hace": "Do:",
+      "howto": "Swipe ↑↓←→ or tap ● on your pet. The sequence is secret and changes every try. Higher HueGotchi level = more steps and more XP.",
+      "briefing": "Guess the sequence · swipe or tap using the gestures below",
+      "progress": "Step {{n}} of {{total}}",
+      "xpRange": "+{{min}}–{{max}} XP"
     },
     "view": {
       "title": "View",
@@ -814,6 +818,8 @@
       "social": "Social"
     },
     "orbitHint": "Drag sideways to spin · tap to greet",
+    "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
+    "glbHint": "Drag to spin · tap to greet · 3D model",
     "cambiarMascota": "Switch pet",
     "hub": {
       "bajada": "Pick a game to play with your pets.",

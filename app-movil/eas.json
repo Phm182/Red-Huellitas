@@ -10,10 +10,22 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
       }
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
+      }
+    },
+    "apk": {
+      "extends": "preview",
       "android": {
         "buildType": "apk"
       },

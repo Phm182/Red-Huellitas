@@ -19,3 +19,6 @@ export { PLACES } from './systems/environment';
 export { SLEEP_LOCK_MS } from './domain/poses';
 export { ClayPet3D } from './components/ClayPet3D';
 export { ChibiPetStage } from './three/ChibiPetStage';
+export { LottiePetStage } from './lottie/LottiePetStage';
+export { GlbPetStage } from './glb/GlbPetStage';
+export { hasGlbModel } from './glb/registry';

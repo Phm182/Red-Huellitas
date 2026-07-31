@@ -131,22 +131,27 @@ export default function JuegoScreen() {
     setActuando(tipo);
     // Duraciones alineadas con las poses del motor HueGotchi.
     // Dormir se mantiene hasta que el usuario despierte o expire el lock visual.
-    if (tipo === 'dormir') {
-      setTimeout(() => setActuando(null), 20000);
-    } else {
-      setTimeout(() => setActuando(null), 5200);
-    }
-    const res = await juegoApi.accion(Number(mascotaId), tipo);
-    setAccionEnCurso(null);
-
-    if (res.success && res.data) {
-      setJuego(res.data.juego);
-      leidoEn.current = Date.now();
-      setAhora(Date.now());
-      setCelebrar((c) => c + 1);
-      setMensaje(res.data.subioNivel ? t('juego.subioNivel', { nivel: res.data.juego.nivel }) : null);
-    } else {
-      setMensaje(res.message);
+    const clearActuando = setTimeout(
+      () => setActuando(null),
+      tipo === 'dormir' ? 20000 : 5200
+    );
+    try {
+      const res = await juegoApi.accion(Number(mascotaId), tipo);
+      if (res.success && res.data) {
+        setJuego(res.data.juego);
+        leidoEn.current = Date.now();
+        setAhora(Date.now());
+        setCelebrar((c) => c + 1);
+        setMensaje(res.data.subioNivel ? t('juego.subioNivel', { nivel: res.data.juego.nivel }) : null);
+      } else {
+        setMensaje(res.message);
+      }
+    } catch {
+      setMensaje(t('juego.errorAccion', { defaultValue: 'No se pudo completar la acción. Probá de nuevo.' }));
+      clearTimeout(clearActuando);
+      setActuando(null);
+    } finally {
+      setAccionEnCurso(null);
     }
   };
 

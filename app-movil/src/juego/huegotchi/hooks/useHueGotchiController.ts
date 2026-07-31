@@ -20,7 +20,17 @@ import {
   fetchLocalWeather,
 } from '../systems/environment';
 import { createGuestVisit, DEMO_FRIENDS, visitTrigger } from '../systems/social';
-import { gestureFromSwipe, GestureToken, TrickTrainer, TRICKS, TRICKS_QUE_SOSTIENEN } from '../systems/training';
+import {
+  buildTrickInstance,
+  gestureFromSwipe,
+  GestureToken,
+  previewXpRange,
+  TrickDef,
+  TrickTrainer,
+  TRICK_KINDS,
+  TRICKS,
+  TRICKS_QUE_SOSTIENEN,
+} from '../systems/training';
 import { TrickId } from '../domain/types';
 import { Platform } from 'react-native';
 
@@ -76,6 +86,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     riveAvailable ? null : 'missing-riv'
   );
   const [activeTrick, setActiveTrick] = useState<TrickId | null>(null);
+  const [trickInstance, setTrickInstance] = useState<TrickDef | null>(null);
   const [trickMsg, setTrickMsg] = useState<string | null>(null);
   const [trickPasos, setTrickPasos] = useState(0);
   /** Feedback visual sobre el escenario: gesto ok / fallo / logro. */
@@ -99,14 +110,32 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   const [sleepUntil, setSleepUntil] = useState(0);
   const [voiceMouth, setVoiceMouth] = useState<VoiceMouth | null>(null);
   const [, bump] = useState(0);
+  /** Sube en cada reacción: fuerza reinicio del clip Lottie aunque sea el mismo. */
+  const [animGen, setAnimGen] = useState(0);
   const animRef = useRef<{ trigger: string; startedAt: number } | null>(null);
+  const animClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sleepLocked = sleepUntil > Date.now() && heldStance === 'sleep';
 
   const react = useCallback((trigger: string) => {
+    // poke idle no debe “comerse” el estado visual ni bloquear reacciones.
+    if (trigger === 'poke') {
+      handleRef.current?.react(trigger);
+      return;
+    }
     handleRef.current?.react(trigger);
     animRef.current = { trigger, startedAt: performance.now() };
+    setAnimGen((n) => n + 1);
+    bump((n) => (n + 1) % 100000);
+    if (animClearTimer.current) clearTimeout(animClearTimer.current);
+    const dur = poseDuration(trigger);
+    animClearTimer.current = setTimeout(() => {
+      if (animRef.current?.trigger === trigger) {
+        animRef.current = null;
+        bump((n) => (n + 1) % 100000);
+      }
+    }, dur + 40);
   }, []);
 
   const playVoice = useCallback(async () => {
@@ -278,7 +307,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     setRiveReady(false);
   }, []);
 
-  // Micro-reacciones idle (no mientras duerme o entrena).
+  // Micro-reacciones idle (solo Rive/physics; no tocan Lottie).
   useEffect(() => {
     const id = setInterval(() => {
       if (sleepLocked || heldStance === 'sleep' || trainer.activo) return;
@@ -286,10 +315,17 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
         const dur = poseDuration(animRef.current.trigger);
         if (performance.now() - animRef.current.startedAt < dur) return;
       }
-      react('poke');
+      handleRef.current?.react('poke');
+      physics.onTap();
     }, 14000);
     return () => clearInterval(id);
-  }, [react, sleepLocked, heldStance, trainer]);
+  }, [sleepLocked, heldStance, trainer, physics]);
+
+  useEffect(() => {
+    return () => {
+      if (animClearTimer.current) clearTimeout(animClearTimer.current);
+    };
+  }, []);
 
   const coatKey = `@red_huellitas/huegotchi/coat/${identity.mascotaId}`;
   useEffect(() => {
@@ -354,6 +390,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
         setTrickPasos(def.pattern.length);
         trainer.cancelar();
         setActiveTrick(null);
+        setTrickInstance(null);
         void playVoice();
       } else if (res === 'avanza') {
         flashTrick('ok');
@@ -363,7 +400,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
         flashTrick('fail');
         react(RIVE_TRIGGERS.trickFail);
         setTrickPasos(0);
-        setTrickMsg('Casi… arrancá de nuevo la secuencia.');
+        setTrickMsg('Casi… la secuencia se reinició. Seguí adivinando.');
       }
     },
     [react, trainer, playVoice, flashTrick]
@@ -468,21 +505,25 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   const startTrick = useCallback(
     (id: TrickId) => {
       if (sleepLocked) return;
-      const def = TRICKS.find((t) => t.id === id);
-      if (!def) return;
+      const kind = TRICK_KINDS.find((t) => t.id === id);
+      if (!kind) return;
       if (activeTrick === id) {
         trainer.cancelar();
         setActiveTrick(null);
+        setTrickInstance(null);
         setTrickMsg(null);
         setTrickPasos(0);
         return;
       }
-      trainer.empezar(def);
+      // Cada intento genera una secuencia nueva (nivel HueGotchi sube la dificultad).
+      const instance = buildTrickInstance(kind, juego.nivel);
+      trainer.empezar(instance);
+      setTrickInstance(instance);
       setActiveTrick(id);
       setTrickPasos(0);
       setTrickMsg(null);
     },
-    [activeTrick, trainer, sleepLocked]
+    [activeTrick, trainer, sleepLocked, juego.nivel]
   );
 
   useEffect(() => {
@@ -491,6 +532,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       if (trainer.expirado()) {
         trainer.cancelar();
         setActiveTrick(null);
+        setTrickInstance(null);
         setTrickPasos(0);
         setTrickMsg('Se cortó el entrenamiento. Probá de nuevo.');
       }
@@ -536,13 +578,21 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     startTrick,
     trickMsg,
     tricks: TRICKS,
+    trickXpPreview: (id: TrickId) => {
+      const kind = TRICK_KINDS.find((t) => t.id === id);
+      if (!kind) return null;
+      return previewXpRange(kind, juego.nivel);
+    },
     react,
     animation: animRef.current,
+    animGen,
     coats,
     coatId,
     setCoat,
     trickPasos,
-    trickPatron: trainer.definicion?.pattern ?? null,
+    trickTotal: trickInstance?.pattern.length ?? 0,
+    trickGesturePool: trickInstance?.gesturePool ?? null,
+    trickXpReward: trickInstance?.xpReward ?? null,
     trickFlash,
     heldStance,
     setStance,

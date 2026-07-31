@@ -19,22 +19,17 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { radii } from '../../theme/elevation';
 import { PLACES } from './systems/environment';
 import { modifiersForTrait } from './systems/personality';
-import { ClayPet3D } from './components/ClayPet3D';
-import { ChibiPetStage } from './three/ChibiPetStage';
 import { SceneBackdrop } from './components/SceneBackdrop';
 import { CatchFoodGame } from './components/CatchFoodGame';
 import { TrickCoachOverlay } from './components/TrickCoachOverlay';
+import { LottiePetStage } from './lottie/LottiePetStage';
+import { GlbPetStage } from './glb/GlbPetStage';
+import { hasGlbModel } from './glb/registry';
 import { resolveVisualState } from './domain/riveStates';
 import { useHueGotchiController } from './hooks/useHueGotchiController';
 import { PlaceId } from './domain/types';
-import { describeBreed, resolveBreedProfile } from './domain/breeds';
-import {
-  blendPose,
-  idlePose,
-  mouthFromVoice,
-  poseDuration,
-  poseForSpecies,
-} from './domain/poses';
+import { describeBreed } from './domain/breeds';
+import { poseDuration } from './domain/poses';
 
 type Props = {
   juego: MascotaJuego;
@@ -44,11 +39,8 @@ type Props = {
 
 type PanelId = 'entertain' | 'stance' | 'place' | 'coat' | 'tricks' | 'social' | null;
 
-const GUEST_SCALE = 0.68;
-const GROUND_FRAC = 0.75;
-
 /**
- * Escenario HueGotchi: modelo clay 3D único (órbita 360°) + paneles en acordeón.
+ * Escenario HueGotchi: Lottie por estado/acción (LottieFiles) + fondos propios + acordeón.
  */
 export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
   const { t } = useTranslation();
@@ -115,53 +107,19 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
   });
 
   const gesture = Gesture.Exclusive(pan, tap);
-  const phy = c.physicsSnapshot;
   const visual = resolveVisualState({ animo: juego.animo, accion });
   const isRaining = c.environment.weather === 'rain' || c.environment.weather === 'storm';
   const species = c.identity.species;
+  const clock = Date.now() / 1000;
 
-  const now = Date.now();
-  const clock = now / 1000;
-
-  const sleeping = c.heldStance === 'sleep' || accion === 'dormir' || visual === 'sleeping';
-  const base = idlePose(clock, {
-    fidget: traitMods.fidget,
-    sleeping,
-    sad: visual === 'sad',
-    happy: visual === 'happy' || visual === 'playing',
-    held: c.heldStance,
-  });
-
-  let pose = base;
   const anim = c.animation;
+  let actionTrigger: string | null = null;
   if (anim) {
     const dur = poseDuration(anim.trigger);
-    const tAnim = (performance.now() - anim.startedAt) / dur;
-    if (tAnim >= 0 && tAnim <= 1.15) {
-      const fade = Math.min(1, Math.min(tAnim / 0.12, (1.05 - tAnim) / 0.15));
-      pose = blendPose(base, poseForSpecies(anim.trigger, tAnim, species), Math.max(0, fade));
+    if (performance.now() - anim.startedAt < dur) {
+      actionTrigger = anim.trigger;
     }
   }
-
-  if (c.voiceMouth) {
-    const elapsed = performance.now() - c.voiceMouth.startedAt;
-    const mouth = mouthFromVoice(elapsed, c.voiceMouth.durationMs, species);
-    if (mouth > 0) {
-      pose = { ...pose, mouthOpen: Math.max(pose.mouthOpen, mouth) };
-    }
-  }
-
-  const guestBreed = c.guest
-    ? resolveBreedProfile(c.guest.guestSpecies, c.guest.guestRaza, 'adulto')
-    : null;
-  const guestPose = c.guest
-    ? idlePose(clock + 1.7, {
-        fidget: 0.6,
-        sleeping: false,
-        sad: c.guest.outcome === 'ignore',
-        happy: c.guest.outcome === 'play',
-      })
-    : null;
 
   const chip = (on: boolean) => ({
     borderColor: on ? colors.primary : colors.border,
@@ -199,38 +157,74 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
             size={tamano}
             clock={clock}
           />
-          {c.guest && guestBreed && guestPose ? (
+          {c.guest ? (
             <View
               style={{
                 position: 'absolute',
-                width: tamano * GUEST_SCALE,
-                height: tamano * GUEST_SCALE,
-                left: tamano * 0.27,
-                top: GROUND_FRAC * tamano * (1 - GUEST_SCALE),
+                width: tamano * 0.42,
+                height: tamano * 0.42,
+                right: tamano * 0.04,
+                bottom: tamano * 0.08,
+                opacity: 0.92,
               }}
               pointerEvents="none"
             >
-              <ClayPet3D
-                size={tamano * GUEST_SCALE}
-                breed={guestBreed}
-                pose={guestPose}
-                yaw={-0.9}
-                uid="guest"
-                clock={clock}
-                lookX={-0.4}
+              <LottiePetStage
+                size={tamano * 0.42}
+                species={c.guest.guestSpecies}
+                heldStance="none"
+                actionTrigger={c.guest.outcome === 'play' ? 'play' : null}
+                mood={c.guest.outcome === 'ignore' ? 'triste' : 'feliz'}
+                visual={c.guest.outcome === 'ignore' ? 'sad' : 'happy'}
               />
             </View>
           ) : null}
           <View style={styles.fill} pointerEvents="box-none">
-            <ChibiPetStage size={tamano} breed={c.breed} pose={pose} yaw={c.yaw} />
+            {hasGlbModel(species) ? (
+              <GlbPetStage
+                size={tamano}
+                species={species}
+                yaw={c.yaw}
+                heldStance={c.heldStance}
+                actionTrigger={actionTrigger}
+                mood={juego.animo}
+                animGen={c.animGen}
+                actionStartedAt={anim?.startedAt ?? null}
+              />
+            ) : (
+              <LottiePetStage
+                size={tamano}
+                species={species}
+                heldStance={c.heldStance}
+                actionTrigger={actionTrigger}
+                mood={juego.animo}
+                visual={visual}
+                animGen={c.animGen}
+              />
+            )}
           </View>
           <TrickCoachOverlay
-            patron={c.trickPatron}
+            activo={c.activeTrick != null}
+            gesturePool={c.trickGesturePool}
+            totalPasos={c.trickTotal}
             pasos={c.trickPasos}
             flash={c.trickFlash}
             primary={colors.primary}
             surface={colors.surface}
             border={colors.border}
+            textColor={colors.text}
+            mutedColor={colors.textMuted}
+            titulo={
+              c.activeTrick
+                ? t(c.tricks.find((tr) => tr.id === c.activeTrick)?.labelKey ?? 'juego.tricks.title')
+                : null
+            }
+            xpHint={c.trickXpReward}
+            hintText={t('juego.tricks.briefing')}
+            progressLabel={t('juego.tricks.progress', {
+              n: Math.min(c.trickPasos + 1, Math.max(1, c.trickTotal)),
+              total: c.trickTotal,
+            })}
           />
           {c.sleepLocked ? (
             <View style={styles.sleepOverlay} pointerEvents="none">
@@ -242,7 +236,9 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
         </View>
       </GestureDetector>
 
-      <Text style={[styles.hint, { color: colors.textMuted }]}>{t('juego.orbitHint')}</Text>
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        {hasGlbModel(species) ? t('juego.glbHint') : t('juego.lottieHint')}
+      </Text>
 
       {/* Pelaje siempre visible: no queda escondido en el acordeón. */}
       {c.coats.length > 0 ? (
@@ -493,22 +489,33 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
             ) : null}
 
             {panel === 'tricks' ? (
-              <View style={styles.panel}>
-                {c.tricks.map((tr) => {
-                  const on = c.activeTrick === tr.id;
-                  return (
-                    <Pressable
-                      key={tr.id}
-                      disabled={c.sleepLocked}
-                      onPress={() => c.startTrick(tr.id)}
-                      style={[styles.chip, chip(on), c.sleepLocked && styles.disabled]}
-                    >
-                      <Text style={{ color: on ? colors.primary : colors.text, fontSize: 12 }}>
-                        {t(tr.labelKey)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View style={styles.panelCol}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginBottom: 6 }}>
+                  {t('juego.tricks.howto')}
+                </Text>
+                <View style={styles.panel}>
+                  {c.tricks.map((tr) => {
+                    const on = c.activeTrick === tr.id;
+                    const xp = c.trickXpPreview(tr.id);
+                    return (
+                      <Pressable
+                        key={tr.id}
+                        disabled={c.sleepLocked}
+                        onPress={() => c.startTrick(tr.id)}
+                        style={[styles.chip, chip(on), c.sleepLocked && styles.disabled]}
+                      >
+                        <Text style={{ color: on ? colors.primary : colors.text, fontSize: 12 }}>
+                          {t(tr.labelKey)}
+                        </Text>
+                        {xp ? (
+                          <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 2 }}>
+                            {t('juego.tricks.xpRange', { min: xp.min, max: xp.max })}
+                          </Text>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             ) : null}
 
@@ -668,6 +675,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     width: '100%',
   },
+  panelCol: { width: '100%', alignItems: 'center' },
   panel: {
     flexDirection: 'row',
     flexWrap: 'wrap',

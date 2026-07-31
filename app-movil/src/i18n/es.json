@@ -752,7 +752,11 @@
       "sentarse": "Sentarse",
       "darVuelta": "Dar una vuelta",
       "hacerseMuerto": "Hacerse el muerto",
-      "hace": "Hacé:"
+      "hace": "Hacé:",
+      "howto": "Deslizá ↑↓←→ o tocá ● sobre la mascota. La secuencia es secreta y cambia cada vez. A más nivel HueGotchi, más gestos y más XP.",
+      "briefing": "Adiviná la secuencia · deslizá o tocá con los gestos de abajo",
+      "progress": "Paso {{n}} de {{total}}",
+      "xpRange": "+{{min}}–{{max}} XP"
     },
     "view": {
       "title": "Vista",
@@ -828,6 +832,8 @@
       "social": "Social"
     },
     "orbitHint": "Arrastrá horizontal para girar · tocá para saludar",
+    "lottieHint": "Tocá para saludar · gestos en trucos · el fondo lo elegís vos",
+    "glbHint": "Arrastrá para girar · tocá para saludar · modelo 3D",
     "cambiarMascota": "Cambiar mascota",
     "hub": {
       "bajada": "Elegí un juego para jugar con tus mascotas.",
