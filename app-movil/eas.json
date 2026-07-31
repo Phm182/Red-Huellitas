@@ -12,7 +12,7 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
       }
     },
     "preview": {
@@ -21,7 +21,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
       }
     },
     "apk": {
@@ -30,7 +30,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
       }
     },
     "production": {
@@ -38,7 +38,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar/inc"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
       }
     }
   },

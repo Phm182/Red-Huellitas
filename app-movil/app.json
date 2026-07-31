@@ -15,7 +15,7 @@
       "package": "com.redhuellitas.app",
       "versionCode": 2,
       "adaptiveIcon": {
-        "backgroundColor": "#E8873A",
+        "backgroundColor": "#0F766E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -85,7 +85,7 @@
       [
         "expo-notifications",
         {
-          "color": "#E8873A"
+          "color": "#0F766E"
         }
       ],
       "expo-font",

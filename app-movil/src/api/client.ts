@@ -21,7 +21,8 @@ function getApiUrl(): string {
 
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
   if (fromEnv) {
-    return fromEnv;
+    // Se puede poner la raíz del sitio; el backend PHP vive en /inc.
+    return fromEnv.endsWith('/inc') ? fromEnv : `${fromEnv}/inc`;
   }
   return 'http://localhost/Red%20Huellitas/inc';
 }
