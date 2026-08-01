@@ -74,7 +74,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "export:web": "expo export -p web --output-dir dist",
-    "export:web:patched": "npm run export:web && powershell -ExecutionPolicy Bypass -File scripts/patch-web-index.ps1",
+    "export:web:patched": "npm run export:web && powershell -ExecutionPolicy Bypass -File scripts/patch-web-index.ps1 && powershell -ExecutionPolicy Bypass -File scripts/copy-maplibre-worker.ps1",
     "prebuild:android": "expo prebuild -p android --clean",
     "android:studio": "powershell -ExecutionPolicy Bypass -File scripts/open-android-studio.ps1",
     "android:apk:debug": "cd android && .\\gradlew.bat assembleDebug",

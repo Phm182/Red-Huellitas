@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 // maplibregl from` compila igual pero llega `undefined` en runtime — o sea que
 // el respaldo recién fallaría el día que se acabe el cupo de Mapbox.
 import * as maplibregl from 'maplibre-gl';
+import { setWorkerUrl } from 'maplibre-gl';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Supercluster from 'supercluster';
 
@@ -17,6 +18,18 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
 import { MAPA_TIPO_POR_CLAVE } from '../../types/mapa';
 import { rhMediaUrl } from '../../utils/media';
+
+/**
+ * MapLibre v6 es ESM-only: con Metro/Expo el worker no se resuelve solo.
+ * Sin `setWorkerUrl` el mapa monta pero queda en blanco (sin tiles).
+ * Los archivos viven en /public y se sirven mismo-origen en el export.
+ */
+let workerMapLibreListo = false;
+function asegurarWorkerMapLibre() {
+  if (workerMapLibreListo || typeof window === 'undefined') return;
+  setWorkerUrl(`${window.location.origin}/maplibre-gl-worker.mjs`);
+  workerMapLibreListo = true;
+}
 
 /**
  * El mapa propiamente dicho (sólo web).
@@ -322,6 +335,7 @@ export function MapaLienzo({
     (async () => {
       const clave = claveMapaVivo(oscuro);
       const esMapbox = sesion.motor === 'mapbox' && !!sesion.token;
+      if (!esMapbox) asegurarWorkerMapLibre();
       const gl: any = esMapbox ? mapboxgl : maplibregl;
       glRef.current = gl;
 
@@ -343,25 +357,56 @@ export function MapaLienzo({
         nodo.style.visibility = 'hidden';
         document.body.appendChild(nodo);
 
-        if (esMapbox) gl.accessToken = sesion.token;
+        let motorGl: any = gl;
+        let estilo: string = esMapbox && sesion.estilo ? sesion.estilo : estiloMapLibre(oscuro);
+        let sesionUsada = sesion;
 
-        const mapa = new gl.Map({
-          container: nodo,
-          style: esMapbox ? sesion.estilo : estiloMapLibre(oscuro),
-          center: [centro.lng, centro.lat],
-          zoom: 12.4,
-          pitch: 45,          // inclinación: da la sensación de volumen
-          bearing: -12,
-          antialias: true,
-          attributionControl: true,
-        });
+        if (esMapbox) motorGl.accessToken = sesion.token;
 
-        // Abajo a la derecha: arriba chocaban con el contador y los filtros, y
-        // ademas alla no llega el pulgar.
-        mapa.addControl(new gl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+        const armar = (lib: any, styleUrl: string) => {
+          const mapa = new lib.Map({
+            container: nodo,
+            style: styleUrl,
+            center: [centro.lng, centro.lat],
+            zoom: 12.4,
+            pitch: 45,
+            bearing: -12,
+            antialias: true,
+            attributionControl: true,
+          });
+          mapa.addControl(new lib.NavigationControl({ visualizePitch: true }), 'bottom-right');
+          return mapa;
+        };
+
+        let mapa: any;
+        try {
+          mapa = armar(motorGl, estilo);
+        } catch {
+          // Token/Map inválido → MapLibre + worker.
+          asegurarWorkerMapLibre();
+          motorGl = maplibregl;
+          estilo = estiloMapLibre(oscuro);
+          sesionUsada = { ...sesion, motor: 'maplibre' };
+          delete (sesionUsada as { token?: string }).token;
+          delete (sesionUsada as { estilo?: string }).estilo;
+          mapa = armar(motorGl, estilo);
+          glRef.current = motorGl;
+        }
+
+        // Mapbox montó pero el estilo no baja (URL restriction, 401…): Carto.
+        if (esMapbox) {
+          mapa.once('error', () => {
+            try {
+              asegurarWorkerMapLibre();
+              mapa.setStyle(estiloMapLibre(oscuro));
+            } catch {
+              /* se queda el error original en consola */
+            }
+          });
+        }
 
         nodo.style.visibility = '';
-        vivo = { mapa, nodo, clave, sesion };
+        vivo = { mapa, nodo, clave, sesion: sesionUsada };
         return vivo;
       };
 
@@ -377,10 +422,22 @@ export function MapaLienzo({
 
       try {
         const v = await obtener();
-        if (!activo || !v || !contenedor.current) return;
+        if (!activo || !v) return;
 
-        contenedor.current.appendChild(v.nodo);
+        // El ref a veces no está listo justo después del await (Strict Mode /
+        // remount). Reintentamos un par de frames antes de tirar el mapa.
+        let host = contenedor.current;
+        for (let i = 0; !host && i < 10 && activo; i++) {
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          host = contenedor.current;
+        }
+        if (!activo || !host) return;
+
+        host.appendChild(v.nodo);
         mapaRef.current = v.mapa;
+        glRef.current = (sesion.motor === 'mapbox' && sesion.token ? mapboxgl : maplibregl) as any;
+        // Si crear() cayó a MapLibre, el ref ya quedó apuntando ahí.
+        if (v.sesion.motor === 'maplibre') glRef.current = maplibregl as any;
         v.mapa.resize();
         v.mapa.jumpTo({ center: [centro.lng, centro.lat] });
         v.mapa.on('moveend', avisarMovimiento);
@@ -400,6 +457,15 @@ export function MapaLienzo({
         // Si nunca carga, es sólo relieve que falta: el mapa sigue usable.
         if (v.mapa.isStyleLoaded()) agregarEdificios(v.mapa, oscuro);
         else v.mapa.once('styledata', () => agregarEdificios(v.mapa, oscuro));
+
+        // Resize cuando el contenedor ya tiene tamaño real (flex/absolute).
+        requestAnimationFrame(() => {
+          try {
+            v.mapa.resize();
+          } catch {
+            /* mapa ya removido */
+          }
+        });
       } catch (e: any) {
         if (activo) setError(e?.message ?? 'No se pudo cargar el mapa');
       }

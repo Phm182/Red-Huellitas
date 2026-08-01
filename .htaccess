@@ -1,12 +1,18 @@
 Options -Indexes
 DirectoryIndex index.html
 
+# MapLibre v6 worker (ESM): sin el MIME correcto el navegador no lo ejecuta
+# y el mapa queda en blanco.
+<IfModule mod_mime.c>
+    AddType text/javascript .mjs
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
     # No reescribir API PHP, uploads, logos ni assets del build
     RewriteRule ^(inc|uploads|imgLogo|vendor|sql|_expo|assets)/ - [L]
-    RewriteRule ^(favicon\.ico|metadata\.json)$ - [L]
+    RewriteRule ^(favicon\.ico|metadata\.json|maplibre-gl-worker\.mjs|maplibre-gl-shared\.mjs)$ - [L]
 
     # SPA: rutas de Expo Router → index.html
     RewriteCond %{REQUEST_FILENAME} !-f
