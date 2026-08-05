@@ -136,8 +136,9 @@ export const HUBS: Hub[] = [
     match: (p) => p.includes('/hueplay') || p.includes('/juego'),
     items: [
       { key: 'hueplay', labelKey: 'nav.hueplay', route: '/(app)/hueplay', icon: 'game-controller-outline' },
+      { key: 'huegotchi', labelKey: 'juego.titulo', route: '/(app)/juego/mascotas', icon: 'paw-outline' },
       { key: 'desafios', labelKey: 'hueplay.desafios', route: '/(app)/hueplay/desafios', icon: 'flash-outline' },
-      { key: 'mascotas', labelKey: 'mascotas.title', route: '/(app)/mascotas', icon: 'paw-outline' },
+      { key: 'mascotas', labelKey: 'mascotas.title', route: '/(app)/mascotas', icon: 'list-outline' },
     ],
   },
 ];

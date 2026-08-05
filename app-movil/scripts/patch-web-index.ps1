@@ -56,6 +56,9 @@ $fixed = @"
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Red Huellitas</title>
+    <!-- index.html no se cachea: si no, Hostinger/CDN deja el entry JS viejo. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
     <style id="rh-web-reset">
       html, body { height: 100%; margin: 0; }
       #root { display: flex; flex: 1; min-height: 100%; height: 100%; }

@@ -65,6 +65,7 @@ export function titleForPath(pathname: string, t: TFunction): string {
     { test: (x) => x.includes('/mis-compras'), title: t('pedidos.misCompras') },
     { test: (x) => x.includes('/mis-ventas'), title: t('pedidos.misVentas') },
     { test: (x) => x.includes('/pedidos'), title: t('pedidos.detalleTitulo') },
+    { test: (x) => x.includes('/hueplay'), title: t('nav.hueplay') },
     { test: (x) => x.includes('/juego'), title: t('juego.titulo') },
     { test: (x) => x.includes('/admin/verificaciones'), title: t('admin.verificacionesTitulo') },
     { test: (x) => x.includes('/admin/denuncias'), title: t('admin.denunciasTitulo') },
