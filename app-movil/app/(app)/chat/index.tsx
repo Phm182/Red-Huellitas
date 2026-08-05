@@ -259,7 +259,13 @@ export default function ChatScreen() {
                   </Text>
                 ) : null}
                 <Text style={[type.bodySm, { color: colors.textMuted }]} numberOfLines={1}>
-                  {item.ultimoTipo === 'zumbido' ? `⚡ ${t('chat.zumbido')}` : item.ultimoTexto ?? ''}
+                  {item.ultimoTipo === 'zumbido'
+                    ? `⚡ ${t('chat.zumbido')}`
+                    : item.ultimoTipo === 'sticker'
+                      // En un sticker `ultimoTexto` es el id del dibujo, no algo
+                      // legible: mostrarlo crudo diría "perro_feliz".
+                      ? `🐾 ${t('chat.stickerEnviado')}`
+                      : item.ultimoTexto ?? ''}
                 </Text>
               </View>
 

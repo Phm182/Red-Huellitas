@@ -105,8 +105,14 @@ export default function AppLayout() {
         <Stack.Screen name="pedidos/mis-compras" />
         <Stack.Screen name="pedidos/mis-ventas" />
         <Stack.Screen name="pedidos/[id]" />
-        <Stack.Screen name="juego/index" />
         <Stack.Screen name="juego/[mascotaId]" />
+        <Stack.Screen name="hueplay/index" />
+        <Stack.Screen name="hueplay/huematch" />
+        <Stack.Screen name="hueplay/hueconecta" />
+        <Stack.Screen name="hueplay/huememo" />
+        <Stack.Screen name="hueplay/huetrivia" />
+        <Stack.Screen name="hueplay/desafios" />
+        <Stack.Screen name="hueplay/retar" />
         <Stack.Screen name="admin/index" />
         <Stack.Screen name="admin/verificaciones" />
         <Stack.Screen name="admin/denuncias" />

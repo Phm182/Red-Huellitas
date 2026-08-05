@@ -17,6 +17,30 @@ require_once __DIR__ . '/uploads.php';
  * un pedido de compra en común: en esos tres casos ya se conocen y mandarlos a
  * la bandeja de solicitudes sería un estorbo.
  */
+/**
+ * Ids de sticker válidos. Tiene que coincidir con `src/chat/stickers.tsx`.
+ *
+ * Es una lista blanca y no texto libre: `Mensaje.Texto` se usa como id, y sin
+ * validar acá cualquiera podría inyectar contenido arbitrario en un mensaje
+ * que la app dibuja distinto. Un id desconocido no rompe la app (no dibuja
+ * nada), pero mejor no dejarlo entrar.
+ */
+const RH_STICKERS = [
+    'huella',
+    'perro_feliz',
+    'gato_curioso',
+    'hueso',
+    'corazon_huella',
+    'pelota',
+    'adopta',
+    'dormido',
+];
+
+function rh_sticker_valido(string $id): bool
+{
+    return in_array($id, RH_STICKERS, true);
+}
+
 function rh_chat_hay_relacion(mysqli $conn, int $a, int $b): bool
 {
     $stmt = $conn->prepare(

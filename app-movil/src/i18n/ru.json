@@ -230,7 +230,17 @@
     "preguntame": "СПРОСИ МЕНЯ",
     "escribiRespuesta": "Напишите ответ…",
     "timerOff": "Без таймера",
-    "timerCancelHint": "Нажмите для отмены"
+    "timerCancelHint": "Нажмите для отмены",
+    "reacciones": {
+      "huella": "Лапка",
+      "amor": "Обожаю",
+      "divertido": "Смешно",
+      "asombro": "Вау",
+      "triste": "Грустно",
+      "abrazo": "Обнимаю",
+      "guau": "Гав",
+      "michi": "Мяу"
+    }
   },
   "adopcion": {
     "tituloLista": "Усыновление",
@@ -613,7 +623,7 @@
         "limite_global": "Достигнут дневной лимит аватаров. Возвращайтесь завтра."
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -679,7 +689,10 @@
     "coat": {
       "title": "Окрас"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -853,7 +866,20 @@
     "solicitudDe": "хочет вам написать",
     "sinSolicitudes": "Запросов нет",
     "escribiendo": "печатает…",
-    "nuevaCharla": "Новый чат"
+    "nuevaCharla": "Новый чат",
+    "stickersTab": "Стикеры",
+    "emojisTab": "Эмодзи",
+    "stickerEnviado": "Стикер",
+    "stickers": {
+      "huella": "Лапка",
+      "perroFeliz": "Счастливый пёс",
+      "gatoCurioso": "Любопытный кот",
+      "hueso": "Косточка",
+      "corazonHuella": "Сердце с лапкой",
+      "pelota": "Мячик",
+      "adopta": "Забери домой",
+      "dormido": "Спит"
+    }
   },
   "configuracion": {
     "cuenta": "Аккаунт",
@@ -937,5 +963,98 @@
     "comentarioPlaceholder": "Как всё прошло? (необязательно)",
     "vino": "Пришёл?",
     "faltasSinAviso": "Не пришёл {{count}} раз без предупреждения"
+  },
+  "fechaNac": {
+    "titulo": "Нам нужна ваша дата рождения",
+    "bajada": "Мы используем её, чтобы защитить детей младше 13 лет в чате. Никому её не показываем.",
+    "label": "Дата рождения",
+    "ayuda": "Указывается один раз и потом не редактируется.",
+    "ayudaRegistro": "Используется для правил детской безопасности.",
+    "guardar": "Сохранить и продолжить",
+    "unaVez": "Если ошиблись, напишите нам — мы исправим.",
+    "incompleta": "Заполните день, месяц и год."
+  },
+  "hueplay": {
+    "bajada": "Играй, набирай очки и бросай вызов кому угодно.",
+    "nivel": "Уровень {{n}}",
+    "nivelCorto": "Ур. {{n}}",
+    "puntosYPuesto": "{{puntos}} очков · место {{puesto}}",
+    "faltanParaNivel": "Ещё {{n}} до уровня {{nivel}}",
+    "partidas": "Партии",
+    "ganados": "Победы",
+    "perdidos": "Поражения",
+    "desafios": "Дуэли",
+    "desafiosBajada": "Поединки с другими пользователями",
+    "juegos": "Игры",
+    "ranking": "Рейтинг",
+    "proximamente": "Скоро",
+    "pronto": "Скоро",
+    "tuRecord": "Твой рекорд: {{n}}",
+    "retarA": "Бросить вызов",
+    "retar": "Вызвать",
+    "jugar": "Играть",
+    "volver": "Назад в HuePlay",
+    "sinDesafios": "Дуэлей нет",
+    "sinDesafiosDesc": "Брось вызов и сыграйте на одном поле.",
+    "teToca": "Твой ход",
+    "esperando": "Ждём соперника",
+    "historial": "История",
+    "teRetaron": "Тебе бросили вызов",
+    "yaJugoRival": "Соперник сыграл, твой ход",
+    "hicisteN": "Ты набрал {{n}} очков",
+    "vencido": "Истёк, так и не сыгран",
+    "g": "П",
+    "p": "О",
+    "sinRivales": "Некого вызвать",
+    "sinRivalesDesc": "Попробуй поиск по имени или нику.",
+    "loSeguis": "ты подписан",
+    "subisteDeNivel": "новый уровень!",
+    "match": {
+      "comoSeJuega": "Нажми на две соседние фишки, чтобы поменять их местами. Собери 3 и больше в ряд, пока не кончилась минута. Цепочки умножают очки.",
+      "avisoDuelo": "Дуэль: вы играете на одном и том же поле.",
+      "empezar": "Начать",
+      "guardando": "Сохраняем партию...",
+      "puntos": "Очки",
+      "tiempo": "Время",
+      "nuevoRecord": "Новый рекорд!",
+      "esperandoRival": "Теперь ход {{rival}}",
+      "empate": "Ничья",
+      "ganaste": "Ты выиграл!",
+      "perdiste": "Ты проиграл",
+      "otraVez": "Ещё раз"
+    },
+    "empezasVos": "Ты ходишь первым",
+    "conecta": {
+      "vos": "Ты",
+      "jugadas": "{{n}} ходов",
+      "tuTurno": "Твой ход",
+      "turnoDe": "Ход игрока {{rival}}",
+      "turnoDelRival": "Ждём его ход",
+      "terminado": "Дуэль окончена",
+      "ganasteFin": "Ты выиграл! +{{puntos}} очков",
+      "perdisteFin": "В этот раз ты проиграл",
+      "empateFin": "Ничья. +{{puntos}} очков",
+      "soltarEn": "Бросить в колонку {{n}}",
+      "seguirDespues": "Продолжить позже"
+    },
+    "memo": {
+      "comoSeJuega": "Переворачивай карты по две и найди все 8 пар, пока не вышло время. Чем меньше ошибок и быстрее финиш, тем больше очков.",
+      "avisoDuelo": "Дуэль: карты разложены так же, как у соперника.",
+      "pares": "Пары",
+      "fallos": "Ошибки",
+      "completo": "Нашёл все, ошибок: {{fallos}}",
+      "incompleto": "Найдено пар: {{n}} из {{total}}",
+      "carta": "Карта {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} вопросов об уходе за животными, по {{s}} секунд. В конце увидишь, что угадал и почему.",
+      "avisoDuelo": "Дуэль: соперник отвечает ровно на те же вопросы.",
+      "corrigiendo": "Проверяем...",
+      "aciertos": "верных",
+      "repaso": "Разбор",
+      "laCorrecta": "Правильный ответ",
+      "saltear": "Пропустить вопрос",
+      "sinIdioma": "Вопросов на твоём языке пока нет, поэтому они на испанском."
+    }
   }
 }

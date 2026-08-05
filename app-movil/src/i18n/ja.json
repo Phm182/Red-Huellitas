@@ -230,7 +230,17 @@
     "preguntame": "質問して",
     "escribiRespuesta": "回答を書く…",
     "timerOff": "タイマーなし",
-    "timerCancelHint": "タップでキャンセル"
+    "timerCancelHint": "タップでキャンセル",
+    "reacciones": {
+      "huella": "肉球",
+      "amor": "大好き",
+      "divertido": "おもしろい",
+      "asombro": "すごい",
+      "triste": "かなしい",
+      "abrazo": "ぎゅっ",
+      "guau": "ワン",
+      "michi": "ニャー"
+    }
   },
   "adopcion": {
     "tituloLista": "里親募集",
@@ -611,7 +621,7 @@
         "limite_global": "本日の作成上限に達しました。また明日どうぞ。"
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -677,7 +687,10 @@
     "coat": {
       "title": "毛色"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -851,7 +864,20 @@
     "solicitudDe": "さんがメッセージを送りたがっています",
     "sinSolicitudes": "リクエストはありません",
     "escribiendo": "入力中…",
-    "nuevaCharla": "新しいトーク"
+    "nuevaCharla": "新しいトーク",
+    "stickersTab": "スタンプ",
+    "emojisTab": "絵文字",
+    "stickerEnviado": "スタンプ",
+    "stickers": {
+      "huella": "肉球",
+      "perroFeliz": "うれしい犬",
+      "gatoCurioso": "気になる猫",
+      "hueso": "骨",
+      "corazonHuella": "肉球ハート",
+      "pelota": "ボール",
+      "adopta": "里親募集",
+      "dormido": "おやすみ"
+    }
   },
   "configuracion": {
     "cuenta": "アカウント",
@@ -935,5 +961,98 @@
     "comentarioPlaceholder": "どうでしたか？（任意）",
     "vino": "来ましたか？",
     "faltasSinAviso": "無断欠席 {{count}} 回"
+  },
+  "fechaNac": {
+    "titulo": "生年月日が必要です",
+    "bajada": "チャットで13歳未満を保護するために使います。誰にも表示しません。",
+    "label": "生年月日",
+    "ayuda": "一度だけ登録でき、後から変更できません。",
+    "ayudaRegistro": "子どもの安全ルールに使用します。",
+    "guardar": "保存して続ける",
+    "unaVez": "間違えた場合はご連絡ください。修正します。",
+    "incompleta": "日・月・年を入力してください。"
+  },
+  "hueplay": {
+    "bajada": "遊んでポイントを貯めて、誰にでも挑戦しよう。",
+    "nivel": "レベル {{n}}",
+    "nivelCorto": "Lv.{{n}}",
+    "puntosYPuesto": "{{puntos}} ポイント · {{puesto}} 位",
+    "faltanParaNivel": "レベル {{nivel}} まであと {{n}}",
+    "partidas": "プレイ数",
+    "ganados": "勝ち",
+    "perdidos": "負け",
+    "desafios": "対戦",
+    "desafiosBajada": "他のユーザーとの対決",
+    "juegos": "ゲーム",
+    "ranking": "ランキング",
+    "proximamente": "近日公開",
+    "pronto": "近日",
+    "tuRecord": "自己ベスト: {{n}}",
+    "retarA": "誰かに挑戦",
+    "retar": "挑戦",
+    "jugar": "プレイ",
+    "volver": "HuePlay に戻る",
+    "sinDesafios": "対戦はありません",
+    "sinDesafiosDesc": "誰かに挑戦して同じ盤面で勝負しよう。",
+    "teToca": "あなたの番",
+    "esperando": "相手を待っています",
+    "historial": "履歴",
+    "teRetaron": "挑戦されました",
+    "yaJugoRival": "相手は終了、あなたの番",
+    "hicisteN": "{{n}} ポイント獲得",
+    "vencido": "未プレイのまま期限切れ",
+    "g": "勝",
+    "p": "負",
+    "sinRivales": "挑戦できる人がいません",
+    "sinRivalesDesc": "名前かユーザー名で検索してみてください。",
+    "loSeguis": "フォロー中",
+    "subisteDeNivel": "レベルアップ！",
+    "match": {
+      "comoSeJuega": "隣り合う2つのコマをタップして入れ替えます。1分以内に3つ以上そろえましょう。連鎖でポイントが倍増します。",
+      "avisoDuelo": "対戦: 相手とまったく同じ盤面でプレイします。",
+      "empezar": "スタート",
+      "guardando": "記録を保存中...",
+      "puntos": "スコア",
+      "tiempo": "時間",
+      "nuevoRecord": "自己ベスト更新！",
+      "esperandoRival": "次は {{rival}} の番",
+      "empate": "引き分け",
+      "ganaste": "勝ちました！",
+      "perdiste": "負けました",
+      "otraVez": "もう一度"
+    },
+    "empezasVos": "あなたが先手",
+    "conecta": {
+      "vos": "あなた",
+      "jugadas": "{{n}} 手",
+      "tuTurno": "あなたの番です",
+      "turnoDe": "{{rival}} の番です",
+      "turnoDelRival": "相手の手を待っています",
+      "terminado": "対戦が終了しました",
+      "ganasteFin": "勝ちました！ +{{puntos}} ポイント",
+      "perdisteFin": "今回は負けました",
+      "empateFin": "引き分け。+{{puntos}} ポイント",
+      "soltarEn": "{{n}} 列目に落とす",
+      "seguirDespues": "あとで続ける"
+    },
+    "memo": {
+      "comoSeJuega": "カードを2枚ずつめくって、時間内に8組すべてを見つけましょう。ミスが少なく早く終わるほど高得点です。",
+      "avisoDuelo": "対戦: カードの配置は相手とまったく同じです。",
+      "pares": "ペア",
+      "fallos": "ミス",
+      "completo": "全部見つけました（ミス {{fallos}} 回）",
+      "incompleto": "{{total}} 組中 {{n}} 組を発見",
+      "carta": "カード {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "動物のケアに関する {{n}} 問、1問 {{s}} 秒です。最後に正解と理由を確認できます。",
+      "avisoDuelo": "対戦: 相手もまったく同じ問題に答えます。",
+      "corrigiendo": "採点中...",
+      "aciertos": "正解",
+      "repaso": "おさらい",
+      "laCorrecta": "正解",
+      "saltear": "この問題をとばす",
+      "sinIdioma": "まだあなたの言語の問題がないため、スペイン語で表示しています。"
+    }
   }
 }

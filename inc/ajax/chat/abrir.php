@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/chat.php';
+require_once __DIR__ . '/../../funciones/menores.php';
 
 $userId = rh_require_auth($conn);
 
@@ -32,12 +33,49 @@ if ($conversacionId <= 0) {
     }
     $stmt->close();
 
+    // Protección de menores ANTES de crear nada: si el vínculo no está
+    // permitido, no queremos ni siquiera dejar la conversación creada.
+    $permiso = rh_chat_permitido($conn, $userId, $otroUserId);
+    if (!$permiso['ok'] && $permiso['motivo'] !== 'esperando_autorizacion') {
+        json_error(rh_chat_motivo_texto($permiso['motivo']), 403);
+    }
+
     $conversacionId = rh_chat_obtener_o_crear($conn, $userId, $otroUserId);
 }
 
 $estado = rh_chat_estado_participante($conn, $conversacionId, $userId);
 if ($estado === null) {
     json_error('No participás de esta conversación', 403);
+}
+
+// Con la conversación ya identificada se revalida incluyendo la autorización
+// del tutor, y se deja la fila pendiente para que el adulto la vea.
+$otroDatos = rh_chat_otro_participante($conn, $conversacionId, $userId);
+$permisoChat = ['ok' => true, 'motivo' => ''];
+if ($otroDatos) {
+    $otroId = (int) $otroDatos['userId'];
+    foreach ([$userId, $otroId] as $uid) {
+        if (rh_es_menor($conn, $uid) && rh_tutor_de($conn, $uid) !== null) {
+            rh_autorizacion_asegurar($conn, $conversacionId, $uid);
+        }
+    }
+    $permisoChat = rh_chat_permitido($conn, $userId, $otroId, $conversacionId);
+}
+
+// Sin autorización del tutor no se devuelve el contenido, sólo el motivo. Dejar
+// leer los mensajes "mientras espera" vaciaría de sentido el permiso: el chat
+// ya habría pasado igual.
+if (!$permisoChat['ok']) {
+    json_success([
+        'conversacionId' => $conversacionId,
+        'estado' => $estado,
+        'otro' => $otroDatos,
+        'mensajes' => [],
+        'bloqueo' => [
+            'motivo' => $permisoChat['motivo'],
+            'texto' => rh_chat_motivo_texto($permisoChat['motivo']),
+        ],
+    ]);
 }
 
 $sql = 'SELECT * FROM Mensaje WHERE ConversacionId = ?';
@@ -63,6 +101,7 @@ $stmt->close();
 json_success([
     'conversacionId' => $conversacionId,
     'estado' => $estado,
-    'otro' => rh_chat_otro_participante($conn, $conversacionId, $userId),
+    'otro' => $otroDatos,
     'mensajes' => $mensajes,
+    'bloqueo' => null,
 ]);

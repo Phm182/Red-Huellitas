@@ -3,13 +3,15 @@ require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/chat.php';
+require_once __DIR__ . '/../../funciones/menores.php';
 require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
 $conversacionId = (int) ($_POST['conversacionId'] ?? 0);
 $texto = trim($_POST['texto'] ?? '');
-$tipo = ($_POST['tipo'] ?? 'texto') === 'zumbido' ? 'zumbido' : 'texto';
+$tipoPedido = $_POST['tipo'] ?? 'texto';
+$tipo = in_array($tipoPedido, ['zumbido', 'sticker'], true) ? $tipoPedido : 'texto';
 
 if ($conversacionId <= 0) {
     json_error('Falta conversacionId');
@@ -20,6 +22,11 @@ if ($tipo === 'texto' && $texto === '') {
 if (mb_strlen($texto) > 1000) {
     json_error('El mensaje es demasiado largo');
 }
+// En un sticker, `texto` es el id del dibujo, no un mensaje: se valida contra
+// la lista blanca para que no entre cualquier cosa por ese campo.
+if ($tipo === 'sticker' && !rh_sticker_valido($texto)) {
+    json_error('Sticker desconocido');
+}
 // El zumbido no lleva texto propio: lo que se guarda es la marca, y la app
 // dibuja el sacudón. Guardar algo permite que quede en el historial.
 if ($tipo === 'zumbido') {
@@ -29,6 +36,17 @@ if ($tipo === 'zumbido') {
 $estado = rh_chat_estado_participante($conn, $conversacionId, $userId);
 if ($estado === null) {
     json_error('No participás de esta conversación', 403);
+}
+
+// ¡Acá también! Chequear sólo en abrir.php dejaría el bypass de pegarle directo
+// a este endpoint con un conversacionId ya creado: la conversación existiría de
+// antes (o de cuando ambos eran mayores) y el mensaje pasaría igual.
+$otroPrevio = rh_chat_otro_participante($conn, $conversacionId, $userId);
+if ($otroPrevio) {
+    $permiso = rh_chat_permitido($conn, $userId, (int) $otroPrevio['userId'], $conversacionId);
+    if (!$permiso['ok']) {
+        json_error(rh_chat_motivo_texto($permiso['motivo']), 403);
+    }
 }
 
 $stmt = $conn->prepare(

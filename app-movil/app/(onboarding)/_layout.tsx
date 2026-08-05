@@ -6,6 +6,8 @@ export default function OnboardingLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="usuario-zona" />
       <Stack.Screen name="verificacion" />
+      {/* Sin gesto de volver: es bloqueante hasta que cargue la fecha. */}
+      <Stack.Screen name="fecha-nacimiento" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }

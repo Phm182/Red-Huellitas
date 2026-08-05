@@ -14,8 +14,6 @@
     "@lottiefiles/dotlottie-react": "^0.13.5",
     "@maplibre/maplibre-react-native": "^11.3.6",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@rive-app/react-canvas": "^4.30.0",
-    "@rive-app/react-native": "^0.4.19",
     "expo": "~57.0.8",
     "expo-asset": "^57.0.8",
     "expo-auth-session": "~57.0.5",

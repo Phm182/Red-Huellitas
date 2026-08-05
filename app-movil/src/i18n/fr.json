@@ -230,7 +230,17 @@
     "preguntame": "DEMANDEZ-MOI",
     "escribiRespuesta": "Écrivez votre réponse…",
     "timerOff": "Sans minut.",
-    "timerCancelHint": "Touchez pour annuler"
+    "timerCancelHint": "Touchez pour annuler",
+    "reacciones": {
+      "huella": "Patte",
+      "amor": "J’adore",
+      "divertido": "Drôle",
+      "asombro": "Waouh",
+      "triste": "Triste",
+      "abrazo": "Câlin",
+      "guau": "Ouaf",
+      "michi": "Miaou"
+    }
   },
   "adopcion": {
     "tituloLista": "Adoption",
@@ -613,7 +623,7 @@
         "limite_global": "La limite quotidienne d'avatars est atteinte. Revenez demain."
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -679,7 +689,10 @@
     "coat": {
       "title": "Pelage"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -853,7 +866,20 @@
     "solicitudDe": "veut vous écrire",
     "sinSolicitudes": "Aucune demande",
     "escribiendo": "écrit…",
-    "nuevaCharla": "Nouvelle discussion"
+    "nuevaCharla": "Nouvelle discussion",
+    "stickersTab": "Stickers",
+    "emojisTab": "Émojis",
+    "stickerEnviado": "Sticker",
+    "stickers": {
+      "huella": "Empreinte",
+      "perroFeliz": "Chien heureux",
+      "gatoCurioso": "Chat curieux",
+      "hueso": "Os",
+      "corazonHuella": "Cœur avec empreinte",
+      "pelota": "Balle",
+      "adopta": "Adopte",
+      "dormido": "Endormi"
+    }
   },
   "configuracion": {
     "cuenta": "Compte",
@@ -941,5 +967,98 @@
     "faltasSinAviso": "Absent {{count}} fois sans prévenir",
     "faltasSinAviso_one": "Absent 1 fois sans prévenir",
     "faltasSinAviso_other": "Absent {{count}} fois sans prévenir"
+  },
+  "fechaNac": {
+    "titulo": "Nous avons besoin de ta date de naissance",
+    "bajada": "Elle sert à protéger les moins de 13 ans dans le chat. Elle n’est montrée à personne.",
+    "label": "Date de naissance",
+    "ayuda": "Elle ne se saisit qu’une fois et ne peut pas être modifiée ensuite.",
+    "ayudaRegistro": "Utilisée pour les règles de protection des mineurs.",
+    "guardar": "Enregistrer et continuer",
+    "unaVez": "En cas d’erreur, écris-nous et on la corrige.",
+    "incompleta": "Renseigne le jour, le mois et l’année."
+  },
+  "hueplay": {
+    "bajada": "Joue, gagne des points et défie qui tu veux.",
+    "nivel": "Niveau {{n}}",
+    "nivelCorto": "Niv. {{n}}",
+    "puntosYPuesto": "{{puntos}} points · rang {{puesto}}",
+    "faltanParaNivel": "Encore {{n}} pour le niveau {{nivel}}",
+    "partidas": "Parties",
+    "ganados": "Gagnés",
+    "perdidos": "Perdus",
+    "desafios": "Défis",
+    "desafiosBajada": "Duels contre d'autres utilisateurs",
+    "juegos": "Jeux",
+    "ranking": "Classement",
+    "proximamente": "Bientôt",
+    "pronto": "Bientôt",
+    "tuRecord": "Ton record : {{n}}",
+    "retarA": "Défier quelqu'un",
+    "retar": "Défier",
+    "jugar": "Jouer",
+    "volver": "Retour à HuePlay",
+    "sinDesafios": "Aucun duel",
+    "sinDesafiosDesc": "Défie quelqu'un et jouez le même plateau.",
+    "teToca": "À toi de jouer",
+    "esperando": "En attente du rival",
+    "historial": "Historique",
+    "teRetaron": "Tu as été défié",
+    "yaJugoRival": "Il a joué, à toi",
+    "hicisteN": "Tu as fait {{n}} points",
+    "vencido": "Expiré sans être joué",
+    "g": "G",
+    "p": "P",
+    "sinRivales": "Personne à défier",
+    "sinRivalesDesc": "Cherche par nom ou pseudo.",
+    "loSeguis": "tu le suis",
+    "subisteDeNivel": "niveau supérieur !",
+    "match": {
+      "comoSeJuega": "Touche deux pièces voisines pour les échanger. Aligne-en 3 ou plus avant la fin de la minute. Les enchaînements multiplient les points.",
+      "avisoDuelo": "Duel : tu joues exactement le même plateau que ton rival.",
+      "empezar": "Commencer",
+      "guardando": "Enregistrement de la partie...",
+      "puntos": "Points",
+      "tiempo": "Temps",
+      "nuevoRecord": "Nouveau record !",
+      "esperandoRival": "C'est au tour de {{rival}}",
+      "empate": "Égalité",
+      "ganaste": "Tu as gagné !",
+      "perdiste": "Tu as perdu",
+      "otraVez": "Encore"
+    },
+    "empezasVos": "Tu commences",
+    "conecta": {
+      "vos": "Toi",
+      "jugadas": "Coups : {{n}}",
+      "tuTurno": "À toi de jouer",
+      "turnoDe": "C'est au tour de {{rival}}",
+      "turnoDelRival": "En attente de son coup",
+      "terminado": "Le duel est terminé",
+      "ganasteFin": "Tu as gagné ! +{{puntos}} points",
+      "perdisteFin": "Tu as perdu cette fois",
+      "empateFin": "Égalité. +{{puntos}} points",
+      "soltarEn": "Lâcher dans la colonne {{n}}",
+      "seguirDespues": "Continuer plus tard"
+    },
+    "memo": {
+      "comoSeJuega": "Retourne les cartes deux par deux et trouve les 8 paires avant la fin du temps. Moins d'erreurs et plus de vitesse rapportent plus de points.",
+      "avisoDuelo": "Duel : les cartes sont distribuées comme celles de ton adversaire.",
+      "pares": "Paires",
+      "fallos": "Erreurs",
+      "completo": "Tu les as toutes trouvées, avec {{fallos}} erreurs",
+      "incompleto": "Tu as trouvé {{n}} paires sur {{total}}",
+      "carta": "Carte {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} questions sur les soins aux animaux, {{s}} secondes chacune. À la fin tu vois tes réponses et pourquoi.",
+      "avisoDuelo": "Duel : ton adversaire répond exactement aux mêmes questions.",
+      "corrigiendo": "Correction...",
+      "aciertos": "bonnes réponses",
+      "repaso": "Révision",
+      "laCorrecta": "La bonne réponse",
+      "saltear": "Passer la question",
+      "sinIdioma": "Il n'y a pas encore de questions dans ta langue, elles s'affichent en espagnol."
+    }
   }
 }

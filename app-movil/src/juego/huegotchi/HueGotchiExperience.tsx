@@ -23,6 +23,7 @@ import { SceneBackdrop } from './components/SceneBackdrop';
 import { CatchFoodGame } from './components/CatchFoodGame';
 import { TrickCoachOverlay } from './components/TrickCoachOverlay';
 import { LottiePetStage } from './lottie/LottiePetStage';
+import { ProceduralPetStage } from './components/ProceduralPetStage';
 import { GlbPetStage } from './glb/GlbPetStage';
 import { hasGlbModel } from './glb/registry';
 import { resolveVisualState } from './domain/riveStates';
@@ -180,7 +181,26 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
             </View>
           ) : null}
           <View style={styles.fill} pointerEvents="box-none">
-            {hasGlbModel(species) ? (
+            {/* El gato va por el renderer procedural: su pack GLB era un STL de
+                impresión 3D, sin huesos, que sólo se movía en bloque. El perro
+                sí tiene malla con esqueleto y clips, así que sigue en GLB. */}
+            {species === 'gato' ? (
+              <ProceduralPetStage
+                size={tamano}
+                breed={c.breed}
+                yaw={c.yaw}
+                heldStance={c.heldStance}
+                actionTrigger={actionTrigger}
+                actionStartedAt={anim?.startedAt ?? null}
+                visual={visual}
+                voiceMouth={c.voiceMouth}
+                fidget={traitMods.fidget}
+                lookX={c.physicsSnapshot.lookX}
+                lookY={c.physicsSnapshot.lookY}
+                squash={c.physicsSnapshot.squash}
+                stretch={c.physicsSnapshot.stretch}
+              />
+            ) : hasGlbModel(species) ? (
               <GlbPetStage
                 size={tamano}
                 species={species}

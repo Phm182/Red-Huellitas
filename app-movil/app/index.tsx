@@ -38,5 +38,12 @@ export default function Index() {
     return <Redirect href="/(onboarding)/usuario-zona" />;
   }
 
+  // Va DESPUÉS del onboarding y antes de la app: sin fecha, la protección de
+  // menores falla cerrado y la cuenta no puede chatear. Es un backfill para
+  // las cuentas creadas antes de que el campo existiera.
+  if (user.requiereFechaNacimiento) {
+    return <Redirect href="/(onboarding)/fecha-nacimiento" />;
+  }
+
   return <Redirect href="/(app)/(tabs)" />;
 }

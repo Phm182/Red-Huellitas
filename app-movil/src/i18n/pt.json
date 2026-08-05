@@ -230,7 +230,17 @@
     "preguntame": "PERGUNTE",
     "escribiRespuesta": "Escreva sua resposta…",
     "timerOff": "Sem temp.",
-    "timerCancelHint": "Toque para cancelar"
+    "timerCancelHint": "Toque para cancelar",
+    "reacciones": {
+      "huella": "Patinha",
+      "amor": "Amei",
+      "divertido": "Divertido",
+      "asombro": "Uau",
+      "triste": "Triste",
+      "abrazo": "Abraço",
+      "guau": "Au au",
+      "michi": "Miau"
+    }
   },
   "adopcion": {
     "tituloLista": "Adoção",
@@ -613,7 +623,7 @@
         "limite_global": "O limite diário de avatares foi atingido. Volte amanhã."
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -679,7 +689,10 @@
     "coat": {
       "title": "Pelagem"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -853,7 +866,20 @@
     "solicitudDe": "quer te escrever",
     "sinSolicitudes": "Sem solicitações",
     "escribiendo": "digitando…",
-    "nuevaCharla": "Nova conversa"
+    "nuevaCharla": "Nova conversa",
+    "stickersTab": "Stickers",
+    "emojisTab": "Emojis",
+    "stickerEnviado": "Sticker",
+    "stickers": {
+      "huella": "Patinha",
+      "perroFeliz": "Cachorro feliz",
+      "gatoCurioso": "Gato curioso",
+      "hueso": "Osso",
+      "corazonHuella": "Coração com patinha",
+      "pelota": "Bola",
+      "adopta": "Adote",
+      "dormido": "Dormindo"
+    }
   },
   "configuracion": {
     "cuenta": "Conta",
@@ -941,5 +967,98 @@
     "faltasSinAviso": "Faltou {{count}} vezes sem avisar",
     "faltasSinAviso_one": "Faltou 1 vez sem avisar",
     "faltasSinAviso_other": "Faltou {{count}} vezes sem avisar"
+  },
+  "fechaNac": {
+    "titulo": "Precisamos da sua data de nascimento",
+    "bajada": "Usamos para proteger menores de 13 anos no chat. Não mostramos a ninguém.",
+    "label": "Data de nascimento",
+    "ayuda": "É preenchida uma única vez e não pode ser editada depois.",
+    "ayudaRegistro": "Usada para as regras de segurança infantil.",
+    "guardar": "Salvar e continuar",
+    "unaVez": "Se errar, escreva para nós e corrigimos.",
+    "incompleta": "Preencha o dia, o mês e o ano."
+  },
+  "hueplay": {
+    "bajada": "Jogue, ganhe pontos e desafie quem quiser.",
+    "nivel": "Nível {{n}}",
+    "nivelCorto": "Nv. {{n}}",
+    "puntosYPuesto": "{{puntos}} pontos · posição {{puesto}}",
+    "faltanParaNivel": "Faltam {{n}} para o nível {{nivel}}",
+    "partidas": "Partidas",
+    "ganados": "Vitórias",
+    "perdidos": "Derrotas",
+    "desafios": "Desafios",
+    "desafiosBajada": "Duelos contra outros usuários",
+    "juegos": "Jogos",
+    "ranking": "Ranking",
+    "proximamente": "Em breve",
+    "pronto": "Em breve",
+    "tuRecord": "Seu recorde: {{n}}",
+    "retarA": "Desafiar alguém",
+    "retar": "Desafiar",
+    "jugar": "Jogar",
+    "volver": "Voltar ao HuePlay",
+    "sinDesafios": "Sem duelos",
+    "sinDesafiosDesc": "Desafie alguém e jogue o mesmo tabuleiro.",
+    "teToca": "Sua vez",
+    "esperando": "Esperando o rival",
+    "historial": "Histórico",
+    "teRetaron": "Você foi desafiado",
+    "yaJugoRival": "Já jogou, é sua vez",
+    "hicisteN": "Você fez {{n}} pontos",
+    "vencido": "Expirou sem ser jogado",
+    "g": "V",
+    "p": "D",
+    "sinRivales": "Ninguém para desafiar",
+    "sinRivalesDesc": "Tente buscar por nome ou usuário.",
+    "loSeguis": "você segue",
+    "subisteDeNivel": "subiu de nível!",
+    "match": {
+      "comoSeJuega": "Toque em duas peças vizinhas para trocá-las. Alinhe 3 ou mais antes do minuto acabar. Combos multiplicam os pontos.",
+      "avisoDuelo": "Duelo: você joga o mesmo tabuleiro do seu rival.",
+      "empezar": "Começar",
+      "guardando": "Salvando a partida...",
+      "puntos": "Pontos",
+      "tiempo": "Tempo",
+      "nuevoRecord": "Novo recorde!",
+      "esperandoRival": "Agora é a vez de {{rival}}",
+      "empate": "Empate",
+      "ganaste": "Você ganhou!",
+      "perdiste": "Você perdeu",
+      "otraVez": "De novo"
+    },
+    "empezasVos": "Você começa",
+    "conecta": {
+      "vos": "Você",
+      "jugadas": "Jogadas: {{n}}",
+      "tuTurno": "Sua vez de jogar",
+      "turnoDe": "É a vez de {{rival}}",
+      "turnoDelRival": "Aguardando a jogada",
+      "terminado": "O duelo terminou",
+      "ganasteFin": "Você ganhou! +{{puntos}} pontos",
+      "perdisteFin": "Você perdeu desta vez",
+      "empateFin": "Empate. +{{puntos}} pontos",
+      "soltarEn": "Soltar na coluna {{n}}",
+      "seguirDespues": "Continuar depois"
+    },
+    "memo": {
+      "comoSeJuega": "Vire as cartas de duas em duas e encontre os 8 pares antes do tempo acabar. Menos erros e mais rapidez valem mais pontos.",
+      "avisoDuelo": "Duelo: as cartas estão distribuídas igual às do seu rival.",
+      "pares": "Pares",
+      "fallos": "Erros",
+      "completo": "Encontrou todos, com {{fallos}} erros",
+      "incompleto": "Encontrou {{n}} de {{total}} pares",
+      "carta": "Carta {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} perguntas sobre cuidado animal, {{s}} segundos cada. No final você vê o que acertou e por quê.",
+      "avisoDuelo": "Duelo: seu rival responde exatamente as mesmas perguntas.",
+      "corrigiendo": "Corrigindo...",
+      "aciertos": "acertos",
+      "repaso": "Revisão",
+      "laCorrecta": "A correta",
+      "saltear": "Pular pergunta",
+      "sinIdioma": "Ainda não há perguntas no seu idioma, então aparecem em espanhol."
+    }
   }
 }

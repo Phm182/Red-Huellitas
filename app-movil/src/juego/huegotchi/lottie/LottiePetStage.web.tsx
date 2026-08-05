@@ -52,7 +52,6 @@ function WebLottieClip({
         animationData: data,
         rendererSettings: {
           preserveAspectRatio: 'xMidYMid meet',
-          clearCanvas: true,
         },
       });
     });

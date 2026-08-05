@@ -13,14 +13,15 @@ export type GlbPack = {
 /**
  * Packs GLB listos para Three.js.
  * - Perro: RSG German Shepherd (skinned + idle/play/walk/run/turn/lean).
- * - Gato: STL sitting blue cat (estático sentado, motion rígido).
+ *
+ * El gato NO está acá a propósito: su modelo era un STL de impresión 3D, una
+ * malla sólida sentada, sin esqueleto ni clips. Sólo se podía trasladar y rotar
+ * en bloque, así que nunca iba a moverse de forma creíble. Va por
+ * `ProceduralPetStage` hasta que haya un GLB con huesos.
+ * Para volver a meterlo acá alcanza con un mesh skinned + su mapa de huesos en
+ * `skeletonPose.ts`.
  */
 const GLB_PACKS: Partial<Record<HueSpecies, GlbPack>> = {
-  gato: {
-    mesh: require('../../../../assets/juego/glb/gato_mesh.glb'),
-    clips: {},
-    restPose: 'sit',
-  },
   perro: {
     mesh: require('../../../../assets/juego/glb/perro_mesh.glb'),
     clips: {

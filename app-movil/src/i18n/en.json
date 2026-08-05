@@ -341,7 +341,17 @@
     "preguntame": "ASK ME",
     "escribiRespuesta": "Type your answer…",
     "timerOff": "No timer",
-    "timerCancelHint": "Tap to cancel"
+    "timerCancelHint": "Tap to cancel",
+    "reacciones": {
+      "huella": "Paw",
+      "amor": "Love",
+      "divertido": "Funny",
+      "asombro": "Wow",
+      "triste": "Sad",
+      "abrazo": "Hug",
+      "guau": "Woof",
+      "michi": "Meow"
+    }
   },
   "adopcion": {
     "tituloLista": "Adoption",
@@ -918,7 +928,7 @@
     "rescate": "Rescue",
     "tienda": "Shop",
     "salud": "Health",
-    "hueplay": "HueGotchi",
+    "hueplay": "HuePlay",
     "configuracion": "Settings",
     "atajosHint": "Press and hold to see the shortcuts",
     "ocultarBotones": "Hide buttons",
@@ -988,7 +998,20 @@
     "solicitudDe": "wants to message you",
     "sinSolicitudes": "No requests",
     "escribiendo": "typing…",
-    "nuevaCharla": "New chat"
+    "nuevaCharla": "New chat",
+    "stickersTab": "Stickers",
+    "emojisTab": "Emojis",
+    "stickerEnviado": "Sticker",
+    "stickers": {
+      "huella": "Paw print",
+      "perroFeliz": "Happy dog",
+      "gatoCurioso": "Curious cat",
+      "hueso": "Bone",
+      "corazonHuella": "Heart with paw",
+      "pelota": "Ball",
+      "adopta": "Adopt",
+      "dormido": "Sleeping"
+    }
   },
   "configuracion": {
     "cuenta": "Account",
@@ -1076,5 +1099,98 @@
     "faltasSinAviso": "No-showed {{count}} times",
     "faltasSinAviso_one": "No-showed once",
     "faltasSinAviso_other": "No-showed {{count}} times"
+  },
+  "fechaNac": {
+    "titulo": "We need your date of birth",
+    "bajada": "We use it to protect users under 13 in chat. We never show it to anyone.",
+    "label": "Date of birth",
+    "ayuda": "You can only set it once; it cannot be edited later.",
+    "ayudaRegistro": "Used for child safety rules.",
+    "guardar": "Save and continue",
+    "unaVez": "If you make a mistake, write to us and we will fix it.",
+    "incompleta": "Fill in the day, month and year."
+  },
+  "hueplay": {
+    "bajada": "Play, earn points and challenge anyone.",
+    "nivel": "Level {{n}}",
+    "nivelCorto": "Lv. {{n}}",
+    "puntosYPuesto": "{{puntos}} points · rank {{puesto}}",
+    "faltanParaNivel": "{{n}} to go for level {{nivel}}",
+    "partidas": "Games",
+    "ganados": "Won",
+    "perdidos": "Lost",
+    "desafios": "Challenges",
+    "desafiosBajada": "Duels against other users",
+    "juegos": "Games",
+    "ranking": "Leaderboard",
+    "proximamente": "Coming soon",
+    "pronto": "Soon",
+    "tuRecord": "Your best: {{n}}",
+    "retarA": "Challenge someone",
+    "retar": "Challenge",
+    "jugar": "Play",
+    "volver": "Back to HuePlay",
+    "sinDesafios": "No duels yet",
+    "sinDesafiosDesc": "Challenge someone and play the same board.",
+    "teToca": "Your turn",
+    "esperando": "Waiting for your rival",
+    "historial": "History",
+    "teRetaron": "You were challenged",
+    "yaJugoRival": "They played, your turn",
+    "hicisteN": "You scored {{n}}",
+    "vencido": "Expired unplayed",
+    "g": "W",
+    "p": "L",
+    "sinRivales": "Nobody to challenge",
+    "sinRivalesDesc": "Try searching by name or username.",
+    "loSeguis": "you follow them",
+    "subisteDeNivel": "level up!",
+    "match": {
+      "comoSeJuega": "Tap two neighbouring tiles to swap them. Line up 3 or more before the minute runs out. Chains multiply your score.",
+      "avisoDuelo": "Duel: you play the exact same board as your rival.",
+      "empezar": "Start",
+      "guardando": "Saving your game...",
+      "puntos": "Score",
+      "tiempo": "Time",
+      "nuevoRecord": "New best!",
+      "esperandoRival": "Now it's {{rival}}'s turn",
+      "empate": "Draw",
+      "ganaste": "You won!",
+      "perdiste": "You lost",
+      "otraVez": "Again"
+    },
+    "empezasVos": "You go first",
+    "conecta": {
+      "vos": "You",
+      "jugadas": "Moves: {{n}}",
+      "tuTurno": "Your move",
+      "turnoDe": "{{rival}}'s turn",
+      "turnoDelRival": "Waiting for their move",
+      "terminado": "The duel is over",
+      "ganasteFin": "You won! +{{puntos}} points",
+      "perdisteFin": "You lost this one",
+      "empateFin": "Draw. +{{puntos}} points",
+      "soltarEn": "Drop in column {{n}}",
+      "seguirDespues": "Continue later"
+    },
+    "memo": {
+      "comoSeJuega": "Flip the cards two at a time and find all 8 pairs before time runs out. Fewer mistakes and a faster finish mean more points.",
+      "avisoDuelo": "Duel: the cards are dealt exactly like your rival's.",
+      "pares": "Pairs",
+      "fallos": "Misses",
+      "completo": "You found them all, with {{fallos}} misses",
+      "incompleto": "You found {{n}} of {{total}} pairs",
+      "carta": "Card {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} animal-care questions, {{s}} seconds each. At the end you see what you got right and why.",
+      "avisoDuelo": "Duel: your rival answers the exact same questions.",
+      "corrigiendo": "Marking...",
+      "aciertos": "correct",
+      "repaso": "Review",
+      "laCorrecta": "Correct answer",
+      "saltear": "Skip question",
+      "sinIdioma": "There are no questions in your language yet, so these are in Spanish."
+    }
   }
 }

@@ -16,6 +16,7 @@ import { noticiasApi } from '../../src/api/noticiasApi';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { Atmosphere } from '../../src/components/Atmosphere';
 import { LogoImage } from '../../src/components/LogoImage';
+import { FechaNacimientoField } from '../../src/components/FechaNacimientoField';
 import { TipoUsuarioCatalogoItem } from '../../src/types';
 import { radii } from '../../src/theme/elevation';
 import { centeredContent } from '../../src/theme/layout';
@@ -43,17 +44,26 @@ export default function RegistroScreen() {
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [aceptaClausula, setAceptaClausula] = useState(false);
   const [tipoUsuarioCodigo, setTipoUsuarioCodigo] = useState('individual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const puedeEnviar = nombreCompleto.trim() && email.trim() && password.length >= 8 && aceptaClausula;
+  const puedeEnviar =
+    nombreCompleto.trim() && email.trim() && password.length >= 8 && aceptaClausula && fechaNacimiento;
 
   const onSubmit = async () => {
     setError(null);
     setLoading(true);
-    const res = await registro(email.trim(), password, nombreCompleto.trim(), aceptaClausula, tipoUsuarioCodigo);
+    const res = await registro(
+      email.trim(),
+      password,
+      nombreCompleto.trim(),
+      aceptaClausula,
+      tipoUsuarioCodigo,
+      fechaNacimiento
+    );
     setLoading(false);
     if (res.success) {
       router.replace('/');
@@ -98,6 +108,15 @@ export default function RegistroScreen() {
         autoComplete="new-password"
         textContentType="newPassword"
       />
+
+      <View style={{ marginTop: 14, width: '100%' }}>
+        <FechaNacimientoField
+          value={fechaNacimiento}
+          onChange={setFechaNacimiento}
+          label={t('fechaNac.label')}
+          ayuda={t('fechaNac.ayudaRegistro')}
+        />
+      </View>
 
       <Text style={[styles.label, { color: colors.text }]}>{t('tipoUsuario.selectorLabel')}</Text>
       <View style={styles.tipoRow}>

@@ -16,6 +16,14 @@ export interface Usuario {
   /** mtime del archivo; para cache-bust al servir por media/avatar.php */
   avatarBust?: number | null;
   onboardingCompleto: boolean;
+  /** AAAA-MM-DD, o null en cuentas creadas antes de que el campo existiera. */
+  fechaNacimiento: string | null;
+  /**
+   * Sin fecha cargada la cuenta se trata como menor y no puede chatear
+   * (`rh_es_menor()` falla cerrado). Esto habilita la pantalla bloqueante.
+   */
+  requiereFechaNacimiento: boolean;
+  edad: number | null;
   aceptoClausulaAntiCriaderos: boolean;
   rol: string;
   tipoUsuarioCodigo: string | null;
@@ -94,8 +102,12 @@ export interface ChatMensaje {
   mensajeId: number;
   userIdEmisor: number;
   texto: string;
-  /** El zumbido viaja como mensaje para quedar en el historial. */
-  tipo: 'texto' | 'zumbido';
+  /**
+   * El zumbido y el sticker viajan como mensaje para quedar en el historial.
+   * En un sticker, `texto` es el id del dibujo (ver src/chat/stickers.tsx),
+   * no un mensaje escrito.
+   */
+  tipo: 'texto' | 'zumbido' | 'sticker';
   createdAt: string;
 }
 
@@ -103,7 +115,7 @@ export interface ChatConversacion {
   conversacionId: number;
   ultimoMensajeEn: string | null;
   ultimoTexto: string | null;
-  ultimoTipo: 'texto' | 'zumbido' | null;
+  ultimoTipo: 'texto' | 'zumbido' | 'sticker' | null;
   noLeidos: number;
   otro: ChatOtro;
 }

@@ -230,7 +230,17 @@
     "preguntame": "问我",
     "escribiRespuesta": "写下你的回答…",
     "timerOff": "无定时",
-    "timerCancelHint": "点击取消"
+    "timerCancelHint": "点击取消",
+    "reacciones": {
+      "huella": "爪印",
+      "amor": "喜欢",
+      "divertido": "有趣",
+      "asombro": "哇",
+      "triste": "难过",
+      "abrazo": "抱抱",
+      "guau": "汪",
+      "michi": "喵"
+    }
   },
   "adopcion": {
     "tituloLista": "领养",
@@ -611,7 +621,7 @@
         "limite_global": "今日头像生成已达上限，请明天再来。"
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -677,7 +687,10 @@
     "coat": {
       "title": "毛色"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -851,7 +864,20 @@
     "solicitudDe": "想给你发消息",
     "sinSolicitudes": "没有请求",
     "escribiendo": "正在输入…",
-    "nuevaCharla": "新聊天"
+    "nuevaCharla": "新聊天",
+    "stickersTab": "贴纸",
+    "emojisTab": "表情",
+    "stickerEnviado": "贴纸",
+    "stickers": {
+      "huella": "爪印",
+      "perroFeliz": "开心的狗",
+      "gatoCurioso": "好奇的猫",
+      "hueso": "骨头",
+      "corazonHuella": "爪印爱心",
+      "pelota": "球",
+      "adopta": "领养",
+      "dormido": "睡着了"
+    }
   },
   "configuracion": {
     "cuenta": "账户",
@@ -935,5 +961,98 @@
     "comentarioPlaceholder": "体验如何？（可选）",
     "vino": "到场了吗？",
     "faltasSinAviso": "{{count}} 次未到且未告知"
+  },
+  "fechaNac": {
+    "titulo": "我们需要你的出生日期",
+    "bajada": "用于在聊天中保护 13 岁以下的用户。我们不会向任何人展示。",
+    "label": "出生日期",
+    "ayuda": "只能填写一次，之后无法修改。",
+    "ayudaRegistro": "用于儿童安全规则。",
+    "guardar": "保存并继续",
+    "unaVez": "如果填错了，请联系我们更正。",
+    "incompleta": "请填写日、月和年。"
+  },
+  "hueplay": {
+    "bajada": "玩游戏、赚积分，向任何人发起挑战。",
+    "nivel": "等级 {{n}}",
+    "nivelCorto": "Lv.{{n}}",
+    "puntosYPuesto": "{{puntos}} 分 · 第 {{puesto}} 名",
+    "faltanParaNivel": "距离 {{nivel}} 级还差 {{n}} 分",
+    "partidas": "场次",
+    "ganados": "获胜",
+    "perdidos": "失败",
+    "desafios": "对战",
+    "desafiosBajada": "与其他用户对决",
+    "juegos": "游戏",
+    "ranking": "排行榜",
+    "proximamente": "即将推出",
+    "pronto": "敬请期待",
+    "tuRecord": "你的纪录：{{n}}",
+    "retarA": "挑战某人",
+    "retar": "挑战",
+    "jugar": "开始",
+    "volver": "返回 HuePlay",
+    "sinDesafios": "还没有对战",
+    "sinDesafiosDesc": "挑战某人，玩同一个棋盘。",
+    "teToca": "轮到你了",
+    "esperando": "等待对手",
+    "historial": "历史记录",
+    "teRetaron": "有人挑战你",
+    "yaJugoRival": "对方已完成，轮到你",
+    "hicisteN": "你得了 {{n}} 分",
+    "vencido": "未开始已过期",
+    "g": "胜",
+    "p": "负",
+    "sinRivales": "没有可挑战的人",
+    "sinRivalesDesc": "试试按姓名或用户名搜索。",
+    "loSeguis": "你关注了",
+    "subisteDeNivel": "升级了！",
+    "match": {
+      "comoSeJuega": "点击两个相邻的棋子进行交换。在一分钟内连成 3 个或更多。连锁会成倍加分。",
+      "avisoDuelo": "对战：你和对手玩的是同一个棋盘。",
+      "empezar": "开始",
+      "guardando": "正在保存本局...",
+      "puntos": "得分",
+      "tiempo": "时间",
+      "nuevoRecord": "新纪录！",
+      "esperandoRival": "现在轮到 {{rival}}",
+      "empate": "平局",
+      "ganaste": "你赢了！",
+      "perdiste": "你输了",
+      "otraVez": "再来一局"
+    },
+    "empezasVos": "你先手",
+    "conecta": {
+      "vos": "你",
+      "jugadas": "步数：{{n}}",
+      "tuTurno": "轮到你落子",
+      "turnoDe": "轮到 {{rival}}",
+      "turnoDelRival": "等待对方落子",
+      "terminado": "对战已结束",
+      "ganasteFin": "你赢了！+{{puntos}} 分",
+      "perdisteFin": "这局你输了",
+      "empateFin": "平局。+{{puntos}} 分",
+      "soltarEn": "在第 {{n}} 列落子",
+      "seguirDespues": "稍后继续"
+    },
+    "memo": {
+      "comoSeJuega": "每次翻开两张牌，在时间结束前找出全部 8 对。错得越少、完成越快，分数越高。",
+      "avisoDuelo": "对战：你的牌和对手的完全一样。",
+      "pares": "配对",
+      "fallos": "失误",
+      "completo": "全部找到，失误 {{fallos}} 次",
+      "incompleto": "找到 {{total}} 对中的 {{n}} 对",
+      "carta": "第 {{n}} 张牌"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} 道动物照护题，每题 {{s}} 秒。结束后可以看到答对了哪些以及原因。",
+      "avisoDuelo": "对战：对手回答完全相同的题目。",
+      "corrigiendo": "批改中...",
+      "aciertos": "答对",
+      "repaso": "回顾",
+      "laCorrecta": "正确答案",
+      "saltear": "跳过本题",
+      "sinIdioma": "你的语言暂时还没有题目，因此以西班牙语显示。"
+    }
   }
 }

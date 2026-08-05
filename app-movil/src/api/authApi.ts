@@ -12,7 +12,8 @@ export const authApi = {
     password: string,
     nombreCompleto: string,
     aceptaClausulaAntiCriaderos: boolean,
-    tipoUsuarioCodigo: string
+    tipoUsuarioCodigo: string,
+    fechaNacimiento: string
   ) =>
     apiPost<AuthResult>('ajax/auth/registro.php', {
       email,
@@ -20,7 +21,20 @@ export const authApi = {
       nombreCompleto,
       aceptaClausulaAntiCriaderos: aceptaClausulaAntiCriaderos ? '1' : '0',
       tipoUsuarioCodigo,
+      fechaNacimiento,
     }),
+
+  /**
+   * Backfill para cuentas creadas antes de que existiera el campo. Se puede
+   * cargar una sola vez: si fuera editable, un menor con el chat restringido
+   * se pondría 30 años y quedaría sin protección.
+   */
+  guardarFechaNacimiento: (fechaNacimiento: string) =>
+    apiPost<{ fechaNacimiento: string; edad: number; esMenor: boolean }>(
+      'ajax/perfil/fecha_nacimiento_guardar.php',
+      { fechaNacimiento },
+      true
+    ),
 
   login: (email: string, password: string) => apiPost<AuthResult>('ajax/auth/login.php', { email, password }),
 

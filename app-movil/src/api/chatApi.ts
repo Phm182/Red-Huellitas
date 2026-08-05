@@ -16,7 +16,11 @@ export const chatApi = {
   abrir: (params: { conversacionId?: number; userId?: number; desdeMensajeId?: number }) =>
     apiGet<ChatDetalle>('ajax/chat/abrir.php', { ...params }, true),
 
-  enviar: (conversacionId: number, texto: string, tipo: 'texto' | 'zumbido' = 'texto') =>
+  enviar: (
+    conversacionId: number,
+    texto: string,
+    tipo: 'texto' | 'zumbido' | 'sticker' = 'texto'
+  ) =>
     apiPost<{ mensajeId: number; conversacionId: number; tipo: string }>(
       'ajax/chat/enviar.php',
       { conversacionId, texto, tipo },

@@ -230,7 +230,17 @@
     "preguntame": "FRAG MICH",
     "escribiRespuesta": "Schreib deine Antwort…",
     "timerOff": "Kein Timer",
-    "timerCancelHint": "Zum Abbrechen tippen"
+    "timerCancelHint": "Zum Abbrechen tippen",
+    "reacciones": {
+      "huella": "Pfote",
+      "amor": "Liebe",
+      "divertido": "Lustig",
+      "asombro": "Wow",
+      "triste": "Traurig",
+      "abrazo": "Umarmung",
+      "guau": "Wau",
+      "michi": "Miau"
+    }
   },
   "adopcion": {
     "tituloLista": "Adoption",
@@ -613,7 +623,7 @@
         "limite_global": "Das Tageslimit für Avatare ist erreicht. Komm morgen wieder."
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -679,7 +689,10 @@
     "coat": {
       "title": "Fell"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -853,7 +866,20 @@
     "solicitudDe": "möchte dir schreiben",
     "sinSolicitudes": "Keine Anfragen",
     "escribiendo": "schreibt…",
-    "nuevaCharla": "Neuer Chat"
+    "nuevaCharla": "Neuer Chat",
+    "stickersTab": "Sticker",
+    "emojisTab": "Emojis",
+    "stickerEnviado": "Sticker",
+    "stickers": {
+      "huella": "Pfotenabdruck",
+      "perroFeliz": "Fröhlicher Hund",
+      "gatoCurioso": "Neugierige Katze",
+      "hueso": "Knochen",
+      "corazonHuella": "Herz mit Pfote",
+      "pelota": "Ball",
+      "adopta": "Adoptiere",
+      "dormido": "Schlafend"
+    }
   },
   "configuracion": {
     "cuenta": "Konto",
@@ -941,5 +967,98 @@
     "faltasSinAviso": "{{count}}-mal unentschuldigt gefehlt",
     "faltasSinAviso_one": "1-mal unentschuldigt gefehlt",
     "faltasSinAviso_other": "{{count}}-mal unentschuldigt gefehlt"
+  },
+  "fechaNac": {
+    "titulo": "Wir brauchen dein Geburtsdatum",
+    "bajada": "Wir nutzen es, um Kinder unter 13 im Chat zu schützen. Es wird niemandem angezeigt.",
+    "label": "Geburtsdatum",
+    "ayuda": "Es kann nur einmal eingetragen und danach nicht geändert werden.",
+    "ayudaRegistro": "Wird für den Kinderschutz verwendet.",
+    "guardar": "Speichern und weiter",
+    "unaVez": "Bei einem Fehler schreib uns, wir korrigieren es.",
+    "incompleta": "Trag Tag, Monat und Jahr ein."
+  },
+  "hueplay": {
+    "bajada": "Spiel, sammle Punkte und fordere andere heraus.",
+    "nivel": "Level {{n}}",
+    "nivelCorto": "Lv. {{n}}",
+    "puntosYPuesto": "{{puntos}} Punkte · Platz {{puesto}}",
+    "faltanParaNivel": "Noch {{n}} bis Level {{nivel}}",
+    "partidas": "Spiele",
+    "ganados": "Gewonnen",
+    "perdidos": "Verloren",
+    "desafios": "Duelle",
+    "desafiosBajada": "Duelle gegen andere Nutzer",
+    "juegos": "Spiele",
+    "ranking": "Rangliste",
+    "proximamente": "Demnächst",
+    "pronto": "Bald",
+    "tuRecord": "Dein Rekord: {{n}}",
+    "retarA": "Jemanden herausfordern",
+    "retar": "Fordern",
+    "jugar": "Spielen",
+    "volver": "Zurück zu HuePlay",
+    "sinDesafios": "Keine Duelle",
+    "sinDesafiosDesc": "Fordere jemanden heraus und spielt dasselbe Feld.",
+    "teToca": "Du bist dran",
+    "esperando": "Warte auf den Gegner",
+    "historial": "Verlauf",
+    "teRetaron": "Du wurdest herausgefordert",
+    "yaJugoRival": "Er hat gespielt, du bist dran",
+    "hicisteN": "Du hast {{n}} Punkte gemacht",
+    "vencido": "Ungespielt abgelaufen",
+    "g": "S",
+    "p": "N",
+    "sinRivales": "Niemand zum Herausfordern",
+    "sinRivalesDesc": "Suche nach Name oder Benutzername.",
+    "loSeguis": "du folgst ihm",
+    "subisteDeNivel": "Level aufgestiegen!",
+    "match": {
+      "comoSeJuega": "Tippe zwei benachbarte Steine an, um sie zu tauschen. Bringe 3 oder mehr in eine Reihe, bevor die Minute abläuft. Ketten vervielfachen die Punkte.",
+      "avisoDuelo": "Duell: Du spielst dasselbe Feld wie dein Gegner.",
+      "empezar": "Starten",
+      "guardando": "Spiel wird gespeichert...",
+      "puntos": "Punkte",
+      "tiempo": "Zeit",
+      "nuevoRecord": "Neuer Rekord!",
+      "esperandoRival": "Jetzt ist {{rival}} dran",
+      "empate": "Unentschieden",
+      "ganaste": "Gewonnen!",
+      "perdiste": "Verloren",
+      "otraVez": "Nochmal"
+    },
+    "empezasVos": "Du fängst an",
+    "conecta": {
+      "vos": "Du",
+      "jugadas": "Züge: {{n}}",
+      "tuTurno": "Du bist am Zug",
+      "turnoDe": "{{rival}} ist am Zug",
+      "turnoDelRival": "Warte auf den Zug",
+      "terminado": "Das Duell ist vorbei",
+      "ganasteFin": "Gewonnen! +{{puntos}} Punkte",
+      "perdisteFin": "Diesmal verloren",
+      "empateFin": "Unentschieden. +{{puntos}} Punkte",
+      "soltarEn": "In Spalte {{n}} einwerfen",
+      "seguirDespues": "Später weiterspielen"
+    },
+    "memo": {
+      "comoSeJuega": "Decke immer zwei Karten auf und finde alle 8 Paare, bevor die Zeit abläuft. Weniger Fehler und ein schnelleres Ende bringen mehr Punkte.",
+      "avisoDuelo": "Duell: Die Karten liegen genauso wie bei deinem Gegner.",
+      "pares": "Paare",
+      "fallos": "Fehler",
+      "completo": "Alle gefunden, mit {{fallos}} Fehlern",
+      "incompleto": "{{n}} von {{total}} Paaren gefunden",
+      "carta": "Karte {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} Fragen zur Tierpflege, je {{s}} Sekunden. Am Ende siehst du, was richtig war und warum.",
+      "avisoDuelo": "Duell: Dein Gegner beantwortet genau dieselben Fragen.",
+      "corrigiendo": "Wird ausgewertet...",
+      "aciertos": "richtig",
+      "repaso": "Rückblick",
+      "laCorrecta": "Richtige Antwort",
+      "saltear": "Frage überspringen",
+      "sinIdioma": "Es gibt noch keine Fragen in deiner Sprache, daher auf Spanisch."
+    }
   }
 }

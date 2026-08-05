@@ -90,6 +90,19 @@ export const historiasApi = {
       true
     ),
 
+  /**
+   * Reacción rápida. Tocar otra reemplaza la anterior; tocar la misma la saca.
+   * El backend devuelve el estado ya resuelto, así que la UI se pinta con eso
+   * y no adivina.
+   */
+  reaccionar: (historiaId: number, tipo: string) =>
+    apiPost<{
+      historiaId: number;
+      miReaccion: string | null;
+      conteo: Record<string, number>;
+      total: number;
+    }>('ajax/historias/reaccionar.php', { historiaId, tipo }, true),
+
   responder: (historiaId: number, texto: string) =>
     apiPost<null>('ajax/historias/responder.php', { historiaId, texto }, true),
 

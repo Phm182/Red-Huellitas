@@ -24,6 +24,7 @@ import { StoryOverlayLayer, storyFilterCss } from '../../../../src/stories/Story
 import { emptyOverlay, StoryOverlay } from '../../../../src/stories/storyEditorTypes';
 import { Historia } from '../../../../src/types';
 import { rhMediaUrl } from '../../../../src/utils/media';
+import { ReaccionesBarra, ReaccionHistoria } from '../../../../src/historias/ReaccionesBarra';
 
 const DURACION_FOTO_MS = 5000;
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -118,6 +119,24 @@ export default function VisorHistoriasScreen() {
   );
 
   const actual = historias[index] ?? null;
+  // Indexado por historiaId: al pasar a la siguiente Huellita no se puede
+  // arrastrar la reacción de la anterior.
+  const [reacciones, setReacciones] = useState<
+    Record<number, { mia: ReaccionHistoria | null; conteo: Record<string, number> }>
+  >({});
+
+  const onReaccionar = async (tipo: ReaccionHistoria) => {
+    if (!actual) return;
+    const res = await historiasApi.reaccionar(actual.historiaId, tipo);
+    if (!res.success || !res.data) return;
+    setReacciones((prev) => ({
+      ...prev,
+      [actual.historiaId]: {
+        mia: (res.data!.miReaccion as ReaccionHistoria | null) ?? null,
+        conteo: res.data!.conteo ?? {},
+      },
+    }));
+  };
 
   const overlay: StoryOverlay = useMemo(() => {
     if (!actual?.overlay) return emptyOverlay();
@@ -506,6 +525,15 @@ export default function VisorHistoriasScreen() {
       </View>
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]} pointerEvents="box-none">
+        <View style={styles.reaccionesWrap}>
+          <ReaccionesBarra
+            miReaccion={reacciones[actual.historiaId]?.mia ?? null}
+            conteo={reacciones[actual.historiaId]?.conteo ?? {}}
+            onReaccionar={onReaccionar}
+            // El autor ve los conteos pero no reacciona a lo suyo.
+            soloLectura={actual.esAutor}
+          />
+        </View>
         {actual.esAutor ? (
           <Pressable
             style={styles.vistasBtn}
@@ -612,6 +640,7 @@ const styles = StyleSheet.create({
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12, zIndex: 6 },
   vistasBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', padding: 8 },
   vistasLabel: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  reaccionesWrap: { marginBottom: 10 },
   responderFila: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   responderInput: {
     flex: 1,

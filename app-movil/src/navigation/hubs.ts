@@ -128,12 +128,15 @@ export const HUBS: Hub[] = [
   {
     key: 'hueplay',
     labelKey: 'nav.hueplay',
-    route: '/(app)/juego',
+    route: '/(app)/hueplay',
     icon: 'game-controller-outline',
     iconActive: 'game-controller',
-    match: (p) => p.includes('/juego'),
+    // HueGotchi sigue viviendo en /juego, así que el hub tiene que quedar
+    // marcado en las dos rutas.
+    match: (p) => p.includes('/hueplay') || p.includes('/juego'),
     items: [
-      { key: 'juego', labelKey: 'nav.hueplay', route: '/(app)/juego', icon: 'game-controller-outline' },
+      { key: 'hueplay', labelKey: 'nav.hueplay', route: '/(app)/hueplay', icon: 'game-controller-outline' },
+      { key: 'desafios', labelKey: 'hueplay.desafios', route: '/(app)/hueplay/desafios', icon: 'flash-outline' },
       { key: 'mascotas', labelKey: 'mascotas.title', route: '/(app)/mascotas', icon: 'paw-outline' },
     ],
   },

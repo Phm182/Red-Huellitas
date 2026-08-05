@@ -230,7 +230,17 @@
     "preguntame": "질문해 주세요",
     "escribiRespuesta": "답변을 적어 주세요…",
     "timerOff": "타이머 없음",
-    "timerCancelHint": "탭하여 취소"
+    "timerCancelHint": "탭하여 취소",
+    "reacciones": {
+      "huella": "발자국",
+      "amor": "사랑해요",
+      "divertido": "웃겨요",
+      "asombro": "놀라워요",
+      "triste": "슬퍼요",
+      "abrazo": "안아주기",
+      "guau": "멍",
+      "michi": "야옹"
+    }
   },
   "adopcion": {
     "tituloLista": "입양",
@@ -611,7 +621,7 @@
         "limite_global": "오늘의 생성 한도에 도달했어요. 내일 다시 오세요."
       }
     },
-        "catchFood": "Catch food",
+    "catchFood": "Catch food",
     "places": {
       "living": "Living",
       "cocina": "Kitchen",
@@ -677,7 +687,10 @@
     "coat": {
       "title": "털색"
     },
-    "panel": { "place": "Place", "social": "Social" },
+    "panel": {
+      "place": "Place",
+      "social": "Social"
+    },
     "orbitHint": "Drag sideways to spin · tap to greet",
     "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
     "hub": {
@@ -851,7 +864,20 @@
     "solicitudDe": "님이 메시지를 보내고 싶어 합니다",
     "sinSolicitudes": "요청이 없습니다",
     "escribiendo": "입력 중…",
-    "nuevaCharla": "새 대화"
+    "nuevaCharla": "새 대화",
+    "stickersTab": "스티커",
+    "emojisTab": "이모지",
+    "stickerEnviado": "스티커",
+    "stickers": {
+      "huella": "발자국",
+      "perroFeliz": "행복한 강아지",
+      "gatoCurioso": "호기심 많은 고양이",
+      "hueso": "뼈다귀",
+      "corazonHuella": "발자국 하트",
+      "pelota": "공",
+      "adopta": "입양하기",
+      "dormido": "자는 중"
+    }
   },
   "configuracion": {
     "cuenta": "계정",
@@ -935,5 +961,98 @@
     "comentarioPlaceholder": "어떠셨나요? (선택)",
     "vino": "참석했나요?",
     "faltasSinAviso": "연락 없이 {{count}}회 불참"
+  },
+  "fechaNac": {
+    "titulo": "생년월일이 필요합니다",
+    "bajada": "채팅에서 13세 미만 이용자를 보호하는 데 사용합니다. 누구에게도 공개하지 않습니다.",
+    "label": "생년월일",
+    "ayuda": "한 번만 입력할 수 있으며 이후에는 수정할 수 없습니다.",
+    "ayudaRegistro": "아동 보호 규칙에 사용됩니다.",
+    "guardar": "저장하고 계속",
+    "unaVez": "잘못 입력했다면 문의해 주세요. 수정해 드립니다.",
+    "incompleta": "일, 월, 연도를 입력하세요."
+  },
+  "hueplay": {
+    "bajada": "게임하고 포인트를 모아 누구에게든 도전하세요.",
+    "nivel": "레벨 {{n}}",
+    "nivelCorto": "Lv.{{n}}",
+    "puntosYPuesto": "{{puntos}}점 · {{puesto}}위",
+    "faltanParaNivel": "레벨 {{nivel}}까지 {{n}}점",
+    "partidas": "판수",
+    "ganados": "승",
+    "perdidos": "패",
+    "desafios": "대결",
+    "desafiosBajada": "다른 사용자와의 대결",
+    "juegos": "게임",
+    "ranking": "랭킹",
+    "proximamente": "출시 예정",
+    "pronto": "곧",
+    "tuRecord": "최고 기록: {{n}}",
+    "retarA": "도전하기",
+    "retar": "도전",
+    "jugar": "플레이",
+    "volver": "HuePlay로 돌아가기",
+    "sinDesafios": "대결이 없습니다",
+    "sinDesafiosDesc": "누군가에게 도전해 같은 보드로 겨뤄보세요.",
+    "teToca": "내 차례",
+    "esperando": "상대를 기다리는 중",
+    "historial": "기록",
+    "teRetaron": "도전을 받았습니다",
+    "yaJugoRival": "상대가 끝냈어요, 내 차례",
+    "hicisteN": "{{n}}점 획득",
+    "vencido": "플레이 없이 만료됨",
+    "g": "승",
+    "p": "패",
+    "sinRivales": "도전할 사람이 없습니다",
+    "sinRivalesDesc": "이름이나 사용자명으로 검색해 보세요.",
+    "loSeguis": "팔로우 중",
+    "subisteDeNivel": "레벨 업!",
+    "match": {
+      "comoSeJuega": "인접한 두 조각을 눌러 바꾸세요. 1분 안에 3개 이상 맞추면 됩니다. 연쇄가 점수를 배로 늘려줍니다.",
+      "avisoDuelo": "대결: 상대와 똑같은 보드로 플레이합니다.",
+      "empezar": "시작",
+      "guardando": "게임 저장 중...",
+      "puntos": "점수",
+      "tiempo": "시간",
+      "nuevoRecord": "최고 기록 경신!",
+      "esperandoRival": "이제 {{rival}}의 차례",
+      "empate": "무승부",
+      "ganaste": "이겼습니다!",
+      "perdiste": "졌습니다",
+      "otraVez": "다시"
+    },
+    "empezasVos": "당신이 선공",
+    "conecta": {
+      "vos": "나",
+      "jugadas": "{{n}}수",
+      "tuTurno": "당신 차례입니다",
+      "turnoDe": "{{rival}} 차례입니다",
+      "turnoDelRival": "상대의 수를 기다리는 중",
+      "terminado": "대결이 끝났습니다",
+      "ganasteFin": "이겼습니다! +{{puntos}}점",
+      "perdisteFin": "이번엔 졌습니다",
+      "empateFin": "무승부. +{{puntos}}점",
+      "soltarEn": "{{n}}번 열에 놓기",
+      "seguirDespues": "나중에 계속"
+    },
+    "memo": {
+      "comoSeJuega": "카드를 두 장씩 뒤집어 시간 안에 8쌍을 모두 찾으세요. 실수가 적고 빨리 끝낼수록 점수가 높아집니다.",
+      "avisoDuelo": "대결: 카드 배치가 상대와 완전히 같습니다.",
+      "pares": "짝",
+      "fallos": "실수",
+      "completo": "모두 찾았습니다. 실수 {{fallos}}회",
+      "incompleto": "{{total}}쌍 중 {{n}}쌍 발견",
+      "carta": "카드 {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "동물 돌봄 문제 {{n}}개, 각 {{s}}초입니다. 끝나면 맞힌 문제와 이유를 볼 수 있습니다.",
+      "avisoDuelo": "대결: 상대도 똑같은 문제를 풉니다.",
+      "corrigiendo": "채점 중...",
+      "aciertos": "정답",
+      "repaso": "복습",
+      "laCorrecta": "정답",
+      "saltear": "문제 건너뛰기",
+      "sinIdioma": "아직 해당 언어의 문제가 없어 스페인어로 표시됩니다."
+    }
   }
 }

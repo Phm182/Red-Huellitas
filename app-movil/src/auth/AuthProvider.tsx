@@ -38,7 +38,8 @@ interface AuthContextValue {
     password: string,
     nombreCompleto: string,
     aceptaClausula: boolean,
-    tipoUsuarioCodigo: string
+    tipoUsuarioCodigo: string,
+    fechaNacimiento: string
   ) => Promise<{ success: boolean; message: string }>;
   loginConGoogle: (idToken: string) => Promise<{ success: boolean; message: string }>;
   /** Cierra sólo la cuenta activa; si hay otra, pasa a esa. */
@@ -174,9 +175,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     nombreCompleto: string,
     aceptaClausula: boolean,
-    tipoUsuarioCodigo: string
+    tipoUsuarioCodigo: string,
+    fechaNacimiento: string
   ) => {
-    const res = await authApi.registro(email, password, nombreCompleto, aceptaClausula, tipoUsuarioCodigo);
+    const res = await authApi.registro(
+      email,
+      password,
+      nombreCompleto,
+      aceptaClausula,
+      tipoUsuarioCodigo,
+      fechaNacimiento
+    );
     if (res.success && res.data) {
       await activateSession(res.data.token, res.data.user);
     }

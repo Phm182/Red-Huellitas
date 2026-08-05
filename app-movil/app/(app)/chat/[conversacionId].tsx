@@ -28,6 +28,8 @@ import { radii } from '../../../src/theme/elevation';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { convertirEmoticones } from '../../../src/utils/emoticones';
+import { StickerPicker } from '../../../src/chat/StickerPicker';
+import { StickerImagen, StickerId } from '../../../src/chat/stickers';
 import { hapticExito, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
 
 /** Cada cuánto se pregunta por mensajes nuevos con la charla abierta. */
@@ -56,6 +58,7 @@ export default function ConversacionScreen() {
   const [texto, setTexto] = useState('');
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [pickerAbierto, setPickerAbierto] = useState(false);
 
   const listaRef = useRef<FlatList<ChatMensaje>>(null);
   const ultimoIdRef = useRef(0);
@@ -148,9 +151,13 @@ export default function ConversacionScreen() {
     return () => clearInterval(id);
   }, [convId, loading, aplicarMensajes]);
 
-  const enviar = async (tipo: 'texto' | 'zumbido' = 'texto') => {
+  const enviar = async (
+    tipo: 'texto' | 'zumbido' | 'sticker' = 'texto',
+    stickerId?: StickerId
+  ) => {
     const limpio = convertirEmoticones(texto.trim());
     if (tipo === 'texto' && !limpio) return;
+    if (tipo === 'sticker' && !stickerId) return;
     if (enviando) return;
 
     setEnviando(true);
@@ -159,7 +166,9 @@ export default function ConversacionScreen() {
     } else {
       hapticLeve();
     }
-    const res = await chatApi.enviar(convId, tipo === 'zumbido' ? '' : limpio, tipo);
+    // En un sticker lo que viaja en `texto` es el id del dibujo.
+    const cuerpo = tipo === 'zumbido' ? '' : tipo === 'sticker' ? stickerId! : limpio;
+    const res = await chatApi.enviar(convId, cuerpo, tipo);
     setEnviando(false);
 
     if (res.success && res.data) {
@@ -169,7 +178,7 @@ export default function ConversacionScreen() {
         {
           mensajeId: res.data!.mensajeId,
           userIdEmisor: user?.userId ?? 0,
-          texto: tipo === 'zumbido' ? '¡Zumbido!' : limpio,
+          texto: tipo === 'zumbido' ? '¡Zumbido!' : tipo === 'sticker' ? stickerId! : limpio,
           tipo,
           createdAt: new Date().toISOString(),
         },
@@ -232,6 +241,14 @@ export default function ConversacionScreen() {
                 </View>
               );
             }
+            if (item.tipo === 'sticker') {
+              // Sin burbuja: el dibujo es el mensaje, encajonarlo lo achica.
+              return (
+                <View style={[styles.stickerFila, mio ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' }]}>
+                  <StickerImagen id={item.texto} size={104} />
+                </View>
+              );
+            }
             return (
               <View
                 style={[
@@ -272,6 +289,18 @@ export default function ConversacionScreen() {
               <Pressable onPress={() => enviar('zumbido')} style={styles.zumbidoBtn} hitSlop={6}>
                 <Ionicons name="flash" size={20} color={colors.accent} />
               </Pressable>
+              <Pressable
+                onPress={() => setPickerAbierto((v) => !v)}
+                style={styles.zumbidoBtn}
+                hitSlop={6}
+                accessibilityLabel={t('chat.stickersTab')}
+              >
+                <Ionicons
+                  name={pickerAbierto ? 'close-circle-outline' : 'happy-outline'}
+                  size={22}
+                  color={pickerAbierto ? colors.primary : colors.textMuted}
+                />
+              </Pressable>
               <TextInput
                 value={texto}
                 // Los emoticones se convierten mientras escribís, como el MSN.
@@ -290,6 +319,18 @@ export default function ConversacionScreen() {
                 <Ionicons name="send" size={18} color={colors.primaryText} />
               </Pressable>
             </View>
+            {pickerAbierto ? (
+              <StickerPicker
+                onSticker={(id) => {
+                  setPickerAbierto(false);
+                  void enviar('sticker', id);
+                }}
+                // El emoji se inserta en el texto en vez de mandarse solo: así
+                // se puede escribir "vamos 🐾" en un mismo mensaje.
+                onEmoji={(e) => setTexto((prev) => prev + e)}
+                onCerrar={() => setPickerAbierto(false)}
+              />
+            ) : null}
           </KeyboardAvoidingView>
         )}
       </Animated.View>
@@ -302,6 +343,7 @@ const styles = StyleSheet.create({
   cabecera: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   nombre: { fontFamily: fonts.bodySemi, fontSize: 16 },
   lista: { padding: 12, gap: 8, paddingBottom: 20 },
+  stickerFila: { marginVertical: 4, paddingHorizontal: 4 },
   burbuja: { maxWidth: '78%', borderRadius: radii.lg, paddingHorizontal: 14, paddingVertical: 10 },
   zumbidoFila: { alignSelf: 'center', paddingVertical: 6 },
   barra: {

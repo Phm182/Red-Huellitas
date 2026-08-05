@@ -188,6 +188,14 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'avatarPath' => $u['AvatarPath'],
         'avatarBust' => rh_avatar_bust($u['AvatarPath'] ?? null),
         'onboardingCompleto' => $u['OnboardingCompleto'] === 'Y',
+        'fechaNacimiento' => $u['FechaNacimiento'] ?? null,
+        // La app usa esto para mostrar la pantalla bloqueante del backfill.
+        // Sin fecha la cuenta se trata como menor y no puede chatear, así que
+        // conviene que lo sepa antes de chocar contra el 403.
+        'requiereFechaNacimiento' => ($u['FechaNacimiento'] ?? null) === null,
+        'edad' => isset($u['FechaNacimiento']) && $u['FechaNacimiento'] !== null
+            ? (int) (new DateTimeImmutable($u['FechaNacimiento']))->diff(new DateTimeImmutable('today'))->y
+            : null,
         'aceptoClausulaAntiCriaderos' => (bool) $u['AceptoClausulaAntiCriaderos'],
         'rol' => $u['Rol'],
         'tipoUsuarioCodigo' => $tipoUsuarioCodigo,

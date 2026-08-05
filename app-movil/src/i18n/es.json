@@ -350,7 +350,17 @@
     "preguntame": "PREGUNTAME",
     "escribiRespuesta": "Escribí tu respuesta…",
     "timerOff": "Sin temp.",
-    "timerCancelHint": "Tocá para cancelar"
+    "timerCancelHint": "Tocá para cancelar",
+    "reacciones": {
+      "huella": "Huella",
+      "amor": "Me encanta",
+      "divertido": "Me divierte",
+      "asombro": "Me asombra",
+      "triste": "Me entristece",
+      "abrazo": "Abrazo",
+      "guau": "Guau",
+      "michi": "Michi"
+    }
   },
   "adopcion": {
     "tituloLista": "Adopción",
@@ -932,7 +942,7 @@
     "rescate": "Rescate",
     "tienda": "Tienda",
     "salud": "Salud",
-    "hueplay": "HueGotchi",
+    "hueplay": "HuePlay",
     "configuracion": "Configuración",
     "atajosHint": "Mantené apretado para ver los atajos",
     "ocultarBotones": "Ocultar botones",
@@ -1002,7 +1012,20 @@
     "solicitudDe": "te quiere escribir",
     "sinSolicitudes": "No hay solicitudes",
     "escribiendo": "escribiendo…",
-    "nuevaCharla": "Nueva charla"
+    "nuevaCharla": "Nueva charla",
+    "stickersTab": "Stickers",
+    "emojisTab": "Emojis",
+    "stickerEnviado": "Sticker",
+    "stickers": {
+      "huella": "Huella",
+      "perroFeliz": "Perro feliz",
+      "gatoCurioso": "Gato curioso",
+      "hueso": "Hueso",
+      "corazonHuella": "Corazón con huella",
+      "pelota": "Pelota",
+      "adopta": "Adoptá",
+      "dormido": "Dormido"
+    }
   },
   "configuracion": {
     "cuenta": "Cuenta",
@@ -1090,5 +1113,98 @@
     "faltasSinAviso": "Faltó {{count}} veces sin avisar",
     "faltasSinAviso_one": "Faltó 1 vez sin avisar",
     "faltasSinAviso_other": "Faltó {{count}} veces sin avisar"
+  },
+  "fechaNac": {
+    "titulo": "Necesitamos tu fecha de nacimiento",
+    "bajada": "La usamos para proteger a los menores de 13 en el chat. Es un dato que no mostramos a nadie.",
+    "label": "Fecha de nacimiento",
+    "ayuda": "Se carga una sola vez y no se puede editar después.",
+    "ayudaRegistro": "La usamos para las reglas de seguridad infantil.",
+    "guardar": "Guardar y continuar",
+    "unaVez": "Si te equivocás, escribinos y lo corregimos.",
+    "incompleta": "Completá el día, el mes y el año."
+  },
+  "hueplay": {
+    "bajada": "Jugá, sumá puntos y retá a quien quieras.",
+    "nivel": "Nivel {{n}}",
+    "nivelCorto": "Niv. {{n}}",
+    "puntosYPuesto": "{{puntos}} puntos · puesto {{puesto}}",
+    "faltanParaNivel": "Faltan {{n}} para el nivel {{nivel}}",
+    "partidas": "Partidas",
+    "ganados": "Ganados",
+    "perdidos": "Perdidos",
+    "desafios": "Desafíos",
+    "desafiosBajada": "Duelos contra otros usuarios",
+    "juegos": "Juegos",
+    "ranking": "Ranking",
+    "proximamente": "Próximamente",
+    "pronto": "Pronto",
+    "tuRecord": "Tu récord: {{n}}",
+    "retarA": "Retar a alguien",
+    "retar": "Retar",
+    "jugar": "Jugar",
+    "volver": "Volver a HuePlay",
+    "sinDesafios": "No tenés duelos",
+    "sinDesafiosDesc": "Retá a alguien y jugá el mismo tablero.",
+    "teToca": "Te toca jugar",
+    "esperando": "Esperando al rival",
+    "historial": "Historial",
+    "teRetaron": "Te retaron",
+    "yaJugoRival": "Ya jugó, te toca",
+    "hicisteN": "Hiciste {{n}} puntos",
+    "vencido": "Venció sin jugarse",
+    "g": "G",
+    "p": "P",
+    "sinRivales": "No hay a quién retar",
+    "sinRivalesDesc": "Probá buscando por nombre o usuario.",
+    "loSeguis": "lo seguís",
+    "subisteDeNivel": "¡subiste de nivel!",
+    "match": {
+      "comoSeJuega": "Tocá dos fichas vecinas para intercambiarlas. Alineá 3 o más y sumá antes de que se acabe el minuto. Encadenar multiplica los puntos.",
+      "avisoDuelo": "Duelo: jugás el mismo tablero que tu rival.",
+      "empezar": "Empezar",
+      "guardando": "Guardando la partida...",
+      "puntos": "Puntos",
+      "tiempo": "Tiempo",
+      "nuevoRecord": "¡Nuevo récord!",
+      "esperandoRival": "Ahora le toca a {{rival}}",
+      "empate": "Empate",
+      "ganaste": "¡Ganaste!",
+      "perdiste": "Perdiste",
+      "otraVez": "Otra vez"
+    },
+    "empezasVos": "Empezás vos",
+    "conecta": {
+      "vos": "Vos",
+      "jugadas": "Jugadas: {{n}}",
+      "tuTurno": "Te toca mover",
+      "turnoDe": "Le toca a {{rival}}",
+      "turnoDelRival": "Esperando su jugada",
+      "terminado": "El duelo terminó",
+      "ganasteFin": "¡Ganaste! +{{puntos}} puntos",
+      "perdisteFin": "Perdiste esta vez",
+      "empateFin": "Empate. +{{puntos}} puntos",
+      "soltarEn": "Soltar en la columna {{n}}",
+      "seguirDespues": "Seguir después"
+    },
+    "memo": {
+      "comoSeJuega": "Dá vuelta las cartas de a dos y encontrá los 8 pares antes de que se acabe el tiempo. Cuantos menos errores hagas y más rápido termines, más puntos sumás.",
+      "avisoDuelo": "Duelo: las cartas están repartidas igual que las de tu rival.",
+      "pares": "Pares",
+      "fallos": "Errores",
+      "completo": "Los encontraste todos, con {{fallos}} errores",
+      "incompleto": "Encontraste {{n}} de {{total}} pares",
+      "carta": "Carta {{n}}"
+    },
+    "trivia": {
+      "comoSeJuega": "{{n}} preguntas de cuidado animal, {{s}} segundos cada una. Al final ves cuáles acertaste y por qué.",
+      "avisoDuelo": "Duelo: tu rival responde exactamente las mismas preguntas.",
+      "corrigiendo": "Corrigiendo...",
+      "aciertos": "aciertos",
+      "repaso": "Repaso",
+      "laCorrecta": "La correcta",
+      "saltear": "Saltear pregunta",
+      "sinIdioma": "Todavía no hay preguntas en tu idioma, así que se muestran en español."
+    }
   }
 }
