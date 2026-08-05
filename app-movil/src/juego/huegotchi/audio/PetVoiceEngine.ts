@@ -1,4 +1,15 @@
-import { Audio, AVPlaybackStatusSuccess } from 'expo-av';
+/**
+ * `expo-audio` y no `expo-av`: expo-av fue eliminado de Expo en el SDK 54 y
+ * este proyecto usa el 57. La versión que había quedado colgada referenciaba
+ * clases de `expo-modules-core` que ya no existen, así que su módulo nativo
+ * explotaba al registrarse y se llevaba puesta la app entera al arrancar.
+ *
+ * La diferencia de API que importa: en expo-av el reproductor se creaba con
+ * `await Audio.Sound.createAsync(...)`, acá `createAudioPlayer()` devuelve el
+ * player ya, sin await, y se controla con propiedades (`volume`) en vez de
+ * métodos asincrónicos.
+ */
+import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { Platform } from 'react-native';
 import { HueSpecies, MoodBucket } from '../domain/types';
 
@@ -81,16 +92,18 @@ export type VoicePlayResult = {
 };
 
 let audioReady = false;
-let activeSound: Audio.Sound | null = null;
+let activeSound: AudioPlayer | null = null;
 let fadeTimer: ReturnType<typeof setInterval> | null = null;
 
 async function ensureMode() {
   if (audioReady) return;
   try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      allowsRecordingIOS: false,
-      staysActiveInBackground: false,
+    // Los nombres de las claves cambiaron en expo-audio: ya no llevan el
+    // sufijo de plataforma.
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      allowsRecording: false,
+      shouldPlayInBackground: false,
     });
     audioReady = true;
   } catch {
@@ -122,10 +135,11 @@ async function stopActive() {
   activeSound = null;
   if (!prev) return;
   try {
-    await prev.stopAsync();
-    await prev.unloadAsync();
+    prev.pause();
+    // `remove()` es el equivalente de unloadAsync: libera el recurso nativo.
+    prev.remove();
   } catch {
-    /* ya descargado */
+    /* ya liberado */
   }
 }
 
@@ -133,7 +147,7 @@ async function stopActive() {
  * Baja el volumen en escalones y descarga. Evita el corte seco al terminar
  * (o al interrumpir un clip largo).
  */
-function scheduleFadeOut(sound: Audio.Sound, durationMs: number, peakVol: number) {
+function scheduleFadeOut(sound: AudioPlayer, durationMs: number, peakVol: number) {
   clearFade();
   const startAt = Math.max(40, durationMs - FADE_MS);
   const stepMs = Math.max(20, Math.floor(FADE_MS / FADE_STEPS));
@@ -143,10 +157,19 @@ function scheduleFadeOut(sound: Audio.Sound, durationMs: number, peakVol: number
     fadeTimer = setInterval(() => {
       step += 1;
       const vol = peakVol * Math.max(0, 1 - step / FADE_STEPS);
-      void sound.setVolumeAsync(vol).catch(() => undefined);
+      // En expo-audio el volumen es una propiedad, no un método asincrónico.
+      try {
+        sound.volume = vol;
+      } catch {
+        /* liberado mientras bajaba */
+      }
       if (step >= FADE_STEPS) {
         clearFade();
-        void sound.unloadAsync().catch(() => undefined);
+        try {
+          sound.remove();
+        } catch {
+          /* ya liberado */
+        }
         if (activeSound === sound) activeSound = null;
       }
     }, stepMs);
@@ -171,36 +194,32 @@ export class PetVoiceEngine {
         await ensureMode();
         await stopActive();
         const peakVol = 0.92;
-        const { sound } = await Audio.Sound.createAsync(asset, {
-          shouldPlay: true,
-          volume: peakVol,
-          rate: pitch,
-          shouldCorrectPitch: true,
-        });
+        // `createAudioPlayer` es sincrónico y devuelve el player ya listo.
+        const sound = createAudioPlayer(asset);
+        sound.volume = peakVol;
+        sound.setPlaybackRate(pitch, 'high');
+        sound.play();
         activeSound = sound;
 
-        // Pedir duración: a veces status no la trae al toque.
+        // `duration` viene en SEGUNDOS (expo-av lo daba en milisegundos), y
+        // puede llegar en 0 si todavía no terminó de cargar: ahí se cae a la
+        // estimación del sintetizador, que es lo que había antes.
         let durationMs = SYNTH[clip].ms;
-        try {
-          const st = (await sound.getStatusAsync()) as AVPlaybackStatusSuccess;
-          if (st.isLoaded && st.durationMillis && st.durationMillis > 0) {
-            durationMs = st.durationMillis / pitch;
-          }
-        } catch {
-          /* fallback synth estimate */
+        const seg = sound.duration;
+        if (typeof seg === 'number' && seg > 0) {
+          durationMs = (seg * 1000) / pitch;
         }
 
         scheduleFadeOut(sound, durationMs, peakVol);
 
-        sound.setOnPlaybackStatusUpdate((st) => {
-          const s = st as AVPlaybackStatusSuccess;
-          if (!s.isLoaded) return;
-          if (s.durationMillis && s.durationMillis > 0) {
-            // Recalcular fade si la duración real llega tarde.
-          }
-          if (s.didJustFinish) {
+        sound.addListener('playbackStatusUpdate', (st) => {
+          if (st.didJustFinish) {
             clearFade();
-            void sound.unloadAsync().catch(() => undefined);
+            try {
+              sound.remove();
+            } catch {
+              /* ya liberado por el fade */
+            }
             if (activeSound === sound) activeSound = null;
           }
         });
@@ -232,10 +251,17 @@ export class PetVoiceEngine {
       const samples = synthSamples(clip, species, pitch, sampleRate);
       const wav = encodeWav(samples, sampleRate);
       const uri = `data:audio/wav;base64,${toBase64(wav)}`;
-      const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true, volume: 0.95 });
-      sound.setOnPlaybackStatusUpdate((st) => {
-        const s = st as AVPlaybackStatusSuccess;
-        if (s.isLoaded && s.didJustFinish) void sound.unloadAsync();
+      const sound = createAudioPlayer({ uri });
+      sound.volume = 0.95;
+      sound.play();
+      sound.addListener('playbackStatusUpdate', (st) => {
+        if (st.didJustFinish) {
+          try {
+            sound.remove();
+          } catch {
+            /* ya liberado */
+          }
+        }
       });
     } catch {
       /* dispositivo sin soporte */
