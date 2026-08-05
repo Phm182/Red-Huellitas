@@ -16,9 +16,14 @@ $userId = rh_require_auth($conn);
 $perfil = rh_juego_perfil($conn, $userId);
 $total = (int) $perfil['PuntosTotales'];
 
+// Por juego: record, puntos acumulados y nivel propio. El nivel por juego es
+// lo que hace que probar un juego nuevo se sienta como progreso desde la
+// primera partida, en vez de quedar clavado en el nivel de cuenta.
 $records = [];
+$porJuego = [];
 foreach (array_keys(RH_JUEGOS) as $codigo) {
     $records[$codigo] = rh_juego_record($conn, $userId, $codigo);
+    $porJuego[$codigo] = rh_juego_progreso_juego(rh_juego_puntos_de($conn, $userId, $codigo));
 }
 
 // Top 10 global. Se lee de `UsuarioJuegoPerfil` y no de un GROUP BY sobre
@@ -75,6 +80,7 @@ json_success([
     'desafiosGanados' => (int) $perfil['DesafiosGanados'],
     'desafiosPerdidos' => (int) $perfil['DesafiosPerdidos'],
     'records' => $records,
+    'porJuego' => $porJuego,
     'ranking' => $ranking,
     'miPuesto' => $miPuesto,
     'desafiosPendientes' => $pendientes,

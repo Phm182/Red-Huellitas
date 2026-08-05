@@ -1053,6 +1053,7 @@
       "laCorrecta": "正确答案",
       "saltear": "跳过本题",
       "sinIdioma": "你的语言暂时还没有题目，因此以西班牙语显示。"
-    }
+    },
+    "nivelEnJuego": "{{juego}} · 等级 {{n}}"
   }
 }

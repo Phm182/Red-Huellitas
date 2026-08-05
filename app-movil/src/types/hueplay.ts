@@ -29,6 +29,13 @@ export interface HuePlayPerfil {
   desafiosPerdidos: number;
   /** Récord personal por código de juego. */
   records: Record<string, number>;
+  /**
+   * Nivel y puntos DENTRO de cada juego, por código.
+   *
+   * Es distinto de `progreso`, que es el de la cuenta: ese suma todos los
+   * juegos y por eso siempre va por delante de cualquiera de estos.
+   */
+  porJuego: Record<string, HuePlayProgreso>;
   ranking: HuePlayRankingItem[];
   miPuesto: number;
   desafiosPendientes: number;

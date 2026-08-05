@@ -1053,6 +1053,7 @@
       "laCorrecta": "정답",
       "saltear": "문제 건너뛰기",
       "sinIdioma": "아직 해당 언어의 문제가 없어 스페인어로 표시됩니다."
-    }
+    },
+    "nivelEnJuego": "{{juego}} · 레벨 {{n}}"
   }
 }

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/juego.php';
+require_once __DIR__ . '/../../funciones/juegos.php';
 
 $userId = rh_require_auth($conn);
 
@@ -23,4 +24,9 @@ if ($datos === null) {
     json_error('No tenés acceso a esta mascota', 403);
 }
 
-json_success(['juego' => rh_juego_publico($conn, $datos['juego'], $datos['mascota'])]);
+json_success([
+    'juego' => rh_juego_publico($conn, $datos['juego'], $datos['mascota']),
+    // Nivel de HueGotchi dentro de HuePlay, para que la barra ya esté al abrir
+    // y no aparezca recién después de la primera acción.
+    'progresoJuego' => rh_juego_progreso_juego(rh_juego_puntos_de($conn, $userId, 'huegotchi')),
+]);

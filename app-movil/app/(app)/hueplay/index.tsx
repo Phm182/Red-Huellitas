@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { BarraNivel } from '../../../src/components/ui/BarraNivel';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
 import { HuePlayPerfil } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -195,6 +196,17 @@ export default function HuePlayScreen() {
               <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>
                 {t('hueplay.tuRecord', { n: perfil.records[j.id] })}
               </Text>
+            ) : null}
+            {/* Nivel propio del juego. Se muestra siempre que haya perfil, aun
+                en nivel 1 con 0 puntos: ver la barra vacía invita a jugar mucho
+                más que no ver nada. */}
+            {perfil?.porJuego?.[j.id] ? (
+              <BarraNivel
+                compacta
+                color={j.color}
+                progreso={perfil.porJuego[j.id]!}
+                etiqueta={t('hueplay.nivel', { n: perfil.porJuego[j.id]!.nivel })}
+              />
             ) : null}
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />

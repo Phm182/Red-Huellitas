@@ -2,6 +2,8 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BarraNivel } from '../../../src/components/ui/BarraNivel';
+import type { HuePlayProgreso } from '../../../src/types/hueplay';
 import { juegoApi } from '../../../src/api/juegoApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { HuePlusBadge } from '../../../src/components/HuePlusBadge';
@@ -41,6 +43,7 @@ export default function JuegoScreen() {
   const [juego, setJuego] = useState<MascotaJuego | null>(null);
   const [loading, setLoading] = useState(true);
   const [accionEnCurso, setAccionEnCurso] = useState<JuegoAccion | null>(null);
+  const [progresoHuePlay, setProgresoHuePlay] = useState<HuePlayProgreso | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [celebrar, setCelebrar] = useState(0);
   // Qué está actuando la mascota. Va aparte de accionEnCurso porque la
@@ -68,6 +71,7 @@ export default function JuegoScreen() {
     juegoApi.estado(Number(mascotaId)).then((res) => {
       if (res.success && res.data) {
         setJuego(res.data.juego);
+        if (res.data.progresoJuego) setProgresoHuePlay(res.data.progresoJuego);
         leidoEn.current = Date.now();
         setAhora(Date.now());
       } else {
@@ -139,10 +143,15 @@ export default function JuegoScreen() {
       const res = await juegoApi.accion(Number(mascotaId), tipo);
       if (res.success && res.data) {
         setJuego(res.data.juego);
+        if (res.data.progresoJuego) setProgresoHuePlay(res.data.progresoJuego);
         leidoEn.current = Date.now();
         setAhora(Date.now());
         setCelebrar((c) => c + 1);
         setMensaje(res.data.subioNivel ? t('juego.subioNivel', { nivel: res.data.juego.nivel }) : null);
+        // La XP de cuidar también sube el nivel de la cuenta en HuePlay: se
+        // actualiza acá para que la barra se mueva en el momento, y no recién
+        // al volver al hub.
+        setProgresoHuePlay(res.data.progresoJuego);
       } else {
         setMensaje(res.message);
       }
@@ -217,6 +226,23 @@ export default function JuegoScreen() {
           </Text>
         ) : null}
       </View>
+
+      {/* Nivel de HueGotchi dentro de HuePlay.
+          Es distinto del nivel de la mascota que está justo abajo: ese es de
+          ESTE animal, y este es el del juego en tu cuenta. Antes la XP subía
+          sólo el de la mascota y no se veía en ningún otro lado, que era el
+          reclamo: ganabas experiencia y no cambiaba nada. */}
+      {progresoHuePlay ? (
+        <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <BarraNivel
+            progreso={progresoHuePlay}
+            etiqueta={t('hueplay.nivelEnJuego', {
+              juego: 'HueGotchi',
+              n: progresoHuePlay.nivel,
+            })}
+          />
+        </View>
+      ) : null}
 
       <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.filaEntre}>

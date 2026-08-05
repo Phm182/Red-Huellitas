@@ -1053,6 +1053,7 @@
       "laCorrecta": "正解",
       "saltear": "この問題をとばす",
       "sinIdioma": "まだあなたの言語の問題がないため、スペイン語で表示しています。"
-    }
+    },
+    "nivelEnJuego": "{{juego}} · レベル {{n}}"
   }
 }

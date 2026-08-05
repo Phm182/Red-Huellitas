@@ -1191,6 +1191,7 @@
       "laCorrecta": "Correct answer",
       "saltear": "Skip question",
       "sinIdioma": "There are no questions in your language yet, so these are in Spanish."
-    }
+    },
+    "nivelEnJuego": "{{juego}} · level {{n}}"
   }
 }

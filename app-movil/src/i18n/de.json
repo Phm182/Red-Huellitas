@@ -1059,6 +1059,7 @@
       "laCorrecta": "Richtige Antwort",
       "saltear": "Frage überspringen",
       "sinIdioma": "Es gibt noch keine Fragen in deiner Sprache, daher auf Spanisch."
-    }
+    },
+    "nivelEnJuego": "{{juego}} · Level {{n}}"
   }
 }

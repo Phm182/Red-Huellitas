@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from './client';
+import type { HuePlayProgreso } from '../types/hueplay';
 import { JuegoAccion, JuegoAvatarEstado, MascotaJuego, MascotaJuegoResumen } from '../types';
 
 export const juegoApi = {
@@ -6,11 +7,18 @@ export const juegoApi = {
     apiGet<{ mascotas: MascotaJuegoResumen[] }>('ajax/juego/mis_mascotas.php', undefined, true),
 
   estado: (mascotaId: number) =>
-    apiGet<{ juego: MascotaJuego }>('ajax/juego/estado.php', { mascotaId }, true),
+    apiGet<{ juego: MascotaJuego; progresoJuego: HuePlayProgreso }>('ajax/juego/estado.php', { mascotaId }, true),
 
   /** Devuelve 429 con `esperarSegundos` si la acción todavía está en cooldown. */
   accion: (mascotaId: number, tipo: JuegoAccion) =>
-    apiPost<{ juego: MascotaJuego; subioNivel: boolean }>(
+    apiPost<{
+      juego: MascotaJuego;
+      subioNivel: boolean;
+      /** Nivel de la CUENTA: la XP de cuidar también suma a HuePlay. */
+      progresoCuenta: HuePlayProgreso;
+      /** Nivel dentro de HueGotchi. */
+      progresoJuego: HuePlayProgreso;
+    }>(
       'ajax/juego/accion.php',
       { mascotaId, tipo },
       true

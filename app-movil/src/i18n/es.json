@@ -1205,6 +1205,7 @@
       "laCorrecta": "La correcta",
       "saltear": "Saltear pregunta",
       "sinIdioma": "Todavía no hay preguntas en tu idioma, así que se muestran en español."
-    }
+    },
+    "nivelEnJuego": "{{juego}} · nivel {{n}}"
   }
 }

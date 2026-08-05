@@ -1059,6 +1059,7 @@
       "laCorrecta": "La corretta",
       "saltear": "Salta domanda",
       "sinIdioma": "Non ci sono ancora domande nella tua lingua, quindi sono in spagnolo."
-    }
+    },
+    "nivelEnJuego": "{{juego}} · livello {{n}}"
   }
 }

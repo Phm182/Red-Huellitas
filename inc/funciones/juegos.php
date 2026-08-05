@@ -35,7 +35,62 @@ const RH_JUEGOS = [
     // HueTrivia tampoco necesita techo: el puntaje lo calcula el servidor a
     // partir de las respuestas, el cliente no informa ningún número.
     'huetrivia' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 0],
+    // HueGotchi no se juega por partidas: suma de a poco con cada acción de
+    // cuidado. No se puede retar, y el puntaje lo pone el servidor.
+    'huegotchi' => ['modo' => 'cuidado', 'maxPuntos' => 100, 'minSegundos' => 0],
 ];
+
+/**
+ * Puntos acumulados en UN juego.
+ *
+ * Se calcula sumando `JuegoPartida` en vez de guardarlo en una columna: es una
+ * consulta sobre un índice que ya existe, y evita tener un total que se pueda
+ * desincronizar del historial que lo respalda.
+ */
+function rh_juego_puntos_de(mysqli $conn, int $userId, string $codigo): int
+{
+    $stmt = $conn->prepare(
+        'SELECT COALESCE(SUM(Puntos), 0) AS Total FROM JuegoPartida WHERE UserId = ? AND JuegoCodigo = ?'
+    );
+    $stmt->bind_param('is', $userId, $codigo);
+    $stmt->execute();
+    $t = (int) ($stmt->get_result()->fetch_assoc()['Total'] ?? 0);
+    $stmt->close();
+    return $t;
+}
+
+/**
+ * Nivel dentro de un juego.
+ *
+ * Misma forma que el nivel de cuenta pero con la mitad de costo: el nivel L
+ * necesita 25*(L-1)^2 puntos en ese juego, contra 50*(L-1)^2 del total.
+ *
+ * La relación entre los dos es a propósito. El nivel de cuenta suma TODOS los
+ * juegos, así que siempre va por delante de cualquiera de los individuales;
+ * leerlo tiene sentido ("nivel 12 de cuenta, nivel 8 en HueMatch"). Y como cada
+ * juego arranca de cero, la curva más barata hace que se note el progreso
+ * enseguida al probar uno nuevo, en vez de quedarse clavado en nivel 1.
+ */
+function rh_juego_nivel_juego(int $puntos): int
+{
+    if ($puntos < 25) {
+        return 1;
+    }
+    return min((int) floor(sqrt($puntos / 25)) + 1, 99);
+}
+
+/** Progreso dentro de un juego, con la misma forma que `rh_juego_progreso()`. */
+function rh_juego_progreso_juego(int $puntos): array
+{
+    $nivel = rh_juego_nivel_juego($puntos);
+    return [
+        'nivel' => $nivel,
+        'puntos' => $puntos,
+        'nivelDesde' => 25 * ($nivel - 1) ** 2,
+        'nivelHasta' => 25 * $nivel ** 2,
+        'faltan' => max(0, 25 * $nivel ** 2 - $puntos),
+    ];
+}
 
 function rh_juego_modo(string $codigo): string
 {
@@ -158,7 +213,11 @@ function rh_juego_registrar_partida(
     string $codigo,
     int $puntos,
     ?int $duracion = null,
-    ?int $desafioId = null
+    ?int $desafioId = null,
+    // HueGotchi suma de a poco con cada acción de cuidado, no por partidas.
+    // Sin esto, dar de comer contaría como una partida jugada y el contador
+    // del hub diría 400 partidas cuando en realidad jugaste diez.
+    bool $cuentaPartida = true
 ): array {
     $antes = rh_juego_perfil($conn, $userId);
     $nivelAntes = rh_juego_nivel((int) $antes['PuntosTotales']);
@@ -174,13 +233,14 @@ function rh_juego_registrar_partida(
     // El nivel se recalcula en SQL sobre el total ya sumado, no en PHP sobre un
     // valor leído antes: si el usuario tiene dos partidas terminando a la vez,
     // leer-sumar-escribir perdería una.
+    $suma = $cuentaPartida ? 1 : 0;
     $stmt = $conn->prepare(
         'UPDATE UsuarioJuegoPerfil
             SET PuntosTotales = PuntosTotales + ?,
-                PartidasJugadas = PartidasJugadas + 1
+                PartidasJugadas = PartidasJugadas + ?
           WHERE UserId = ?'
     );
-    $stmt->bind_param('ii', $puntos, $userId);
+    $stmt->bind_param('iii', $puntos, $suma, $userId);
     $stmt->execute();
     $stmt->close();
 
