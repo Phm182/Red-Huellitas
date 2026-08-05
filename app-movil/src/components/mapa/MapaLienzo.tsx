@@ -52,6 +52,19 @@ const ESTILO_CLARO = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.j
 const ESTILO_OSCURO = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 /**
+ * Desde qué zoom se dibujan los edificios, y con cuál se abre el mapa.
+ *
+ * Estaban desalineados y por eso "se perdió" el 3D: los edificios aparecían
+ * recién en zoom 14 pero el mapa abría en 12.4, así que al entrar nunca se veía
+ * un solo volumen. Ahora el zoom inicial cae adentro del rango.
+ *
+ * No se baja más el umbral porque cada nivel hacia afuera multiplica la
+ * geometría de edificios que hay que bajar y dibujar.
+ */
+const EDIFICIOS_DESDE_ZOOM = 13;
+const ZOOM_INICIAL = 13.6;
+
+/**
  * En nativo no hay instancia de mapa que sobreviva entre pantallas como en web,
  * y tampoco hace falta: MapLibre no cobra por crearla. Existe para que el
  * import funcione igual en las dos plataformas.
@@ -131,7 +144,7 @@ export function MapaLienzo({
       >
         <Camera
           ref={camara}
-          initialViewState={{ center: [centro.lng, centro.lat], zoom: 12.4, pitch: 45 }}
+          initialViewState={{ center: [centro.lng, centro.lat], zoom: ZOOM_INICIAL, pitch: 45 }}
           // Seguir al usuario mientras camina: el pedido fue "si se mueve, que
           // se mueva también". Se apaga en cuanto arrastra el mapa a mano —lo
           // hace el propio motor— para no pelearle el control.
@@ -142,6 +155,44 @@ export function MapaLienzo({
             precisión real del GPS y el cono de orientación. `accuracy` dibuja
             el halo de incerteza, que es más honesto que un punto nítido. */}
         <UserLocation animated accuracy heading minDisplacement={3} />
+
+        {/*
+          Edificios en 3D. En la web esta capa ya estaba y acá faltaba entera:
+          el nativo tenía la cámara inclinada pero nada que sobresaliera, así
+          que se veía plano por más `pitch` que tuviera.
+
+          La fuente se llama `carto` porque los estilos de Carto son
+          OpenMapTiles y así nombran su fuente vectorial; por eso también los
+          campos son `render_height`/`render_min_height` y no `height`, que es
+          la convención de Mapbox. Si algún día se cambia el estilo base hay
+          que revisar los dos nombres.
+
+          Va antes de los puntos para que los volúmenes queden por debajo de
+          los marcadores y no los tapen.
+        */}
+        <Layer
+          id="rh-edificios"
+          source="carto"
+          source-layer="building"
+          type="fill-extrusion"
+          minzoom={EDIFICIOS_DESDE_ZOOM}
+          paint={{
+            'fill-extrusion-color': oscuro ? '#1b2540' : '#c9d4e8',
+            'fill-extrusion-height': [
+              'coalesce',
+              ['get', 'render_height'],
+              ['get', 'height'],
+              6,
+            ],
+            'fill-extrusion-base': [
+              'coalesce',
+              ['get', 'render_min_height'],
+              ['get', 'min_height'],
+              0,
+            ],
+            'fill-extrusion-opacity': 0.6,
+          }}
+        />
 
         <Images images={imagenes} />
 

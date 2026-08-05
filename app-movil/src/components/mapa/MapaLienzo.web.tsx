@@ -130,6 +130,19 @@ export function sesionMapaViva(oscuro: boolean): MapaSesion | null {
  * CSS para que peguen con la estética del resto: sin eso el fallback se ve como
  * un mapa de otra app.
  */
+/**
+ * Desde que zoom se dibujan los edificios, y con cual se abre el mapa.
+ *
+ * Estaban desalineados y por eso "se perdio" el 3D: los edificios aparecian
+ * recien en zoom 14 pero el mapa abria en 12.4, asi que al entrar no se veia un
+ * solo volumen. Ahora el zoom inicial cae adentro del rango.
+ *
+ * No se baja mas el umbral porque cada nivel hacia afuera multiplica la
+ * geometria de edificios que hay que bajar y dibujar.
+ */
+const EDIFICIOS_DESDE_ZOOM = 13;
+const ZOOM_INICIAL = 13.6;
+
 function estiloMapLibre(oscuro: boolean) {
   const base = oscuro
     ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
@@ -250,7 +263,7 @@ function agregarEdificios(mapa: any, oscuro: boolean): void {
           'source-layer': 'building',
           filter: ['==', 'extrude', 'true'],
           type: 'fill-extrusion',
-          minzoom: 14,
+          minzoom: EDIFICIOS_DESDE_ZOOM,
           paint: {
             'fill-extrusion-color': color,
             'fill-extrusion-height': ['get', 'height'],
@@ -276,7 +289,7 @@ function agregarEdificios(mapa: any, oscuro: boolean): void {
         source: fuente,
         'source-layer': 'building',
         type: 'fill-extrusion',
-        minzoom: 14,
+        minzoom: EDIFICIOS_DESDE_ZOOM,
         paint: {
           'fill-extrusion-color': color,
           'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 6],
@@ -368,7 +381,7 @@ export function MapaLienzo({
             container: nodo,
             style: styleUrl,
             center: [centro.lng, centro.lat],
-            zoom: 12.4,
+            zoom: ZOOM_INICIAL,
             pitch: 45,
             bearing: -12,
             antialias: true,
