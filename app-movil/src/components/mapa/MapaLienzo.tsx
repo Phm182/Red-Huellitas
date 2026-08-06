@@ -10,7 +10,7 @@ import {
 } from '@maplibre/maplibre-react-native';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { MAPA_TIPO_POR_CLAVE } from '../../types/mapa';
+import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
 import { rhMediaUrl } from '../../utils/media';
 
@@ -74,6 +74,46 @@ const ZOOM_INICIAL = 13.6;
  * vieran iguales.
  */
 const CLUSTER_HASTA_ZOOM = 12;
+
+/**
+ * Un contador por tipo dentro de cada grupo.
+ *
+ * MapLibre agrupa los puntos pero pierde de vista qué había adentro: por eso el
+ * grupo se dibujaba de un color fijo. Con esto cada grupo lleva `n_adopcion`,
+ * `n_perdidos`, etc., y se puede pintar según lo que realmente contiene.
+ */
+const CONTADORES_POR_TIPO = Object.fromEntries(
+  MAPA_TIPOS.map((m) => [
+    `n_${m.tipo}`,
+    ['+', ['case', ['==', ['get', 'tipo'], m.tipo], 1, 0]],
+  ])
+);
+
+/**
+ * Color del grupo: el del tipo más frecuente adentro.
+ *
+ * Es lo mismo que hace la web, que pinta el marcador con el color del tipo
+ * dominante; así las dos plataformas se ven igual. La expresión se arma acá y
+ * no a mano porque son 8 tipos y cada uno hay que compararlo contra los otros
+ * 7: escrito a mano son 64 comparaciones que se desactualizan al agregar un
+ * tipo nuevo.
+ */
+function colorDominante(): any {
+  const ramas: any[] = ['case'];
+  for (const m of MAPA_TIPOS) {
+    const esElMayor: any[] = ['all'];
+    for (const otro of MAPA_TIPOS) {
+      if (otro.tipo === m.tipo) continue;
+      esElMayor.push(['>=', ['get', `n_${m.tipo}`], ['get', `n_${otro.tipo}`]]);
+    }
+    ramas.push(esElMayor, m.color);
+  }
+  // Sin datos de tipo (no debería pasar) queda el cian de antes.
+  ramas.push('#4CC9F0');
+  return ramas;
+}
+
+const COLOR_GRUPO = colorDominante();
 
 /**
  * En nativo no hay instancia de mapa que sobreviva entre pantallas como en web,
@@ -223,6 +263,7 @@ export function MapaLienzo({
           // individuales, y el agrupado queda para cuando alejás de verdad, que
           // es cuando sirve.
           clusterMaxZoom={CLUSTER_HASTA_ZOOM}
+          clusterProperties={CONTADORES_POR_TIPO}
           onPress={async (e: any) => {
             const f = e.features?.[0];
             if (!f) return;
@@ -276,8 +317,8 @@ export function MapaLienzo({
             type="circle"
             filter={['has', 'point_count']}
             paint={{
-              'circle-color': '#4CC9F0',
-              'circle-opacity': 0.85,
+              'circle-color': COLOR_GRUPO,
+              'circle-opacity': 0.92,
               // Crece con la cantidad, pero por escalones: sin tope, un grupo
               // de 300 taparía media pantalla.
               'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30],
@@ -294,7 +335,7 @@ export function MapaLienzo({
               'text-size': 13,
               'text-allow-overlap': true,
             }}
-            paint={{ 'text-color': '#06202E' }}
+            paint={{ 'text-color': '#FFFFFF', 'text-halo-color': 'rgba(0,0,0,.35)', 'text-halo-width': 1 }}
           />
           <Layer
             id="rh-grupos-halo"
@@ -302,10 +343,10 @@ export function MapaLienzo({
             filter={['has', 'point_count']}
             beforeId="rh-grupos"
             paint={{
-              'circle-color': '#4CC9F0',
-              'circle-radius': ['step', ['get', 'point_count'], 30, 10, 38, 50, 46],
-              'circle-blur': 1,
-              'circle-opacity': 0.45,
+              'circle-color': COLOR_GRUPO,
+              'circle-radius': ['step', ['get', 'point_count'], 32, 10, 40, 50, 50],
+              'circle-blur': 0.9,
+              'circle-opacity': 0.6,
             }}
           />
           {/* Tres capas por punto, como en la web: el resplandor de color, el
