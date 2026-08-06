@@ -68,6 +68,23 @@ export default function MapaScreen() {
    */
   const altoMaxHoja = Math.round(altoPantalla * 0.72);
 
+  /**
+   * A qué altura del borde inferior se apoya la hoja.
+   *
+   * **Y por qué no es cero en las dos plataformas.** `AppChrome` reserva el
+   * lugar de la barra con un `paddingBottom` en el contenedor. En nativo la
+   * raíz de esta pantalla vive adentro de ese padding, así que su borde de
+   * abajo YA es el techo de la barra y `bottom: 0` la deja apoyada. En web, en
+   * cambio, la raíz se posiciona absoluta sobre toda la columna e ignora el
+   * padding: ahí `bottom: 0` mete la hoja por debajo de la barra, y hay que
+   * bajar... perdón, subirla, esos mismos píxeles a mano.
+   *
+   * Medido en el navegador: con este valor el borde de la hoja cae exacto
+   * sobre el techo de la barra.
+   */
+  const alturaBarra = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
+  const hojaDesdeAbajo = Platform.OS === 'web' ? alturaBarra : 0;
+
   // Deep link: /(app)/mapa?lat=..&lng=..&zoom=.. abre centrado en ese punto.
   // Lo usan los botones "Ver en mapa" de veterinarias, refugios y campañas.
   const params = useLocalSearchParams<{ lat?: string; lng?: string }>();
@@ -595,15 +612,11 @@ export default function MapaScreen() {
             styles.hoja,
             {
               backgroundColor: colors.surface,
-              // `bottom: 0` y no la altura de la barra: el contenedor de esta
-              // pantalla YA termina donde empieza el menú, así que cero es
-              // "apoyada sobre la barra". Sumarle la altura la levantaba una
-              // barra entera de más y dejaba una franja de mapa abajo.
-              //
-              // Tampoco lleva padding inferior: el último resultado tiene que
+              // Cuánto sube depende de la plataforma (ver `hojaDesdeAbajo`).
+              // No lleva padding inferior: el último resultado tiene que
               // quedar pegado al menú cuando terminás de bajar, y ese padding
               // era justo el espacio muerto que sobraba al final.
-              bottom: 0,
+              bottom: hojaDesdeAbajo,
               maxHeight: altoMaxHoja,
             },
           ]}
