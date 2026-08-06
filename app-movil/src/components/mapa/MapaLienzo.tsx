@@ -65,6 +65,17 @@ const EDIFICIOS_DESDE_ZOOM = 13;
 const ZOOM_INICIAL = 13.6;
 
 /**
+ * Hasta qué zoom se agrupan los puntos.
+ *
+ * Va por DEBAJO de `ZOOM_INICIAL` a propósito: así al abrir el mapa ya se ven
+ * los marcadores individuales, con su color por tipo y su foto. Si el umbral
+ * queda por encima del zoom inicial, todo aparece agrupado y los grupos se
+ * pintan de un color único, que es lo que hacía que todas las publicaciones se
+ * vieran iguales.
+ */
+const CLUSTER_HASTA_ZOOM = 12;
+
+/**
  * En nativo no hay instancia de mapa que sobreviva entre pantallas como en web,
  * y tampoco hace falta: MapLibre no cobra por crearla. Existe para que el
  * import funcione igual en las dos plataformas.
@@ -202,7 +213,16 @@ export function MapaLienzo({
           data={coleccion}
           cluster
           clusterRadius={58}
-          clusterMaxZoom={17}
+          // Hasta qué zoom se agrupa. Estaba en 17, que es altísimo: el mapa
+          // abre en 13.6, así que TODO se veía agrupado y los grupos se pintan
+          // de un color fijo. De ahí el "todos los puntos son iguales" — los
+          // marcadores con color por tipo y foto existen, pero recién se
+          // separaban acercando muchísimo.
+          //
+          // Con 12 (por debajo del zoom inicial) al entrar ya se ven los puntos
+          // individuales, y el agrupado queda para cuando alejás de verdad, que
+          // es cuando sirve.
+          clusterMaxZoom={CLUSTER_HASTA_ZOOM}
           onPress={async (e: any) => {
             const f = e.features?.[0];
             if (!f) return;
@@ -211,17 +231,36 @@ export function MapaLienzo({
             // que en web, para que la hoja inferior las liste.
             const clusterId = f.properties?.cluster_id;
             if (clusterId != null) {
-              const hojas = await fuente.current?.getClusterLeaves(clusterId, 200, 0);
-              const dentro = (hojas ?? [])
-                .map((h) => {
-                  try {
-                    return JSON.parse((h.properties as any).punto) as MapaPunto;
-                  } catch {
-                    return null;
-                  }
-                })
-                .filter((p): p is MapaPunto => p !== null);
-              if (dentro.length > 0) onSeleccion(dentro);
+              // Todo esto va en try/catch porque `getClusterLeaves` es nativo y
+              // puede fallar. Sin el catch, un error acá se comía el toque en
+              // silencio y parecía que tocar el mapa no hacía nada.
+              try {
+                const hojas = await fuente.current?.getClusterLeaves(clusterId, 200, 0);
+                const dentro = (hojas ?? [])
+                  .map((h) => {
+                    try {
+                      return JSON.parse((h.properties as any).punto) as MapaPunto;
+                    } catch {
+                      return null;
+                    }
+                  })
+                  .filter((p): p is MapaPunto => p !== null);
+
+                if (dentro.length > 0) {
+                  onSeleccion(dentro);
+                  return;
+                }
+              } catch {
+                /* cae al acercar, abajo */
+              }
+
+              // Si no se pudo abrir el grupo, al menos acercar: al separarse
+              // quedan los puntos sueltos, que sí se pueden tocar de a uno.
+              // Es mejor que un toque que no hace absolutamente nada.
+              const c = f.geometry?.coordinates;
+              if (Array.isArray(c) && c.length === 2) {
+                camara.current?.flyTo({ center: [c[0], c[1]], zoom: 16, duration: 600 });
+              }
               return;
             }
 
