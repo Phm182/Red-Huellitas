@@ -555,10 +555,17 @@ export default function MapaScreen() {
             styles.hoja,
             {
               backgroundColor: colors.surface,
-              // La barra de abajo sigue montada en esta pantalla: sin este
-              // margen, los últimos resultados quedan tapados por ella.
-              bottom: APP_TAB_BAR_HEIGHT + insets.bottom,
-              paddingBottom: 16,
+              // La hoja llega hasta abajo de todo y despeja la barra con
+              // padding, no levantándose con `bottom`.
+              //
+              // Antes se apoyaba en `bottom: APP_TAB_BAR_HEIGHT`, y como esa
+              // constante no coincide exacto con lo que la barra mide en cada
+              // plataforma, quedaba una franja de mapa entre la hoja y el menú.
+              // Con padding el fondo siempre llega hasta la barra: si la
+              // constante se queda corta o larga sólo cambia cuánto respira el
+              // contenido, no aparece un hueco.
+              bottom: 0,
+              paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom + 16,
             },
           ]}
         >

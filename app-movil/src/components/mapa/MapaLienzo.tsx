@@ -81,11 +81,22 @@ const CLUSTER_HASTA_ZOOM = 12;
  * MapLibre agrupa los puntos pero pierde de vista qué había adentro: por eso el
  * grupo se dibujaba de un color fijo. Con esto cada grupo lleva `n_adopcion`,
  * `n_perdidos`, etc., y se puede pintar según lo que realmente contiene.
+ *
+ * Va en la forma LARGA `[operador, mapa]`, con el `['accumulated']` explícito.
+ * La forma corta `['+', <mapa>]` que acepta Mapbox GL JS en web el motor
+ * nativo la ignora en silencio: no tira error, simplemente deja las
+ * propiedades sin calcular. Y como todas quedaban en cero, `colorDominante()`
+ * caía siempre en la primera rama —adopción— y por eso en el celular TODOS los
+ * grupos se veían del mismo rosa, y el anillo de capas no aparecía nunca
+ * porque su filtro pide `> 0`.
  */
 const CONTADORES_POR_TIPO = Object.fromEntries(
   MAPA_TIPOS.map((m) => [
     `n_${m.tipo}`,
-    ['+', ['case', ['==', ['get', 'tipo'], m.tipo], 1, 0]],
+    [
+      ['+', ['accumulated'], ['get', `n_${m.tipo}`]],
+      ['case', ['==', ['get', 'tipo'], m.tipo], 1, 0],
+    ],
   ])
 );
 
@@ -303,7 +314,13 @@ export function MapaLienzo({
           clusterMaxZoom={CLUSTER_HASTA_ZOOM}
           clusterProperties={CONTADORES_POR_TIPO}
           onPress={async (e: any) => {
-            const f = e.features?.[0];
+            // Los datos del toque vienen en `nativeEvent`, no sueltos en el
+            // evento: es un NativeSyntheticEvent, como cualquier evento que
+            // cruza el puente. Leyéndolo mal `f` daba siempre undefined y el
+            // handler cortaba en la línea de abajo, así que tocar un grupo no
+            // hacía absolutamente nada. Se deja el fallback por si alguna
+            // versión del paquete lo entrega plano.
+            const f = e.nativeEvent?.features?.[0] ?? e.features?.[0];
             if (!f) return;
 
             // Grupo: se devuelven todas las publicaciones que contiene, igual
@@ -314,8 +331,13 @@ export function MapaLienzo({
               // puede fallar. Sin el catch, un error acá se comía el toque en
               // silencio y parecía que tocar el mapa no hacía nada.
               try {
-                const hojas = await fuente.current?.getClusterLeaves(clusterId, 200, 0);
-                const dentro = (hojas ?? [])
+                const crudo: any = await fuente.current?.getClusterLeaves(clusterId, 200, 0);
+                // El tipo dice `Feature[]`, pero la doc del método habla de una
+                // FeatureCollection: según la plataforma vuelve una cosa o la
+                // otra. Se aceptan las dos en vez de confiar en el tipo, que ya
+                // demostró no coincidir con lo que manda el nativo.
+                const hojas: any[] = Array.isArray(crudo) ? crudo : (crudo?.features ?? []);
+                const dentro = hojas
                   .map((h) => {
                     try {
                       return JSON.parse((h.properties as any).punto) as MapaPunto;
