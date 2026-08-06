@@ -2,16 +2,16 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { radii } from '../../theme/elevation';
 import { useTheme } from '../../theme/ThemeProvider';
-import { Ficha } from './Ficha';
-import { Celda, COLUMNAS, FILAS, Tablero as TableroT, VACIO } from './motor';
+import { Celda } from './Celda';
+import { Celda as CeldaCoord, COLUMNAS, FILAS, Tablero as TableroT } from './motor';
 
 type Props = {
   tablero: TableroT;
-  seleccionada: Celda | null;
+  seleccionada: CeldaCoord | null;
   /** Par que acaba de rebotar por no armar línea, para marcarlo en rojo. */
-  rechazadas: Celda[] | null;
+  rechazadas: CeldaCoord[] | null;
   lado: number;
-  onCelda: (c: Celda) => void;
+  onCelda: (c: CeldaCoord) => void;
   bloqueado: boolean;
 };
 
@@ -67,13 +67,10 @@ export function TableroHueMatch({
                         ? 'rgba(220,60,60,0.22)'
                         : 'transparent',
                     borderColor: activa ? colors.primary : 'transparent',
-                    // La ficha elegida crece un poco: en un tablero de 49
-                    // celdas el borde solo se pierde de vista.
-                    transform: [{ scale: activa ? 1.1 : 1 }],
                   },
                 ]}
               >
-                {tipo === VACIO ? null : <Ficha tipo={tipo} size={celda * 0.78} />}
+                <Celda tipo={tipo} lado={celda} fila={f} seleccionada={activa} />
               </View>
             </Pressable>
           );

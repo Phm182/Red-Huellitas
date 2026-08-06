@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { CartaMemo } from '../../../src/juego/huememo/Carta';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
 import { COLUMNAS, PARES, SEGUNDOS, TOTAL, puntaje, repartir } from '../../../src/juego/huememo/motor';
 import { HuePlayProgreso } from '../../../src/types/hueplay';
@@ -396,34 +397,22 @@ export default function HueMemoScreen() {
             const abierta = vueltas.includes(i) || halladas.has(tipo);
             const hecha = halladas.has(tipo);
             return (
-              <Pressable
+              <View
                 key={i}
-                onPress={() => tocar(i)}
                 style={[
                   styles.carta,
                   { width: celda, height: celda, left: (i % COLUMNAS) * celda, top: Math.floor(i / COLUMNAS) * celda },
                 ]}
-                accessibilityLabel={t('hueplay.memo.carta', { n: i + 1 })}
               >
-                <View
-                  style={[
-                    styles.cartaFondo,
-                    {
-                      backgroundColor: abierta ? colors.surface : colors.primary,
-                      borderColor: hecha ? colors.success : colors.border,
-                      // Las halladas se apagan un poco: dejan de ser tocables y
-                      // conviene que dejen de competir por la atención.
-                      opacity: hecha ? 0.55 : 1,
-                    },
-                  ]}
-                >
-                  {abierta ? (
-                    <Ficha tipo={tipo} size={celda * 0.6} />
-                  ) : (
-                    <Ionicons name="paw" size={celda * 0.34} color={colors.primaryText} />
-                  )}
-                </View>
-              </Pressable>
+                <CartaMemo
+                  tipo={tipo}
+                  lado={celda}
+                  abierta={abierta}
+                  hecha={hecha}
+                  onPress={() => tocar(i)}
+                  accessibilityLabel={t('hueplay.memo.carta', { n: i + 1 })}
+                />
+              </View>
             );
           })}
         </View>
