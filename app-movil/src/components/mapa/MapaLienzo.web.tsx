@@ -16,7 +16,7 @@ import Supercluster from 'supercluster';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
-import { MAPA_TIPO_POR_CLAVE } from '../../types/mapa';
+import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import { rhMediaUrl } from '../../utils/media';
 
 /**
@@ -44,6 +44,16 @@ function asegurarWorkerMapLibre() {
  * `addImage`, una por una. Agrupando con `supercluster` y pintando marcadores
  * HTML, la foto es un `<img>` común y el diseño se hace con CSS.
  */
+
+/**
+ * Radio del anillo de capas alrededor de un grupo, en píxeles.
+ *
+ * Va por fuera del disco (`.rh-cluster` mide 52 px, o sea radio 26) para que
+ * los puntitos no se apoyen encima del número. El mismo valor está en la
+ * versión nativa: si cambia acá, cambia allá, o los dos mapas dejan de verse
+ * igual.
+ */
+const RADIO_ANILLO = 32;
 
 type Props = {
   sesion: MapaSesion;
@@ -192,6 +202,14 @@ function inyectarEstilos() {
   background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.28), transparent 60%), var(--rh-c);
   box-shadow:0 0 0 4px rgba(255,255,255,.12), 0 0 26px var(--rh-c), 0 8px 18px rgba(0,0,0,.5);
   position:relative;
+}
+/* Un puntito por capa presente, en anillo alrededor del grupo: el disco solo
+   dice cuántas cosas hay y cuál es la mayoría, no qué mezcla contiene. El
+   ángulo de cada tipo es fijo, así la posición significa siempre lo mismo. */
+.rh-cluster-capa {
+  position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%;
+  box-sizing:border-box; border:1.5px solid rgba(255,255,255,.95);
+  box-shadow:0 1px 3px rgba(0,0,0,.45);
 }
 /* Anillo que late, para que se lea como "acá hay varios". */
 .rh-cluster::after {
@@ -548,7 +566,19 @@ export function MapaLienzo({
         hijos.forEach((h) => conteo.set(h.tipo, (conteo.get(h.tipo) ?? 0) + 1));
         const dominante = [...conteo.entries()].sort((x, y) => y[1] - x[1])[0][0];
 
-        el.innerHTML = `<div class="rh-cluster">${cantidad > 99 ? '99+' : cantidad}</div>`;
+        // El anillo: un puntito por cada capa que el grupo contiene, en el
+        // ángulo fijo que le toca a ese tipo. Es lo que hace que un grupo
+        // mitad perdidos mitad adopciones no se vea igual a uno de puras
+        // adopciones, que era lo único que el color dominante no podía contar.
+        const anillo = MAPA_TIPOS.map((m, i) => {
+          if (!conteo.has(m.tipo)) return '';
+          const angulo = (i / MAPA_TIPOS.length) * 2 * Math.PI;
+          const x = (Math.sin(angulo) * RADIO_ANILLO).toFixed(1);
+          const y = (-Math.cos(angulo) * RADIO_ANILLO).toFixed(1);
+          return `<span class="rh-cluster-capa" style="background:${m.color};transform:translate(-50%,-50%) translate(${x}px,${y}px)"></span>`;
+        }).join('');
+
+        el.innerHTML = `<div class="rh-cluster">${cantidad > 99 ? '99+' : cantidad}${anillo}</div>`;
         el.style.setProperty('--rh-c', MAPA_TIPO_POR_CLAVE[dominante]?.color ?? '#4CC9F0');
         el.onclick = (ev) => {
           ev.stopPropagation();

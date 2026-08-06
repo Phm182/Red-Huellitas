@@ -116,6 +116,44 @@ function colorDominante(): any {
 const COLOR_GRUPO = colorDominante();
 
 /**
+ * A qué distancia del centro del grupo se dibuja el anillo de puntitos.
+ *
+ * Tiene que caer por fuera del disco más grande (radio 25, ver `rh-grupos`)
+ * para que los puntitos no queden apoyados encima del número.
+ */
+const RADIO_ANILLO = 32;
+
+/**
+ * Un puntito por capa, en anillo alrededor del grupo.
+ *
+ * El disco solo alcanza para decir "acá hay 12 cosas" y de qué es la mayoría,
+ * pero no *qué* mezcla hay adentro: un grupo mitad perdidos mitad adopciones se
+ * ve idéntico a uno de puras adopciones. El anillo lo resuelve mostrando un
+ * puntito del color de cada capa presente.
+ *
+ * La posición de cada tipo es FIJA (siempre el mismo ángulo) y no depende de lo
+ * que haya en el grupo: así "arriba a la derecha es tránsito" se aprende una
+ * vez y vale para todos los grupos del mapa.
+ *
+ * `circle-translate` no acepta expresiones de datos, sólo un valor constante;
+ * por eso el desplazamiento se calcula acá, en píxeles, y hay una capa por tipo
+ * en vez de una sola capa que se acomode sola.
+ */
+const ANILLO_DE_CAPAS = MAPA_TIPOS.map((m, i) => {
+  const angulo = (i / MAPA_TIPOS.length) * 2 * Math.PI;
+  return {
+    tipo: m.tipo,
+    color: m.color,
+    // El eje Y de la pantalla crece hacia abajo: de ahí el signo invertido,
+    // para que el índice 0 quede arriba y el anillo gire en sentido horario.
+    offset: [
+      Math.round(Math.sin(angulo) * RADIO_ANILLO * 10) / 10,
+      Math.round(-Math.cos(angulo) * RADIO_ANILLO * 10) / 10,
+    ] as [number, number],
+  };
+});
+
+/**
  * En nativo no hay instancia de mapa que sobreviva entre pantallas como en web,
  * y tampoco hace falta: MapLibre no cobra por crearla. Existe para que el
  * import funcione igual en las dos plataformas.
@@ -320,8 +358,10 @@ export function MapaLienzo({
               'circle-color': COLOR_GRUPO,
               'circle-opacity': 0.92,
               // Crece con la cantidad, pero por escalones: sin tope, un grupo
-              // de 300 taparía media pantalla.
-              'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30],
+              // de 300 taparía media pantalla. El escalón más grande queda por
+              // dentro de RADIO_ANILLO para que los puntitos de las capas no se
+              // apoyen encima del número.
+              'circle-radius': ['step', ['get', 'point_count'], 17, 10, 21, 50, 25],
               'circle-stroke-width': 2,
               'circle-stroke-color': 'rgba(255,255,255,.9)',
             }}
@@ -337,6 +377,27 @@ export function MapaLienzo({
             }}
             paint={{ 'text-color': '#FFFFFF', 'text-halo-color': 'rgba(0,0,0,.35)', 'text-halo-width': 1 }}
           />
+          {/* El anillo va después del disco y del número para quedar encima de
+              los dos; si fuera antes, el disco se lo comería. */}
+          {ANILLO_DE_CAPAS.map((p) => (
+            <Layer
+              key={p.tipo}
+              id={`rh-grupos-capa-${p.tipo}`}
+              type="circle"
+              filter={['all', ['has', 'point_count'], ['>', ['get', `n_${p.tipo}`], 0]]}
+              paint={{
+                'circle-color': p.color,
+                'circle-radius': 4.5,
+                'circle-stroke-width': 1.5,
+                'circle-stroke-color': 'rgba(255,255,255,.95)',
+                'circle-translate': p.offset,
+                // 'viewport' y no 'map': el mapa está inclinado 45°, así que con
+                // el anclaje por defecto el anillo se deformaría en óvalo y
+                // giraría con la brújula.
+                'circle-translate-anchor': 'viewport',
+              }}
+            />
+          ))}
           <Layer
             id="rh-grupos-halo"
             type="circle"
