@@ -81,6 +81,8 @@ type Props = {
   oscuro: boolean;
   /** Se dispara al tocar un pin (uno o varios apilados). */
   onSeleccion: (puntos: MapaPunto[]) => void;
+  /** Tocaron el mapa donde no hay nada: sirve para cerrar la hoja abierta. */
+  onFondo?: () => void;
   /** El usuario movió el mapa; sirve para volver a pedir puntos. */
   onMover?: (centro: { lat: number; lng: number }) => void;
 };
@@ -331,6 +333,7 @@ export function MapaLienzo({
   irA,
   oscuro,
   onSeleccion,
+  onFondo,
   onMover,
 }: Props) {
   const contenedor = useRef<HTMLDivElement | null>(null);
@@ -346,8 +349,10 @@ export function MapaLienzo({
   // (y con él, gastar otra carga del cupo de Mapbox).
   const onSeleccionRef = useRef(onSeleccion);
   const onMoverRef = useRef(onMover);
+  const onFondoRef = useRef(onFondo);
   onSeleccionRef.current = onSeleccion;
   onMoverRef.current = onMover;
+  onFondoRef.current = onFondo;
 
   // --- Crear (o recuperar) el mapa ----------------------------------------
   useEffect(() => {
@@ -472,6 +477,10 @@ export function MapaLienzo({
         v.mapa.resize();
         v.mapa.jumpTo({ center: [centro.lng, centro.lat] });
         v.mapa.on('moveend', avisarMovimiento);
+        // Tocar el mapa donde no hay nada cierra la hoja. Los pines son nodos
+        // HTML con su propio `onclick` que ya llama a `stopPropagation()`, así
+        // que abrir un punto no dispara esto.
+        v.mapa.on('click', () => onFondoRef.current?.());
 
         // Ya se pueden dibujar los marcadores.
         //

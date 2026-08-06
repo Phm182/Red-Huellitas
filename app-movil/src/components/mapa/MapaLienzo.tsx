@@ -8,8 +8,9 @@ import {
   Map,
   UserLocation,
 } from '@maplibre/maplibre-react-native';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useBrujula } from '../../hooks/useBrujula';
 import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
 import { rhMediaUrl } from '../../utils/media';
@@ -23,6 +24,8 @@ type Props = {
   irA?: { lat: number; lng: number; nonce: number } | null;
   oscuro: boolean;
   onSeleccion: (puntos: MapaPunto[]) => void;
+  /** Tocaron el mapa donde no hay nada: sirve para cerrar la hoja abierta. */
+  onFondo?: () => void;
   onMover?: (centro: { lat: number; lng: number }) => void;
   /** Con esto la cámara acompaña al usuario mientras camina (sólo nativo). */
   seguirme?: boolean;
@@ -135,34 +138,84 @@ const COLOR_GRUPO = colorDominante();
 const RADIO_ANILLO = 32;
 
 /**
- * Un puntito por capa, en anillo alrededor del grupo.
+ * Un puntito por capa, en anillo alrededor del grupo, girando como las lunas de
+ * un planeta.
  *
  * El disco solo alcanza para decir "acá hay 12 cosas" y de qué es la mayoría,
  * pero no *qué* mezcla hay adentro: un grupo mitad perdidos mitad adopciones se
  * ve idéntico a uno de puras adopciones. El anillo lo resuelve mostrando un
  * puntito del color de cada capa presente.
  *
- * La posición de cada tipo es FIJA (siempre el mismo ángulo) y no depende de lo
- * que haya en el grupo: así "arriba a la derecha es tránsito" se aprende una
- * vez y vale para todos los grupos del mapa.
+ * El ángulo de cada tipo es fijo *entre ellos* (siempre en el mismo orden y
+ * equiespaciados) y todo el conjunto gira parejo, así que las posiciones
+ * relativas no cambian nunca: el anillo se lee igual, sólo que en movimiento.
  *
  * `circle-translate` no acepta expresiones de datos, sólo un valor constante;
  * por eso el desplazamiento se calcula acá, en píxeles, y hay una capa por tipo
- * en vez de una sola capa que se acomode sola.
+ * en vez de una sola capa que se acomode sola. Esa misma limitación es la que
+ * obliga a animar desde JS: no hay forma de que el estilo conozca el tiempo.
  */
-const ANILLO_DE_CAPAS = MAPA_TIPOS.map((m, i) => {
-  const angulo = (i / MAPA_TIPOS.length) * 2 * Math.PI;
+function anilloDeCapas(giroRad: number) {
+  return MAPA_TIPOS.map((m, i) => {
+    const angulo = (i / MAPA_TIPOS.length) * 2 * Math.PI + giroRad;
+    return {
+      tipo: m.tipo,
+      color: m.color,
+      // El eje Y de la pantalla crece hacia abajo: de ahí el signo invertido,
+      // para que el giro se vea en sentido horario.
+      offset: [
+        Math.round(Math.sin(angulo) * RADIO_ANILLO * 10) / 10,
+        Math.round(-Math.cos(angulo) * RADIO_ANILLO * 10) / 10,
+      ] as [number, number],
+    };
+  });
+}
+
+/**
+ * El reloj de la animación del grupo: giro del anillo y paso del brillo.
+ *
+ * Un solo temporizador para las dos cosas. Cada tick reescribe 9 propiedades de
+ * estilo (8 puntitos + el brillo), así que el paso es de 80 ms y no de 16: a 60
+ * cuadros por segundo serían 540 escrituras por segundo cruzando al motor
+ * nativo mientras el mapa además dibuja tiles. A 12,5 por segundo el giro se ve
+ * fluido igual porque es lento —una vuelta cada 9 s— y el costo baja a un
+ * séptimo.
+ *
+ * El brillo no acompaña al giro: pasa una vez cada ciclo largo y el resto del
+ * tiempo está apagado, que es lo que lo hace parecer un reflejo y no una luz
+ * prendida.
+ */
+const PASO_MS = 80;
+const VUELTA_MS = 9000;
+const BRILLO_CADA_MS = 4500;
+/** Cuánto dura el paso del brillo dentro de ese ciclo. */
+const BRILLO_DURACION_MS = 900;
+
+function useRelojGrupo(activo: boolean) {
+  const [t, setT] = useState(0);
+
+  useEffect(() => {
+    if (!activo) return;
+    const id = setInterval(() => setT((v) => v + PASO_MS), PASO_MS);
+    return () => clearInterval(id);
+  }, [activo]);
+
+  const giroRad = ((t % VUELTA_MS) / VUELTA_MS) * 2 * Math.PI;
+
+  // El brillo cruza la esfera en diagonal, de arriba-izquierda a abajo-derecha,
+  // y fuera de su ventana se queda quieto y transparente.
+  const fase = (t % BRILLO_CADA_MS) / BRILLO_DURACION_MS;
+  const brillando = fase <= 1;
+  const avance = brillando ? fase : 0;
+
   return {
-    tipo: m.tipo,
-    color: m.color,
-    // El eje Y de la pantalla crece hacia abajo: de ahí el signo invertido,
-    // para que el índice 0 quede arriba y el anillo gire en sentido horario.
-    offset: [
-      Math.round(Math.sin(angulo) * RADIO_ANILLO * 10) / 10,
-      Math.round(-Math.cos(angulo) * RADIO_ANILLO * 10) / 10,
-    ] as [number, number],
+    giroRad,
+    // Se mueve dentro del disco, no fuera: es un reflejo sobre la superficie.
+    brilloOffset: [-9 + avance * 18, -9 + avance * 18] as [number, number],
+    // Entra y sale con una curva suave para que no aparezca de golpe.
+    brilloOpacidad: brillando ? Math.sin(avance * Math.PI) * 0.5 : 0,
   };
-});
+}
 
 /**
  * En nativo no hay instancia de mapa que sobreviva entre pantallas como en web,
@@ -176,14 +229,27 @@ export function sesionMapaViva(_oscuro: boolean): MapaSesion | null {
 export function MapaLienzo({
   puntos,
   centro,
+  precisionM,
   irA,
   oscuro,
   seguirme = false,
   onSeleccion,
+  onFondo,
   onMover,
 }: Props) {
   const camara = useRef<CameraRef>(null);
   const fuente = useRef<GeoJSONSourceRef>(null);
+
+  /**
+   * Hacia dónde mira el teléfono. Va por la brújula y no por el GPS: el rumbo
+   * del GPS sólo existe mientras te movés, así que parado la flecha no giraba.
+   */
+  const brujula = useBrujula(true);
+
+  // La animación sólo corre si hay algo que animar.
+  const hayGrupos = puntos.length > 1;
+  const { giroRad, brilloOffset, brilloOpacidad } = useRelojGrupo(hayGrupos);
+  const anillo = anilloDeCapas(giroRad);
 
   /**
    * Las fotos de las publicaciones, cargadas como imágenes del estilo.
@@ -244,6 +310,11 @@ export function MapaLienzo({
         attributionPosition={{ bottom: 96, right: 8 }}
         compass
         compassPosition={{ bottom: 150, right: 10 }}
+        // Tocar el mapa donde no hay nada cierra la hoja. Los toques sobre un
+        // punto no llegan acá porque el handler de la fuente corta la
+        // propagación; si no la cortara, abrir un grupo lo cerraría en el mismo
+        // gesto.
+        onPress={() => onFondo?.()}
         onRegionDidChange={(e) => {
           const c = e.nativeEvent?.center;
           if (c) onMover?.({ lat: c[1], lng: c[0] });
@@ -258,10 +329,71 @@ export function MapaLienzo({
           trackUserLocation={seguirme ? 'default' : undefined}
         />
 
-        {/* El punto azul lo maneja el sistema: se actualiza solo, con la
-            precisión real del GPS y el cono de orientación. `accuracy` dibuja
-            el halo de incerteza, que es más honesto que un punto nítido. */}
-        <UserLocation animated accuracy heading minDisplacement={3} />
+        {/*
+          El punto de "vos estás acá". La posición la sigue manejando el
+          sistema, pero las capas las dibujamos nosotros por un motivo: la
+          flecha de orientación que trae el componente se orienta con
+          `coords.heading`, el rumbo del GPS, que es la dirección en la que te
+          estás desplazando. Parado no hay desplazamiento y ese dato llega
+          nulo, así que la flecha no giraba al girar el teléfono en la mano.
+
+          Pasándole hijos, `UserLocation` sólo aporta la posición y el orden de
+          las capas queda a cargo nuestro; el ícono de la flecha lo sigue
+          registrando el propio componente gracias a `heading`.
+        */}
+        <UserLocation animated heading minDisplacement={3}>
+          {/* Halo de incerteza: se dibuja con la precisión real que informa el
+              GPS, más honesto que un punto nítido. Crece con el zoom porque son
+              metros sobre el terreno, no píxeles de pantalla. */}
+          {typeof precisionM === 'number' && precisionM > 0 ? (
+            <Layer
+              id="rh-yo-precision"
+              type="circle"
+              paint={{
+                'circle-color': '#4CC9F0',
+                'circle-opacity': 0.18,
+                'circle-pitch-alignment': 'map',
+                'circle-radius': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  0,
+                  9,
+                  22,
+                  9 + precisionM * 100,
+                ],
+              }}
+            />
+          ) : null}
+
+          {brujula !== null ? (
+            <Layer
+              id="rh-yo-rumbo"
+              type="symbol"
+              layout={{
+                'icon-image': 'mlrn-user-location-puck-heading',
+                'icon-allow-overlap': true,
+                // Los dos en 'map' para que la flecha quede pegada al terreno:
+                // si giro el mapa, la flecha sigue apuntando al mismo lugar del
+                // mundo, que es lo que uno espera de una brújula.
+                'icon-rotation-alignment': 'map',
+                'icon-pitch-alignment': 'map',
+                'icon-rotate': brujula,
+              }}
+            />
+          ) : null}
+
+          <Layer
+            id="rh-yo-borde"
+            type="circle"
+            paint={{ 'circle-radius': 9, 'circle-color': '#fff', 'circle-pitch-alignment': 'map' }}
+          />
+          <Layer
+            id="rh-yo-centro"
+            type="circle"
+            paint={{ 'circle-radius': 6, 'circle-color': '#4CC9F0', 'circle-pitch-alignment': 'map' }}
+          />
+        </UserLocation>
 
         {/*
           Edificios en 3D. En la web esta capa ya estaba y acá faltaba entera:
@@ -330,6 +462,10 @@ export function MapaLienzo({
             const f = e.nativeEvent?.features?.[0] ?? e.features?.[0];
             if (!f) return;
 
+            // Sin esto el toque sigue subiendo hasta el `onPress` del mapa, que
+            // cierra la hoja: abrir un grupo y cerrarlo en el mismo gesto.
+            e.stopPropagation?.();
+
             // Grupo: se devuelven todas las publicaciones que contiene, igual
             // que en web, para que la hoja inferior las liste.
             const clusterId = f.properties?.cluster_id;
@@ -379,13 +515,36 @@ export function MapaLienzo({
             }
           }}
         >
+          {/*
+            La esfera: cuatro capas apiladas en vez de un disco plano.
+
+            Un `circle` de MapLibre es de color liso —no hay degradado radial
+            como en CSS—, así que el volumen se finge con luces y sombras
+            superpuestas: una sombra oscura corrida hacia abajo, el disco de
+            color, un sombreado inferior, y un reflejo arriba a la izquierda.
+            El ojo lee esa secuencia como una fuente de luz desde arriba, que es
+            lo que convierte el círculo en pelota.
+          */}
+          <Layer
+            id="rh-grupos-sombra"
+            type="circle"
+            filter={['has', 'point_count']}
+            paint={{
+              'circle-color': '#000',
+              'circle-opacity': 0.38,
+              'circle-radius': ['step', ['get', 'point_count'], 17, 10, 21, 50, 25],
+              'circle-blur': 0.35,
+              'circle-translate': [0, 3],
+              'circle-translate-anchor': 'viewport',
+            }}
+          />
           <Layer
             id="rh-grupos"
             type="circle"
             filter={['has', 'point_count']}
             paint={{
               'circle-color': COLOR_GRUPO,
-              'circle-opacity': 0.92,
+              'circle-opacity': 0.95,
               // Crece con la cantidad, pero por escalones: sin tope, un grupo
               // de 300 taparía media pantalla. El escalón más grande queda por
               // dentro de RADIO_ANILLO para que los puntitos de las capas no se
@@ -393,6 +552,53 @@ export function MapaLienzo({
               'circle-radius': ['step', ['get', 'point_count'], 17, 10, 21, 50, 25],
               'circle-stroke-width': 2,
               'circle-stroke-color': 'rgba(255,255,255,.9)',
+            }}
+          />
+          {/* El lado en sombra: un disco negro difuminado, corrido hacia abajo
+              y más chico, que oscurece la parte inferior de la pelota. */}
+          <Layer
+            id="rh-grupos-sombreado"
+            type="circle"
+            filter={['has', 'point_count']}
+            paint={{
+              'circle-color': '#000',
+              'circle-opacity': 0.3,
+              'circle-radius': ['step', ['get', 'point_count'], 13, 10, 16, 50, 19],
+              'circle-blur': 1,
+              'circle-translate': [1, 5],
+              'circle-translate-anchor': 'viewport',
+            }}
+          />
+          {/* El reflejo fijo, arriba a la izquierda: el brillo especular que
+              termina de vender la esfera. Es el mismo lugar del que sale el
+              `radial-gradient` de la web. */}
+          <Layer
+            id="rh-grupos-luz"
+            type="circle"
+            filter={['has', 'point_count']}
+            paint={{
+              'circle-color': '#fff',
+              'circle-opacity': 0.3,
+              'circle-radius': ['step', ['get', 'point_count'], 7, 10, 9, 50, 11],
+              'circle-blur': 0.85,
+              'circle-translate': [-6, -6],
+              'circle-translate-anchor': 'viewport',
+            }}
+          />
+          {/* El brillo que pasa cada tanto. Cruza la esfera en diagonal y el
+              resto del tiempo está en opacidad cero: por eso se lee como un
+              reflejo momentáneo y no como una luz siempre prendida. */}
+          <Layer
+            id="rh-grupos-brillo"
+            type="circle"
+            filter={['has', 'point_count']}
+            paint={{
+              'circle-color': '#fff',
+              'circle-opacity': brilloOpacidad,
+              'circle-radius': ['step', ['get', 'point_count'], 6, 10, 8, 50, 10],
+              'circle-blur': 0.7,
+              'circle-translate': brilloOffset,
+              'circle-translate-anchor': 'viewport',
             }}
           />
           <Layer
@@ -408,7 +614,7 @@ export function MapaLienzo({
           />
           {/* El anillo va después del disco y del número para quedar encima de
               los dos; si fuera antes, el disco se lo comería. */}
-          {ANILLO_DE_CAPAS.map((p) => (
+          {anillo.map((p) => (
             <Layer
               key={p.tipo}
               id={`rh-grupos-capa-${p.tipo}`}

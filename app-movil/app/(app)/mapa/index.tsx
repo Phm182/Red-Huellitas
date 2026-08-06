@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  BackHandler,
   Image,
   Platform,
   Pressable,
@@ -103,6 +104,28 @@ export default function MapaScreen() {
   // El centro con el que se pidieron los puntos, para no volver a pedir por un
   // arrastre de dos cuadras.
   const centroPedido = useRef<{ lat: number; lng: number } | null>(null);
+
+  /**
+   * Con la hoja abierta, "atrás" la cierra en vez de salir del mapa.
+   *
+   * Es lo mismo que hace el toque en el mapa vacío, y responde a lo que uno
+   * espera: la hoja se siente como una capa por encima del mapa, así que el
+   * gesto de volver tiene que sacar esa capa primero. Antes salía derecho de la
+   * pantalla y te dejaba en el inicio, perdiendo de paso dónde estabas mirando.
+   *
+   * Devolver `true` es lo que le dice a Android "yo me encargo"; con `false` el
+   * evento sigue su curso normal y la pantalla se cierra.
+   */
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (seleccion && seleccion.length > 0) {
+        setSeleccion(null);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [seleccion]);
 
   // --- Arranque: motor + ubicación ----------------------------------------
   useEffect(() => {
@@ -413,6 +436,7 @@ export default function MapaScreen() {
             irA={irA}
             oscuro={esOscuro}
             onSeleccion={setSeleccion}
+            onFondo={() => setSeleccion(null)}
             onMover={onMover}
           />
         ) : (
@@ -571,15 +595,14 @@ export default function MapaScreen() {
             styles.hoja,
             {
               backgroundColor: colors.surface,
-              // La hoja llega hasta abajo de todo y despeja la barra con
-              // padding, no levantándose con `bottom`.
+              // `bottom: 0` y no la altura de la barra: el contenedor de esta
+              // pantalla YA termina donde empieza el menú, así que cero es
+              // "apoyada sobre la barra". Sumarle la altura la levantaba una
+              // barra entera de más y dejaba una franja de mapa abajo.
               //
-              // Antes se apoyaba en `bottom: APP_TAB_BAR_HEIGHT`, y como esa
-              // constante no coincide exacto con lo que la barra mide en cada
-              // plataforma, quedaba una franja de mapa entre la hoja y el menú.
-              // Con padding el fondo siempre llega hasta la barra: si la
-              // constante se queda corta o larga sólo cambia cuánto respira el
-              // contenido, no aparece un hueco.
+              // Tampoco lleva padding inferior: el último resultado tiene que
+              // quedar pegado al menú cuando terminás de bajar, y ese padding
+              // era justo el espacio muerto que sobraba al final.
               bottom: 0,
               maxHeight: altoMaxHoja,
             },
@@ -596,20 +619,13 @@ export default function MapaScreen() {
           </View>
 
           {/*
-            El hueco que despeja la barra va DENTRO del scroll, no en la hoja.
-            Puesto en la hoja era un bloque fijo de ~110 px que no se podía
-            usar para nada: la lista cortaba ahí arriba y abajo quedaba un
-            vacío. Acá adentro la lista llega hasta el borde de la pantalla y
-            el hueco es sólo el colchón final, el que deja al último resultado
-            por encima del menú cuando terminás de bajar.
-
             `flexGrow: 0` para que no se estire más que su contenido —si no, con
             dos resultados la hoja se abre igual de alta y sobra abajo—, y
             `flexShrink: 1` para que se achique al llegar al tope de la hoja.
+            Sin `maxHeight` acá: ese es el tope de la hoja y hay uno solo.
           */}
           <ScrollView
             style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{ paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom }}
             showsVerticalScrollIndicator={false}
           >
             {seleccion.map((p) => {
