@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,6 +51,21 @@ export default function MapaScreen() {
   const { colors, theme } = useTheme();
   const esOscuro = theme === 'dark';
   const insets = useSafeAreaInsets();
+  const { height: altoPantalla } = useWindowDimensions();
+
+  /**
+   * Hasta dónde puede crecer la hoja inferior, entera.
+   *
+   * El tope va acá, en la hoja, y NO en la lista de adentro. Con un tope en
+   * cada uno los dos se pisan: la lista se queda con su alto máximo aunque
+   * entren menos ítems y abajo sobra un vacío. Con un solo tope, la hoja mide
+   * lo que mide su contenido y la lista se encoge sola cuando ya no entra.
+   *
+   * El límite existe porque la hoja sale de tocar un punto DEL MAPA: si lo
+   * tapa entero se pierde de vista dónde estaba parado, que es justo el
+   * contexto que hace falta para leer la lista.
+   */
+  const altoMaxHoja = Math.round(altoPantalla * 0.72);
 
   // Deep link: /(app)/mapa?lat=..&lng=..&zoom=.. abre centrado en ese punto.
   // Lo usan los botones "Ver en mapa" de veterinarias, refugios y campañas.
@@ -565,7 +581,7 @@ export default function MapaScreen() {
               // constante se queda corta o larga sólo cambia cuánto respira el
               // contenido, no aparece un hueco.
               bottom: 0,
-              paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom + 16,
+              maxHeight: altoMaxHoja,
             },
           ]}
         >
@@ -579,7 +595,23 @@ export default function MapaScreen() {
             </Pressable>
           </View>
 
-          <ScrollView style={{ maxHeight: 330 }} showsVerticalScrollIndicator={false}>
+          {/*
+            El hueco que despeja la barra va DENTRO del scroll, no en la hoja.
+            Puesto en la hoja era un bloque fijo de ~110 px que no se podía
+            usar para nada: la lista cortaba ahí arriba y abajo quedaba un
+            vacío. Acá adentro la lista llega hasta el borde de la pantalla y
+            el hueco es sólo el colchón final, el que deja al último resultado
+            por encima del menú cuando terminás de bajar.
+
+            `flexGrow: 0` para que no se estire más que su contenido —si no, con
+            dos resultados la hoja se abre igual de alta y sobra abajo—, y
+            `flexShrink: 1` para que se achique al llegar al tope de la hoja.
+          */}
+          <ScrollView
+            style={{ flexGrow: 0, flexShrink: 1 }}
+            contentContainerStyle={{ paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom }}
+            showsVerticalScrollIndicator={false}
+          >
             {seleccion.map((p) => {
               const meta = MAPA_TIPO_POR_CLAVE[p.tipo];
               return (
