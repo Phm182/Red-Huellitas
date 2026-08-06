@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { SlideInRight } from 'react-native-reanimated';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { TriviaPregunta, TriviaResultado, TriviaTanda } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -311,6 +312,14 @@ export default function HueTriviaScreen() {
         />
       </View>
 
+      {/* La pregunta entera entra desplazada y se acomoda.
+          La `key` es el índice: al cambiar, React desmonta y vuelve a montar,
+          y la animación de entrada se dispara sola en cada pregunta. Sin eso
+          el texto se reemplazaba de golpe y no se notaba que habías avanzado. */}
+      <Animated.View
+        key={indice}
+        entering={SlideInRight.duration(260).springify().damping(18)}
+      >
       <Text style={[styles.pregunta, { color: colors.text }]}>{p.texto}</Text>
 
       {p.opciones.map((o) => (
@@ -328,6 +337,7 @@ export default function HueTriviaScreen() {
           <Text style={{ color: colors.text, fontSize: 14, flex: 1 }}>{o.texto}</Text>
         </Pressable>
       ))}
+      </Animated.View>
 
       <Pressable
         onPress={() => {

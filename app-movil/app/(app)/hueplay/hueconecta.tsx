@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Ellipse, G } from 'react-native-svg';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { FichaCae } from '../../../src/juego/hueconecta/FichaCae';
 import { CeldaTablero, HuePlayDesafio } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -297,7 +298,9 @@ export default function HueConectaScreen() {
                     reciente && !ganadora && { borderWidth: 2, borderColor: colors.text, borderRadius: 999 },
                   ]}
                 >
-                  {v === '0' ? <Hueco size={celda * 0.86} /> : <Huella jugador={v} size={celda * 0.8} />}
+                  <FichaCae valor={v} fila={f} lado={celda} ganadora={ganadora}>
+                    {v === '0' ? <Hueco size={celda * 0.86} /> : <Huella jugador={v} size={celda * 0.8} />}
+                  </FichaCae>
                 </View>
               </View>
             );
