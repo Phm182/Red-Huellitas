@@ -211,6 +211,13 @@ export function MapaLienzo({
           // devolver el objeto completo, y las propiedades de un feature
           // nativo sólo aceptan valores planos.
           punto: JSON.stringify(p),
+          // El tipo, aparte y como valor plano. Va suelto porque
+          // `CONTADORES_POR_TIPO` lo lee con `['get', 'tipo']` al agrupar, y
+          // dentro del JSON de `punto` una expresión del estilo no puede
+          // entrar. Faltaba: los contadores daban cero para TODOS los tipos,
+          // los grupos salían siempre del color del primero de la lista y el
+          // anillo de capas no aparecía nunca.
+          tipo: p.tipo,
           color: MAPA_TIPO_POR_CLAVE[p.tipo]?.color ?? '#4CC9F0',
           // Cadena vacía y no null: las expresiones del estilo comparan
           // contra '' para decidir si hay foto.
