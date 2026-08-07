@@ -1160,7 +1160,7 @@
     "loSeguis": "lo seguís",
     "subisteDeNivel": "¡subiste de nivel!",
     "match": {
-      "comoSeJuega": "Tocá dos fichas vecinas para intercambiarlas. Alineá 3 o más y sumá antes de que se acabe el minuto. Encadenar multiplica los puntos.",
+      "comoSeJuega": "Deslizá una ficha hacia el lado que quieras para cambiarla con su vecina. También podés tocar las dos. Alineá 3 o más y sumá antes de que se acabe el minuto: encadenar multiplica los puntos.",
       "avisoDuelo": "Duelo: jugás el mismo tablero que tu rival.",
       "empezar": "Empezar",
       "guardando": "Guardando la partida...",

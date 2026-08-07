@@ -1146,7 +1146,7 @@
     "loSeguis": "you follow them",
     "subisteDeNivel": "level up!",
     "match": {
-      "comoSeJuega": "Tap two neighbouring tiles to swap them. Line up 3 or more before the minute runs out. Chains multiply your score.",
+      "comoSeJuega": "Swipe a tile in any direction to swap it with its neighbour. You can also tap both. Line up 3 or more before the minute runs out: chains multiply your score.",
       "avisoDuelo": "Duel: you play the exact same board as your rival.",
       "empezar": "Start",
       "guardando": "Saving your game...",

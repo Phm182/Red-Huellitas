@@ -102,12 +102,12 @@ function rh_juego_modo(string $codigo): string
  *
  * Vive acá y no en cada endpoint porque el nombre aparece en varios avisos, y
  * tenerlo escrito a mano en cada uno garantiza que al sumar un juego alguno
- * quede diciendo "HueMatch" para todos.
+ * quede diciendo "HueCrush" para todos.
  */
 function rh_juego_titulo(string $codigo): string
 {
     $nombres = [
-        'huematch' => 'HueMatch',
+        'huematch' => 'HueCrush',
         'hueconecta' => 'HueConecta',
         'huememo' => 'HueMemo',
         'huetrivia' => 'HueTrivia',

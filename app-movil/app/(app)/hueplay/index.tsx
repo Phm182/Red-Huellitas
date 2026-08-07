@@ -36,7 +36,7 @@ type JuegoDef = {
 const JUEGOS: JuegoDef[] = [
   {
     id: 'huematch',
-    titulo: 'HueMatch',
+    titulo: 'HueCrush',
     bajada: 'Alineá 3 huellas o más contra reloj. Se puede jugar en duelo.',
     icono: 'grid',
     color: '#E8577E',

@@ -1014,7 +1014,7 @@
     "loSeguis": "tu le suis",
     "subisteDeNivel": "niveau supérieur !",
     "match": {
-      "comoSeJuega": "Touche deux pièces voisines pour les échanger. Aligne-en 3 ou plus avant la fin de la minute. Les enchaînements multiplient les points.",
+      "comoSeJuega": "Fais glisser une pièce dans la direction voulue pour l'échanger avec sa voisine. Tu peux aussi toucher les deux. Aligne-en 3 ou plus avant la fin de la minute : les enchaînements multiplient les points.",
       "avisoDuelo": "Duel : tu joues exactement le même plateau que ton rival.",
       "empezar": "Commencer",
       "guardando": "Enregistrement de la partie...",

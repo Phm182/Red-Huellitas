@@ -68,7 +68,7 @@ export default function DesafiosScreen() {
 
   /** Nombre visible del juego, para no mostrar el código crudo. */
   const nombreJuego = (codigo: string) =>
-    ({ huematch: 'HueMatch', hueconecta: 'HueConecta', huememo: 'HueMemo', huetrivia: 'HueTrivia' })[
+    ({ huematch: 'HueCrush', hueconecta: 'HueConecta', huememo: 'HueMemo', huetrivia: 'HueTrivia' })[
       codigo
     ] ?? codigo;
 

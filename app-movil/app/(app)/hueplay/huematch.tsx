@@ -209,6 +209,42 @@ export default function HueMatchScreen() {
     []
   );
 
+  /**
+   * El intercambio en sí, que es lo único que comparten el toque y el arrastre.
+   *
+   * Los dos gestos terminan pidiendo lo mismo —cambiá estas dos fichas— y sólo
+   * se diferencian en cómo llegan al par. Tenerlo separado evita que el rebote
+   * de una jugada inválida o el remezclado del tablero trabado se escriban dos
+   * veces y se vayan desincronizando.
+   */
+  const intercambiar = useCallback(
+    async (a: Celda, b: Celda) => {
+      const r = resolverIntercambio(tablero, a, b, semilla, colasRef.current);
+
+      if (!r.valido) {
+        hapticError();
+        setRechazadas([a, b]);
+        setSeleccionada(null);
+        setTimeout(() => vivoRef.current && setRechazadas(null), 260);
+        return;
+      }
+
+      setSeleccionada(null);
+      setBloqueado(true);
+      hapticLeve();
+      await animar(r.pasos);
+
+      // Tablero trabado: se mezcla en vez de dejar al jugador mirando el reloj.
+      if (vivoRef.current && !hayJugada(r.tablero)) {
+        await esperar(200);
+        if (vivoRef.current) setTablero(mezclar(semilla, colasRef.current));
+      }
+
+      if (vivoRef.current) setBloqueado(false);
+    },
+    [animar, semilla, tablero]
+  );
+
   const onCelda = useCallback(
     async (c: Celda) => {
       if (fase !== 'jugando' || bloqueado) return;
@@ -231,30 +267,39 @@ export default function HueMatchScreen() {
         return;
       }
 
-      const r = resolverIntercambio(tablero, seleccionada, c, semilla, colasRef.current);
+      await intercambiar(seleccionada, c);
+    },
+    [bloqueado, fase, intercambiar, seleccionada]
+  );
 
-      if (!r.valido) {
-        hapticError();
-        setRechazadas([seleccionada, c]);
-        setSeleccionada(null);
-        setTimeout(() => vivoRef.current && setRechazadas(null), 260);
+  /**
+   * Arrastrar una ficha hacia un lado: se cambia con la vecina de ese lado.
+   *
+   * Es el gesto natural de este tipo de juego —el dedo empuja la ficha— y
+   * ahorra los dos toques. El de tocar sigue funcionando: en una pantalla
+   * chica, apuntar es más preciso que arrastrar.
+   *
+   * Arrastrar contra el borde no hace nada, ni suena a error: no hay vecina
+   * ahí, y avisarlo sería regañar por algo que se ve solo.
+   */
+  const onDeslizar = useCallback(
+    async (origen: Celda, dir: { df: number; dc: number }) => {
+      if (fase !== 'jugando' || bloqueado) return;
+
+      const destino = { fila: origen.fila + dir.df, col: origen.col + dir.dc };
+      if (
+        destino.fila < 0 ||
+        destino.col < 0 ||
+        destino.fila >= tablero.length ||
+        destino.col >= tablero[0].length
+      ) {
         return;
       }
 
       setSeleccionada(null);
-      setBloqueado(true);
-      hapticLeve();
-      await animar(r.pasos);
-
-      // Tablero trabado: se mezcla en vez de dejar al jugador mirando el reloj.
-      if (vivoRef.current && !hayJugada(r.tablero)) {
-        await esperar(200);
-        if (vivoRef.current) setTablero(mezclar(semilla, colasRef.current));
-      }
-
-      if (vivoRef.current) setBloqueado(false);
+      await intercambiar(origen, destino);
     },
-    [animar, bloqueado, fase, seleccionada, semilla, tablero]
+    [bloqueado, fase, intercambiar, tablero]
   );
 
   const urgente = restante <= 10;
@@ -270,7 +315,7 @@ export default function HueMatchScreen() {
             <Ficha key={i} tipo={i} size={40} />
           ))}
         </View>
-        <Text style={[styles.titulo, { color: colors.text }]}>HueMatch</Text>
+        <Text style={[styles.titulo, { color: colors.text }]}>HueCrush</Text>
         <Text style={[styles.bajada, { color: colors.textMuted }]}>{t('hueplay.match.comoSeJuega')}</Text>
 
         {desafioId ? (
@@ -444,6 +489,7 @@ export default function HueMatchScreen() {
           rechazadas={rechazadas}
           lado={lado}
           onCelda={onCelda}
+          onDeslizar={onDeslizar}
           bloqueado={bloqueado}
         />
         {combo ? (
