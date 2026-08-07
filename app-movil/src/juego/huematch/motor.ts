@@ -231,18 +231,33 @@ export function resolverIntercambio(
   b: Celda,
   semilla: number,
   colas: Colas
-): { valido: boolean; pasos: PasoCascada[]; tablero: Tablero; puntos: number } {
+): {
+  valido: boolean;
+  pasos: PasoCascada[];
+  tablero: Tablero;
+  puntos: number;
+  /**
+   * El tablero con las dos fichas ya cambiadas y todavía nada explotado.
+   *
+   * Existe para la animación: el intercambio se ve deslizándose, y al terminar
+   * el deslizamiento hay que dejar el tablero en ese estado intermedio. Sin
+   * esto habría que saltar directo al primer paso de la cascada, y las fichas
+   * volverían un cuadro a su lugar viejo antes de explotar.
+   */
+  intercambiado: Tablero;
+} {
   if (!sonVecinas(a, b)) {
-    return { valido: false, pasos: [], tablero: t, puntos: 0 };
+    return { valido: false, pasos: [], tablero: t, puntos: 0, intercambiado: t };
   }
 
   let actual = t.map((f) => [...f]);
   const tmp = actual[a.fila]![a.col]!;
   actual[a.fila]![a.col] = actual[b.fila]![b.col]!;
   actual[b.fila]![b.col] = tmp;
+  const intercambiado = actual.map((f) => [...f]);
 
   if (buscarMatches(actual).length === 0) {
-    return { valido: false, pasos: [], tablero: t, puntos: 0 };
+    return { valido: false, pasos: [], tablero: t, puntos: 0, intercambiado };
   }
 
   const pasos: PasoCascada[] = [];
@@ -267,7 +282,7 @@ export function resolverIntercambio(
     cascada++;
   }
 
-  return { valido: true, pasos, tablero: actual, puntos: total };
+  return { valido: true, pasos, tablero: actual, puntos: total, intercambiado };
 }
 
 /**

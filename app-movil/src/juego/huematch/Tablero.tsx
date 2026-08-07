@@ -14,6 +14,8 @@ type Props = {
   /** Par que acaba de rebotar por no armar línea, para marcarlo en rojo. */
   rechazadas: CeldaCoord[] | null;
   lado: number;
+  /** Las dos fichas que están viajando una al lugar de la otra. */
+  movimiento: { a: CeldaCoord; b: CeldaCoord } | null;
   onCelda: (c: CeldaCoord) => void;
   /** Arrastre: la ficha de `desde` se cambia con la vecina en esa dirección. */
   onDeslizar: (desde: CeldaCoord, dir: Direccion) => void;
@@ -41,6 +43,7 @@ export function TableroHueMatch({
   seleccionada,
   rechazadas,
   lado,
+  movimiento,
   onCelda,
   onDeslizar,
   bloqueado,
@@ -103,6 +106,15 @@ export function TableroHueMatch({
   const esRechazada = (f: number, c: number) =>
     !!rechazadas?.some((r) => r.fila === f && r.col === c);
 
+  /** Cada una de las dos viaja hacia la otra, así que el signo se invierte. */
+  const desplazamiento = (f: number, c: number) => {
+    if (!movimiento) return null;
+    const { a, b } = movimiento;
+    if (a.fila === f && a.col === c) return { dx: b.col - a.col, dy: b.fila - a.fila };
+    if (b.fila === f && b.col === c) return { dx: a.col - b.col, dy: a.fila - b.fila };
+    return null;
+  };
+
   return (
     <View
       {...pan.panHandlers}
@@ -135,7 +147,13 @@ export function TableroHueMatch({
                   },
                 ]}
               >
-                <Celda tipo={tipo} lado={celda} fila={f} seleccionada={activa} />
+                <Celda
+                  tipo={tipo}
+                  lado={celda}
+                  fila={f}
+                  seleccionada={activa}
+                  desplaza={desplazamiento(f, c)}
+                />
               </View>
             </View>
           );

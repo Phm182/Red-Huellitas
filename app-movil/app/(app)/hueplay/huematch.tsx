@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
+import { T_MOVER } from '../../../src/juego/huematch/Celda';
 import { TableroHueMatch } from '../../../src/juego/huematch/Tablero';
 import {
   Celda,
@@ -68,6 +69,8 @@ export default function HueMatchScreen() {
   const colasRef = useRef<Colas>([]);
   const [seleccionada, setSeleccionada] = useState<Celda | null>(null);
   const [rechazadas, setRechazadas] = useState<Celda[] | null>(null);
+  /** Las dos fichas que están viajando una al lugar de la otra. */
+  const [movimiento, setMovimiento] = useState<{ a: Celda; b: Celda } | null>(null);
   const [bloqueado, setBloqueado] = useState(false);
   const [puntos, setPuntos] = useState(0);
   const [restante, setRestante] = useState(SEGUNDOS);
@@ -221,16 +224,33 @@ export default function HueMatchScreen() {
     async (a: Celda, b: Celda) => {
       const r = resolverIntercambio(tablero, a, b, semilla, colasRef.current);
 
+      // Las dos fichas salen viajando ANTES de saber si la jugada sirve: es lo
+      // que hace que el rebote se entienda. Si primero se comprobara y sólo se
+      // animaran las jugadas buenas, equivocarse no tendría respuesta visual y
+      // parecería que el toque no se registró.
+      setSeleccionada(null);
+      setBloqueado(true);
+      setMovimiento({ a, b });
+      await esperar(T_MOVER);
+      if (!vivoRef.current) return;
+
       if (!r.valido) {
         hapticError();
         setRechazadas([a, b]);
-        setSeleccionada(null);
-        setTimeout(() => vivoRef.current && setRechazadas(null), 260);
+        // A cero: las fichas vuelven solas por donde vinieron.
+        setMovimiento(null);
+        await esperar(T_MOVER);
+        if (!vivoRef.current) return;
+        setRechazadas(null);
+        setBloqueado(false);
         return;
       }
 
-      setSeleccionada(null);
-      setBloqueado(true);
+      // El tablero ya intercambiado y el fin del viaje, en el mismo render: si
+      // se limpiara el movimiento sin cambiar el tablero, las fichas saltarían
+      // un cuadro a su lugar viejo antes de explotar.
+      setTablero(r.intercambiado);
+      setMovimiento(null);
       hapticLeve();
       await animar(r.pasos);
 
@@ -488,6 +508,7 @@ export default function HueMatchScreen() {
           seleccionada={seleccionada}
           rechazadas={rechazadas}
           lado={lado}
+          movimiento={movimiento}
           onCelda={onCelda}
           onDeslizar={onDeslizar}
           bloqueado={bloqueado}
