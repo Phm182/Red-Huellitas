@@ -1206,6 +1206,19 @@
       "saltear": "Saltear pregunta",
       "sinIdioma": "Todavía no hay preguntas en tu idioma, así que se muestran en español."
     },
-    "nivelEnJuego": "{{juego}} · nivel {{n}}"
+    "nivelEnJuego": "{{juego}} · nivel {{n}}",
+    "diario": {
+      "titulo": "Reto del día",
+      "bajada": "El mismo tablero para todos. Un intento por día.",
+      "bajadaHub": "Un tablero por día, igual para todos",
+      "racha": "Días seguidos: {{dias}}",
+      "jugar": "Jugar",
+      "verTabla": "Ver la tabla del día",
+      "nadieJugo": "Todavía no jugó nadie. Podés ser el primero.",
+      "jugaron": "{{total}} jugaron hoy",
+      "tuPuntaje": "{{puntos}} puntos · puesto {{puesto}} de {{total}}",
+      "quedaste": "Quedaste {{puesto}}° de {{total}}",
+      "pie": "El reto cambia todos los días a la medianoche."
+    }
   }
 }

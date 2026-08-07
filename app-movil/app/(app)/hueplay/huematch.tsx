@@ -30,7 +30,7 @@ import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticCelebracion, hapticError, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
-import { HuePlayProgreso } from '../../../src/types/hueplay';
+import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 
 const SEGUNDOS = 60;
 const JUEGO = 'huematch';
@@ -54,9 +54,11 @@ export default function HueMatchScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
-  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string }>();
+  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string; diario?: string }>();
 
   const desafioId = params.desafioId ? Number(params.desafioId) : null;
+  /** Se entró desde el reto del día: el puntaje va a la tabla global. */
+  const esDiario = params.diario === '1';
 
   // La semilla se fija una sola vez. Si se recalculara en cada render, el
   // tablero se regeneraría al tocar cualquier cosa.
@@ -80,6 +82,7 @@ export default function HueMatchScreen() {
     record?: number;
     esRecord?: boolean;
     duelo?: { misPuntos: number; susPuntos: number | null; gane: boolean | null; rival: string };
+    diario?: DiarioResultado;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +163,16 @@ export default function HueMatchScreen() {
         } else {
           setError(res.message ?? t('common.error'));
         }
+      } else if (esDiario) {
+        const res = await hueplayApi.diarioJugar(JUEGO, finales, SEGUNDOS);
+        if (!vivoRef.current) return;
+        if (res.success && res.data) {
+          setResultado({ progreso: res.data.progreso, diario: res.data });
+        } else {
+          // "Ya jugaste" no es un fallo: puede pasar si quedó una pantalla
+          // vieja abierta. Se muestra como aviso, no como error rojo.
+          setError(res.message ?? t('common.error'));
+        }
       } else {
         const res = await hueplayApi.guardarPartida(JUEGO, finales, SEGUNDOS);
         if (!vivoRef.current) return;
@@ -178,7 +191,7 @@ export default function HueMatchScreen() {
     }
 
     if (vivoRef.current) setFase('fin');
-  }, [desafioId, t]);
+  }, [desafioId, esDiario, t]);
 
   useEffect(() => {
     if (fase === 'jugando' && restante === 0) {
@@ -390,6 +403,20 @@ export default function HueMatchScreen() {
             <Ionicons name="trophy" size={16} color={colors.primary} />
             <Text style={{ color: colors.text, fontSize: 13, fontFamily: fonts.bodySemi }}>
               {t('hueplay.match.nuevoRecord')}
+            </Text>
+          </View>
+        ) : null}
+
+        {resultado?.diario ? (
+          <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' }}>
+              {t('hueplay.diario.quedaste', {
+                puesto: resultado.diario.puesto ?? 0,
+                total: resultado.diario.participantes,
+              })}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
+              {t('hueplay.diario.racha', { dias: resultado.diario.racha })}
             </Text>
           </View>
         ) : null}

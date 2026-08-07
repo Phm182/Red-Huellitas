@@ -1054,6 +1054,19 @@
       "saltear": "跳过本题",
       "sinIdioma": "你的语言暂时还没有题目，因此以西班牙语显示。"
     },
-    "nivelEnJuego": "{{juego}} · 等级 {{n}}"
+    "nivelEnJuego": "{{juego}} · 等级 {{n}}",
+    "diario": {
+      "titulo": "每日挑战",
+      "bajada": "所有人同一个棋盘，每天一次机会。",
+      "bajadaHub": "每天一个棋盘，人人相同",
+      "racha": "连续天数：{{dias}}",
+      "jugar": "开始",
+      "verTabla": "查看今日榜单",
+      "nadieJugo": "还没有人玩过，你可以是第一个。",
+      "jugaron": "今天有 {{total}} 人玩过",
+      "tuPuntaje": "{{puntos}} 分 · 第 {{puesto}} 名，共 {{total}} 人",
+      "quedaste": "你排第 {{puesto}} 名，共 {{total}} 人",
+      "pie": "挑战每天午夜更新。"
+    }
   }
 }

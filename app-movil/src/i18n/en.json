@@ -1192,6 +1192,19 @@
       "saltear": "Skip question",
       "sinIdioma": "There are no questions in your language yet, so these are in Spanish."
     },
-    "nivelEnJuego": "{{juego}} · level {{n}}"
+    "nivelEnJuego": "{{juego}} · level {{n}}",
+    "diario": {
+      "titulo": "Daily challenge",
+      "bajada": "The same board for everyone. One try a day.",
+      "bajadaHub": "One board a day, the same for everyone",
+      "racha": "Days in a row: {{dias}}",
+      "jugar": "Play",
+      "verTabla": "See today’s table",
+      "nadieJugo": "Nobody has played yet. You could be first.",
+      "jugaron": "{{total}} played today",
+      "tuPuntaje": "{{puntos}} points · {{puesto}} of {{total}}",
+      "quedaste": "You came {{puesto}} of {{total}}",
+      "pie": "The challenge changes every day at midnight."
+    }
   }
 }

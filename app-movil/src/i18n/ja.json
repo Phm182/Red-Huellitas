@@ -1054,6 +1054,19 @@
       "saltear": "この問題をとばす",
       "sinIdioma": "まだあなたの言語の問題がないため、スペイン語で表示しています。"
     },
-    "nivelEnJuego": "{{juego}} · レベル {{n}}"
+    "nivelEnJuego": "{{juego}} · レベル {{n}}",
+    "diario": {
+      "titulo": "今日のチャレンジ",
+      "bajada": "全員が同じ盤面。1日1回だけ。",
+      "bajadaHub": "1日1盤面、みんな同じ",
+      "racha": "連続日数：{{dias}}",
+      "jugar": "プレイ",
+      "verTabla": "今日のランキングを見る",
+      "nadieJugo": "まだ誰もプレイしていません。一番乗りになれます。",
+      "jugaron": "今日は{{total}}人がプレイしました",
+      "tuPuntaje": "{{puntos}}ポイント · {{total}}人中{{puesto}}位",
+      "quedaste": "{{total}}人中{{puesto}}位でした",
+      "pie": "チャレンジは毎日0時に変わります。"
+    }
   }
 }

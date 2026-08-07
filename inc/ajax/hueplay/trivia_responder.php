@@ -137,6 +137,53 @@ if ($desafioId !== null) {
     ]);
 }
 
+// --- Reto del día ----------------------------------------------------------
+//
+// El diario de trivia se cierra ACÁ y no con `diario_jugar`, a diferencia de
+// los otros juegos. El motivo es que en trivia el puntaje lo calcula el
+// servidor a partir de las respuestas; si el cliente tuviera que reenviarlo
+// por otro endpoint, ese endpoint tendría que creerle un número que acaba de
+// inventar y se abriría el agujero que trivia justamente no tiene.
+if (($_POST['diario'] ?? '') === '1') {
+    require_once __DIR__ . '/../../funciones/diario.php';
+
+    $reto = rh_diario_obtener($conn, 'huetrivia');
+    if (!$reto) {
+        json_error('El reto de hoy no está disponible');
+    }
+
+    // Que la semilla sea la del día es lo que hace que todos hayan contestado
+    // las mismas diez preguntas. Sin este control, alguien podría pedir una
+    // tanda fácil con otra semilla y anotarla en la tabla del día.
+    if ((int) $semilla !== (int) $reto['semilla']) {
+        json_error('Esas preguntas no son las del reto de hoy');
+    }
+
+    $r = rh_diario_guardar($conn, $reto['diarioId'], $userId, 'huetrivia', $puntos, $duracion);
+    if ($r === null) {
+        $mio = rh_diario_mi_resultado($conn, $reto['diarioId'], $userId);
+        json_error('Ya jugaste el reto de hoy', 409, [
+            'yaJugado' => true,
+            'miPuntaje' => $mio['puntos'] ?? null,
+        ]);
+    }
+
+    json_success([
+        'aciertos' => $correccion['aciertos'],
+        'total' => $correccion['total'],
+        'puntos' => $puntos,
+        'detalle' => $correccion['detalle'],
+        'progreso' => $r['progreso'],
+        'diario' => [
+            'puntos' => $r['puntos'],
+            'racha' => $r['racha'],
+            'puesto' => $r['puesto'],
+            'participantes' => $r['participantes'],
+            'progreso' => $r['progreso'],
+        ],
+    ]);
+}
+
 // --- Partida suelta --------------------------------------------------------
 $recordAntes = rh_juego_record($conn, $userId, 'huetrivia');
 $progreso = rh_juego_registrar_partida($conn, $userId, 'huetrivia', $puntos, $duracion);

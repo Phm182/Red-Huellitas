@@ -148,6 +148,30 @@ export default function HuePlayScreen() {
         </View>
       ) : null}
 
+      {/* El diario va primero y con el color de acento: es el modo que
+          queremos que se abra todos los días, y enterrarlo debajo de la lista
+          de juegos lo dejaría como una opción más. */}
+      <Pressable
+        onPress={() => {
+          hapticLeve();
+          router.push('/(app)/hueplay/diario' as never);
+        }}
+        style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+      >
+        <View style={[styles.icono, { backgroundColor: '#FFB70022' }]}>
+          <Ionicons name="today" size={24} color="#FFB700" />
+        </View>
+        <View style={styles.texto}>
+          <Text style={[styles.tarjetaTitulo, { color: colors.text }]}>
+            {t('hueplay.diario.titulo')}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+            {t('hueplay.diario.bajadaHub')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      </Pressable>
+
       <Pressable
         onPress={() => {
           hapticLeve();

@@ -1054,6 +1054,19 @@
       "saltear": "문제 건너뛰기",
       "sinIdioma": "아직 해당 언어의 문제가 없어 스페인어로 표시됩니다."
     },
-    "nivelEnJuego": "{{juego}} · 레벨 {{n}}"
+    "nivelEnJuego": "{{juego}} · 레벨 {{n}}",
+    "diario": {
+      "titulo": "오늘의 도전",
+      "bajada": "모두 같은 판, 하루 한 번.",
+      "bajadaHub": "하루 한 판, 모두 같은 판",
+      "racha": "연속 일수: {{dias}}",
+      "jugar": "플레이",
+      "verTabla": "오늘의 순위 보기",
+      "nadieJugo": "아직 아무도 안 했어요. 첫 번째가 될 수 있어요.",
+      "jugaron": "오늘 {{total}}명이 했어요",
+      "tuPuntaje": "{{puntos}}점 · {{total}}명 중 {{puesto}}위",
+      "quedaste": "{{total}}명 중 {{puesto}}위예요",
+      "pie": "도전은 매일 자정에 바뀝니다."
+    }
   }
 }

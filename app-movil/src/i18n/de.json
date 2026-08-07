@@ -1060,6 +1060,19 @@
       "saltear": "Frage überspringen",
       "sinIdioma": "Es gibt noch keine Fragen in deiner Sprache, daher auf Spanisch."
     },
-    "nivelEnJuego": "{{juego}} · Level {{n}}"
+    "nivelEnJuego": "{{juego}} · Level {{n}}",
+    "diario": {
+      "titulo": "Tagesherausforderung",
+      "bajada": "Dasselbe Spielfeld für alle. Ein Versuch pro Tag.",
+      "bajadaHub": "Ein Spielfeld pro Tag, für alle gleich",
+      "racha": "Tage in Folge: {{dias}}",
+      "jugar": "Spielen",
+      "verTabla": "Tagesrangliste ansehen",
+      "nadieJugo": "Noch niemand hat gespielt. Du kannst der Erste sein.",
+      "jugaron": "{{total}} haben heute gespielt",
+      "tuPuntaje": "{{puntos}} Punkte · {{puesto}} von {{total}}",
+      "quedaste": "Du wurdest {{puesto}} von {{total}}",
+      "pie": "Die Herausforderung wechselt täglich um Mitternacht."
+    }
   }
 }

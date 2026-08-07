@@ -41,6 +41,59 @@ export interface HuePlayPerfil {
   desafiosPendientes: number;
 }
 
+/**
+ * Un reto diario: el mismo tablero para todo el mundo ese día.
+ *
+ * `semilla` viene sólo mientras no lo jugaste. Cuando `jugado` es `true` el
+ * backend la deja afuera a propósito —para que no se pueda practicar el
+ * tablero del día sin registrar el intento—, y por eso acá es opcional.
+ */
+export interface DiarioReto {
+  diarioId: number;
+  fecha: string;
+  juegoCodigo: string;
+  titulo: string;
+  semilla?: number;
+  datos: string | null;
+  jugado: boolean;
+  miPuntaje: number | null;
+  miPuesto: number | null;
+  participantes: number;
+}
+
+export interface DiarioHoy {
+  fecha: string;
+  retos: DiarioReto[];
+  /** Días seguidos jugando. Llega en 0 si la racha se cortó. */
+  racha: number;
+}
+
+export interface DiarioRankingItem {
+  puesto: number;
+  userId: number;
+  username: string;
+  nombreCompleto: string;
+  avatarPath: string | null;
+  puntos: number;
+  duracionSegundos: number | null;
+}
+
+export interface DiarioRanking {
+  reto: DiarioReto;
+  ranking: DiarioRankingItem[];
+  participantes: number;
+  miPuntaje: number | null;
+  miPuesto: number | null;
+}
+
+export interface DiarioResultado {
+  puntos: number;
+  racha: number;
+  puesto: number | null;
+  participantes: number;
+  progreso: HuePlayProgreso;
+}
+
 export interface HuePlayRival {
   userId: number;
   nombreCompleto: string;
@@ -145,6 +198,8 @@ export interface TriviaDetalle {
 }
 
 export interface TriviaResultado {
+  /** Sólo cuando la partida fue el reto del día. */
+  diario?: DiarioResultado;
   aciertos: number;
   total: number;
   puntos: number;

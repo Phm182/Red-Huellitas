@@ -1,5 +1,8 @@
 import { apiGet, apiPost } from './client';
 import {
+  DiarioHoy,
+  DiarioRanking,
+  DiarioResultado,
   HuePlayDesafio,
   HuePlayDesafiosBandeja,
   HuePlayPerfil,
@@ -28,6 +31,27 @@ export const hueplayApi = {
     apiPost<HuePlayProgreso & { record: number; esRecord: boolean }>(
       'ajax/hueplay/partida_guardar.php',
       { juegoCodigo, puntos, duracionSegundos },
+      true
+    ),
+
+  /** Los retos de hoy, los tres en una sola llamada: la pantalla los lista. */
+  diarioHoy: () => apiGet<DiarioHoy>('ajax/hueplay/diario_hoy.php', undefined, true),
+
+  /**
+   * Cierra el reto del día. Puede fallar con "ya jugaste", que no es un error
+   * sino la regla: en `data` viene el puntaje que ya tenías.
+   */
+  diarioJugar: (juegoCodigo: string, puntos: number, duracionSegundos: number) =>
+    apiPost<DiarioResultado>(
+      'ajax/hueplay/diario_jugar.php',
+      { juegoCodigo, puntos, duracionSegundos },
+      true
+    ),
+
+  diarioRanking: (juegoCodigo: string, fecha?: string) =>
+    apiGet<DiarioRanking>(
+      'ajax/hueplay/diario_ranking.php',
+      fecha ? { juegoCodigo, fecha } : { juegoCodigo },
       true
     ),
 
@@ -75,7 +99,8 @@ export const hueplayApi = {
     idioma: string,
     respuestas: Record<string, number | null>,
     duracionSegundos: number,
-    desafioId?: number | null
+    desafioId?: number | null,
+    diario?: boolean
   ) =>
     apiPost<TriviaResultado>(
       'ajax/hueplay/trivia_responder.php',
@@ -85,6 +110,7 @@ export const hueplayApi = {
         duracionSegundos,
         respuestas: JSON.stringify(respuestas),
         ...(desafioId ? { desafioId } : {}),
+        ...(diario ? { diario: '1' } : {}),
       },
       true
     ),

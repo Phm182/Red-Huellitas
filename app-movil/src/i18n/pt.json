@@ -1060,6 +1060,19 @@
       "saltear": "Pular pergunta",
       "sinIdioma": "Ainda não há perguntas no seu idioma, então aparecem em espanhol."
     },
-    "nivelEnJuego": "{{juego}} · nível {{n}}"
+    "nivelEnJuego": "{{juego}} · nível {{n}}",
+    "diario": {
+      "titulo": "Desafio do dia",
+      "bajada": "O mesmo tabuleiro para todos. Uma tentativa por dia.",
+      "bajadaHub": "Um tabuleiro por dia, igual para todos",
+      "racha": "Dias seguidos: {{dias}}",
+      "jugar": "Jogar",
+      "verTabla": "Ver a tabela do dia",
+      "nadieJugo": "Ninguém jogou ainda. Você pode ser o primeiro.",
+      "jugaron": "{{total}} jogaram hoje",
+      "tuPuntaje": "{{puntos}} pontos · {{puesto}} de {{total}}",
+      "quedaste": "Você ficou em {{puesto}} de {{total}}",
+      "pie": "O desafio muda todos os dias à meia-noite."
+    }
   }
 }

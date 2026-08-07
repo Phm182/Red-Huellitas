@@ -1060,6 +1060,19 @@
       "saltear": "Passer la question",
       "sinIdioma": "Il n'y a pas encore de questions dans ta langue, elles s'affichent en espagnol."
     },
-    "nivelEnJuego": "{{juego}} · niveau {{n}}"
+    "nivelEnJuego": "{{juego}} · niveau {{n}}",
+    "diario": {
+      "titulo": "Défi du jour",
+      "bajada": "Le même plateau pour tout le monde. Un essai par jour.",
+      "bajadaHub": "Un plateau par jour, le même pour tous",
+      "racha": "Jours d’affilée : {{dias}}",
+      "jugar": "Jouer",
+      "verTabla": "Voir le classement du jour",
+      "nadieJugo": "Personne n’a encore joué. Tu peux être le premier.",
+      "jugaron": "{{total}} ont joué aujourd’hui",
+      "tuPuntaje": "{{puntos}} points · {{puesto}} sur {{total}}",
+      "quedaste": "Tu es {{puesto}} sur {{total}}",
+      "pie": "Le défi change chaque jour à minuit."
+    }
   }
 }

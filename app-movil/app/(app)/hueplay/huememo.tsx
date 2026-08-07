@@ -15,7 +15,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { CartaMemo } from '../../../src/juego/huememo/Carta';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
 import { COLUMNAS, PARES, SEGUNDOS, TOTAL, puntaje, repartir } from '../../../src/juego/huememo/motor';
-import { HuePlayProgreso } from '../../../src/types/hueplay';
+import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
@@ -40,9 +40,11 @@ export default function HueMemoScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
-  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string }>();
+  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string; diario?: string }>();
 
   const desafioId = params.desafioId ? Number(params.desafioId) : null;
+  /** Se entró desde el reto del día: el puntaje va a la tabla global. */
+  const esDiario = params.diario === '1';
   const [semilla] = useState(() =>
     params.semilla ? Number(params.semilla) : Math.floor(Math.random() * 2147483646) + 1
   );
@@ -60,6 +62,7 @@ export default function HueMemoScreen() {
     completo: boolean;
     esRecord?: boolean;
     duelo?: { misPuntos: number; susPuntos: number | null; gane: boolean | null; rival: string };
+    diario?: DiarioResultado;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +144,19 @@ export default function HueMemoScreen() {
           } else {
             setError(res.message ?? t('common.error'));
           }
+        } else if (esDiario) {
+          const res = await hueplayApi.diarioJugar(JUEGO, puntos, segundosUsados);
+          if (!vivoRef.current) return;
+          if (res.success && res.data) {
+            setResultado({
+              progreso: res.data.progreso,
+              puntos,
+              completo,
+              diario: res.data,
+            });
+          } else {
+            setError(res.message ?? t('common.error'));
+          }
         } else {
           const res = await hueplayApi.guardarPartida(JUEGO, puntos, segundosUsados);
           if (!vivoRef.current) return;
@@ -161,7 +177,7 @@ export default function HueMemoScreen() {
 
       if (vivoRef.current) setFase('fin');
     },
-    [desafioId, t]
+    [desafioId, esDiario, t]
   );
 
   // Se acabó el tiempo.

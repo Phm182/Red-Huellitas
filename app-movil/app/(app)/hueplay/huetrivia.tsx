@@ -25,9 +25,11 @@ type Fase = 'cargando' | 'listo' | 'jugando' | 'enviando' | 'fin';
 export default function HueTriviaScreen() {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string }>();
+  const params = useLocalSearchParams<{ desafioId?: string; semilla?: string; diario?: string }>();
 
   const desafioId = params.desafioId ? Number(params.desafioId) : null;
+  /** Se entró desde el reto del día: lo cierra el propio trivia_responder. */
+  const esDiario = params.diario === '1';
   const [semilla] = useState(() =>
     params.semilla ? Number(params.semilla) : Math.floor(Math.random() * 2147483646) + 1
   );
@@ -77,7 +79,8 @@ export default function HueTriviaScreen() {
       tanda.idioma,
       respuestasRef.current,
       segundosRef.current,
-      desafioId
+      desafioId,
+      esDiario
     );
     if (!vivoRef.current) return;
 
@@ -88,7 +91,7 @@ export default function HueTriviaScreen() {
       setError(res.message ?? t('common.error'));
     }
     setFase('fin');
-  }, [tanda, semilla, desafioId, t]);
+  }, [tanda, semilla, desafioId, esDiario, t]);
 
   const siguiente = useCallback(() => {
     setIndice((i) => {
