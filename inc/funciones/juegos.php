@@ -32,6 +32,12 @@ const RH_JUEGOS = [
     // 'turnos': un solo tablero que los dos van modificando. Acá `maxPuntos` no
     // aplica porque el puntaje lo pone el servidor, no el cliente.
     'hueconecta' => ['modo' => 'turnos'],
+    'huedamas' => ['modo' => 'turnos'],
+    'hueajedrez' => ['modo' => 'turnos'],
+    // 'sala': hasta 4 jugadores sobre `JuegoSala`/`JuegoSalaJugador`, no
+    // `JuegoDesafio` — el puntaje también lo pone el servidor.
+    'hueludo' => ['modo' => 'sala'],
+    'huerummy' => ['modo' => 'sala'],
     // HueTrivia tampoco necesita techo: el puntaje lo calcula el servidor a
     // partir de las respuestas, el cliente no informa ningún número.
     'huetrivia' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 0],
@@ -111,6 +117,10 @@ function rh_juego_titulo(string $codigo): string
         'hueconecta' => 'HueConecta',
         'huememo' => 'HueMemo',
         'huetrivia' => 'HueTrivia',
+        'huedamas' => 'HueDamas',
+        'hueajedrez' => 'HueAjedrez',
+        'hueludo' => 'HueLudo',
+        'huerummy' => 'HueRummy',
     ];
     return $nombres[$codigo] ?? $codigo;
 }
@@ -121,6 +131,106 @@ const RH_DESAFIO_DIAS = 3;
 function rh_juego_existe(string $codigo): bool
 {
     return isset(RH_JUEGOS[$codigo]);
+}
+
+/**
+ * Si un juego tiene modo solitario contra la IA de la app.
+ *
+ * Lista hardcodeada a propósito, mismo estilo que el resto del archivo (no hay
+ * un registro genérico de "capacidades" por juego): sumar un juego acá es el
+ * único punto a tocar cuando otro además de Damas tenga IA.
+ */
+function rh_juego_ia_disponible(string $codigo): bool
+{
+    return in_array($codigo, ['huedamas', 'hueajedrez'], true);
+}
+
+/**
+ * El `UserId` de la cuenta bot compartida por todos los juegos con IA.
+ *
+ * Cacheada en la request: se consulta varias veces (crear desafío, cerrar
+ * duelo, filtrar notificaciones) y sólo existe una fila así en toda la base.
+ */
+function rh_juego_bot_user_id(mysqli $conn): int
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $res = $conn->query('SELECT UserId FROM Usuario WHERE EsBot = 1 LIMIT 1');
+    $fila = $res ? $res->fetch_assoc() : null;
+    $cache = (int) ($fila['UserId'] ?? 0);
+    return $cache;
+}
+
+/** Si ese usuario es la cuenta bot (nunca hay que notificarle ni sumarle partidas). */
+function rh_juego_es_bot(mysqli $conn, int $userId): bool
+{
+    return $userId > 0 && $userId === rh_juego_bot_user_id($conn);
+}
+
+/**
+ * Actualiza el historial de a pares entre dos usuarios humanos, para un
+ * juego. `UserIdA` siempre es el menor de los dos UserId (sin importar quién
+ * ganó), así el par tiene una sola fila posible sin importar el orden en que
+ * se pasen los argumentos.
+ *
+ * `$ganadorUserId === null` es empate/tablas: suma a `Empates`, no a ninguna
+ * de las dos victorias. Se saltea sin hacer nada si cualquiera de los dos es
+ * el bot — el historial es entre personas, no contra la IA.
+ */
+function rh_juego_registrar_historial_par(mysqli $conn, int $userId1, int $userId2, string $juegoCodigo, ?int $ganadorUserId): void
+{
+    if ($userId1 === $userId2 || $userId1 <= 0 || $userId2 <= 0) {
+        return;
+    }
+    if (rh_juego_es_bot($conn, $userId1) || rh_juego_es_bot($conn, $userId2)) {
+        return;
+    }
+
+    $userIdA = min($userId1, $userId2);
+    $userIdB = max($userId1, $userId2);
+    $sumaA = $ganadorUserId === $userIdA ? 1 : 0;
+    $sumaB = $ganadorUserId === $userIdB ? 1 : 0;
+    $sumaEmpate = $ganadorUserId === null ? 1 : 0;
+
+    $stmt = $conn->prepare(
+        'INSERT INTO JuegoHistorialPar (UserIdA, UserIdB, JuegoCodigo, VictoriasA, VictoriasB, Empates)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+            VictoriasA = VictoriasA + VALUES(VictoriasA),
+            VictoriasB = VictoriasB + VALUES(VictoriasB),
+            Empates = Empates + VALUES(Empates)'
+    );
+    $stmt->bind_param('iisiii', $userIdA, $userIdB, $juegoCodigo, $sumaA, $sumaB, $sumaEmpate);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/** El historial de a pares contra alguien, en un juego. Puntos de vista relativo a $userId. */
+function rh_juego_historial_par(mysqli $conn, int $userId, int $rivalUserId, string $juegoCodigo): array
+{
+    $userIdA = min($userId, $rivalUserId);
+    $userIdB = max($userId, $rivalUserId);
+
+    $stmt = $conn->prepare(
+        'SELECT VictoriasA, VictoriasB, Empates FROM JuegoHistorialPar WHERE UserIdA = ? AND UserIdB = ? AND JuegoCodigo = ?'
+    );
+    $stmt->bind_param('iis', $userIdA, $userIdB, $juegoCodigo);
+    $stmt->execute();
+    $fila = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$fila) {
+        return ['misVictorias' => 0, 'susVictorias' => 0, 'empates' => 0];
+    }
+
+    $soyA = $userId === $userIdA;
+    return [
+        'misVictorias' => (int) ($soyA ? $fila['VictoriasA'] : $fila['VictoriasB']),
+        'susVictorias' => (int) ($soyA ? $fila['VictoriasB'] : $fila['VictoriasA']),
+        'empates' => (int) $fila['Empates'],
+    ];
 }
 
 /**
@@ -286,23 +396,188 @@ function rh_juego_semilla(): int
 }
 
 /**
- * Marca vencidos los desafíos que nadie jugó.
+ * Pasa el turno al rival y recalcula cuándo vence, según el plazo elegido al
+ * armar el duelo. El `WHERE TurnoDeUserId = ?` es el mismo guard de
+ * concurrencia que ya usaba `turno_jugar.php`: si dos jugadas llegaran a la
+ * vez, la segunda no encuentra fila para actualizar.
+ */
+function rh_juego_avanzar_turno(
+    mysqli $conn,
+    int $desafioId,
+    int $siguienteUserId,
+    int $movidaDeUserId,
+    int $plazoTurnoHoras
+): void {
+    $stmt = $conn->prepare(
+        "UPDATE JuegoDesafio
+            SET TurnoDeUserId = ?, Estado = 'aceptado',
+                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? HOUR)
+          WHERE DesafioId = ? AND TurnoDeUserId = ?"
+    );
+    $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoHoras, $desafioId, $movidaDeUserId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/** Puntos de consuelo cuando el duelo se cierra solo, por inacción de alguien. */
+const RH_JUEGO_PUNTOS_TURNO_VENCIDO = 20;
+
+/**
+ * Cierra un desafío de modo 'turnos' y reparte el resultado.
  *
- * Se llama al listar en vez de por cron: son pocas filas y así el estado que ve
- * el usuario siempre está al día, sin depender de una tarea programada más.
+ * Compartida entre el final normal de una partida (ganó/perdió/empate al
+ * mover) y el cierre por vencimiento de turno: a los dos les hace falta lo
+ * mismo (marcar el estado, sumar la partida de cada uno, avisar). `$ganadorUserId
+ * === null` es empate.
+ *
+ * El `WHERE Estado IN (...)` es el guard de concurrencia: si el desafío ya se
+ * había cerrado por otro camino (alguien jugó justo antes de que el cron
+ * llegara), esta llamada no hace nada y lo dice en el resultado.
+ */
+function rh_juego_cerrar_desafio_turnos(
+    mysqli $conn,
+    array $desafio,
+    ?int $ganadorUserId,
+    int $puntosRetador,
+    int $puntosRetado,
+    bool $porVencimiento = false
+): array {
+    $desafioId = (int) $desafio['DesafioId'];
+    $retador = (int) $desafio['UserIdRetador'];
+    $retado = (int) $desafio['UserIdRetado'];
+    $codigo = $desafio['JuegoCodigo'];
+
+    $stmt = $conn->prepare(
+        "UPDATE JuegoDesafio
+            SET Estado = 'terminado', GanadorUserId = ?, TurnoDeUserId = NULL
+          WHERE DesafioId = ? AND Estado IN ('pendiente','aceptado')"
+    );
+    $stmt->bind_param('ii', $ganadorUserId, $desafioId);
+    $stmt->execute();
+    $cerrado = $stmt->affected_rows > 0;
+    $stmt->close();
+
+    if (!$cerrado) {
+        return ['cerrado' => false];
+    }
+
+    rh_juego_registrar_historial_par($conn, $retador, $retado, $codigo, $ganadorUserId);
+
+    $progresoRetador = rh_juego_es_bot($conn, $retador)
+        ? null
+        : rh_juego_registrar_partida($conn, $retador, $codigo, $puntosRetador, null, $desafioId);
+    $progresoRetado = rh_juego_es_bot($conn, $retado)
+        ? null
+        : rh_juego_registrar_partida($conn, $retado, $codigo, $puntosRetado, null, $desafioId);
+
+    $nombreJuego = rh_juego_titulo($codigo);
+
+    if ($ganadorUserId !== null) {
+        $perdedor = $ganadorUserId === $retador ? $retado : $retador;
+
+        if (!rh_juego_es_bot($conn, $ganadorUserId)) {
+            $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET DesafiosGanados = DesafiosGanados + 1 WHERE UserId = ?');
+            $stmt->bind_param('i', $ganadorUserId);
+            $stmt->execute();
+            $stmt->close();
+
+            rh_notificar($conn, [$ganadorUserId], 'juego_desafio_fin', '¡Ganaste el duelo!',
+                'Ganaste tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios');
+        }
+
+        if (!rh_juego_es_bot($conn, $perdedor)) {
+            $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET DesafiosPerdidos = DesafiosPerdidos + 1 WHERE UserId = ?');
+            $stmt->bind_param('i', $perdedor);
+            $stmt->execute();
+            $stmt->close();
+
+            $cuerpo = $porVencimiento
+                ? 'No respondiste a tiempo y perdiste tu partida de ' . $nombreJuego
+                : 'Perdiste tu partida de ' . $nombreJuego;
+            rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', $cuerpo, '/(app)/hueplay/desafios');
+        }
+    } else {
+        $humanos = array_values(array_filter([$retador, $retado], fn (int $u) => !rh_juego_es_bot($conn, $u)));
+        if ($humanos) {
+            rh_notificar($conn, $humanos, 'juego_desafio_fin', 'Empate',
+                'Tu partida de ' . $nombreJuego . ' terminó empatada', '/(app)/hueplay/desafios');
+        }
+    }
+
+    return [
+        'cerrado' => true,
+        'ganadorUserId' => $ganadorUserId,
+        'progresoRetador' => $progresoRetador,
+        'progresoRetado' => $progresoRetado,
+    ];
+}
+
+/**
+ * Cierra por inacción un desafío de modo 'turnos' cuyo turno venció: pierde
+ * quien tenía que mover y no lo hizo. Puntos bajos a propósito (ver
+ * `RH_JUEGO_PUNTOS_TURNO_VENCIDO`): esperar a que venza nunca debería convenir
+ * más que jugar.
+ */
+function rh_juego_resolver_turno_vencido(mysqli $conn, array $desafio): array
+{
+    $turnoDe = (int) ($desafio['TurnoDeUserId'] ?? 0);
+    $retador = (int) $desafio['UserIdRetador'];
+    $retado = (int) $desafio['UserIdRetado'];
+
+    if ($turnoDe !== $retador && $turnoDe !== $retado) {
+        return ['cerrado' => false];
+    }
+
+    $ganador = $turnoDe === $retador ? $retado : $retador;
+    $puntosRetador = $ganador === $retador ? RH_JUEGO_PUNTOS_TURNO_VENCIDO : 0;
+    $puntosRetado = $ganador === $retado ? RH_JUEGO_PUNTOS_TURNO_VENCIDO : 0;
+
+    return rh_juego_cerrar_desafio_turnos($conn, $desafio, $ganador, $puntosRetador, $puntosRetado, true);
+}
+
+/**
+ * Marca vencidos los desafíos que nadie jugó a tiempo.
+ *
+ * Se llama al listar (además del cron `juego_turnos_vencidos.php`, que cubre a
+ * quien no vuelve a abrir la bandeja): son pocas filas y así el estado que ve
+ * el usuario siempre está al día.
+ *
+ * En modo 'puntaje' el vencimiento sigue siendo neutro (nadie "debía" un
+ * movimiento puntual). En modo 'turnos', desde que el plazo por turno es
+ * configurable, no responder a tiempo es una derrota — se resuelve con el
+ * mismo camino que usa el cron.
  */
 function rh_juego_expirar_desafios(mysqli $conn, int $userId): void
 {
     $stmt = $conn->prepare(
         "UPDATE JuegoDesafio
             SET Estado = 'expirado'
-          WHERE Estado IN ('pendiente','aceptado')
+          WHERE Modo = 'puntaje' AND Estado IN ('pendiente','aceptado')
             AND ExpiraEn <= NOW()
             AND (UserIdRetador = ? OR UserIdRetado = ?)"
     );
     $stmt->bind_param('ii', $userId, $userId);
     $stmt->execute();
     $stmt->close();
+
+    $stmt = $conn->prepare(
+        "SELECT * FROM JuegoDesafio
+          WHERE Modo = 'turnos' AND Estado IN ('pendiente','aceptado')
+            AND ExpiraEn <= NOW()
+            AND (UserIdRetador = ? OR UserIdRetado = ?)"
+    );
+    $stmt->bind_param('ii', $userId, $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $vencidos = [];
+    while ($fila = $res->fetch_assoc()) {
+        $vencidos[] = $fila;
+    }
+    $stmt->close();
+
+    foreach ($vencidos as $d) {
+        rh_juego_resolver_turno_vencido($conn, $d);
+    }
 }
 
 /**
@@ -426,5 +701,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],
+        'plazoTurnoHoras' => (int) ($d['PlazoTurnoHoras'] ?? 24),
+        'esRivalIA' => rh_juego_es_bot($conn, $otroId),
     ];
 }

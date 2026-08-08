@@ -1,11 +1,11 @@
 -- =============================================================================
--- Red Huellitas — schema completo (001 … 045)
+-- Red Huellitas — schema completo (001 … 053)
 --
 -- ARCHIVO GENERADO — no editar a mano.
 -- Se regenera con:  php inc/cli/build_schema.php
 -- Si agregás una migración a sql/, volvé a correr eso y commiteá el resultado.
 --
--- Última generación: 2026-07-28  ·  Migraciones incluidas: 45
+-- Última generación: 2026-08-08  ·  Migraciones incluidas: 53
 --
 -- Sirve para crear la base desde cero con la versión final del esquema:
 --   mysql --default-character-set=utf8mb4 -u root < sql/000_todo_schema.sql
@@ -3464,5 +3464,726 @@ SET @sql = IF(@c = 0,
     'ALTER TABLE Denuncia ADD COLUMN CalificacionId INT UNSIGNED NULL',
     'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
+-- -----------------------------------------------------------------------------
+-- 046_menores_tutela.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- Seguridad infantil: edad, tutela y autorización de chats
+-- Idempotente: se puede correr más de una vez sin error.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/046_menores_tutela.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Fecha de nacimiento del usuario.
+--
+-- Se guarda la FECHA y no la edad: una edad en TINYINT queda
+-- vieja sola con el paso del tiempo, y alguien que hoy tiene 12
+-- mañana tiene 13 sin que nadie toque nada. Arranca NULL porque
+-- las cuentas que ya existen no la declararon nunca.
+--
+-- OJO: en `rh_es_menor()` un NULL se trata como MENOR, no como
+-- adulto. Si el dato falta, la opción segura es restringir.
+-- ------------------------------------------------------------
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'FechaNacimiento');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE Usuario ADD COLUMN FechaNacimiento DATE NULL',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Quién cargó la fecha: el propio usuario o su tutor. Sirve para
+-- auditar y para no dejar que un menor se "corrija" la edad solo
+-- si fue un adulto el que la declaró.
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'EdadOrigen');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE Usuario ADD COLUMN EdadOrigen ENUM(''autodeclarada'',''tutor'') NULL',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Índice para poder listar menores sin tutor desde moderación.
+SET @idx_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND INDEX_NAME = 'IX_Usuario_Nacimiento');
+SET @sql = IF(@idx_exists = 0,
+    'ALTER TABLE Usuario ADD INDEX IX_Usuario_Nacimiento (FechaNacimiento)',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ------------------------------------------------------------
+-- Tutela: vínculo entre un menor y un adulto responsable.
+--
+-- `IniciadaPor` existe porque la puede arrancar cualquiera de los
+-- dos lados, y quien la inicia NO es quien la acepta: el otro
+-- tiene que confirmar. Sin ese dato no se sabe a quién mostrarle
+-- el botón de aceptar.
+--
+-- Las rechazadas y revocadas se conservan en vez de borrarse,
+-- para que quede el rastro de que el vínculo existió.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS Tutela (
+    TutelaId INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    UserIdMenor INT UNSIGNED NOT NULL,
+    UserIdTutor INT UNSIGNED NOT NULL,
+    Estado ENUM('pendiente','aceptada','rechazada','revocada') NOT NULL DEFAULT 'pendiente',
+    IniciadaPor ENUM('menor','tutor') NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ResueltaEn DATETIME NULL,
+    PRIMARY KEY (TutelaId),
+    UNIQUE KEY UQ_Tutela_Par (UserIdMenor, UserIdTutor),
+    KEY IX_Tutela_Menor (UserIdMenor, Estado),
+    KEY IX_Tutela_Tutor (UserIdTutor, Estado),
+    CONSTRAINT fk_tutela_menor FOREIGN KEY (UserIdMenor) REFERENCES Usuario(UserId) ON DELETE CASCADE,
+    CONSTRAINT fk_tutela_tutor FOREIGN KEY (UserIdTutor) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Autorización por conversación.
+--
+-- Una fila por cada conversación en la que participa un menor.
+-- El tutor la pasa a 'autorizada' o 'bloqueada'; mientras esté
+-- 'pendiente' el chat no deja mandar nada.
+--
+-- La PK es (ConversacionId, UserIdMenor) y no incluye al tutor:
+-- si el menor cambia de tutor, la decisión sigue siendo sobre la
+-- misma conversación, y el tutor nuevo la revisa. Guardamos
+-- UserIdTutor igual para saber quién resolvió.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ConversacionAutorizacion (
+    ConversacionId INT UNSIGNED NOT NULL,
+    UserIdMenor INT UNSIGNED NOT NULL,
+    UserIdTutor INT UNSIGNED NULL,
+    Estado ENUM('pendiente','autorizada','bloqueada') NOT NULL DEFAULT 'pendiente',
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ResueltaEn DATETIME NULL,
+    PRIMARY KEY (ConversacionId, UserIdMenor),
+    KEY IX_ConvAut_Tutor (UserIdTutor, Estado),
+    KEY IX_ConvAut_Menor (UserIdMenor, Estado),
+    CONSTRAINT fk_convaut_conv FOREIGN KEY (ConversacionId) REFERENCES Conversacion(ConversacionId) ON DELETE CASCADE,
+    CONSTRAINT fk_convaut_menor FOREIGN KEY (UserIdMenor) REFERENCES Usuario(UserId) ON DELETE CASCADE,
+    CONSTRAINT fk_convaut_tutor FOREIGN KEY (UserIdTutor) REFERENCES Usuario(UserId) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- 047_chat_stickers.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- Stickers propios en el chat + reacciones rápidas en Huellitas
+-- Idempotente: se puede correr más de una vez sin error.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/047_chat_stickers.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Mensaje.Tipo suma 'sticker'.
+--
+-- El sticker viaja como un mensaje más (queda en el historial, cuenta como no
+-- leído, respeta el candado de menores) pero la app lo dibuja sin burbuja.
+-- Es la misma decisión que ya se había tomado con 'zumbido'.
+--
+-- En Texto se guarda el ID del sticker, no una URL: los dibujos son nuestros y
+-- viven en el bundle de la app. Guardar una URL ataría los mensajes viejos a
+-- una ruta que puede cambiar, y obligaría a bajar una imagen para algo que ya
+-- está instalado.
+-- ------------------------------------------------------------
+SET @sql = (SELECT IF(
+    (SELECT LOCATE('sticker', COLUMN_TYPE) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Mensaje' AND COLUMN_NAME = 'Tipo') = 0,
+    'ALTER TABLE Mensaje MODIFY Tipo ENUM(''texto'',''zumbido'',''sticker'') NOT NULL DEFAULT ''texto''',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- ------------------------------------------------------------
+-- Reacciones rápidas a una Huellita.
+--
+-- Una fila por (Historia, Usuario): tocar otra reacción reemplaza la anterior
+-- en vez de acumular, que es como se comportan las reacciones en el resto de
+-- la app. Por eso la PK es compuesta y no un id propio.
+--
+-- Es distinto de HistoriaRespuesta, que es un mensaje escrito: esto es un
+-- toque y no abre conversación.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS HistoriaReaccion (
+    HistoriaId INT UNSIGNED NOT NULL,
+    UserId INT UNSIGNED NOT NULL,
+    Tipo ENUM('huella','amor','divertido','asombro','triste','abrazo','guau','michi') NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (HistoriaId, UserId),
+    KEY idx_historia_tipo (HistoriaId, Tipo),
+    CONSTRAINT fk_hr_historia FOREIGN KEY (HistoriaId) REFERENCES Historia(HistoriaId) ON DELETE CASCADE,
+    CONSTRAINT fk_hr_user FOREIGN KEY (UserId) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- 048_hueplay_juegos.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HuePlay: puntaje por usuario, partidas y desafíos entre cuentas
+-- Idempotente: se puede correr más de una vez sin error.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/048_hueplay_juegos.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Progreso de juegos POR USUARIO.
+--
+-- Es distinto de MascotaJuego.nivel, que es el nivel de una mascota en
+-- HueGotchi. Acá el nivel es de la cuenta y suma de todos los juegos, que es
+-- lo que permite compararse con otros y retar a alguien.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS UsuarioJuegoPerfil (
+    UserId INT UNSIGNED NOT NULL,
+    PuntosTotales INT UNSIGNED NOT NULL DEFAULT 0,
+    Nivel SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    PartidasJugadas INT UNSIGNED NOT NULL DEFAULT 0,
+    DesafiosGanados INT UNSIGNED NOT NULL DEFAULT 0,
+    DesafiosPerdidos INT UNSIGNED NOT NULL DEFAULT 0,
+    UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (UserId),
+    KEY idx_ranking (PuntosTotales DESC),
+    CONSTRAINT fk_ujp_user FOREIGN KEY (UserId) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Una fila por partida jugada, para historial y para el récord personal.
+--
+-- `JuegoCodigo` es texto y no una FK a un catálogo en base: los juegos viven
+-- en el código (pantallas, reglas, dibujos), así que una tabla de catálogo
+-- sería un espejo que hay que mantener sincronizado a mano.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoPartida (
+    PartidaId INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    JuegoCodigo VARCHAR(32) NOT NULL,
+    UserId INT UNSIGNED NOT NULL,
+    Puntos INT UNSIGNED NOT NULL DEFAULT 0,
+    DuracionSegundos SMALLINT UNSIGNED NULL,
+    /** Si nació de un desafío, para no contar dos veces el puntaje. */
+    DesafioId INT UNSIGNED NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (PartidaId),
+    KEY idx_user_juego (UserId, JuegoCodigo, Puntos DESC),
+    KEY idx_juego_puntos (JuegoCodigo, Puntos DESC),
+    CONSTRAINT fk_jp_user FOREIGN KEY (UserId) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Desafío entre dos cuentas.
+--
+-- Decisión central: `Semilla` guarda la semilla del tablero y LOS DOS JUGADORES
+-- JUEGAN EXACTAMENTE EL MISMO TABLERO. Con eso el duelo es justo sin necesidad
+-- de tiempo real: cada uno juega cuando puede, gana el que hace más puntos.
+-- En hosting compartido con PHP no hay websockets, así que un "tiempo real"
+-- de verdad no era posible; esto da un duelo competitivo igual de emocionante
+-- sin fingir una infraestructura que no existe.
+--
+-- Se puede retar a cualquiera, lo sigas o no, que es lo pedido. La protección
+-- de menores no aplica acá porque un desafío no abre un canal de mensajes.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoDesafio (
+    DesafioId INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    JuegoCodigo VARCHAR(32) NOT NULL,
+    UserIdRetador INT UNSIGNED NOT NULL,
+    UserIdRetado INT UNSIGNED NOT NULL,
+    Estado ENUM('pendiente','aceptado','terminado','rechazado','expirado') NOT NULL DEFAULT 'pendiente',
+    Semilla INT UNSIGNED NOT NULL,
+    PuntosRetador INT UNSIGNED NULL,
+    PuntosRetado INT UNSIGNED NULL,
+    GanadorUserId INT UNSIGNED NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ExpiraEn DATETIME NOT NULL,
+    PRIMARY KEY (DesafioId),
+    KEY idx_retado (UserIdRetado, Estado),
+    KEY idx_retador (UserIdRetador, Estado),
+    CONSTRAINT fk_jd_retador FOREIGN KEY (UserIdRetador) REFERENCES Usuario(UserId) ON DELETE CASCADE,
+    CONSTRAINT fk_jd_retado FOREIGN KEY (UserIdRetado) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- 049_hueplay_turnos.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HuePlay: partidas por turnos sobre un tablero compartido
+-- Idempotente con el patrón information_schema + PREPARE de sql/025.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/049_hueplay_turnos.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Hasta ahora un desafío era siempre "cada uno juega su partida y se comparan
+-- los puntajes" (HueMatch). Conecta 4 necesita otra cosa: UN tablero que los
+-- dos van modificando por turnos.
+--
+-- Se agrega a `JuegoDesafio` en vez de crear una tabla nueva porque todo lo que
+-- rodea al duelo —la bandeja, las notificaciones, el vencimiento, quién puede
+-- rechazarlo— ya está resuelto ahí y sirve igual para los dos modos.
+--
+-- La diferencia importante contra el modo 'puntaje': acá **el servidor valida
+-- cada jugada y decide quién ganó**. En HueMatch el puntaje lo calcula el
+-- celular y sólo se le puede poner un techo; en un tablero por turnos el
+-- servidor sabe si la columna es legal y si hay 4 en línea, así que no hay nada
+-- que confiarle al cliente.
+-- ------------------------------------------------------------
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND COLUMN_NAME = 'Modo') = 0,
+    "ALTER TABLE JuegoDesafio ADD COLUMN Modo ENUM('puntaje','turnos') NOT NULL DEFAULT 'puntaje' AFTER JuegoCodigo",
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Estado del tablero serializado. Para Conecta 4 son 42 caracteres
+-- ('0' vacío, '1' retador, '2' retado), leídos de arriba hacia abajo.
+-- Es texto y no una tabla de jugadas: el tablero completo entra en una celda,
+-- se lee de un saque y no hace falta reconstruirlo movimiento por movimiento.
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND COLUMN_NAME = 'Tablero') = 0,
+    'ALTER TABLE JuegoDesafio ADD COLUMN Tablero VARCHAR(128) NULL AFTER Semilla',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- De quién es el turno. NULL en el modo 'puntaje', donde no hay turnos.
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND COLUMN_NAME = 'TurnoDeUserId') = 0,
+    'ALTER TABLE JuegoDesafio ADD COLUMN TurnoDeUserId INT UNSIGNED NULL AFTER Tablero',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Cuántas fichas se pusieron. Sirve para detectar el empate sin recorrer el
+-- tablero y para que el front sepa si tiene que refrescar.
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND COLUMN_NAME = 'Movimientos') = 0,
+    'ALTER TABLE JuegoDesafio ADD COLUMN Movimientos SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER TurnoDeUserId',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- `GanadorUserId` ya existe y se reusa. Para marcar el empate hace falta
+-- distinguir "terminado sin ganador" de "todavía no terminó", y eso ya lo dice
+-- `Estado`, así que no se agrega nada más.
+
+-- Índice para la bandeja: "los duelos donde me toca mover".
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND INDEX_NAME = 'idx_turno') = 0,
+    'ALTER TABLE JuegoDesafio ADD INDEX idx_turno (TurnoDeUserId, Estado)',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- -----------------------------------------------------------------------------
+-- 050_hueplay_trivia.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HueTrivia: preguntas de cuidado animal
+-- Idempotente: se puede correr más de una vez sin duplicar preguntas.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/050_hueplay_trivia.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Las preguntas van en base y no en el código de la app.
+--
+-- Tres razones: se pueden agregar sin sacar una versión nueva de la app; se
+-- pueden traducir de a poco (una fila por idioma) en vez de tener que tener los
+-- 10 idiomas listos antes de publicar; y si una pregunta sale mal o está
+-- desactualizada se apaga con `Estado` sin tocar nada más.
+--
+-- `Clave` agrupa la misma pregunta en distintos idiomas. Es lo que permite que
+-- un duelo entre alguien en español y alguien en inglés reciba **las mismas
+-- preguntas**, cada uno en su idioma: se sortean claves, no filas.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS TriviaPregunta (
+    PreguntaId INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Clave VARCHAR(48) NOT NULL,
+    Idioma CHAR(2) NOT NULL,
+    Texto VARCHAR(400) NOT NULL,
+    OpcionA VARCHAR(200) NOT NULL,
+    OpcionB VARCHAR(200) NOT NULL,
+    OpcionC VARCHAR(200) NOT NULL,
+    OpcionD VARCHAR(200) NOT NULL,
+    /** Nunca viaja al cliente: el servidor corrige. */
+    Correcta ENUM('A','B','C','D') NOT NULL,
+    Explicacion VARCHAR(400) NULL,
+    Estado CHAR(1) NOT NULL DEFAULT 'A',
+    PRIMARY KEY (PreguntaId),
+    UNIQUE KEY uk_clave_idioma (Clave, Idioma),
+    KEY idx_idioma (Idioma, Estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Preguntas iniciales. `INSERT IGNORE` contra el único (Clave, Idioma) hace que
+-- correr la migración de nuevo no duplique nada, y que agregar preguntas más
+-- adelante sea sumar filas acá abajo.
+--
+-- Hoy están cargadas en español e inglés. Los otros 8 idiomas caen a español
+-- por el fallback del endpoint hasta que se carguen: es preferible una pregunta
+-- entendible en otro idioma que una pantalla vacía.
+-- ------------------------------------------------------------
+INSERT IGNORE INTO TriviaPregunta (Clave, Idioma, Texto, OpcionA, OpcionB, OpcionC, OpcionD, Correcta, Explicacion) VALUES
+('vacuna_cachorro', 'es', '¿A partir de qué edad se puede dar la primera vacuna a un cachorro?', 'A las 6-8 semanas', 'Al nacer', 'Al año de vida', 'A los 6 meses', 'A', 'Antes de las 6 semanas todavía lo protegen los anticuerpos de la madre.'),
+('chocolate', 'es', '¿Por qué el chocolate es peligroso para los perros?', 'Porque tiene teobromina, que no pueden metabolizar', 'Porque tiene mucha azúcar', 'Porque les mancha los dientes', 'Porque les da sueño', 'A', 'La teobromina les afecta el corazón y el sistema nervioso.'),
+('castracion_edad', 'es', '¿Cuál es el principal beneficio de castrar a una mascota?', 'Evita camadas no deseadas y previene algunas enfermedades', 'La hace más obediente', 'Le cambia el color del pelo', 'Le alarga las patas', 'A', NULL),
+('gato_leche', 'es', '¿Es buena idea darle leche de vaca a un gato adulto?', 'No, la mayoría es intolerante a la lactosa', 'Sí, todos los días', 'Sí, pero sólo tibia', 'Sí, reemplaza el agua', 'A', 'De adultos pierden la enzima que digiere la lactosa.'),
+('paseo_calor', 'es', '¿Cuándo NO conviene pasear a un perro en verano?', 'Al mediodía, con el asfalto caliente', 'Temprano a la mañana', 'Al atardecer', 'De noche', 'A', 'El asfalto puede quemarle las almohadillas.'),
+('microchip', 'es', '¿Para qué sirve el microchip en una mascota?', 'Para identificarla si se pierde', 'Para rastrearla por GPS en tiempo real', 'Para medirle la temperatura', 'Para abrirle la puerta', 'A', 'No tiene GPS: guarda un número que se lee con un lector.'),
+('uvas', 'es', '¿Cuál de estos alimentos es tóxico para perros y gatos?', 'Las uvas y pasas de uva', 'La zanahoria', 'El arroz cocido', 'La manzana sin semillas', 'A', NULL),
+('celo_gata', 'es', '¿Cada cuánto entra en celo una gata sin castrar?', 'Varias veces al año, sobre todo en primavera y verano', 'Una vez en la vida', 'Una vez cada 5 años', 'Nunca', 'A', NULL),
+('perro_cola', 'es', 'Un perro moviendo la cola, ¿siempre está contento?', 'No, también puede estar nervioso o alerta', 'Sí, siempre', 'Sólo si es cachorro', 'Sólo si ladra al mismo tiempo', 'A', 'Hay que mirar todo el cuerpo, no sólo la cola.'),
+('agua_fresca', 'es', '¿Con qué frecuencia hay que cambiarle el agua a una mascota?', 'Todos los días, al menos una vez', 'Una vez por semana', 'Una vez por mes', 'Sólo en verano', 'A', NULL),
+('gato_arenero', 'es', '¿Cuántos areneros conviene tener con dos gatos en casa?', 'Tres: uno más que la cantidad de gatos', 'Uno solo alcanza', 'Ninguno, van afuera', 'Cinco como mínimo', 'A', 'La regla es un arenero por gato más uno.'),
+('pulgas', 'es', '¿Las pulgas sólo aparecen en verano?', 'No, con calefacción pueden sobrevivir todo el año', 'Sí, sólo en verano', 'Sí, sólo en invierno', 'Sólo si el perro sale al campo', 'A', NULL),
+('adopcion_edad', 'es', '¿A qué edad mínima conviene separar a un cachorro de su madre?', 'A las 8 semanas', 'A las 2 semanas', 'Al día siguiente de nacer', 'Al año', 'A', 'Antes de eso todavía aprende conductas sociales de la camada.'),
+('huesos_cocidos', 'es', '¿Se le pueden dar huesos cocidos a un perro?', 'No, se astillan y pueden perforarle el intestino', 'Sí, son los mejores', 'Sí, si son de pollo', 'Sí, una vez por semana', 'A', NULL),
+('gato_ronronea', 'es', 'Un gato que ronronea, ¿siempre está a gusto?', 'No, también ronronean cuando tienen dolor o miedo', 'Sí, siempre', 'Sólo cuando come', 'Sólo de noche', 'A', NULL),
+('desparasitar', 'es', '¿Cada cuánto se suele desparasitar a un perro adulto sano?', 'Cada 3 a 6 meses, según indicación veterinaria', 'Una vez en la vida', 'Todos los días', 'Cada 5 años', 'A', NULL),
+('auto_calor', 'es', '¿Qué pasa si dejo a mi perro en el auto cerrado en verano?', 'Puede sufrir un golpe de calor mortal en minutos', 'No pasa nada si hay sombra', 'Se duerme tranquilo', 'Sólo pasa si el auto es negro', 'A', NULL),
+('correa_ciudad', 'es', '¿Por qué conviene llevar al perro con correa en la ciudad?', 'Por su seguridad y la de los demás', 'Porque es más lindo', 'Porque camina más rápido', 'Porque así no ladra', 'A', NULL),
+('gato_ventana', 'es', '¿Qué es el "síndrome del gato paracaidista"?', 'Caídas desde ventanas o balcones sin red', 'Un juego con paracaídas', 'Una raza de gato', 'Una vacuna', 'A', 'Por eso se recomienda poner redes de protección.'),
+('perro_viejo', 'es', 'Un perro mayor que duerme mucho más que antes, ¿qué conviene hacer?', 'Consultar al veterinario: puede haber algo detrás', 'Nada, es normal y listo', 'Despertarlo seguido', 'Darle más comida', 'A', NULL),
+('cepillado', 'es', '¿Para qué sirve cepillar a un gato de pelo largo?', 'Evita nudos y reduce las bolas de pelo', 'Para que crezca más rápido', 'Para que cambie de color', 'No sirve para nada', 'A', NULL),
+('collar_isabelino', 'es', '¿Para qué se usa el collar isabelino después de una cirugía?', 'Para que no se lama ni se muerda la herida', 'Para que no ladre', 'Para que no coma', 'Para abrigarlo', 'A', NULL),
+('temperatura_perro', 'es', '¿Cuál es la temperatura corporal normal de un perro?', 'Entre 38 y 39 grados', 'Entre 33 y 34 grados', 'Entre 41 y 42 grados', 'La misma que la humana', 'A', 'Es más alta que la de las personas.'),
+('socializacion', 'es', '¿Cuál es la mejor etapa para socializar a un cachorro?', 'Entre las 3 y las 12 semanas de vida', 'Después de los 3 años', 'Nunca, se socializa solo', 'Sólo cuando ya está castrado', 'A', NULL),
+('gato_agua', 'es', '¿Por qué muchos gatos toman poca agua del bebedero?', 'Prefieren agua en movimiento y lejos de la comida', 'No necesitan agua', 'Sólo toman leche', 'Toman del aire', 'A', 'Por eso funcionan bien las fuentes de agua.'),
+('perro_cebolla', 'es', '¿La cebolla y el ajo son seguros para los perros?', 'No, dañan sus glóbulos rojos', 'Sí, en cualquier cantidad', 'Sí, si están cocidos', 'Sí, una vez por semana', 'A', NULL),
+('rescate_calle', 'es', 'Si encontrás un perro perdido en la calle, ¿qué es lo primero?', 'Ver si tiene chapita o microchip y avisar en la zona', 'Llevártelo directamente a tu casa para siempre', 'Ignorarlo', 'Soltarlo en otro barrio', 'A', NULL),
+('gato_cajas', 'es', '¿Por qué a los gatos les gustan las cajas?', 'Les dan sensación de refugio y de seguridad', 'Porque son de cartón', 'Porque tienen olor a comida', 'Porque son cuadradas', 'A', NULL),
+('vacuna_antirrabica', 'es', '¿La vacuna antirrábica es obligatoria en la mayoría de los lugares?', 'Sí, y se repite periódicamente', 'No, es opcional', 'Sólo para gatos', 'Sólo para perros de raza', 'A', NULL),
+('ejercicio_diario', 'es', '¿Qué pasa si un perro activo no hace suficiente ejercicio?', 'Puede desarrollar ansiedad y conductas destructivas', 'Nada, se adapta', 'Se pone más obediente', 'Duerme mejor de noche', 'A', NULL),
+('vacuna_cachorro', 'en', 'At what age can a puppy get its first vaccine?', 'At 6-8 weeks', 'At birth', 'At one year old', 'At 6 months', 'A', 'Before 6 weeks the mother\'s antibodies still protect them.'),
+('chocolate', 'en', 'Why is chocolate dangerous for dogs?', 'It contains theobromine, which they cannot metabolise', 'It has too much sugar', 'It stains their teeth', 'It makes them sleepy', 'A', 'Theobromine affects their heart and nervous system.'),
+('castracion_edad', 'en', 'What is the main benefit of neutering a pet?', 'It prevents unwanted litters and some diseases', 'It makes them more obedient', 'It changes their coat colour', 'It makes their legs longer', 'A', NULL),
+('gato_leche', 'en', 'Is cow milk a good idea for an adult cat?', 'No, most of them are lactose intolerant', 'Yes, every day', 'Yes, but only warm', 'Yes, it replaces water', 'A', 'As adults they lose the enzyme that digests lactose.'),
+('paseo_calor', 'en', 'When should you NOT walk a dog in summer?', 'At midday, when the asphalt is hot', 'Early in the morning', 'At sunset', 'At night', 'A', 'Hot asphalt can burn their paw pads.'),
+('microchip', 'en', 'What is a pet microchip for?', 'To identify them if they get lost', 'To track them by GPS in real time', 'To measure their temperature', 'To open the door for them', 'A', 'It has no GPS: it stores a number read by a scanner.'),
+('uvas', 'en', 'Which of these foods is toxic to dogs and cats?', 'Grapes and raisins', 'Carrot', 'Cooked rice', 'Apple without seeds', 'A', NULL),
+('celo_gata', 'en', 'How often does an unspayed cat go into heat?', 'Several times a year, mostly in spring and summer', 'Once in a lifetime', 'Once every 5 years', 'Never', 'A', NULL),
+('perro_cola', 'en', 'Is a dog wagging its tail always happy?', 'No, it can also be nervous or alert', 'Yes, always', 'Only if it is a puppy', 'Only if it barks at the same time', 'A', 'You have to read the whole body, not just the tail.'),
+('agua_fresca', 'en', 'How often should you change a pet water bowl?', 'Every day, at least once', 'Once a week', 'Once a month', 'Only in summer', 'A', NULL),
+('gato_arenero', 'en', 'How many litter boxes should you have for two cats?', 'Three: one more than the number of cats', 'One is enough', 'None, they go outside', 'At least five', 'A', 'The rule is one box per cat plus one.'),
+('pulgas', 'en', 'Do fleas only appear in summer?', 'No, with indoor heating they survive all year', 'Yes, summer only', 'Yes, winter only', 'Only if the dog goes to the countryside', 'A', NULL),
+('adopcion_edad', 'en', 'What is the minimum age to separate a puppy from its mother?', 'At 8 weeks', 'At 2 weeks', 'The day after birth', 'At one year', 'A', 'Before that they are still learning social behaviour from the litter.'),
+('huesos_cocidos', 'en', 'Can you give cooked bones to a dog?', 'No, they splinter and can pierce the intestine', 'Yes, they are the best', 'Yes, if they are chicken bones', 'Yes, once a week', 'A', NULL),
+('gato_ronronea', 'en', 'Is a purring cat always comfortable?', 'No, they also purr when in pain or scared', 'Yes, always', 'Only while eating', 'Only at night', 'A', NULL),
+('desparasitar', 'en', 'How often is a healthy adult dog usually dewormed?', 'Every 3 to 6 months, as advised by a vet', 'Once in a lifetime', 'Every day', 'Every 5 years', 'A', NULL),
+('auto_calor', 'en', 'What happens if you leave a dog in a closed car in summer?', 'It can suffer fatal heatstroke within minutes', 'Nothing if it is in the shade', 'It sleeps peacefully', 'It only matters if the car is black', 'A', NULL),
+('correa_ciudad', 'en', 'Why should a dog be leashed in the city?', 'For its own safety and everyone else', 'Because it looks nicer', 'Because it walks faster', 'Because it stops barking', 'A', NULL),
+('gato_ventana', 'en', 'What is "high-rise syndrome" in cats?', 'Falls from unscreened windows or balconies', 'A game with parachutes', 'A cat breed', 'A vaccine', 'A', 'That is why protective netting is recommended.'),
+('perro_viejo', 'en', 'An older dog sleeping much more than before: what should you do?', 'See a vet: something may be behind it', 'Nothing, it is just normal', 'Wake it up often', 'Feed it more', 'A', NULL),
+('cepillado', 'en', 'Why brush a long-haired cat?', 'It prevents knots and reduces hairballs', 'To make the fur grow faster', 'To change its colour', 'It is useless', 'A', NULL),
+('collar_isabelino', 'en', 'What is a cone collar used for after surgery?', 'So they cannot lick or bite the wound', 'So they do not bark', 'So they do not eat', 'To keep them warm', 'A', NULL),
+('temperatura_perro', 'en', 'What is a normal body temperature for a dog?', 'Between 38 and 39 degrees Celsius', 'Between 33 and 34', 'Between 41 and 42', 'The same as a human', 'A', 'It is higher than in people.'),
+('socializacion', 'en', 'When is the best window to socialise a puppy?', 'Between 3 and 12 weeks of age', 'After 3 years old', 'Never, it happens on its own', 'Only after neutering', 'A', NULL),
+('gato_agua', 'en', 'Why do many cats drink little from their bowl?', 'They prefer moving water, away from their food', 'They do not need water', 'They only drink milk', 'They absorb it from the air', 'A', 'That is why water fountains work well.'),
+('perro_cebolla', 'en', 'Are onion and garlic safe for dogs?', 'No, they damage their red blood cells', 'Yes, in any amount', 'Yes, if cooked', 'Yes, once a week', 'A', NULL),
+('rescate_calle', 'en', 'If you find a lost dog on the street, what comes first?', 'Check for a tag or microchip and ask around the area', 'Take it home for good right away', 'Ignore it', 'Release it in another neighbourhood', 'A', NULL),
+('gato_cajas', 'en', 'Why do cats like boxes?', 'They feel sheltered and safe inside', 'Because they are cardboard', 'Because they smell like food', 'Because they are square', 'A', NULL),
+('vacuna_antirrabica', 'en', 'Is the rabies vaccine mandatory in most places?', 'Yes, and it is repeated periodically', 'No, it is optional', 'Only for cats', 'Only for purebred dogs', 'A', NULL),
+('ejercicio_diario', 'en', 'What happens if an active dog does not get enough exercise?', 'It can develop anxiety and destructive behaviour', 'Nothing, it adapts', 'It becomes more obedient', 'It sleeps better at night', 'A', NULL);
+
+
+-- -----------------------------------------------------------------------------
+-- 051_hueplay_diario.sql
+-- -----------------------------------------------------------------------------
+
+-- =====================================================================
+-- 051 — El desafío diario de HuePlay
+--
+-- Un reto por día y por juego, igual para todo el mundo, con ranking
+-- global. La pieza que lo hace posible es la SEMILLA compartida: los
+-- juegos ya saben generar su tablero a partir de un número (es lo que
+-- usan los duelos), así que si todos reciben la misma semilla juegan
+-- exactamente el mismo tablero y los puntajes se pueden comparar de
+-- verdad. Sin eso, un ranking sólo mediría quién tuvo mejor suerte.
+--
+-- Idempotente: se puede correr dos veces sin romper nada.
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- El reto del día
+--
+-- `Semilla` es lo que comparten todos los jugadores de esa fecha.
+-- `Datos` queda para los juegos que necesitan algo más que un número —el
+-- puzzle diario de damas o de ajedrez guarda acá su posición inicial y
+-- la solución—, y va NULL en los que se arman solos con la semilla.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoDiario (
+    DiarioId        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Fecha           DATE NOT NULL,
+    JuegoCodigo     VARCHAR(32) NOT NULL,
+    Semilla         INT UNSIGNED NOT NULL,
+    Datos           TEXT NULL,
+    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (DiarioId),
+    -- Un solo reto por juego y por día: es lo que garantiza que el
+    -- ranking compare partidas del mismo tablero.
+    UNIQUE KEY uq_diario_fecha_juego (Fecha, JuegoCodigo),
+    KEY idx_diario_fecha (Fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Lo que hizo cada usuario en el reto del día
+--
+-- La clave única `(DiarioId, UserId)` es el corazón del asunto: se juega
+-- UNA vez por día. Sin ella el ranking premiaría al que más veces lo
+-- intenta, que es justo lo contrario de lo que un reto diario propone.
+-- El intento se registra al terminar, no al empezar, así que cerrar la
+-- app a mitad de partida no quema el día.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoDiarioResultado (
+    ResultadoId     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    DiarioId        INT UNSIGNED NOT NULL,
+    UserId          INT UNSIGNED NOT NULL,
+    Puntos          INT UNSIGNED NOT NULL DEFAULT 0,
+    DuracionSegundos SMALLINT UNSIGNED NULL,
+    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ResultadoId),
+    UNIQUE KEY uq_diario_usuario (DiarioId, UserId),
+    -- El índice del ranking: ordenar por puntos dentro de un día.
+    -- `Puntos` descendente y `CreatedAt` ascendente porque ante empate
+    -- va primero el que lo logró antes.
+    KEY idx_ranking (DiarioId, Puntos DESC, CreatedAt ASC),
+    KEY idx_usuario (UserId),
+    CONSTRAINT fk_diarioresultado_diario FOREIGN KEY (DiarioId)
+        REFERENCES JuegoDiario (DiarioId) ON DELETE CASCADE,
+    CONSTRAINT fk_diarioresultado_usuario FOREIGN KEY (UserId)
+        REFERENCES Usuario (UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Racha de días seguidos
+--
+-- Va en el perfil de juego que ya existe y no en una tabla aparte: es un
+-- dato por usuario, se lee siempre junto al resto del perfil, y contarlo
+-- cada vez recorriendo los resultados sería caro para algo que se muestra
+-- en cada pantalla.
+--
+-- El patrón de `information_schema` es el mismo de sql/025: `ADD COLUMN`
+-- no admite `IF NOT EXISTS` en todas las versiones de MySQL/MariaDB, así
+-- que se pregunta antes y se arma la sentencia sólo si falta.
+-- ---------------------------------------------------------------------
+SET @existe := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'UsuarioJuegoPerfil'
+      AND COLUMN_NAME = 'RachaDiaria'
+);
+SET @sql := IF(@existe = 0,
+    'ALTER TABLE UsuarioJuegoPerfil ADD COLUMN RachaDiaria SMALLINT UNSIGNED NOT NULL DEFAULT 0',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @existe := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'UsuarioJuegoPerfil'
+      AND COLUMN_NAME = 'UltimoDiario'
+);
+SET @sql := IF(@existe = 0,
+    'ALTER TABLE UsuarioJuegoPerfil ADD COLUMN UltimoDiario DATE NULL',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
+-- -----------------------------------------------------------------------------
+-- 052_hueplay_plazo_ia.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HuePlay: plazo de turno configurable + cuenta de IA del sistema
+-- Idempotente con el patrón information_schema + PREPARE de sql/049.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/052_hueplay_plazo_ia.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Hasta ahora un duelo por turnos (HueConecta) vencía a un plazo fijo global
+-- (RH_DESAFIO_DIAS = 3 días, igual que en modo 'puntaje'). Se pidió que ese
+-- plazo sea configurable por quien arma el duelo, con un tope obligatorio de
+-- 24 horas, y que no responder a tiempo sea una DERROTA (no un vencimiento
+-- neutro). Esto se agrega para todos los juegos por turnos, HueConecta
+-- incluido, no sólo para los nuevos.
+--
+-- También se agrega la cuenta reservada que va a actuar de rival cuando
+-- alguien juega en modo solitario contra la app.
+-- ------------------------------------------------------------
+
+-- `EsBot`: marca la cuenta de sistema que hace de rival en el modo solitario.
+-- Se agrega en vez de reusar `Rol` (que ya significa "permiso de admin") o
+-- `Estado` (que sólo distingue activo/inactivo) para no mezclar dos
+-- significados distintos en la misma columna.
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'EsBot') = 0,
+    'ALTER TABLE Usuario ADD COLUMN EsBot TINYINT(1) NOT NULL DEFAULT 0 AFTER Rol',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND INDEX_NAME = 'IX_Usuario_EsBot') = 0,
+    'ALTER TABLE Usuario ADD INDEX IX_Usuario_EsBot (EsBot)',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- La cuenta bot en sí. `PasswordHash` queda NULL a propósito: `password_verify()`
+-- da `false` ante un hash nulo, así que esta cuenta nunca puede loguearse por
+-- más que alguien adivine el email. Es una sola cuenta compartida por todos
+-- los juegos con modo IA — qué movimiento juega lo decide el endpoint de cada
+-- juego según `JuegoCodigo`, no esta fila.
+-- `INSERT IGNORE` es idempotente porque `Usuario.Email` tiene UNIQUE KEY.
+INSERT IGNORE INTO Usuario
+    (Email, PasswordHash, NombreCompleto, Username, Rol, Estado, EsBot, OnboardingCompleto)
+VALUES
+    ('ia@sistema.redhuellitas.local', NULL, 'IA de Red Huellitas', 'ia_huellitas', 'bot', 'A', 1, 'Y');
+
+-- `PlazoTurnoHoras`: cuánto tiempo tiene el rival para responder cada
+-- movimiento, elegido por quien arma el duelo (1-24, se valida en PHP — el
+-- proyecto no usa CHECK en SQL en ningún lado). Default 24 = el tope máximo,
+-- así que los duelos de HueConecta ya existentes quedan con el plazo más
+-- permisivo posible al migrar (antes tenían de hecho 72h vía RH_DESAFIO_DIAS;
+-- es un recorte intencional acorde al nuevo límite de producto, y se aplica
+-- recién en la próxima jugada de cada uno, no retroactivo sobre `ExpiraEn`).
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoDesafio' AND COLUMN_NAME = 'PlazoTurnoHoras') = 0,
+    'ALTER TABLE JuegoDesafio ADD COLUMN PlazoTurnoHoras SMALLINT UNSIGNED NOT NULL DEFAULT 24 AFTER Modo',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- -----------------------------------------------------------------------------
+-- 053_hueplay_salas.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HuePlay: salas de hasta 4 jugadores + historial de a pares
+-- Idempotente: son tablas nuevas, CREATE TABLE IF NOT EXISTS alcanza (no
+-- hace falta el patrón information_schema+PREPARE que usan los ALTER).
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/053_hueplay_salas.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- Una partida de hasta 4 jugadores (Ludo, y después Rummy). Es la hermana de
+-- `JuegoDesafio` pero para N jugadores en vez de 2 — se separan en tablas
+-- distintas en vez de forzar el 1v1 existente a un caso especial de N=2,
+-- porque el modelo de "quién puede jugar contra quién" es distinto: acá hay
+-- una invitación por asiento (`JuegoSalaJugador`) y un código para que
+-- cualquiera se sume, no un retador/retado fijo.
+--
+-- `Tablero` guarda JSON, no un string de casillas como Damas/Ajedrez: Ludo no
+-- es una grilla cuadrada (camino en cruz + corrales + tramos finales), así
+-- que inventar una codificación de caracteres sería más complicado que
+-- json_encode/json_decode de un array de fichas.
+--
+-- `TurnoDeSalaJugadorId` y `GanadorSalaJugadorId` apuntan a filas de
+-- `JuegoSalaJugador` (no a `Usuario` directo) sin FK — igual criterio que
+-- `JuegoDesafio.GanadorUserId`, que tampoco tiene FK — porque esa tabla se
+-- define después acá abajo.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoSala (
+    SalaId              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    JuegoCodigo         VARCHAR(32) NOT NULL,
+    CreadorUserId       INT UNSIGNED NOT NULL,
+    MaxJugadores        TINYINT UNSIGNED NOT NULL DEFAULT 4,
+    -- Si al iniciar sobran asientos sin humanos, se completan con la IA.
+    CompletarConIA      TINYINT(1) NOT NULL DEFAULT 0,
+    -- Qué pasa con un asiento cuyo turno venció: la IA lo toma el resto de la
+    -- partida, se lo saltea sin sacarlo, o se lo expulsa (fichas fuera).
+    PoliticaAbandono    ENUM('ia','espera','expulsa') NOT NULL DEFAULT 'espera',
+    PlazoTurnoHoras     SMALLINT UNSIGNED NOT NULL DEFAULT 24,
+    -- Código corto para compartir por fuera de la app (WhatsApp, etc.) y que
+    -- cualquiera con el código se sume sin haber sido invitado puntualmente.
+    CodigoInvitacion    CHAR(6) NOT NULL,
+    Estado              ENUM('esperando','jugando','terminada','cancelada') NOT NULL DEFAULT 'esperando',
+    Tablero             TEXT NULL,
+    TurnoDeSalaJugadorId INT UNSIGNED NULL,
+    TurnoVenceEn        DATETIME NULL,
+    GanadorSalaJugadorId INT UNSIGNED NULL,
+    CreatedAt           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    IniciadaEn          DATETIME NULL,
+    TerminadaEn         DATETIME NULL,
+    PRIMARY KEY (SalaId),
+    UNIQUE KEY uq_js_codigo (CodigoInvitacion),
+    KEY idx_js_creador (CreadorUserId, Estado),
+    KEY idx_js_estado (Estado),
+    CONSTRAINT fk_js_creador FOREIGN KEY (CreadorUserId) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Un asiento de una sala. `UserId` es la cuenta bot reservada en los
+-- asientos que se completaron con IA — mismo criterio que en `JuegoDesafio`
+-- contra la IA, no hace falta una columna aparte para distinguirlo.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoSalaJugador (
+    SalaJugadorId   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    SalaId          INT UNSIGNED NOT NULL,
+    UserId          INT UNSIGNED NOT NULL,
+    -- Orden de turno / qué color de ficha le toca (0-3). Se asigna recién al
+    -- iniciar la partida, barajado con la semilla — no en el orden en que se
+    -- fueron sumando, para que invitar no sea ventaja de jugar primero.
+    Posicion        TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    Estado          ENUM('invitado','aceptado','rechazado','jugando','abandono','expulsado') NOT NULL DEFAULT 'invitado',
+    UnidoPorCodigo  TINYINT(1) NOT NULL DEFAULT 0,
+    -- Se prende cuando la política 'ia' le toma el asiento tras un
+    -- vencimiento de turno. El UserId original se conserva (no se pisa) para
+    -- que el historial de a pares y "quién jugó" sigan siendo ciertos.
+    TomadoPorIA     TINYINT(1) NOT NULL DEFAULT 0,
+    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (SalaJugadorId),
+    -- Sin UNIQUE(SalaId, UserId) a propósito: la cuenta bot puede ocupar
+    -- varios asientos de la misma sala (hasta 3, si sólo hay 1 humano). Que
+    -- una persona real no se sume dos veces a la misma sala se valida en
+    -- PHP (`rh_sala_crear`/`rh_sala_unirse_codigo`), no acá.
+    KEY idx_sj_sala_user (SalaId, UserId),
+    KEY idx_sj_user (UserId, Estado),
+    CONSTRAINT fk_sj_sala FOREIGN KEY (SalaId) REFERENCES JuegoSala(SalaId) ON DELETE CASCADE,
+    CONSTRAINT fk_sj_user FOREIGN KEY (UserId) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Cuántas veces le ganó cada quién a cada quién, por juego. Es de a PARES
+-- (no un ranking general): "le gané 3 a 1 en Damas" es el dato que se pidió,
+-- no un acumulado que mezcle todos los juegos.
+--
+-- `UserIdA` siempre es el menor de los dos UserId, sin importar quién ganó
+-- — así el par es único y no hace falta guardar la fila dos veces (una por
+-- cada orden). `VictoriasA`/`VictoriasB` dicen cuántas le ganó cada uno AL
+-- OTRO, siempre relativas a esa asignación fija.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS JuegoHistorialPar (
+    UserIdA     INT UNSIGNED NOT NULL,
+    UserIdB     INT UNSIGNED NOT NULL,
+    JuegoCodigo VARCHAR(32) NOT NULL,
+    VictoriasA  INT UNSIGNED NOT NULL DEFAULT 0,
+    VictoriasB  INT UNSIGNED NOT NULL DEFAULT 0,
+    -- HueConecta sí puede terminar en empate (tablero lleno sin línea) y
+    -- Ajedrez en tablas (ahogado): cuenta aparte, no le suma a ninguno.
+    Empates     INT UNSIGNED NOT NULL DEFAULT 0,
+    UpdatedAt   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (UserIdA, UserIdB, JuegoCodigo),
+    CONSTRAINT fk_jhp_a FOREIGN KEY (UserIdA) REFERENCES Usuario(UserId) ON DELETE CASCADE,
+    CONSTRAINT fk_jhp_b FOREIGN KEY (UserIdB) REFERENCES Usuario(UserId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

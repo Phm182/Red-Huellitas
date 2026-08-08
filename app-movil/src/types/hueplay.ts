@@ -86,6 +86,33 @@ export interface DiarioRanking {
   miPuesto: number | null;
 }
 
+export type DiarioPeriodo = 'dia' | 'semana' | 'mes' | 'anio';
+
+/** Una fila del ranking acumulado: suma puntos de los tres retos diarios. */
+export interface DiarioRankingPeriodoItem {
+  puesto: number;
+  userId: number;
+  username: string;
+  nombreCompleto: string;
+  avatarPath: string | null;
+  puntos: number;
+  partidas: number;
+  /** En cuántos días distintos jugó dentro de la ventana del período. */
+  dias: number;
+  soyYo: boolean;
+}
+
+export interface DiarioRankingPeriodo {
+  periodo: DiarioPeriodo;
+  desde: string;
+  hasta: string;
+  dias: number;
+  ranking: DiarioRankingPeriodoItem[];
+  miPuntaje: number | null;
+  miPuesto: number | null;
+  misDias: number;
+}
+
 export interface DiarioResultado {
   puntos: number;
   racha: number;
@@ -142,6 +169,10 @@ export interface HuePlayDesafio {
   };
   creadoEn: string;
   expiraEn: string;
+  /** Horas que tiene el rival para responder cada movimiento (1-24). */
+  plazoTurnoHoras: number;
+  /** Si el rival es la IA de la app y no otro usuario. */
+  esRivalIA: boolean;
 }
 
 export interface HuePlayDesafiosBandeja {
@@ -170,6 +201,277 @@ export interface HuePlayTurno {
 export interface HuePlayVista {
   desafio: HuePlayDesafio;
   columnasLibres: number[];
+}
+
+/** Una casilla de un tablero de 8x8 (Damas o Ajedrez). */
+export interface Casilla {
+  fila: number;
+  col: number;
+}
+
+/**
+ * HueDamas: el tablero es un string de 64 posiciones (fila*8+col, fila 0
+ * arriba). '0' vacío, '1'/'3' ficha/dama del retador, '2'/'4' ficha/dama del
+ * retado. El servidor decide todo — el cliente sólo manda desde/hasta.
+ */
+export type CasillaDamas = Casilla;
+
+/** Un salto dentro de una cadena de captura. `comida` es null en un movimiento simple. */
+export interface SaltoDamas {
+  desde: CasillaDamas;
+  hasta: CasillaDamas;
+  comida: CasillaDamas | null;
+}
+
+/** Lo que dejó una jugada, para animar salto por salto. */
+export interface JugadaDamas {
+  saltos: SaltoDamas[];
+  /** La casilla donde coronó, o null si no coronó. */
+  corono: CasillaDamas | null;
+}
+
+/** Un movimiento legal tal como lo manda el servidor (ya con captura obligatoria aplicada). */
+export interface MovimientoLegalDamas {
+  desde: CasillaDamas;
+  hasta: CasillaDamas;
+  saltos: SaltoDamas[];
+  corona: boolean;
+}
+
+export interface HuePlayDamasVista {
+  desafio: HuePlayDesafio;
+  /** Vacío si no es mi turno: recién se calculan cuando hay algo que elegir. */
+  movimientosLegales: MovimientoLegalDamas[];
+}
+
+export interface HuePlayDamasTurno {
+  desafio: HuePlayDesafio;
+  jugada: JugadaDamas;
+  /** La respuesta de la IA, ya aplicada, si el rival es la IA. */
+  jugadaIA: JugadaDamas | null;
+  gane: boolean;
+  perdiste: boolean;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
+ * HueAjedrez: el tablero es un string de 70 caracteres — 64 de casillas
+ * (fila*8+col, fila 0 arriba) con letras de pieza (mayúscula el retador,
+ * minúscula el retado, P/N/B/R/Q/K, '.' vacío) más 6 de estado extra
+ * (derechos de enroque y objetivo de captura al paso) que el cliente nunca
+ * necesita leer directo — el servidor ya manda todo resuelto.
+ */
+export interface JugadaAjedrez {
+  desde: Casilla;
+  hasta: Casilla;
+  /** Dónde estaba la pieza comida, o null si no hubo captura (≠ hasta sólo al paso). */
+  captura: Casilla | null;
+  enroque: { torreDesde: Casilla; torreHasta: Casilla } | null;
+  /** Si el movimiento coronó un peón a dama. */
+  corono: boolean;
+  /** Si esta jugada deja al rival en jaque. */
+  jaque: boolean;
+}
+
+export interface MovimientoLegalAjedrez {
+  desde: Casilla;
+  hasta: Casilla;
+  captura: boolean;
+  enroque: { torreDesde: Casilla; torreHasta: Casilla } | null;
+  promocion: boolean;
+}
+
+export interface HuePlayAjedrezVista {
+  desafio: HuePlayDesafio;
+  /** Vacío si no es mi turno: recién se calculan cuando hay algo que elegir. */
+  movimientosLegales: MovimientoLegalAjedrez[];
+  enJaque: boolean;
+}
+
+export interface HuePlayAjedrezTurno {
+  desafio: HuePlayDesafio;
+  jugada: JugadaAjedrez;
+  /** La respuesta de la IA, ya aplicada, si el rival es la IA. */
+  jugadaIA: JugadaAjedrez | null;
+  gane: boolean;
+  perdiste: boolean;
+  tablas: boolean;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
+ * HueLudo: sala de hasta 4 jugadores. `tablero` es JSON crudo (nunca un
+ * string de casillas como Damas/Ajedrez) — Ludo no es una grilla cuadrada,
+ * así que se parsea con `JSON.parse` en la pantalla del juego, no acá.
+ */
+export type PoliticaAbandonoSala = 'ia' | 'espera' | 'expulsa';
+export type EstadoSala = 'esperando' | 'jugando' | 'terminada' | 'cancelada';
+export type EstadoSalaJugador = 'invitado' | 'aceptado' | 'rechazado' | 'jugando' | 'abandono' | 'expulsado';
+
+export interface HuePlaySalaJugador {
+  salaJugadorId: number;
+  userId: number;
+  nombreCompleto: string;
+  username: string;
+  avatarPath: string | null;
+  /** Orden de turno / de qué color juega (0-3). Recién se asigna al iniciar. */
+  posicion: number;
+  estado: EstadoSalaJugador;
+  unidoPorCodigo: boolean;
+  /** Si la IA le tomó el asiento tras vencer su turno (política 'ia'). */
+  tomadoPorIA: boolean;
+  esBot: boolean;
+  esYo: boolean;
+}
+
+export interface HuePlaySala {
+  salaId: number;
+  juegoCodigo: string;
+  creadorUserId: number;
+  maxJugadores: number;
+  completarConIA: boolean;
+  politicaAbandono: PoliticaAbandonoSala;
+  plazoTurnoHoras: number;
+  codigoInvitacion: string;
+  estado: EstadoSala;
+  /** JSON crudo (Ludo) o null antes de arrancar. */
+  tablero: string | null;
+  jugadores: HuePlaySalaJugador[];
+  miAsientoId: number | null;
+  turnoDeSalaJugadorId: number | null;
+  esMiTurno: boolean;
+  turnoVenceEn: string | null;
+  ganadorSalaJugadorId: number | null;
+  soyCreador: boolean;
+  creadoEn: string;
+  iniciadaEn: string | null;
+  terminadaEn: string | null;
+}
+
+export interface HuePlaySalasBandeja {
+  invitaciones: HuePlaySala[];
+  armando: HuePlaySala[];
+  miTurno: HuePlaySala[];
+  esperando: HuePlaySala[];
+  terminadas: HuePlaySala[];
+}
+
+/** Una ficha de Ludo. `pos`: -1 corral, 0-50 camino compartido, 51-56 tramo final, 57 meta. */
+export interface FichaLudo {
+  jugador: number;
+  num: number;
+  pos: number;
+}
+
+export interface TableroLudo {
+  fichas: FichaLudo[];
+  consecutivosSeis: number;
+  dadoPendiente: number | null;
+  jugadores: number;
+}
+
+export interface MovimientoLegalLudo {
+  ficha: { jugador: number; num: number };
+  desde: number;
+  hasta: number;
+  captura: boolean;
+}
+
+export interface JugadaLudo {
+  dado: number;
+  ficha: { jugador: number; num: number } | null;
+  desde: number | null;
+  hasta: number | null;
+  capturadas: { jugador: number; num: number }[];
+}
+
+/** Todas las jugadas de un asiento IA en su turno (puede ser más de una tirada, si saca seises). */
+export interface JugadasIASalaJugador {
+  salaJugadorId: number;
+  jugadas: JugadaLudo[];
+}
+
+export interface HuePlaySalaTirar {
+  sala: HuePlaySala;
+  dado: number;
+  movimientosLegales: MovimientoLegalLudo[];
+  pasoElTurno: boolean;
+  jugadasIA: JugadasIASalaJugador[];
+}
+
+export interface HuePlaySalaMover {
+  sala: HuePlaySala;
+  jugada: JugadasIASalaJugador;
+  gane: boolean;
+  jugadasIA: JugadasIASalaJugador[];
+}
+
+export interface HistorialPar {
+  misVictorias: number;
+  susVictorias: number;
+  empates: number;
+}
+
+/**
+ * HueRummy: `palo` 0-3 (picas/corazones/diamantes/tréboles), `valor` 1-13
+ * (as=1, J/Q/K=11/12/13). El servidor nunca manda las manos ajenas — sólo
+ * `cantidadCartasPorJugador`.
+ */
+export interface CartaRummy {
+  palo: number;
+  valor: number;
+}
+
+export interface MeldRummy {
+  jugador: number;
+  cartas: CartaRummy[];
+}
+
+/** Vista redactada del estado de una sala de Rummy, propia de quien la pide. */
+export interface EstadoRummyVisible {
+  miMano: CartaRummy[];
+  cantidadCartasPorJugador: number[];
+  cartasEnMazo: number;
+  descarte: CartaRummy[];
+  melds: MeldRummy[];
+  fase: 'robar' | 'descartar';
+  jugadores: number;
+}
+
+/** Respuesta de los endpoints genéricos de sala (`sala_ver.php`, `sala_iniciar.php`): sirven para cualquier juego de sala. */
+export interface HuePlaySalaGenerica {
+  sala: HuePlaySala;
+  jugadasIA: (JugadasIASalaJugador | JugadaIARummy)[];
+  estadoRummy: EstadoRummyVisible | null;
+}
+
+export interface JugadaIARummy {
+  salaJugadorId: number;
+  robo: CartaRummy | null;
+  melds: CartaRummy[][];
+  descarte: CartaRummy | null;
+}
+
+export type JugadasIASalaRummy = JugadaIARummy;
+
+export interface HuePlayRummyRobar {
+  sala: HuePlaySala;
+  carta: CartaRummy | null;
+  rondaCortada: boolean;
+  estadoRummy: EstadoRummyVisible;
+}
+
+export interface HuePlayRummyBajar {
+  sala: HuePlaySala;
+  estadoRummy: EstadoRummyVisible;
+}
+
+export interface HuePlayRummyDescartar {
+  sala: HuePlaySala;
+  cartaDescartada: CartaRummy | null;
+  gane: boolean;
+  jugadasIA: JugadaIARummy[];
+  estadoRummy: EstadoRummyVisible | null;
 }
 
 /** Una pregunta tal como la sirve el backend: sin la respuesta correcta. */

@@ -206,6 +206,124 @@ function rh_diario_ranking(mysqli $conn, int $diarioId, int $limite = 20): array
 }
 
 /**
+ * Los períodos del ranking y cuántos días abarca cada uno.
+ *
+ * **Ventanas móviles y no semanas de calendario.** Un ranking que se reinicia
+ * los lunes deja la tabla casi vacía todo el lunes, y el 1° de enero la anual
+ * arrancaría de cero para todos. Con "los últimos N días" la tabla siempre
+ * tiene contenido, y el que empieza hoy no arrastra una desventaja eterna:
+ * los puntajes viejos van saliendo solos por el fondo.
+ */
+const RH_DIARIO_PERIODOS = [
+    'dia' => 1,
+    'semana' => 7,
+    'mes' => 30,
+    'anio' => 365,
+];
+
+/**
+ * Ranking acumulado de los retos diarios en una ventana de tiempo.
+ *
+ * Suma los puntos de todos los juegos: el que juega los tres retos del día
+ * suma más que el que juega uno. Es a propósito —el modo premia volver y
+ * jugarlo— y es la misma regla para todos.
+ *
+ * Devuelve también en cuántos días jugó cada uno, que es lo que permite leer la
+ * tabla: 9000 puntos en 3 días no dice lo mismo que 9000 en 30.
+ */
+function rh_diario_ranking_periodo(
+    mysqli $conn,
+    string $periodo,
+    int $userId,
+    int $limite = 30
+): array {
+    $dias = RH_DIARIO_PERIODOS[$periodo] ?? 1;
+    $limite = max(1, min(100, $limite));
+    $hoy = rh_diario_hoy();
+    // `- 1` porque la ventana incluye hoy: 7 días son hoy y los 6 anteriores.
+    $desde = date('Y-m-d', strtotime($hoy . ' -' . ($dias - 1) . ' day'));
+
+    $sql =
+        'SELECT r.UserId, SUM(r.Puntos) AS Puntos, COUNT(*) AS Partidas,
+                COUNT(DISTINCT d.Fecha) AS Dias,
+                u.Username, u.NombreCompleto, u.AvatarPath
+         FROM JuegoDiarioResultado r
+         INNER JOIN JuegoDiario d ON d.DiarioId = r.DiarioId
+         INNER JOIN Usuario u ON u.UserId = r.UserId
+         WHERE d.Fecha BETWEEN ? AND ?
+         GROUP BY r.UserId, u.Username, u.NombreCompleto, u.AvatarPath
+         ORDER BY Puntos DESC, Dias DESC, r.UserId ASC';
+
+    $stmt = $conn->prepare($sql . ' LIMIT ?');
+    $stmt->bind_param('ssi', $desde, $hoy, $limite);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $lista = [];
+    $puesto = 0;
+    while ($f = $res->fetch_assoc()) {
+        $puesto++;
+        $lista[] = [
+            'puesto' => $puesto,
+            'userId' => (int) $f['UserId'],
+            'username' => $f['Username'],
+            'nombreCompleto' => $f['NombreCompleto'],
+            'avatarPath' => $f['AvatarPath'],
+            'puntos' => (int) $f['Puntos'],
+            'partidas' => (int) $f['Partidas'],
+            'dias' => (int) $f['Dias'],
+            'soyYo' => (int) $f['UserId'] === $userId,
+        ];
+    }
+    $stmt->close();
+
+    // Mi fila y mi puesto se calculan aparte porque puedo estar fuera del
+    // límite: si sólo se mirara la lista de arriba, alguien en el puesto 80
+    // vería la tabla sin encontrarse en ningún lado.
+    $stmt = $conn->prepare(
+        'SELECT SUM(r.Puntos) AS Puntos, COUNT(*) AS Partidas, COUNT(DISTINCT d.Fecha) AS Dias
+         FROM JuegoDiarioResultado r
+         INNER JOIN JuegoDiario d ON d.DiarioId = r.DiarioId
+         WHERE d.Fecha BETWEEN ? AND ? AND r.UserId = ?'
+    );
+    $stmt->bind_param('ssi', $desde, $hoy, $userId);
+    $stmt->execute();
+    $mio = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $misPuntos = $mio && $mio['Puntos'] !== null ? (int) $mio['Puntos'] : null;
+    $miPuesto = null;
+
+    if ($misPuntos !== null) {
+        $stmt = $conn->prepare(
+            'SELECT COUNT(*) + 1 AS Puesto FROM (
+                 SELECT r.UserId, SUM(r.Puntos) AS P
+                 FROM JuegoDiarioResultado r
+                 INNER JOIN JuegoDiario d ON d.DiarioId = r.DiarioId
+                 WHERE d.Fecha BETWEEN ? AND ?
+                 GROUP BY r.UserId
+                 HAVING P > ?
+             ) mejores'
+        );
+        $stmt->bind_param('ssi', $desde, $hoy, $misPuntos);
+        $stmt->execute();
+        $miPuesto = (int) ($stmt->get_result()->fetch_assoc()['Puesto'] ?? 1);
+        $stmt->close();
+    }
+
+    return [
+        'periodo' => $periodo,
+        'desde' => $desde,
+        'hasta' => $hoy,
+        'dias' => $dias,
+        'ranking' => $lista,
+        'miPuntaje' => $misPuntos,
+        'miPuesto' => $miPuesto,
+        'misDias' => $mio && $mio['Dias'] !== null ? (int) $mio['Dias'] : 0,
+    ];
+}
+
+/**
  * La racha de días seguidos.
  *
  * Se corta con jugar cualquier juego del diario, no uno en particular: la racha

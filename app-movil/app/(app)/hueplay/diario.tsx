@@ -3,9 +3,11 @@ import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { DiarioHoy, DiarioRanking, DiarioReto } from '../../../src/types/hueplay';
+import { ChipRow } from '../../../src/components/ui/ChipRow';
+import { DiarioHoy, DiarioPeriodo, DiarioRanking, DiarioRankingPeriodo, DiarioReto } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
@@ -43,6 +45,7 @@ const ICONOS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function DiarioScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [datos, setDatos] = useState<DiarioHoy | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -51,6 +54,15 @@ export default function DiarioScreen() {
   const [abierto, setAbierto] = useState<string | null>(null);
   const [ranking, setRanking] = useState<DiarioRanking | null>(null);
   const [cargandoRanking, setCargandoRanking] = useState(false);
+
+  /**
+   * Ranking global (suma los tres retos), aparte del "ver tabla" por juego de
+   * arriba. Vive en un modal propio con tabs de período.
+   */
+  const [rankingGlobalVisible, setRankingGlobalVisible] = useState(false);
+  const [periodo, setPeriodo] = useState<DiarioPeriodo>('dia');
+  const [rankingPeriodo, setRankingPeriodo] = useState<DiarioRankingPeriodo | null>(null);
+  const [cargandoRankingPeriodo, setCargandoRankingPeriodo] = useState(false);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -89,6 +101,31 @@ export default function DiarioScreen() {
     [abierto]
   );
 
+  const cargarRankingPeriodo = useCallback(async (p: DiarioPeriodo) => {
+    setCargandoRankingPeriodo(true);
+    const res = await hueplayApi.diarioRankingPeriodo(p);
+    if (res.success && res.data) setRankingPeriodo(res.data);
+    setCargandoRankingPeriodo(false);
+  }, []);
+
+  const abrirRankingGlobal = useCallback(() => {
+    hapticLeve();
+    setRankingGlobalVisible(true);
+    setPeriodo('dia');
+    setRankingPeriodo(null);
+    cargarRankingPeriodo('dia');
+  }, [cargarRankingPeriodo]);
+
+  const cambiarPeriodo = useCallback(
+    (p: DiarioPeriodo) => {
+      hapticLeve();
+      setPeriodo(p);
+      setRankingPeriodo(null);
+      cargarRankingPeriodo(p);
+    },
+    [cargarRankingPeriodo]
+  );
+
   const jugar = useCallback((reto: DiarioReto) => {
     const ruta = RUTAS[reto.juegoCodigo];
     // Sin semilla no se puede jugar el reto: es la que garantiza que sea el
@@ -107,14 +144,28 @@ export default function DiarioScreen() {
   }
 
   return (
+    <>
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.cuerpo, centeredContent]}
     >
-      <Text style={[styles.titulo, { color: colors.text }]}>{t('hueplay.diario.titulo')}</Text>
-      <Text style={[styles.bajada, { color: colors.textMuted }]}>
-        {t('hueplay.diario.bajada')}
-      </Text>
+      <View style={styles.encabezado}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.titulo, { color: colors.text }]}>{t('hueplay.diario.titulo')}</Text>
+          <Text style={[styles.bajada, { color: colors.textMuted }]}>
+            {t('hueplay.diario.bajada')}
+          </Text>
+        </View>
+        <Pressable
+          onPress={abrirRankingGlobal}
+          style={[styles.botonRanking, { backgroundColor: colors.primarySoft, borderColor: colors.primary }]}
+        >
+          <Ionicons name="trophy" size={16} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+            {t('hueplay.diario.ranking')}
+          </Text>
+        </Pressable>
+      </View>
 
       {datos && datos.racha > 0 ? (
         <View style={[styles.racha, { backgroundColor: colors.primarySoft, borderColor: colors.primary }]}>
@@ -213,12 +264,108 @@ export default function DiarioScreen() {
 
       <Text style={[styles.pie, { color: colors.textMuted }]}>{t('hueplay.diario.pie')}</Text>
     </ScrollView>
+
+    <Modal
+      visible={rankingGlobalVisible}
+      animationType="none"
+      onRequestClose={() => setRankingGlobalVisible(false)}
+    >
+      <View style={[styles.modalCuerpo, { backgroundColor: colors.background, paddingTop: insets.top + 16 }]}>
+        <View style={styles.modalHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.titulo, { color: colors.text, fontSize: 20 }]}>
+              {t('hueplay.diario.rankingTitulo')}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+              {t('hueplay.diario.rankingBajada')}
+            </Text>
+          </View>
+          <Pressable onPress={() => setRankingGlobalVisible(false)} hitSlop={10}>
+            <Ionicons name="close" size={24} color={colors.textMuted} />
+          </Pressable>
+        </View>
+
+        <ChipRow
+          style={styles.modalTabs}
+          opciones={[
+            { valor: 'dia', label: t('hueplay.diario.periodoDia') },
+            { valor: 'semana', label: t('hueplay.diario.periodoSemana') },
+            { valor: 'mes', label: t('hueplay.diario.periodoMes') },
+            { valor: 'anio', label: t('hueplay.diario.periodoAnio') },
+          ]}
+          seleccionado={periodo}
+          onSelect={cambiarPeriodo}
+          scrollable={false}
+        />
+
+        <ScrollView contentContainerStyle={styles.modalLista}>
+          {cargandoRankingPeriodo ? (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+          ) : rankingPeriodo && rankingPeriodo.ranking.length > 0 ? (
+            rankingPeriodo.ranking.map((r) => (
+              <View
+                key={r.userId}
+                style={[
+                  styles.puesto,
+                  { borderBottomColor: colors.border },
+                  r.soyYo && { backgroundColor: colors.primarySoft, borderRadius: radii.md },
+                ]}
+              >
+                <Text style={[styles.puestoNum, { color: colors.textMuted }]}>{r.puesto}</Text>
+                {r.avatarPath ? (
+                  <Image source={{ uri: rhAvatarUrl(r.avatarPath) }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, { backgroundColor: colors.border }]} />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: 13 }} numberOfLines={1}>
+                    {r.username ? `@${r.username}` : r.nombreCompleto}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                    {t('hueplay.diario.diasJugados', { dias: r.dias })}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                  {r.puntos}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginVertical: 10 }}>
+              {t('hueplay.diario.rankingVacio')}
+            </Text>
+          )}
+        </ScrollView>
+
+        {rankingPeriodo && rankingPeriodo.miPuesto !== null && rankingPeriodo.miPuntaje !== null ? (
+          <View style={[styles.modalPie, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={{ color: colors.text, fontSize: 13, fontFamily: fonts.bodySemi }}>
+              {t('hueplay.diario.tuPuesto', {
+                puesto: rankingPeriodo.miPuesto,
+                puntos: rankingPeriodo.miPuntaje,
+              })}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cuerpo: { padding: 16, paddingBottom: 40 },
+  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },
+  botonRanking: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   titulo: { fontSize: 26, fontFamily: fonts.display, marginBottom: 4 },
   bajada: { fontSize: 13, marginBottom: 14 },
   racha: {
@@ -252,9 +399,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 8,
+    paddingHorizontal: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   puestoNum: { width: 22, fontSize: 12, fontFamily: fonts.bodySemi },
   avatar: { width: 28, height: 28, borderRadius: 14 },
   pie: { fontSize: 11, textAlign: 'center', marginTop: 8 },
+  modalCuerpo: { flex: 1, paddingHorizontal: 16 },
+  modalHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 },
+  modalTabs: { marginBottom: 8 },
+  modalLista: { paddingBottom: 16 },
+  modalPie: {
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
 });

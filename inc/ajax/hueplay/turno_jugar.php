@@ -65,31 +65,13 @@ $gano = rh_c4_gano($tablero, $fila, $columna);
 $empate = !$gano && rh_c4_lleno($tablero);
 $rival = $userId === $retador ? $retado : $retador;
 
-if ($gano || $empate) {
-    $ganador = $gano ? $userId : null;
-
-    // El turno se pone en NULL al cerrar: dejarlo apuntando a alguien haría que
-    // la bandeja mostrara "te toca" en un duelo terminado.
-    $stmt = $conn->prepare(
-        "UPDATE JuegoDesafio
-            SET Tablero = ?, Movimientos = ?, TurnoDeUserId = NULL,
-                Estado = 'terminado', GanadorUserId = ?
-          WHERE DesafioId = ? AND TurnoDeUserId = ?"
-    );
-    $stmt->bind_param('siiii', $tablero, $movimientos, $ganador, $desafioId, $userId);
-} else {
-    // El `TurnoDeUserId = ?` del WHERE es la guarda contra dos jugadas
-    // simultáneas: si el turno ya cambió, esta no afecta ninguna fila.
-    // También se corre el vencimiento: un duelo activo no debería morirse.
-    $stmt = $conn->prepare(
-        "UPDATE JuegoDesafio
-            SET Tablero = ?, Movimientos = ?, TurnoDeUserId = ?, Estado = 'aceptado',
-                ExpiraEn = DATE_ADD(NOW(), INTERVAL " . RH_DESAFIO_DIAS . " DAY)
-          WHERE DesafioId = ? AND TurnoDeUserId = ?"
-    );
-    $stmt->bind_param('siiii', $tablero, $movimientos, $rival, $desafioId, $userId);
-}
-
+// Paso 1: persistir el tablero. El `WHERE TurnoDeUserId = ?` es el guard de
+// concurrencia: si dos jugadas llegaran a la vez, la segunda no encuentra fila.
+$stmt = $conn->prepare(
+    "UPDATE JuegoDesafio SET Tablero = ?, Movimientos = ?
+      WHERE DesafioId = ? AND TurnoDeUserId = ? AND Estado IN ('pendiente','aceptado')"
+);
+$stmt->bind_param('siii', $tablero, $movimientos, $desafioId, $userId);
 $stmt->execute();
 $afectadas = $stmt->affected_rows;
 $stmt->close();
@@ -100,38 +82,23 @@ if ($afectadas === 0) {
 
 $progreso = null;
 
+// Paso 2: cerrar o pasar el turno.
 if ($gano || $empate) {
-    // Los puntos los reparte el servidor. Pierda o gane, cada uno suma algo.
-    $puntosYo = rh_c4_puntos($gano, $empate);
-    $puntosRival = rh_c4_puntos(false, $empate);
+    $ganador = $gano ? $userId : null;
+    $puntosRetador = rh_c4_puntos($userId === $retador && $gano, $empate);
+    $puntosRetado = rh_c4_puntos($userId === $retado && $gano, $empate);
 
-    $progreso = rh_juego_registrar_partida($conn, $userId, 'hueconecta', $puntosYo, null, $desafioId);
-    rh_juego_registrar_partida($conn, $rival, 'hueconecta', $puntosRival, null, $desafioId);
-
-    if ($gano) {
-        rh_juego_perfil($conn, $userId);
-        rh_juego_perfil($conn, $rival);
-
-        $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET DesafiosGanados = DesafiosGanados + 1 WHERE UserId = ?');
-        $stmt->bind_param('i', $userId);
-        $stmt->execute();
-        $stmt->close();
-
-        $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET DesafiosPerdidos = DesafiosPerdidos + 1 WHERE UserId = ?');
-        $stmt->bind_param('i', $rival);
-        $stmt->execute();
-        $stmt->close();
-
-        rh_notificar($conn, [$rival], 'juego_desafio_fin', 'Perdiste el duelo',
-            rh_juego_nombre($conn, $userId) . ' te ganó en HueConecta', '/(app)/hueplay/desafios');
-    } else {
-        rh_notificar($conn, [$rival], 'juego_desafio_fin', 'Empate en HueConecta',
-            'El tablero se llenó sin ganador', '/(app)/hueplay/desafios');
-    }
+    $d['Tablero'] = $tablero; // para que rh_juego_cerrar_desafio_turnos vea el tablero final
+    $resultado = rh_juego_cerrar_desafio_turnos($conn, $d, $ganador, $puntosRetador, $puntosRetado);
+    $progreso = $userId === $retador ? $resultado['progresoRetador'] : $resultado['progresoRetado'];
 } else {
-    rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
-        rh_juego_nombre($conn, $userId) . ' ya movió en HueConecta', '/(app)/hueplay/desafios',
-        ['actorUserId' => $userId]);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoHoras']);
+
+    if (!rh_juego_es_bot($conn, $rival)) {
+        rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
+            rh_juego_nombre($conn, $userId) . ' ya movió en HueConecta', '/(app)/hueplay/desafios',
+            ['actorUserId' => $userId]);
+    }
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');

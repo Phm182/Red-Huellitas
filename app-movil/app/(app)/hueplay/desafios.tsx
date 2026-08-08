@@ -55,6 +55,20 @@ export default function DesafiosScreen() {
       });
       return;
     }
+    if (d.juegoCodigo === 'huedamas') {
+      router.push({
+        pathname: '/(app)/hueplay/damas',
+        params: { desafioId: d.desafioId },
+      });
+      return;
+    }
+    if (d.juegoCodigo === 'hueajedrez') {
+      router.push({
+        pathname: '/(app)/hueplay/ajedrez',
+        params: { desafioId: d.desafioId },
+      });
+      return;
+    }
     // Los de modo puntaje comparten la forma de entrar: id del duelo + semilla.
     const rutas: Record<string, string> = {
       huememo: '/(app)/hueplay/huememo',
@@ -68,9 +82,25 @@ export default function DesafiosScreen() {
 
   /** Nombre visible del juego, para no mostrar el código crudo. */
   const nombreJuego = (codigo: string) =>
-    ({ huematch: 'HueCrush', hueconecta: 'HueConecta', huememo: 'HueMemo', huetrivia: 'HueTrivia' })[
-      codigo
-    ] ?? codigo;
+    ({
+      huematch: 'HueCrush',
+      hueconecta: 'HueConecta',
+      huememo: 'HueMemo',
+      huetrivia: 'HueTrivia',
+      huedamas: 'HueDamas',
+      hueajedrez: 'HueAjedrez',
+    })[codigo] ?? codigo;
+
+  /** "Vence en 3h" — sólo tiene sentido en duelos abiertos, no contra la IA. */
+  const textoVence = (d: HuePlayDesafio): string | null => {
+    if (d.esRivalIA) return null;
+    const msRestantes = new Date(d.expiraEn.replace(' ', 'T')).getTime() - Date.now();
+    if (msRestantes <= 0) return null;
+    const minutos = Math.floor(msRestantes / 60000);
+    const texto =
+      minutos < 60 ? `${minutos}m` : minutos < 1440 ? `${Math.floor(minutos / 60)}h` : `${Math.floor(minutos / 1440)}d`;
+    return t('hueplay.venceEn', { texto });
+  };
 
   const Avatar = ({ d }: { d: HuePlayDesafio }) =>
     d.otro.avatarPath ? (
@@ -91,7 +121,7 @@ export default function DesafiosScreen() {
       {/* Un botón por juego. Un único "retar" obligaría a elegir el juego en una
           pantalla intermedia, que es un paso de más para dos opciones. */}
       <View style={styles.retarFila}>
-        {(['huematch', 'huememo', 'huetrivia', 'hueconecta'] as const).map((codigo) => (
+        {(['huematch', 'huememo', 'huetrivia', 'hueconecta', 'huedamas', 'hueajedrez'] as const).map((codigo) => (
           <Pressable
             key={codigo}
             onPress={() => {
@@ -107,6 +137,19 @@ export default function DesafiosScreen() {
           </Pressable>
         ))}
       </View>
+
+      <Pressable
+        onPress={() => {
+          hapticLeve();
+          router.push('/(app)/hueplay/salas' as never);
+        }}
+        style={[styles.botonSalas, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
+        <Ionicons name="dice" size={16} color={colors.primary} />
+        <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+          {t('hueplay.sala.verSalas')}
+        </Text>
+      </Pressable>
 
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
@@ -143,6 +186,7 @@ export default function DesafiosScreen() {
                         : d.rivalYaJugo
                           ? t('hueplay.yaJugoRival')
                           : t('hueplay.teRetaron')}
+                      {textoVence(d) ? ` · ${textoVence(d)}` : ''}
                     </Text>
                   </View>
                   {!d.soyRetador ? (
@@ -178,6 +222,7 @@ export default function DesafiosScreen() {
                       {d.modo === 'turnos'
                         ? t('hueplay.conecta.turnoDelRival')
                         : t('hueplay.hicisteN', { n: d.misPuntos ?? 0 })}
+                      {textoVence(d) ? ` · ${textoVence(d)}` : ''}
                     </Text>
                   </View>
                   <Ionicons name="hourglass-outline" size={18} color={colors.textMuted} />
@@ -261,6 +306,16 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radii.pill,
     paddingVertical: 12,
+  },
+  botonSalas: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingVertical: 10,
+    marginTop: 10,
   },
   fila: {
     flexDirection: 'row',

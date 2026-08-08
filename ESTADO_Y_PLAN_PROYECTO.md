@@ -490,6 +490,328 @@ calificaciones de ida y vuelta.
 
 ---
 
+## 4quinquies. Ranking global de HuePlay, con tabs por período (2026-08-07)
+
+Retomando el desafío diario de Fase 1: el "ver la tabla del día" que ya existía
+es **por juego** (HueCrush/HueMemo/HueTrivia, un solo día). Lo que pidió el
+usuario es otra cosa — un botón de **Ranking** aparte, que suma los tres retos
+y se puede mirar en cuatro ventanas: hoy / semana / mes / año.
+
+- **Ventanas móviles, no de calendario.** "Los últimos 7 días" en vez de "esta
+  semana calendario": si se reiniciara los lunes, la tabla estaría vacía todo
+  el lunes, y la anual arrancaría de cero el 1° de enero. `RH_DIARIO_PERIODOS`
+  en `inc/funciones/diario.php` (`rh_diario_ranking_periodo()`) mapea
+  `dia/semana/mes/anio` a 1/7/30/365 días hacia atrás desde hoy inclusive.
+  Nuevo endpoint `inc/ajax/hueplay/diario_ranking_periodo.php`.
+- Mi puesto se calcula aparte de la lista top-N (mismo patrón que ya usaba
+  `rh_diario_mi_puesto`): si no apareciera en el top, igual sabe dónde está.
+- Frontend: modal en `app/(app)/hueplay/diario.tsx`, tabs con el `ChipRow`
+  compartido, un botón "Ranking" nuevo al lado del título.
+
+**Bug real encontrado en la verificación, no del feature en sí — de cómo
+`<Modal>` de React Native se comporta en este proyecto sobre web**:
+`animationType="slide"` deja el modal con un `transform: translateY()` que
+nunca se resuelve (queda trasladado una pantalla entera hacia abajo, invisible
+y en la práctica sin poder clickearlo aunque el texto esté en el DOM).
+`animationType="fade"` (el que ya usaba el modal de Match) tampoco cierra bien
+el círculo: el contenido queda visualmente en su lugar pero con
+`pointer-events: none` heredado de la animación que no termina de "entrar" en
+este entorno web — un click real (coordenadas) no le pega a nada, aunque un
+`dispatchEvent` manual por JS sí (porque eso no respeta `pointer-events`, y por
+eso durante la verificación parecía que las tabs sí andaban aunque el modal
+seguía roto). **La solución fue `animationType="none"`**: sin animación no hay
+transición a medio completar, y el modal queda clickeable desde el primer
+frame. Si se agrega otro `<Modal>` de RN a este proyecto (web), usar `"none"` y
+no asumir que `"fade"` de Match está libre de este problema — no se verificó
+ahí, sólo se descubrió acá.
+
+---
+
+## 4sexies. HueDamas + infraestructura de plazo de turno e IA (2026-08-07)
+
+Primer juego de una tanda de 4 pedidos (Damas, Ajedrez, Ludo, Rummy — los tres
+últimos quedan para entregas futuras, uno por vez). Esta entrega funda dos
+piezas compartidas que **también se aplican retroactivamente a HueConecta**:
+
+- **Plazo de respuesta configurable, con tope de 24hs**: quien arma el duelo
+  elige 1/6/12/24 horas (`JuegoDesafio.PlazoTurnoHoras`, migración
+  `sql/052_hueplay_plazo_ia.sql`). No responder a tiempo **pierde la
+  partida** (no es un vencimiento neutro) — se resuelve tanto perezosamente
+  (al abrir la bandeja, `rh_juego_expirar_desafios()`) como por el cron nuevo
+  `inc/cli/juego_turnos_vencidos.php` (cada 15 min, sin registrar todavía —
+  ver `AUTOMATIZACIONES_PENDIENTES.md` #7).
+- **Modo solitario contra la IA**: cuenta bot reservada (`Usuario.EsBot`,
+  única fila, `PasswordHash=NULL` así nunca puede loguearse), excluida a mano
+  de `usuarios/buscar.php` y `hueplay/rivales.php`. El bot resuelve su turno
+  **en el mismo request** que la jugada humana (`rh_damas_turno_ia()`), nunca
+  hay polling esperándolo. `rh_juego_ia_disponible($codigo)` es el único punto
+  a tocar cuando otro juego sume IA.
+- **Refactor**: `rh_juego_cerrar_desafio_turnos()` (nueva, en `juegos.php`)
+  centraliza el cierre de un desafío por turnos — antes `turno_jugar.php` lo
+  hacía a mano y era el único consumidor; ahora también la usan
+  `damas_mover.php` y la resolución de vencidos, sin repetir el bloque de
+  notificar+contar+registrar partida.
+
+**Damas en sí**: reglas argentinas sobre 8x8 (no 10x10 internacional),
+tablero como string de 64 posiciones igual criterio que HueConecta.
+`inc/funciones/damas.php`: captura obligatoria en las 4 diagonales (no sólo
+adelante — regla FMJD), multi-captura en cadena, dama voladora. IA por
+minimax + poda alfa-beta (profundidad 4, ~2ms por jugada). Dos
+simplificaciones deliberadas y documentadas en el código: no se fuerza la
+"captura de mayoría" cuando hay varias cadenas posibles, y la dama aterriza
+siempre inmediatamente después de la pieza comida (no en cualquier casilla
+libre más lejana).
+
+**Animaciones** (`app-movil/src/juego/huedamas/`): `PiezaDamas` desliza en los
+2 ejes (a diferencia de `FichaCae`, que sólo cae en Y), con pop de corona;
+`PiezaComida` se desvanece antes de salir del árbol; `CelebracionPatitas` es
+el evento visual de "ganar" que HueConecta no tenía (ahí sólo hay
+texto+haptic). El front reproduce la cadena de saltos del backend paso a
+paso, con un delay fijo por salto — nunca aplica el tablero final de un
+golpe.
+
+**Bug real encontrado en la verificación**: un movimiento SIN captura mandaba
+`saltos: []`, y el front sólo sabe animar iterando esa lista — así que un
+movimiento simple nunca actualizaba la posición visual de la ficha (aunque el
+servidor sí lo aplicaba bien). Se arregló haciendo que todo movimiento,
+incluso uno simple, lleve un salto implícito con `comida: null`.
+
+**Verificado**: motor de reglas con casos armados a mano (captura obligatoria,
+cadena de 2 saltos, coronación, dama voladora, bloqueo total) + simulación
+IA-vs-IA completa (72 turnos, 2.2ms/jugada) + partidas reales por HTTP en
+browser (contra la IA y 1v1 humano con `curl`, incluida la IA
+contraatacando con una dama voladora) + vencimiento de turno forzado a mano
+(perezoso y por cron) + HueConecta jugado hasta ganar para confirmar que el
+refactor de `turno_jugar.php` no rompió nada. **No se pudo verificar
+visualmente** (el browser preview de esta sesión no puede tomar
+screenshots) — falta mirar las animaciones en el celular.
+
+**Falta**: Ajedrez, Ludo (con salas de hasta 4) y Rummy (ídem), uno por vez.
+
+## 4septies. HueAjedrez (2026-08-07)
+
+Tercer juego de la tanda (Damas y ahora Ajedrez cerrados; quedan Ludo y
+Rummy, que van a necesitar salas de hasta 4 jugadores). Reusa el 100% de la
+infraestructura de HueDamas sin tocarla — plazo de turno, IA en el mismo
+request, `rh_juego_cerrar_desafio_turnos()` — así que esta entrega fue pura
+lógica de ajedrez.
+
+**Tablero**: string de **70 caracteres**, no 64 como Damas/Conecta4 — los
+primeros 64 son las casillas con **letras** (mayúscula el retador, minúscula
+el retado: `P/N/B/R/Q/K`, `.` vacío; hacían falta letras y no dígitos porque
+son 6 tipos de pieza por lado), y los últimos 6 son estado que el tablero
+solo no alcanza a expresar: 4 de derecho de enroque estilo FEN (`KQkq`, cada
+uno `-` si se perdió) y 2 de la casilla objetivo de captura al paso (`--` si
+no aplica). `inc/funciones/ajedrez.php` implementa reglas completas: jaque,
+jaque mate, ahogado (empate), enroque corto/largo con las 3 condiciones
+(nadie se movió, casillas libres, el rey ni pasa ni termina en jaque),
+captura al paso, promoción automática a dama. La pieza clave del motor es
+`rh_ajedrez_casilla_atacada()`: la reusan tanto la detección de jaque como
+la validación de enroque.
+
+**Deliberadamente no implementado** (documentado en el código): regla de 50
+movimientos, triple repetición, empate por material insuficiente. El plazo
+de turno (compartido) le pone un techo real a una partida que no termine
+sola.
+
+**IA a profundidad 2, no 3**: el factor de ramificación del ajedrez (~35)
+es mucho mayor que el de damas (~7). En la verificación, profundidad 3 tardó
+hasta ~0.9s por jugada desde la posición inicial — riesgoso para un request
+síncrono. A profundidad 2 el promedio medido fue ~200ms.
+
+**Piezas dibujadas con glifos Unicode** (♔♕♖♗♘♙ / ♚♛♜♝♞♟) en vez de 12 SVG a
+mano — se ven nítidas sobre cualquier casilla usando `textShadow` del color
+contrario como contorno. `CelebracionPatitas` (el confeti de huellitas al
+ganar) se movió de `src/juego/huedamas/` a `src/juego/comun/`: es genérica,
+y con Ajedrez como segundo consumidor real ya valía la pena.
+
+Verificado igual que Damas: motor aislado (20 movimientos en la posición
+inicial, jaque forzando a salir, enroque válido e inválido por casilla de
+paso atacada, captura al paso, promoción, mate del pastor, ahogado con rey
+solo), partidas completas por HTTP contra la IA (incluida una captura
+determinística idéntica reproducida dos veces, primero por curl y después
+confirmada clickeando en el browser), y limpieza de datos de prueba al
+cerrar.
+
+**Falta**: Ludo y Rummy, que necesitan el sistema de salas de hasta 4
+jugadores (no existe todavía, se construye recién ahí).
+
+## 4octies. HueLudo + salas de hasta 4 jugadores (2026-08-08)
+
+Cuarto juego de la tanda y el primero que **no** es un duelo 1 contra 1: hasta
+4 jugadores en la misma partida, con asientos completables por IA. Esto
+obligó a construir una infraestructura nueva y genérica (`JuegoSala`,
+`JuegoSalaJugador`) que Rummy va a reusar después sin tocarla — mismo
+criterio de capas que ya separaba `inc/funciones/juegos.php` (genérico) de
+`inc/funciones/damas.php`/`ajedrez.php` (específicos de cada juego).
+
+**Esquema** (`sql/053_hueplay_salas.sql`): `JuegoSala` (código de invitación
+de 6 caracteres sin 0/O/1/I/L, `MaxJugadores` 2-4, `CompletarConIA`,
+`PoliticaAbandono` ENUM `ia`/`espera`/`expulsa`, `Tablero` **JSON** — no un
+string de casillas como Damas/Ajedrez, porque Ludo no es una grilla
+cuadrada) y `JuegoSalaJugador` (un asiento; `TomadoPorIA` se prende cuando la
+política `ia` le toma el lugar a un humano que venció su turno, sin pisar su
+`UserId` — así el historial sigue siendo cierto). También `JuegoHistorialPar`
+(cuántas veces le ganaste/perdiste a cada persona, por juego — de a pares,
+`UserIdA` siempre el menor de los dos UserId; **genérico**, así que
+HueConecta/Damas/Ajedrez también empezaron a acumularlo desde
+`rh_juego_cerrar_desafio_turnos()`).
+
+**Arquitectura de la capa de salas** (`inc/funciones/salas.php`): sabe crear,
+unirse por código, responder invitación, armar el orden de turno (barajado,
+no por orden de llegada), cerrar y resolver un turno vencido según la
+política — pero **no sabe nada de Ludo**. Construir el tablero inicial y
+resolver "quién juega el turno completo de la IA" es responsabilidad del
+juego específico (`inc/funciones/ludo.php`), invocado por dispatch en los
+endpoints (`sala_iniciar.php`, `sala_ver.php`) — mismo patrón que
+`desafio_crear.php` ya usaba para Damas/Ajedrez.
+
+**Motor de Ludo** (`inc/funciones/ludo.php`): estado en JSON
+`{"fichas":[...16],"consecutivosSeis":0,"dadoPendiente":null}`. Cada ficha
+guarda su posición **relativa a su propio jugador** (no absoluta en el
+anillo): `-1` corral, `0-50` las 51 casillas del camino compartido (que da
+casi toda la vuelta a un anillo de 52 antes de doblar), `51-56` su tramo
+final privado, `57` meta. 8 casillas seguras (las 4 entradas + una "estrella"
+8 casillas después de cada una). Tres seises seguidos sin mover de verdad
+pierden el turno. El endpoint `ludo_tirar.php` tira y calcula los
+movimientos legales; si no hay ninguno, pasa el turno ahí mismo y encadena
+lo que le toque jugar a la IA — `ludo_mover.php` aplica la ficha elegida y,
+si no sacó 6, hace lo mismo. **Decisión de alcance**: la partida termina con
+el PRIMER jugador que completa sus 4 fichas, no se juega por 2°/3° puesto
+(documentado en el código) — el historial de a pares sólo puede registrar
+"el ganador le ganó a cada humano", no el orden entre los que no ganaron.
+
+**Frontend**: `sala-crear.tsx` (cantidad de jugadores, completar con IA,
+política de abandono, plazo, buscador de invitados reusando
+`rivales.php`), `sala-unirse.tsx` (pegar código o abrir el deep-link que
+arma `sala-lobby` con `compartirPost`), `sala-lobby/[salaId].tsx` (quién
+aceptó, iniciar), `salas.tsx` (bandeja: invitaciones/armando/tu
+turno/esperando/terminadas) y `ludo.tsx` (el tablero). El tablero es SVG
+puro en una grilla de 15x15 (`TableroLudo.tsx`, con las coordenadas del
+camino/tramos/corrales escritas a mano una sola vez) + `Ficha.tsx`
+(se reposiciona sola por `pos`, igual criterio que `PiezaDamas` con
+fila/col) + `Dado.tsx`. Animar un tiro de varias casillas es la pantalla
+actualizando `pos` de a un paso genuino con una espera chica entre medio
+(`reproducirJugada` en `ludo.tsx`), no Ficha haciendo sub-pasos internos.
+
+Verificado: motor aislado (34 casos — reparto, salida con 6, captura en
+casilla no segura, no-captura en segura, tope exacto para entrar a meta,
+victoria, 3 seises, heurística de IA, expulsión), infraestructura de salas
+por curl (crear con código, unirse, responder, iniciar completando con IA,
+y **las 3 políticas de abandono** forzando vencimiento con el cron), dos
+partidas completas de punta a punta por HTTP (2 humanos + 2 IA hasta que
+ganó la IA; 2 humanos solos hasta que ganó un humano, confirmando que el
+historial de a pares sólo se actualiza cuando gana un humano), y en browser
+(hub → salas → crear → lobby → invitación aceptada por otro usuario vía
+curl → iniciar → tablero SVG con el conteo de piezas esperado → tirar dado →
+"sin jugada, pasa el turno" → el rival jugó su turno por curl → volvió mi
+turno → salió 6 → clic en una ficha resaltada → salió del corral y el turno
+siguió siendo mío). Limpieza de datos de prueba (salas, partidas, historial,
+contadores de perfil) verificada al final.
+
+**Falta**: `inc/cli/salas_turnos_vencidos.php` está escrito y probado con el
+cron manual, pero la tarea programada de Windows no se registró (ver
+`AUTOMATIZACIONES_PENDIENTES.md`, item 8). Rummy queda para después, reusando
+esta misma infraestructura de salas.
+
+## 4nonies. HueRummy — el cuarto y último juego de la tanda (2026-08-08)
+
+Reusa el 100% de la infraestructura de salas de Ludo (`inc/funciones/salas.php`,
+`JuegoSala`/`JuegoSalaJugador`/`JuegoHistorialPar`) sin tocarla — mismo
+patrón de dispatch por `JuegoCodigo` en `sala_iniciar.php`/`sala_ver.php`/el
+cron. Sólo hizo falta sumar `'huerummy' => ['modo' => 'sala']` a `RH_JUEGOS`.
+
+**Reglas**: Rummy de descarte clásico, mazo de 52 cartas sin comodines, 7
+cartas de mano para cualquier cantidad de jugadores (2-4) — decisión de
+alcance, igual criterio que las simplificaciones documentadas de Ludo. Un
+turno es robar (mazo o tope del descarte) → bajar 0 o más juegos nuevos
+(sets de igual valor y palo distinto, o corridas de 3+ del mismo palo) →
+descartar. **No existe "jugar una carta suelta" sobre un meld ya bajado**
+(ni propio ni ajeno) — cada juego se arma completo desde la mano en un solo
+pedido y queda fijo en la mesa; es la simplificación de alcance más
+importante del motor, documentada en el encabezado de
+`inc/funciones/rummy.php`. Si el mazo se vacía se reforma solo con el
+descarte (menos el tope, que sigue visible) — regla clásica. Si no queda
+nada de dónde robar (mazo vacío y el descarte con 1 sola carta), la ronda se
+corta y gana quien tenga menos "deadwood" (as=1, 2-10 su número, figuras=10).
+
+**Información oculta — el cambio de arquitectura más importante de esta
+entrega**: a diferencia de Ludo (donde el tablero entero es público), en
+Rummy cada jugador sólo puede ver su propia mano. Esto obligó a sacar el
+campo `tablero` de `rh_sala_serializar()` (antes mandaba `Tablero` crudo
+para cualquier sala, lo cual en Rummy habría mostrado las cartas de todos a
+cualquiera que mirara la respuesta JSON — se encontró y corrigió **antes**
+de exponer ningún endpoint). Ahora `rh_sala_serializar()` siempre manda
+`tablero: null`; Ludo lo vuelve a pegar entero después (`sala_ver.php`,
+`sala_iniciar.php`, `ludo_tirar.php`, `ludo_mover.php`, ahí sí es seguro) y
+Rummy manda por separado `estadoRummy` (`rh_rummy_estado_visible()`): mi
+mano completa, sólo la CANTIDAD de cartas de cada rival, el mazo como
+número, y lo que ya es público (descarte, melds en la mesa, fase).
+
+**IA**: heurística greedy en `rh_rummy_ia_encontrar_melds()` — agrupa
+primero sets (por valor) y después corridas (por palo) con lo que sobra; no
+busca la combinación óptima entre las dos formas, documentado como
+simplificación de alcance. Toma el descarte en vez del mazo sólo cuando esa
+carta puntual le arma un meld de una.
+
+**Frontend**: `src/juego/huerummy/Carta.tsx` (una carta con símbolo Unicode
+de palo, no SVG a mano) y `ManoRivalOculta` (cartas boca abajo, para mostrar
+cuántas tiene cada rival sin revelarlas). `sala-crear.tsx` ahora lee
+`?juego=hueludo|huerummy` (antes estaba fijo a Ludo) y `salas.tsx` tiene dos
+botones de crear. **Bug real encontrado y corregido durante la verificación
+en browser**: las animaciones declarativas `entering`/`exiting`/`layout` de
+Reanimated (usadas al principio en `Carta.tsx` para el pop de entrada) dejan
+el elemento con `visibility: hidden` **para siempre** en este entorno web —
+las cartas estaban en el DOM con el valor y el palo correctos, pero
+invisibles (confirmado inspeccionando el `outerHTML`, no un problema de
+datos). Se reemplazó por el mismo patrón ya probado en `PiezaDamas`/`Ficha`:
+`useSharedValue` + `withTiming` en un `useEffect` al montar. **Ojo con esto
+en cualquier componente nuevo**: no usar `entering`/`exiting`/`layout` de
+Reanimated en este proyecto, ni en web ni claramente probado en nativo.
+
+Verificado: motor aislado (92 aserciones — reparto sin duplicados, valor de
+carta, sets/corridas válidas e inválidas, robar de mazo y de descarte,
+reforma del mazo al vaciarse, bajar meld válido/inválido, descartar y
+ganar, deadwood, heurística de IA, turno completo de IA), infraestructura
+de salas por curl (crear, invitar, aceptar, iniciar completando con IA, las
+3 políticas de abandono), una partida de 400 turnos por HTTP con un jugador
+de prueba deliberadamente débil (nunca toma del descarte a propósito) que
+sirvió para golpear la reforma del mazo y la cadena de IA cientos de veces
+sin un solo error — y por eso, en vez de esperar a que esa partida lenta
+terminara sola, los DOS caminos de cierre (alguien se queda sin cartas;
+nadie tiene de dónde robar) se verificaron aparte con estado forzado a
+mano, confirmando puntos, historial de a pares y contadores de perfil
+correctos en cada uno. En browser: crear sala de HueRummy, invitación
+aceptada por otro usuario vía curl, iniciar completando con IA, tablero con
+las cartas visibles y legibles (ahí se encontró el bug de arriba), robar,
+seleccionar, descartar, turno pasado correctamente al rival. Limpieza de
+datos de prueba (incluida la reconstrucción exacta de puntos/nivel/partidas
+jugadas desde `JuegoPartida`, no un ajuste aproximado) verificada al final.
+
+**Con esto se cierran los 4 juegos pedidos**: Damas, Ajedrez, Ludo y Rummy,
+todos con animación en cada acción, plazo de turno configurable, IA
+opcional, y (Ludo/Rummy) salas de hasta 4 con historial de a pares.
+
+**Build de Android hecho la misma noche** (2026-08-08): `.env` cambiado
+temporalmente a `EXPO_PUBLIC_API_URL=https://redhuellitas.bitflow.com.ar/inc`
+(y revertido a localhost después de compilar), `JAVA_HOME` al jbr de Android
+Studio, `./gradlew assembleRelease` en `app-movil/android` — mismo comando
+que documenta [[gotcha_java_home_gradle]]. Generó
+`app-arm64-v8a-release.apk` (71 MB) y `app-armeabi-v7a-release.apk` (59 MB)
+en `android/app/build/outputs/apk/release/`, firmados con el keystore de
+debug (igual que siempre, no es un release de Play Store). No había celular
+conectado por USB en ese momento para probar la instalación real — sólo se
+verificó que el build terminó sin errores (`BUILD SUCCESSFUL`).
+
+**iOS: no se pudo compilar** — no hay Mac/Xcode en esta máquina y `eas
+whoami` da "Not logged in" (EAS Build necesita loguearse con la cuenta de
+Expo del usuario, login interactivo que no se puede hacer sin su
+intervención). Se dejó preparado: `app.json` ya tenía `ios.bundleIdentifier`,
+y se agregaron los perfiles `ios-simulator` (sin costo, sólo pide `eas
+login`) e `ios-preview` (necesita Apple Developer Program pago) a
+`eas.json`. Pasos exactos para terminarlo en `AUTOMATIZACIONES_PENDIENTES.md`
+item 9.
+
 ## 5. Convenciones técnicas a mantener
 
 - **`sql/000_todo_schema.sql` es generado**: tras tocar `sql/`, correr

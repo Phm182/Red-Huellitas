@@ -32,6 +32,7 @@ $sql = "
       LEFT JOIN UsuarioJuegoPerfil p ON p.UserId = u.UserId
       LEFT JOIN Seguimiento s ON s.UserIdSeguidor = ? AND s.UserIdSeguido = u.UserId
      WHERE u.Estado = 'A'
+       AND u.EsBot = 0
        AND u.UserId <> ?
        AND NOT EXISTS (
            SELECT 1 FROM JuegoDesafio jd

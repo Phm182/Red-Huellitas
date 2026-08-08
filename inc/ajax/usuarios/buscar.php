@@ -17,7 +17,7 @@ $like = '%' . $q . '%';
 
 $stmt = $conn->prepare(
     "SELECT * FROM Usuario
-     WHERE Estado = 'A' AND (Username LIKE ? OR NombreCompleto LIKE ?)
+     WHERE Estado = 'A' AND EsBot = 0 AND (Username LIKE ? OR NombreCompleto LIKE ?)
      ORDER BY Username ASC LIMIT ?"
 );
 $stmt->bind_param('ssi', $like, $like, $limit);

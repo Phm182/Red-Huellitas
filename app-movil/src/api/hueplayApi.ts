@@ -1,15 +1,31 @@
 import { apiGet, apiPost } from './client';
 import {
   DiarioHoy,
+  DiarioPeriodo,
   DiarioRanking,
+  DiarioRankingPeriodo,
   DiarioResultado,
+  HistorialPar,
+  HuePlayAjedrezTurno,
+  HuePlayAjedrezVista,
+  HuePlayDamasTurno,
+  HuePlayDamasVista,
   HuePlayDesafio,
   HuePlayDesafiosBandeja,
   HuePlayPerfil,
   HuePlayProgreso,
   HuePlayRival,
+  HuePlayRummyBajar,
+  HuePlayRummyDescartar,
+  HuePlayRummyRobar,
+  HuePlaySala,
+  HuePlaySalaGenerica,
+  HuePlaySalaMover,
+  HuePlaySalasBandeja,
+  HuePlaySalaTirar,
   HuePlayTurno,
   HuePlayVista,
+  PoliticaAbandonoSala,
   TriviaResultado,
   TriviaTanda,
 } from '../types/hueplay';
@@ -55,6 +71,10 @@ export const hueplayApi = {
       true
     ),
 
+  /** Ranking acumulado de los tres retos diarios, por período. */
+  diarioRankingPeriodo: (periodo: DiarioPeriodo) =>
+    apiGet<DiarioRankingPeriodo>('ajax/hueplay/diario_ranking_periodo.php', { periodo }, true),
+
   rivales: (juegoCodigo: string, q?: string) =>
     apiGet<{ rivales: HuePlayRival[] }>(
       'ajax/hueplay/rivales.php',
@@ -62,10 +82,24 @@ export const hueplayApi = {
       true
     ),
 
-  crearDesafio: (juegoCodigo: string, rivalUserId: number) =>
+  /**
+   * `rivalUserId` no hace falta si `opciones.contraIA` es `true` — el backend
+   * resuelve el rival a la cuenta de la IA y, si le toca arrancar a ella, la
+   * jugada de apertura ya viene resuelta en la respuesta.
+   */
+  crearDesafio: (
+    juegoCodigo: string,
+    rivalUserId?: number,
+    opciones?: { plazoTurnoHoras?: number; contraIA?: boolean }
+  ) =>
     apiPost<{ desafio: HuePlayDesafio }>(
       'ajax/hueplay/desafio_crear.php',
-      { juegoCodigo, rivalUserId },
+      {
+        juegoCodigo,
+        ...(rivalUserId ? { rivalUserId } : {}),
+        ...(opciones?.plazoTurnoHoras ? { plazoTurnoHoras: opciones.plazoTurnoHoras } : {}),
+        ...(opciones?.contraIA ? { contraIA: '1' } : {}),
+      },
       true
     ),
 
@@ -85,6 +119,30 @@ export const hueplayApi = {
   /** Una jugada de HueConecta: se manda la columna y nada más. */
   jugarTurno: (desafioId: number, columna: number) =>
     apiPost<HuePlayTurno>('ajax/hueplay/turno_jugar.php', { desafioId, columna }, true),
+
+  /** Estado de un duelo de Damas, con los movimientos legales si es mi turno. */
+  verDesafioDamas: (desafioId: number) =>
+    apiGet<HuePlayDamasVista>('ajax/hueplay/damas_ver.php', { desafioId }, true),
+
+  /** Una jugada de Damas: desde/hasta, el servidor busca la cadena que corresponde. */
+  jugarDamas: (desafioId: number, desde: { fila: number; col: number }, hasta: { fila: number; col: number }) =>
+    apiPost<HuePlayDamasTurno>(
+      'ajax/hueplay/damas_mover.php',
+      { desafioId, dFila: desde.fila, dCol: desde.col, hFila: hasta.fila, hCol: hasta.col },
+      true
+    ),
+
+  /** Estado de un duelo de Ajedrez, con los movimientos legales y si estoy en jaque. */
+  verDesafioAjedrez: (desafioId: number) =>
+    apiGet<HuePlayAjedrezVista>('ajax/hueplay/ajedrez_ver.php', { desafioId }, true),
+
+  /** Una jugada de Ajedrez: desde/hasta, el servidor identifica el movimiento (enroque, al paso, promoción). */
+  jugarAjedrez: (desafioId: number, desde: { fila: number; col: number }, hasta: { fila: number; col: number }) =>
+    apiPost<HuePlayAjedrezTurno>(
+      'ajax/hueplay/ajedrez_mover.php',
+      { desafioId, dFila: desde.fila, dCol: desde.col, hFila: hasta.fila, hCol: hasta.col },
+      true
+    ),
 
   /** Las 10 preguntas de una partida. El backend nunca manda la correcta. */
   triviaPreguntas: (semilla: number, idioma: string) =>
@@ -121,4 +179,76 @@ export const hueplayApi = {
       { desafioId },
       true
     ),
+
+  // --- Salas (HueLudo, y después HueRummy) ---
+
+  crearSala: (
+    juegoCodigo: string,
+    opciones: {
+      maxJugadores: number;
+      completarConIA: boolean;
+      politicaAbandono: PoliticaAbandonoSala;
+      plazoTurnoHoras: number;
+      invitadosUserIds?: number[];
+    }
+  ) =>
+    apiPost<{ sala: HuePlaySala }>(
+      'ajax/hueplay/sala_crear.php',
+      {
+        juegoCodigo,
+        maxJugadores: opciones.maxJugadores,
+        completarConIA: opciones.completarConIA ? '1' : '0',
+        politicaAbandono: opciones.politicaAbandono,
+        plazoTurnoHoras: opciones.plazoTurnoHoras,
+        ...(opciones.invitadosUserIds?.length
+          ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }
+          : {}),
+      },
+      true
+    ),
+
+  unirseSala: (codigoInvitacion: string) =>
+    apiPost<{ sala: HuePlaySala }>('ajax/hueplay/sala_unirse.php', { codigoInvitacion }, true),
+
+  responderSala: (salaId: number, aceptar: boolean) =>
+    apiPost<{ sala: HuePlaySala }>(
+      'ajax/hueplay/sala_responder.php',
+      { salaId, aceptar: aceptar ? '1' : '0' },
+      true
+    ),
+
+  iniciarSala: (salaId: number) =>
+    apiPost<HuePlaySalaGenerica>('ajax/hueplay/sala_iniciar.php', { salaId }, true),
+
+  verSala: (salaId: number) =>
+    apiGet<HuePlaySalaGenerica>('ajax/hueplay/sala_ver.php', { salaId }, true),
+
+  salas: () => apiGet<HuePlaySalasBandeja>('ajax/hueplay/sala_listar.php', undefined, true),
+
+  historialCon: (rivalUserId: number, juegoCodigo: string) =>
+    apiGet<{ historial: HistorialPar }>(
+      'ajax/hueplay/historial_con.php',
+      { rivalUserId, juegoCodigo },
+      true
+    ),
+
+  /** Tira el dado en HueLudo. Si no hay jugada posible, el turno ya pasó solo. */
+  ludoTirar: (salaId: number) =>
+    apiPost<HuePlaySalaTirar>('ajax/hueplay/ludo_tirar.php', { salaId }, true),
+
+  /** Mueve la ficha `fichaNum` con el dado que ya se tiró. */
+  ludoMover: (salaId: number, fichaNum: number) =>
+    apiPost<HuePlaySalaMover>('ajax/hueplay/ludo_mover.php', { salaId, fichaNum }, true),
+
+  /** Roba una carta en HueRummy: del mazo, o del tope del descarte. */
+  rummyRobar: (salaId: number, origen: 'mazo' | 'descarte') =>
+    apiPost<HuePlayRummyRobar>('ajax/hueplay/rummy_robar.php', { salaId, origen }, true),
+
+  /** Baja un meld nuevo con cartas de tu mano (índices dentro de tu mano, ya robada la carta del turno). */
+  rummyBajar: (salaId: number, indices: number[]) =>
+    apiPost<HuePlayRummyBajar>('ajax/hueplay/rummy_bajar.php', { salaId, indices: indices.join(',') }, true),
+
+  /** Descarta una carta de tu mano (por índice) y cierra tu turno. */
+  rummyDescartar: (salaId: number, indice: number) =>
+    apiPost<HuePlayRummyDescartar>('ajax/hueplay/rummy_descartar.php', { salaId, indice }, true),
 };

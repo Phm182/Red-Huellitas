@@ -72,6 +72,47 @@ const JUEGOS: JuegoDef[] = [
     duelo: true,
   },
   {
+    id: 'huedamas',
+    titulo: 'HueDamas',
+    bajada: 'Las damas de siempre, por turnos contra otra persona o contra la app.',
+    icono: 'apps',
+    color: '#6B4226',
+    // Igual que HueConecta: sin rival no hay partida, así que se entra retando
+    // (ahí también está la opción de jugar contra la app).
+    ruta: '/(app)/hueplay/retar?juego=huedamas',
+    duelo: true,
+  },
+  {
+    id: 'hueajedrez',
+    titulo: 'HueAjedrez',
+    bajada: 'Ajedrez completo (jaque, enroque, al paso) contra otra persona o contra la app.',
+    icono: 'grid-outline',
+    color: '#7B9463',
+    ruta: '/(app)/hueplay/retar?juego=hueajedrez',
+    duelo: true,
+  },
+  {
+    id: 'hueludo',
+    titulo: 'HueLudo',
+    bajada: 'El clásico de mesa hasta con 4 personas, en salas con código para compartir.',
+    icono: 'dice',
+    color: '#B36FE0',
+    // Tiene su propia bandeja (salas armándose, invitaciones, en curso) en vez
+    // de ir directo a crear: con hasta 4 jugadores hay más que gestionar que
+    // en un duelo 1 contra 1.
+    ruta: '/(app)/hueplay/salas',
+    duelo: true,
+  },
+  {
+    id: 'huerummy',
+    titulo: 'HueRummy',
+    bajada: 'El Rummy de cartas de siempre, en salas de hasta 4 con código para compartir.',
+    icono: 'albums',
+    color: '#4CC3A5',
+    ruta: '/(app)/hueplay/salas',
+    duelo: true,
+  },
+  {
     id: 'huegotchi',
     titulo: 'HueGotchi',
     bajada: 'Cuidá a tu mascota: alimentala, jugá, bañala y enseñale trucos.',
