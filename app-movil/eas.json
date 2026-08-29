@@ -37,6 +37,9 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "ios": {
+        "autoIncrement": true
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
       }

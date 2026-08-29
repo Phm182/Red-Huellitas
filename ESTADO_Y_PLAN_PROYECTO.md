@@ -812,6 +812,77 @@ login`) e `ios-preview` (necesita Apple Developer Program pago) a
 `eas.json`. Pasos exactos para terminarlo en `AUTOMATIZACIONES_PENDIENTES.md`
 item 9.
 
+## 4decies. HueGotchi: se saca el 3D, entran 10 animales dibujados en 2D (2026-08-08)
+
+Pedido: sacar "toda la animación fea" del perro y el gato en 3D, reemplazar
+por un dibujo 2D animado, con al menos 10 animales — bien amistoso, pensado
+para chicos, con animación en cada acción.
+
+**Hallazgo clave, antes de escribir nada**: el motor de dibujo 2D **ya
+existía**: `ProceduralPet.tsx` (SVG a mano, con morfología real por raza) ya dibujaba
+al gato con silueta anatómica completa (torso/cabeza/patas/cola/cara,
+patrones de pelaje, hasta una vista de tortuga lista y sin usar). Lo único
+en 3D de verdad era el **perro** (GLB con esqueleto, Three.js) — el gato NO
+era 3D, la memoria vieja que decía "orphaned" sobre este archivo estaba
+desactualizada. Esto cambió todo el plan: en vez de construir un renderer
+2D desde cero, alcanzó con **generalizarlo** a las 10 especies reales del
+catálogo (`Especie` en `src/types/index.ts`: perro, gato, conejo, ave, pez,
+hámster, cobayo, tortuga, hurón, otro) y sacar el resto (GLB, el "clay" 3D
+viejo del gato con Three.js, los clips Lottie de terceros, el bridge de
+Rive que nunca se llegó a renderizar).
+
+**Arquitectura**: `HueSpecies` pasó a ser un alias de `Especie` (antes sólo
+tenía 4 valores y todo lo demás caía en un "otro" genérico). La mayoría de
+las especies nuevas (conejo, hurón, hámster, cobayo) reusan el mismo
+esqueleto de cuadrúpedo genérico que ya tenían perro/gato — sólo hizo falta
+sumar su `X_PROMEDIO` (morfología) en `domain/breeds.ts`; ave y pez sí
+necesitaron un archetype propio (`Ave`/`Pez` en `ProceduralPet.tsx`) porque
+su anatomía no entra en "torso + cabeza + 4 patas + cola". El sistema de
+`Pose` (postura por acción, función pura de `t`) no se tocó — es agnóstico
+del renderer, así que las 10 especies heredan gratis la animación de las 8
+acciones existentes (comer, jugar, bañarse, dormir, trucos, visitas).
+
+**Bugs reales encontrados recién al verse renderizado** (no se notan leyendo
+el código, hay que mirar el dibujo):
+- Orejas de conejo con `earSize` grande se superponían y leían como un
+  cuerno de unicornio en vez de dos orejas — se les dio un `earStyle`
+  propio (`larga_conejo`, redondeada, inclinada hacia afuera cada una para
+  su lado) en vez de reusar el triángulo genérico.
+- El nombre genérico cuando no hay raza cargada estaba hardcodeado a sólo
+  "Gato"/"Perro" — cualquier otra especie (conejo, ave, etc.) mostraba
+  "Perro" en la ficha. Ahora hay un nombre por especie.
+- El campo `poke` (tocar la mascota para saludar) nunca disparaba la
+  animación en el sistema de `Pose` — antes lo manejaba sólo el puente de
+  Rive (que nunca se renderizaba), así que tocar la mascota no hacía nada
+  visualmente. Se sacó el caso especial.
+- Hámster/cobayo con las mismas proporciones que un perro chico seguían
+  leyendo "perrito" en vez de "roedor redondo" — hizo falta bajar
+  `legLength` casi a cero y subir `bodyWidth`/`headSize` bastante más de lo
+  que parecía necesario en el papel.
+
+**Limpieza**: se borraron `glb/`, `three/` (incluye `ClayPet3D.tsx`,
+`buildChibiPet.ts` — nunca importados desde ningún lado, 1452 líneas
+huérfanas), `lottie/` (clips de terceros), y de `rive/` todo menos
+`contract.ts` (que sólo tiene los nombres de trigger, reusados como
+vocabulario de acciones — no tiene nada de Rive de verdad). En
+`hooks/useHueGotchiController.ts` se sacó el puente entero a Rive
+(`handleRef`, `pushToRive`, `onRiveReady`/`onRiveError`, `riveSource`) —
+estaba 100% muerto, `handleRef.current` era siempre `null` porque ningún
+componente Rive se llegaba a montar nunca. En disco: 88 MB de fuentes 3D
+crudas sin usar (STL/FBX de un gato y un perro) + 4 MB de gifs viejos +
+2.1 MB de `.riv` + 2.6 MB de Lottie, todo sin ninguna referencia en el
+código — `assets/juego/` bajó de >90 MB a 2.1 MB (sólo audio real).
+
+**Verificado en browser** (creando mascotas de prueba para las 10
+especies, borradas al final): las 10 renderizan reconocibles y sin
+errores, sin regresión en gato/perro (Tom y Shaco, las mascotas reales de
+prueba, siguen andando bien), la acción "Dar de comer" anima y suma XP
+correctamente en una especie nueva (hámster). **No se pudo verificar en el
+celular Xiaomi Mi 11i** que se dejó conectado — `adb devices` lo ve pero
+en estado `unauthorized`: hace falta tocar "Permitir" en la pantalla del
+propio celular, algo que no se puede hacer por USB/adb. Queda pendiente
+para cuando el usuario esté para destrabarlo.
+
 ## 5. Convenciones técnicas a mantener
 
 - **`sql/000_todo_schema.sql` es generado**: tras tocar `sql/`, correr

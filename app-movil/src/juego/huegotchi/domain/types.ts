@@ -4,7 +4,15 @@
 
 import { Especie, JuegoAnimo, JuegoStats, MascotaJuego } from '../../../types';
 
-export type HueSpecies = 'gato' | 'perro' | 'tortuga' | 'otro';
+/**
+ * Mismo catálogo que `Especie` (registro de mascotas / Cuidados): antes acá
+ * sólo había 4 baldes (gato/perro/tortuga/"otro" para el resto), y conejo,
+ * ave, pez, hámster, cobayo y hurón cargaban directo el genérico "otro" —
+ * un dibujo sin cara propia para 6 de las 10 especies reales de la app.
+ * Ahora es 1 a 1 con `Especie`, cada una con su propio archetype en
+ * `ProceduralPet.tsx`.
+ */
+export type HueSpecies = Especie;
 
 export type PetAgeStage = 'cachorro' | 'adulto';
 
@@ -80,11 +88,28 @@ export type HueGameSnapshot = {
   experienciaPorNivel: number;
 };
 
+const ESPECIES_VALIDAS: readonly HueSpecies[] = [
+  'perro', 'gato', 'conejo', 'ave', 'pez', 'hamster', 'cobayo', 'tortuga', 'huron', 'otro',
+];
+
+/**
+ * `especie` en la fila real de la mascota ya viene como uno de estos 10
+ * valores casi siempre (viene de `ESPECIES` en `constants/especies.ts`) —
+ * el fallback por texto libre es sólo para datos viejos/sueltos que hayan
+ * quedado en inglés o con mayúsculas.
+ */
 export function toHueSpecies(especie: Especie | string): HueSpecies {
-  const e = String(especie).toLowerCase();
+  const e = String(especie).toLowerCase().trim();
+  if ((ESPECIES_VALIDAS as string[]).includes(e)) return e as HueSpecies;
   if (e.includes('gat') || e === 'cat') return 'gato';
   if (e.includes('perr') || e === 'dog') return 'perro';
+  if (e.includes('conej') || e === 'rabbit') return 'conejo';
+  if (e.includes('ave') || e.includes('pajar') || e === 'bird') return 'ave';
+  if (e.includes('pez') || e === 'fish') return 'pez';
+  if (e.includes('hamst')) return 'hamster';
+  if (e.includes('coba') || e.includes('guinea')) return 'cobayo';
   if (e.includes('tort') || e === 'turtle') return 'tortuga';
+  if (e.includes('huron') || e === 'ferret') return 'huron';
   return 'otro';
 }
 

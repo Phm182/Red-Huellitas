@@ -11,12 +11,16 @@ import {
 } from '../domain/types';
 import { HeldStance, SLEEP_LOCK_MS, poseDuration } from '../domain/poses';
 import { PetPhysicsEngine } from '../physics/PetPhysicsEngine';
-import { riveModuleForSpecies, riveUrlForSpecies, hasRiveAsset } from '../rive/assets';
-import { RiveBridgeInputs, RIVE_TRIGGERS } from '../rive/contract';
-import { RivePetHandle } from '../rive/RivePetRuntime.types';
+// RIVE_TRIGGERS son sólo strings ("feed", "play", ...): el vocabulario de
+// nombres de acción que también consume el sistema de poses del renderer
+// SVG. `rive/contract.ts` se queda por eso — es la única pieza de esa
+// carpeta que sigue viva; el resto (bridge de inputs, carga de .riv,
+// handle nativo) se sacó entero porque nunca se llegó a renderizar ningún
+// componente Rive: `onRiveReady` nunca se disparaba, así que todo lo que
+// dependía de `handleRef` era muerto desde el vamos.
+import { RIVE_TRIGGERS } from '../rive/contract';
 import {
   buildEnvironment,
-  environmentToRiveNumbers,
   fetchLocalWeather,
 } from '../systems/environment';
 import { createGuestVisit, DEMO_FRIENDS, visitTrigger } from '../systems/social';
@@ -32,7 +36,6 @@ import {
   TRICKS_QUE_SOSTIENEN,
 } from '../systems/training';
 import { TrickId } from '../domain/types';
-import { Platform } from 'react-native';
 
 const ACCION_TRIGGER: Record<JuegoAccion, string> = {
   alimentar: RIVE_TRIGGERS.feed,
@@ -40,19 +43,6 @@ const ACCION_TRIGGER: Record<JuegoAccion, string> = {
   banar: RIVE_TRIGGERS.bath,
   dormir: RIVE_TRIGGERS.sleep,
 };
-
-function moodNumber(animo: JuegoAnimo): number {
-  switch (animo) {
-    case 'feliz':
-      return 1;
-    case 'bien':
-      return 0.66;
-    case 'aburrido':
-      return 0.33;
-    case 'decaido':
-      return 0;
-  }
-}
 
 type StageRect = { x: number; y: number; w: number; h: number };
 
@@ -75,16 +65,10 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   );
   const physics = useRef(new PetPhysicsEngine()).current;
   const trainer = useRef(new TrickTrainer()).current;
-  const handleRef = useRef<RivePetHandle | null>(null);
   const stage = useRef<StageRect>({ x: 0, y: 0, w: 320, h: 320 });
 
-  const riveAvailable = hasRiveAsset(identity.species);
   const [place, setPlace] = useState<PlaceId>('living');
   const [guest, setGuest] = useState<HueGuestVisit | null>(null);
-  const [riveReady, setRiveReady] = useState(false);
-  const [riveError, setRiveError] = useState<string | null>(
-    riveAvailable ? null : 'missing-riv'
-  );
   const [activeTrick, setActiveTrick] = useState<TrickId | null>(null);
   const [trickInstance, setTrickInstance] = useState<TrickDef | null>(null);
   const [trickMsg, setTrickMsg] = useState<string | null>(null);
@@ -110,7 +94,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   const [sleepUntil, setSleepUntil] = useState(0);
   const [voiceMouth, setVoiceMouth] = useState<VoiceMouth | null>(null);
   const [, bump] = useState(0);
-  /** Sube en cada reacción: fuerza reinicio del clip Lottie aunque sea el mismo. */
+  /** Sube en cada reacción: fuerza que el disparador de pose se note aunque sea el mismo dos veces seguidas. */
   const [animGen, setAnimGen] = useState(0);
   const animRef = useRef<{ trigger: string; startedAt: number } | null>(null);
   const animClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,12 +103,6 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
   const sleepLocked = sleepUntil > Date.now() && heldStance === 'sleep';
 
   const react = useCallback((trigger: string) => {
-    // poke idle no debe “comerse” el estado visual ni bloquear reacciones.
-    if (trigger === 'poke') {
-      handleRef.current?.react(trigger);
-      return;
-    }
-    handleRef.current?.react(trigger);
     animRef.current = { trigger, startedAt: performance.now() };
     setAnimGen((n) => n + 1);
     bump((n) => (n + 1) % 100000);
@@ -197,39 +175,10 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     [place, weather]
   );
 
-  const riveSource = useMemo(() => {
-    if (!riveAvailable) return null;
-    if (Platform.OS === 'web') return riveUrlForSpecies(identity.species);
-    return riveModuleForSpecies(identity.species) ?? riveUrlForSpecies(identity.species);
-  }, [identity.species, riveAvailable]);
-
-  const pushToRive = useCallback(() => {
-    const h = handleRef.current;
-    if (!h) return;
-    const phy = physics.snapshot();
-    const envN = environmentToRiveNumbers(environment);
-    const inputs: RiveBridgeInputs = {
-      lookX: phy.lookX,
-      lookY: phy.lookY,
-      squash: phy.squash,
-      stretch: phy.stretch,
-      mood: moodNumber(juego.animo),
-      bodyScale: 1,
-      ageBlend: identity.ageStage === 'adulto' ? 1 : 0,
-      placeId: envN.placeId,
-      weatherId: envN.weatherId,
-      periodId: envN.periodId,
-      isDragging: phy.isDragging,
-      isSleeping: heldStance === 'sleep' || accion === 'dormir' || environment.isNight,
-      isNight: envN.isNight,
-      isRaining: envN.isRaining,
-      preferIndoors: envN.preferIndoors,
-      hasGuest: guest != null,
-      skinId: identity.skinId,
-    };
-    h.setInputs(inputs);
-  }, [accion, environment, guest, heldStance, identity, juego.animo, physics]);
-
+  // El físico (mirada/squash/stretch al arrastrar) corre en su propio reloj
+  // de animación, independiente de la pose de acción — `ProceduralPetStage`
+  // lee `physics.snapshot()` en cada frame propio, así que acá sólo hace
+  // falta avanzar la simulación y re-renderizar.
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
@@ -240,7 +189,6 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       physics.step(dt);
-      pushToRive();
       if (now - lastDraw >= 30) {
         lastDraw = now;
         bump((n) => (n + 1) % 100000);
@@ -252,11 +200,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
       alive = false;
       cancelAnimationFrame(raf);
     };
-  }, [physics, pushToRive]);
-
-  useEffect(() => {
-    handleRef.current?.setSkin(identity.skinId);
-  }, [identity.skinId]);
+  }, [physics]);
 
   // Acciones de cuidado → animación + voz + posturas sostenidas.
   useEffect(() => {
@@ -290,24 +234,9 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     }
   }, [environment.isNight, accion, react, heldStance]);
 
-  const onRiveReady = useCallback(
-    (h: RivePetHandle) => {
-      handleRef.current = h;
-      setRiveReady(true);
-      setRiveError(null);
-      h.setSkin(identity.skinId);
-      pushToRive();
-      react('poke');
-    },
-    [identity.skinId, pushToRive, react]
-  );
-
-  const onRiveError = useCallback((e: Error) => {
-    setRiveError(e.message);
-    setRiveReady(false);
-  }, []);
-
-  // Micro-reacciones idle (solo Rive/physics; no tocan Lottie).
+  // Micro-reacción idle: cada tanto le da un empujoncito a la física (mira
+  // para un lado, un poco de squash) aunque nadie lo esté tocando, para que
+  // no quede una estatua entre acción y acción.
   useEffect(() => {
     const id = setInterval(() => {
       if (sleepLocked || heldStance === 'sleep' || trainer.activo) return;
@@ -315,7 +244,6 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
         const dur = poseDuration(animRef.current.trigger);
         if (performance.now() - animRef.current.startedAt < dur) return;
       }
-      handleRef.current?.react('poke');
       physics.onTap();
     }, 14000);
     return () => clearInterval(id);
@@ -368,7 +296,7 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
         react(def.riveTrigger);
         flashTrick('win');
         if (def.riveTrigger === RIVE_TRIGGERS.trickSpin) {
-          // Giro real del modelo 3D (una vuelta).
+          // Vuelta completa de orientación (perfil → frente → perfil → espalda).
           const start = yawRef.current;
           const t0 = performance.now();
           const spin = () => {
@@ -562,12 +490,6 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     guest,
     inviteFriend,
     clearGuest,
-    riveSource,
-    riveAvailable,
-    riveReady,
-    riveError,
-    onRiveReady,
-    onRiveError,
     setStageRect,
     onPointerMove,
     onTapPet,

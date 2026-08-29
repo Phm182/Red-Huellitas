@@ -22,14 +22,11 @@ import { modifiersForTrait } from './systems/personality';
 import { SceneBackdrop } from './components/SceneBackdrop';
 import { CatchFoodGame } from './components/CatchFoodGame';
 import { TrickCoachOverlay } from './components/TrickCoachOverlay';
-import { LottiePetStage } from './lottie/LottiePetStage';
 import { ProceduralPetStage } from './components/ProceduralPetStage';
-import { GlbPetStage } from './glb/GlbPetStage';
-import { hasGlbModel } from './glb/registry';
 import { resolveVisualState } from './domain/riveStates';
 import { useHueGotchiController } from './hooks/useHueGotchiController';
 import { PlaceId } from './domain/types';
-import { describeBreed } from './domain/breeds';
+import { describeBreed, resolveBreedProfile } from './domain/breeds';
 import { poseDuration } from './domain/poses';
 
 type Props = {
@@ -110,7 +107,6 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
   const gesture = Gesture.Exclusive(pan, tap);
   const visual = resolveVisualState({ animo: juego.animo, accion });
   const isRaining = c.environment.weather === 'rain' || c.environment.weather === 'storm';
-  const species = c.identity.species;
   const clock = Date.now() / 1000;
 
   const anim = c.animation;
@@ -170,58 +166,36 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
               }}
               pointerEvents="none"
             >
-              <LottiePetStage
+              <ProceduralPetStage
                 size={tamano * 0.42}
-                species={c.guest.guestSpecies}
+                breed={resolveBreedProfile(c.guest.guestSpecies, c.guest.guestRaza, 'adulto')}
+                yaw={0}
                 heldStance="none"
-                actionTrigger={c.guest.outcome === 'play' ? 'play' : null}
-                mood={c.guest.outcome === 'ignore' ? 'triste' : 'feliz'}
+                actionTrigger={null}
+                actionStartedAt={null}
                 visual={c.guest.outcome === 'ignore' ? 'sad' : 'happy'}
+                uid="guest"
               />
             </View>
           ) : null}
           <View style={styles.fill} pointerEvents="box-none">
-            {/* El gato va por el renderer procedural: su pack GLB era un STL de
-                impresión 3D, sin huesos, que sólo se movía en bloque. El perro
-                sí tiene malla con esqueleto y clips, así que sigue en GLB. */}
-            {species === 'gato' ? (
-              <ProceduralPetStage
-                size={tamano}
-                breed={c.breed}
-                yaw={c.yaw}
-                heldStance={c.heldStance}
-                actionTrigger={actionTrigger}
-                actionStartedAt={anim?.startedAt ?? null}
-                visual={visual}
-                voiceMouth={c.voiceMouth}
-                fidget={traitMods.fidget}
-                lookX={c.physicsSnapshot.lookX}
-                lookY={c.physicsSnapshot.lookY}
-                squash={c.physicsSnapshot.squash}
-                stretch={c.physicsSnapshot.stretch}
-              />
-            ) : hasGlbModel(species) ? (
-              <GlbPetStage
-                size={tamano}
-                species={species}
-                yaw={c.yaw}
-                heldStance={c.heldStance}
-                actionTrigger={actionTrigger}
-                mood={juego.animo}
-                animGen={c.animGen}
-                actionStartedAt={anim?.startedAt ?? null}
-              />
-            ) : (
-              <LottiePetStage
-                size={tamano}
-                species={species}
-                heldStance={c.heldStance}
-                actionTrigger={actionTrigger}
-                mood={juego.animo}
-                visual={visual}
-                animGen={c.animGen}
-              />
-            )}
+            {/* Un solo renderer 2D dibujado a mano (SVG) para las 10 especies:
+                nada de modelos 3D ni de paquetes de animación de terceros. */}
+            <ProceduralPetStage
+              size={tamano}
+              breed={c.breed}
+              yaw={c.yaw}
+              heldStance={c.heldStance}
+              actionTrigger={actionTrigger}
+              actionStartedAt={anim?.startedAt ?? null}
+              visual={visual}
+              voiceMouth={c.voiceMouth}
+              fidget={traitMods.fidget}
+              lookX={c.physicsSnapshot.lookX}
+              lookY={c.physicsSnapshot.lookY}
+              squash={c.physicsSnapshot.squash}
+              stretch={c.physicsSnapshot.stretch}
+            />
           </View>
           <TrickCoachOverlay
             activo={c.activeTrick != null}
@@ -257,7 +231,7 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
       </GestureDetector>
 
       <Text style={[styles.hint, { color: colors.textMuted }]}>
-        {hasGlbModel(species) ? t('juego.glbHint') : t('juego.lottieHint')}
+        {t('juego.petHint')}
       </Text>
 
       {/* Pelaje siempre visible: no queda escondido en el acordeón. */}

@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.redhuellitas.app"
+      "bundleIdentifier": "com.redhuellitas.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.redhuellitas.app",
@@ -22,14 +25,17 @@
       "allowBackup": false,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "CAMERA",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO",
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS",
-        "VIBRATE"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "intentFilters": [
         {
@@ -95,7 +101,8 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "extraProguardRules": "# Reglas de R8 para el release.\n#\n# El grueso de las reglas no está acá: React Native, Expo, MapLibre y Lottie\n# publican sus propias \"consumer rules\" dentro de sus AAR y R8 las aplica solo.\n# Acá va únicamente lo que esas reglas no cubren, que es lo que se rompe por\n# reflexión: nombres de clase que se resuelven en tiempo de ejecución desde\n# strings, y que por lo tanto R8 no ve usados desde ningún lado.\n#\n# Si algo revienta en release y anda en debug, casi siempre es esto: buscar el\n# ClassNotFoundException / NoSuchMethodException en logcat y agregar un -keep.\n# Para desactivar todo de una: android.enableMinifyInReleaseBuilds=false.\n\n# --- React Native ---------------------------------------------------------\n# Los módulos nativos se instancian por nombre desde el bridge.\n-keep,includedescriptorclasses class com.facebook.react.bridge.** { *; }\n-keep,includedescriptorclasses class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }\n\n# Hermes.\n-keep class com.facebook.hermes.** { *; }\n-keep class com.facebook.jsi.** { *; }\n\n# --- Expo -----------------------------------------------------------------\n# expo-modules-core arma los módulos con reflexión de Kotlin: sin esto, las\n# definiciones quedan sin nombre y la app no encuentra ningún módulo de Expo.\n-keep class expo.modules.** { *; }\n-keepclassmembers class * { @expo.modules.core.interfaces.ExpoMethod <methods>; }\n\n# Metadatos de Kotlin, que expo-modules-core lee para resolver tipos.\n-keep class kotlin.Metadata { *; }\n-keepclassmembers class **$WhenMappings { <fields>; }\n\n# --- Reanimated, gestos y pantallas ---------------------------------------\n-keep class com.swmansion.reanimated.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-keep class com.swmansion.rnscreens.** { *; }\n\n# --- Red ------------------------------------------------------------------\n# OkHttp referencia Conscrypt/BouncyCastle/OpenJSSE de forma opcional. No están\n# en el APK y no hacen falta, pero R8 avisa igual y aborta el build.\n-dontwarn org.conscrypt.**\n-dontwarn org.bouncycastle.**\n-dontwarn org.openjsse.**\n-dontwarn okhttp3.internal.platform.**\n-dontwarn javax.annotation.**\n\n# --- Varias ---------------------------------------------------------------\n# El puente de SVG mapea props por nombre.\n-keep class com.horcrux.svg.** { *; }\n\n# Deja los nombres de archivo y línea en los stack traces: sin esto, un crash\n# en producción llega ofuscado y no se puede leer en logcat.\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile\n"
+            "extraProguardRules": "# Reglas de R8 para el release.\n#\n# El grueso de las reglas no está acá: React Native, Expo, MapLibre y Lottie\n# publican sus propias \"consumer rules\" dentro de sus AAR y R8 las aplica solo.\n# Acá va únicamente lo que esas reglas no cubren, que es lo que se rompe por\n# reflexión: nombres de clase que se resuelven en tiempo de ejecución desde\n# strings, y que por lo tanto R8 no ve usados desde ningún lado.\n#\n# Si algo revienta en release y anda en debug, casi siempre es esto: buscar el\n# ClassNotFoundException / NoSuchMethodException en logcat y agregar un -keep.\n# Para desactivar todo de una: android.enableMinifyInReleaseBuilds=false.\n\n# --- React Native ---------------------------------------------------------\n# Los módulos nativos se instancian por nombre desde el bridge.\n-keep,includedescriptorclasses class com.facebook.react.bridge.** { *; }\n-keep,includedescriptorclasses class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }\n\n# Hermes.\n-keep class com.facebook.hermes.** { *; }\n-keep class com.facebook.jsi.** { *; }\n\n# --- Expo -----------------------------------------------------------------\n# expo-modules-core arma los módulos con reflexión de Kotlin: sin esto, las\n# definiciones quedan sin nombre y la app no encuentra ningún módulo de Expo.\n-keep class expo.modules.** { *; }\n-keepclassmembers class * { @expo.modules.core.interfaces.ExpoMethod <methods>; }\n\n# Metadatos de Kotlin, que expo-modules-core lee para resolver tipos.\n-keep class kotlin.Metadata { *; }\n-keepclassmembers class **$WhenMappings { <fields>; }\n\n# --- Reanimated, gestos y pantallas ---------------------------------------\n-keep class com.swmansion.reanimated.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-keep class com.swmansion.rnscreens.** { *; }\n\n# --- Red ------------------------------------------------------------------\n# OkHttp referencia Conscrypt/BouncyCastle/OpenJSSE de forma opcional. No están\n# en el APK y no hacen falta, pero R8 avisa igual y aborta el build.\n-dontwarn org.conscrypt.**\n-dontwarn org.bouncycastle.**\n-dontwarn org.openjsse.**\n-dontwarn okhttp3.internal.platform.**\n-dontwarn javax.annotation.**\n\n# --- Varias ---------------------------------------------------------------\n# El puente de SVG mapea props por nombre.\n-keep class com.horcrux.svg.** { *; }\n\n# Deja los nombres de archivo y línea en los stack traces: sin esto, un crash\n# en producción llega ofuscado y no se puede leer en logcat.\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile\n",
+            "enableMinifyInReleaseBuilds": true
           }
         }
       ],
@@ -103,6 +110,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "36791264-d5e8-4e54-a86a-85962eb7eeab"
+      }
+    },
+    "owner": "pab182"
   }
 }

@@ -692,7 +692,7 @@
       "social": "Social"
     },
     "orbitHint": "Drag sideways to spin · tap to greet",
-    "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
+    "petHint": "ドラッグで回転 · タップで挨拶",
     "hub": {
       "bajada": "ペットと遊ぶゲームを選んでください。",
       "proximamente": "近日公開",

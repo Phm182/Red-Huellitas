@@ -694,7 +694,7 @@
       "social": "Social"
     },
     "orbitHint": "Drag sideways to spin · tap to greet",
-    "lottieHint": "Tap to greet · swipe during tricks · pick your own backdrop",
+    "petHint": "Fais glisser pour tourner · touche pour saluer",
     "hub": {
       "bajada": "Choisissez un jeu pour jouer avec vos animaux.",
       "proximamente": "Bientôt",

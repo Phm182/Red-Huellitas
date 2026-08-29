@@ -6,6 +6,8 @@
  * leerse como una escena, no como un tic de 1 segundo.
  */
 
+import { HueSpecies } from './types';
+
 export type Pose = {
   /** Desplazamiento del animal completo, en unidades del viewBox 200x200. */
   bodyX: number;
@@ -545,13 +547,15 @@ export function blendPose(base: Pose, action: Pose | null, weight: number): Pose
 
 /**
  * Envolvente de boca sincronizada con la duración del audio.
- * `species`: el perro jadea/saca lengua (boca más abierta); el gato maúlla
- * con apertura más chica y sin lengua (la lengua la dibuja ClayPet3D sólo en perro).
+ * `species`: el perro jadea (boca más abierta); el gato maúlla con
+ * apertura más chica. El resto de las especies no tienen voz propia
+ * todavía (ver `VOICE_ASSETS` en `PetVoiceEngine.ts`), así que caen al
+ * caso genérico.
  */
 export function mouthFromVoice(
   elapsedMs: number,
   durationMs: number,
-  species?: 'gato' | 'perro' | 'tortuga' | 'otro'
+  species?: HueSpecies
 ): number {
   if (durationMs <= 0 || elapsedMs < 0 || elapsedMs > durationMs) return 0;
   const t = elapsedMs / durationMs;
@@ -569,7 +573,7 @@ export function mouthFromVoice(
 export function poseForSpecies(
   trigger: string,
   t: number,
-  species: 'gato' | 'perro' | 'tortuga' | 'otro'
+  species: HueSpecies
 ): Pose {
   const p = poseFor(trigger, t);
   if (species === 'gato') {

@@ -842,8 +842,7 @@
       "social": "Social"
     },
     "orbitHint": "Arrastrá horizontal para girar · tocá para saludar",
-    "lottieHint": "Tocá para saludar · gestos en trucos · el fondo lo elegís vos",
-    "glbHint": "Arrastrá para girar · tocá para saludar · modelo 3D",
+    "petHint": "Arrastrá para girar · tocá para saludar",
     "cambiarMascota": "Cambiar mascota",
     "hub": {
       "bajada": "Elegí un juego para jugar con tus mascotas.",

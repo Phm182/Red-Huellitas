@@ -70,6 +70,12 @@ export function ProceduralPet({
   if (b.species === 'tortuga') {
     return <Tortuga size={size} breed={b} pose={pose} uid={uid} facing={facing} lookX={lookX} />;
   }
+  if (b.species === 'ave') {
+    return <Ave size={size} breed={b} pose={pose} uid={uid} facing={facing} lookX={lookX} lookY={lookY} clock={clock} />;
+  }
+  if (b.species === 'pez') {
+    return <Pez size={size} breed={b} pose={pose} uid={uid} facing={facing} lookX={lookX} lookY={lookY} clock={clock} />;
+  }
 
   if (viewMode === 'frente' || viewMode === 'espalda') {
     return (
@@ -543,6 +549,37 @@ function oreja(
       return triangulo(0.62 * e, 0.9, true);
     case 'erecta_punta':
       return triangulo(0.7 * e, 0.86, false);
+    case 'larga_conejo': {
+      // Orejas bien largas y redondeadas, inclinadas hacia afuera cada una
+      // para su lado — así se separan y se leen como dos orejas de
+      // verdad en vez de fundirse en una sola punta (lo que pasaba con
+      // `erecta_punta` a este tamaño: dos triángulos flacos y altos, casi
+      // pegados, leían como un cuerno único).
+      const largo = headR * (1.35 + 0.85 * e);
+      const anchoBase = headR * 0.42;
+      const anchoMedio = headR * 0.3;
+      const leanExtra = lado * 15;
+      const pinna: Pt[] = [
+        [bx - anchoBase * 0.5, by + headR * 0.12],
+        [bx - anchoMedio * 0.5, by - largo * 0.55],
+        [bx, by - largo],
+        [bx + anchoMedio * 0.5, by - largo * 0.55],
+        [bx + anchoBase * 0.5, by + headR * 0.12],
+      ];
+      const interior: Pt[] = [
+        [bx - anchoBase * 0.26, by + headR * 0.02],
+        [bx - anchoMedio * 0.26, by - largo * 0.52],
+        [bx, by - largo * 0.92],
+        [bx + anchoMedio * 0.26, by - largo * 0.52],
+        [bx + anchoBase * 0.26, by + headR * 0.02],
+      ];
+      return (
+        <G transform={`rotate(${rot + leanExtra} ${bx} ${by})`}>
+          <Path d={curvaCerrada(pinna)} fill={color} stroke={shade(color, -50)} strokeWidth={0.9} strokeOpacity={0.4} />
+          <Path d={curvaCerrada(interior)} fill="#E8A0B0" opacity={0.65} />
+        </G>
+      );
+    }
     case 'erecta_redonda':
       return (
         <G transform={`rotate(${rot} ${bx} ${by})`}>
@@ -866,6 +903,276 @@ function Tortuga({
           <Ellipse key={i} cx={cx + rx * (fx as number)} cy={cy + ry * (fy as number)} rx={rx * 0.15} ry={ry * 0.19} fill={b.accent} opacity={0.5} />
         ))}
       </G>
+      </G>
+    </Svg>
+  );
+}
+
+/**
+ * Pajarito redondo y amistoso, parado en una ramita. No tiene patas de
+ * mamífero ni orejas — el `Pose` genérico se reinterpreta: `earFlap` bate
+ * las alas, `pawLift` alza una patita (como mirando para el costado),
+ * `sit`/`lie` lo agachan sobre la ramita, `tailWag` abre el abanico de
+ * plumas de la cola.
+ */
+function Ave({
+  size, breed, pose, uid, facing, lookX, lookY, clock,
+}: { size: number; breed: ResolvedBreed; pose: Pose; uid: string; facing: 1 | -1; lookX: number; lookY: number; clock: number }) {
+  const b = breed;
+  const S = b.scale;
+  const dark = shade(b.base, -34);
+  const light = shade(b.base, 26);
+  const contorno = shade(b.base, -60);
+  const cx = 100 + pose.bodyX * facing;
+  const bodyR = 30 * b.bodyWidth * S;
+  const agachado = (pose.sit + pose.lie) * 0.4;
+  const cy = GROUND_Y - bodyR * (0.92 - agachado * 0.35) + pose.bodyY;
+  const headR = 17 * b.headSize * S;
+  const headCx = cx + (bodyR + headR * 0.3) * facing;
+  const headCy = cy - bodyR * 0.7 + pose.headY;
+  const beakLen = headR * (0.5 + b.snoutLength);
+  const abierta = pose.mouthOpen;
+  const eyeOpen = 1 - pose.eyeClose;
+  const wing = pose.earFlap; // reusa el campo: bate las alas.
+  const bob = Math.sin(clock * 1.6) * 1.4 * S;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 200 200">
+      <Defs>
+        <RadialGradient id={`aveCuerpo_${uid}`} cx="36%" cy="26%" r="80%">
+          <Stop offset="0%" stopColor={light} />
+          <Stop offset="60%" stopColor={b.base} />
+          <Stop offset="100%" stopColor={dark} />
+        </RadialGradient>
+      </Defs>
+      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+        {/* Ramita */}
+        <Path d={`M${cx - 42 * S} ${GROUND_Y + 2} Q${cx} ${GROUND_Y - 3}, ${cx + 42 * S} ${GROUND_Y + 2}`} stroke="#8A6440" strokeWidth={4 * S} strokeLinecap="round" fill="none" />
+        <Ellipse cx={cx} cy={GROUND_Y + 5} rx={bodyR * 0.8} ry={4 * S} fill="#101010" opacity={0.2} />
+
+        <G
+          transform={
+            `translate(${cx} ${cy + bob}) rotate(${pose.bodyRot}) ` +
+            `scale(${pose.bodyScaleX * facing} ${pose.bodyScaleY}) translate(${-cx} ${-cy})`
+          }
+        >
+          {/* Cola: abanico de plumas, más abierto con tailWag */}
+          <G transform={`rotate(${-8 * facing} ${cx} ${cy})`}>
+            {[-1, -0.5, 0, 0.5, 1].map((f, i) => {
+              const spread = 0.18 + Math.min(1, pose.tailWag) * 0.22;
+              const len = (16 + 10 * b.tailLength) * S;
+              const ang = f * spread;
+              const tx = cx - Math.cos(ang) * len * facing;
+              const ty = cy + bodyR * 0.35 - Math.sin(ang) * len;
+              return (
+                <Path
+                  key={i}
+                  d={`M${cx - bodyR * 0.55 * facing} ${cy + bodyR * 0.3} Q${(cx + tx) / 2} ${(cy + ty) / 2 - 4 * S}, ${tx} ${ty}`}
+                  stroke={b.accent}
+                  strokeWidth={4.4 * S}
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity={0.92}
+                />
+              );
+            })}
+          </G>
+
+          {/* Ala lejana */}
+          <Path
+            d={`M${cx - bodyR * 0.1 * facing} ${cy - bodyR * 0.1} Q${cx - bodyR * 0.6 * facing} ${cy + bodyR * 0.1 - wing * S}, ${cx - bodyR * 0.5 * facing} ${cy + bodyR * 0.7}`}
+            stroke={dark}
+            strokeWidth={bodyR * 0.4}
+            strokeLinecap="round"
+            fill="none"
+            opacity={0.55}
+          />
+
+          {/* Patitas finas */}
+          <Path d={`M${cx - bodyR * 0.25 * facing} ${cy + bodyR * 0.75} L${cx - bodyR * 0.25 * facing} ${GROUND_Y - 1}`} stroke="#D98B3A" strokeWidth={2.2 * S} strokeLinecap="round" />
+          <Path
+            d={`M${cx + bodyR * 0.22 * facing} ${cy + bodyR * 0.75 - pose.pawLift * 10 * S} L${cx + bodyR * 0.22 * facing} ${GROUND_Y - 1 - pose.pawLift * 14 * S}`}
+            stroke="#D98B3A"
+            strokeWidth={2.2 * S}
+            strokeLinecap="round"
+          />
+
+          {/* Cuerpo */}
+          <Ellipse cx={cx} cy={cy} rx={bodyR} ry={bodyR * (0.98 - agachado * 0.22)} fill={`url(#aveCuerpo_${uid})`} stroke={contorno} strokeWidth={1.2 * S} strokeOpacity={0.4} />
+          <Ellipse cx={cx - bodyR * 0.08 * facing} cy={cy + bodyR * 0.3} rx={bodyR * 0.66} ry={bodyR * 0.5} fill={b.belly} opacity={0.85} />
+
+          {/* Ala cercana */}
+          <Path
+            d={`M${cx - bodyR * 0.05 * facing} ${cy - bodyR * 0.15} Q${cx - bodyR * 0.7 * facing} ${cy + bodyR * 0.05 - wing * S}, ${cx - bodyR * 0.55 * facing} ${cy + bodyR * 0.75}`}
+            stroke={b.base}
+            strokeWidth={bodyR * 0.44}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Path
+            d={`M${cx - bodyR * 0.05 * facing} ${cy - bodyR * 0.15} Q${cx - bodyR * 0.7 * facing} ${cy + bodyR * 0.05 - wing * S}, ${cx - bodyR * 0.55 * facing} ${cy + bodyR * 0.75}`}
+            stroke={b.accent}
+            strokeWidth={2 * S}
+            strokeLinecap="round"
+            fill="none"
+            opacity={0.6}
+          />
+
+          {/* Cabeza + copete */}
+          <G transform={`rotate(${lookX * 6}) `}>
+            <Ellipse cx={headCx} cy={headCy} rx={headR} ry={headR * 0.94} fill={b.base} stroke={contorno} strokeWidth={1.2 * S} strokeOpacity={0.4} />
+            {b.fluff > 0.15 ? (
+              <Path
+                d={`M${headCx - headR * 0.1 * facing} ${headCy - headR * 0.95} Q${headCx} ${headCy - headR * 1.5}, ${headCx + headR * 0.15 * facing} ${headCy - headR * 0.9}`}
+                stroke={b.accent}
+                strokeWidth={2.6 * S}
+                strokeLinecap="round"
+                fill="none"
+              />
+            ) : null}
+
+            {/* Pico */}
+            <Path
+              d={`M${headCx + headR * 0.75 * facing} ${headCy - headR * 0.08} L${headCx + (headR * 0.75 + beakLen) * facing} ${headCy + headR * 0.02 - abierta * headR * 0.22} L${headCx + headR * 0.72 * facing} ${headCy + headR * 0.32} Z`}
+              fill={b.nose}
+            />
+            {abierta > 0.1 ? (
+              <Path
+                d={`M${headCx + headR * 0.75 * facing} ${headCy + headR * 0.06} L${headCx + (headR * 0.7 + beakLen) * facing} ${headCy + headR * 0.08 + abierta * headR * 0.2} L${headCx + headR * 0.72 * facing} ${headCy + headR * 0.32} Z`}
+                fill={shade(b.nose, -40)}
+              />
+            ) : null}
+
+            {/* Ojo */}
+            {eyeOpen > 0.15 ? (
+              <G>
+                <Circle cx={headCx + headR * 0.28 * facing + lookX * 2} cy={headCy - headR * 0.08 + lookY * 2} r={headR * 0.24} fill="#FFFFFF" />
+                <Circle cx={headCx + headR * 0.32 * facing + lookX * 2.6} cy={headCy - headR * 0.08 + lookY * 2.6} r={headR * 0.15} fill={b.eye} />
+                <Circle cx={headCx + headR * 0.26 * facing} cy={headCy - headR * 0.16} r={headR * 0.06} fill="#FFFFFF" opacity={0.9} />
+              </G>
+            ) : (
+              <Path d={`M${headCx + headR * 0.08 * facing} ${headCy - headR * 0.08} Q${headCx + headR * 0.28 * facing} ${headCy + headR * 0.04}, ${headCx + headR * 0.48 * facing} ${headCy - headR * 0.08}`} stroke="#241F1E" strokeWidth={headR * 0.08} fill="none" strokeLinecap="round" />
+            )}
+
+            {/* Mejilla */}
+            <Ellipse cx={headCx - headR * 0.1 * facing} cy={headCy + headR * 0.35} rx={headR * 0.32} ry={headR * 0.26} fill={b.belly} opacity={0.6} />
+          </G>
+        </G>
+      </G>
+    </Svg>
+  );
+}
+
+/**
+ * Pez redondito nadando (o flotando quieto, dormido). `bodyY`/`bodyRot`
+ * de la pose ya leen como ondulación al nadar; `tailWag` mueve la aleta
+ * caudal, `mouthOpen` hace burbujas al "hablar"/comer.
+ */
+function Pez({
+  size, breed, pose, uid, facing, lookX, lookY, clock,
+}: { size: number; breed: ResolvedBreed; pose: Pose; uid: string; facing: 1 | -1; lookX: number; lookY: number; clock: number }) {
+  const b = breed;
+  const S = b.scale;
+  const dark = shade(b.base, -30);
+  const light = shade(b.base, 26);
+  const contorno = shade(b.base, -55);
+  const swim = Math.sin(clock * 2.1) * 3 * S;
+  const cx = 100 + pose.bodyX * facing + swim;
+  const cy = 96 + pose.bodyY + Math.sin(clock * 2.1 + 1) * 2 * S;
+  const bodyRx = 34 * b.bodyLength * S;
+  const bodyRy = 22 * b.bodyHeight * S;
+  const eyeOpen = 1 - pose.eyeClose;
+  const abierta = pose.mouthOpen;
+  const tailSwish = Math.sin(clock * 5 * Math.max(0.3, pose.tailWag)) * (10 + 10 * Math.min(2, pose.tailWag));
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 200 200">
+      <Defs>
+        <RadialGradient id={`pezCuerpo_${uid}`} cx="40%" cy="30%" r="80%">
+          <Stop offset="0%" stopColor={light} />
+          <Stop offset="55%" stopColor={b.base} />
+          <Stop offset="100%" stopColor={dark} />
+        </RadialGradient>
+      </Defs>
+      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+        <Ellipse cx={cx} cy={cy + bodyRy + 20} rx={bodyRx * 0.9} ry={6 * S} fill="#101010" opacity={0.12} />
+
+        <G transform={`translate(${cx} ${cy}) rotate(${pose.bodyRot + Math.sin(clock * 2.1) * 4}) scale(${pose.bodyScaleX * facing} ${pose.bodyScaleY}) translate(${-cx} ${-cy})`}>
+          {/* Aleta caudal */}
+          <Path
+            d={`M${cx - bodyRx * 0.85 * facing} ${cy} Q${cx - bodyRx * 1.25 * facing} ${cy - bodyRy * 0.9 + tailSwish}, ${cx - bodyRx * 1.55 * facing} ${cy - bodyRy * 1.5 + tailSwish}
+               L${cx - bodyRx * 0.95 * facing} ${cy}
+               L${cx - bodyRx * 1.55 * facing} ${cy + bodyRy * 1.5 + tailSwish}
+               Q${cx - bodyRx * 1.25 * facing} ${cy + bodyRy * 0.9 + tailSwish}, ${cx - bodyRx * 0.85 * facing} ${cy}
+               Z`}
+            fill={b.accent}
+            opacity={0.9}
+          />
+          {/* Aleta dorsal */}
+          <Path d={`M${cx - bodyRx * 0.1 * facing} ${cy - bodyRy * 0.85} Q${cx} ${cy - bodyRy * 1.55}, ${cx + bodyRx * 0.35 * facing} ${cy - bodyRy * 0.8} Z`} fill={b.accent} opacity={0.85} />
+          {/* Aleta pectoral (usa pawLift como aleteo) */}
+          <Ellipse
+            cx={cx + bodyRx * 0.1 * facing}
+            cy={cy + bodyRy * 0.5 - pose.pawLift * 6 * S}
+            rx={bodyRx * 0.22}
+            ry={bodyRy * 0.34}
+            fill={b.accent}
+            opacity={0.8}
+            transform={`rotate(${-20 * facing - pose.pawLift * 20 * facing} ${cx + bodyRx * 0.1 * facing} ${cy + bodyRy * 0.5})`}
+          />
+
+          {/* Cuerpo */}
+          <Ellipse cx={cx} cy={cy} rx={bodyRx} ry={bodyRy} fill={`url(#pezCuerpo_${uid})`} stroke={contorno} strokeWidth={1.2 * S} strokeOpacity={0.4} />
+          <Ellipse cx={cx + bodyRx * 0.05 * facing} cy={cy + bodyRy * 0.35} rx={bodyRx * 0.6} ry={bodyRy * 0.42} fill={b.belly} opacity={0.75} />
+          {b.pattern === 'rayado'
+            ? [0.25, 0.5, 0.75].map((f, i) => (
+                <Path
+                  key={i}
+                  d={`M${cx - bodyRx * 0.5 + bodyRx * f} ${cy - bodyRy} Q${cx - bodyRx * 0.5 + bodyRx * f + 4 * S} ${cy}, ${cx - bodyRx * 0.5 + bodyRx * f} ${cy + bodyRy}`}
+                  stroke={b.accent}
+                  strokeWidth={4 * S}
+                  opacity={0.4}
+                  fill="none"
+                />
+              ))
+            : null}
+
+          {/* Boca */}
+          <Ellipse
+            cx={cx + bodyRx * 0.82 * facing}
+            cy={cy + bodyRy * 0.1}
+            rx={2.4 * S + abierta * 2.4 * S}
+            ry={1.6 * S + abierta * 3.4 * S}
+            fill="#5A2028"
+          />
+
+          {/* Ojo */}
+          <Circle cx={cx + bodyRx * 0.55 * facing} cy={cy - bodyRy * 0.18} r={bodyRy * 0.32} fill="#FFFFFF" opacity={eyeOpen} />
+          <Circle cx={cx + bodyRx * 0.58 * facing + lookX * 2} cy={cy - bodyRy * 0.18 + lookY * 2} r={bodyRy * 0.18} fill={b.eye} opacity={eyeOpen} />
+          {eyeOpen < 0.2 ? (
+            <Path d={`M${cx + bodyRx * 0.4 * facing} ${cy - bodyRy * 0.18} Q${cx + bodyRx * 0.55 * facing} ${cy - bodyRy * 0.04}, ${cx + bodyRx * 0.7 * facing} ${cy - bodyRy * 0.18}`} stroke="#241F1E" strokeWidth={1.4 * S} fill="none" strokeLinecap="round" />
+          ) : null}
+        </G>
+
+        {pose.prop === 'zzz' || (pose.lie > 0.5 && eyeOpen < 0.3) ? (
+          <G>
+            {[0, 1, 2].map((i) => {
+              const f = (clock * 0.35 + i * 0.33) % 1;
+              return (
+                <Circle
+                  key={i}
+                  cx={cx + bodyRx * 0.6 * facing + f * 10 * S}
+                  cy={cy - bodyRy - f * 26 * S}
+                  r={(3 + i) * S * (1 - f * 0.4)}
+                  fill="#BEE6F5"
+                  opacity={(1 - f) * 0.85}
+                  stroke="#FFFFFF"
+                  strokeWidth={0.6}
+                />
+              );
+            })}
+          </G>
+        ) : null}
       </G>
     </Svg>
   );

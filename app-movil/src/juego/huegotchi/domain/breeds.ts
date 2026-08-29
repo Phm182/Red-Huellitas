@@ -11,7 +11,7 @@ import { HueSpecies, PetAgeStage } from './types';
  * Todos los multiplicadores son relativos a 1 = animal promedio de su especie.
  */
 
-export type EarStyle = 'erecta_punta' | 'erecta_redonda' | 'caida' | 'semi' | 'triangulo';
+export type EarStyle = 'erecta_punta' | 'erecta_redonda' | 'caida' | 'semi' | 'triangulo' | 'larga_conejo';
 
 export type CoatPattern =
   | 'solido'
@@ -405,7 +405,7 @@ const EARS: EarStyle[] = ['erecta_punta', 'erecta_redonda', 'caida', 'semi'];
  * del nombre para que al menos sean estables y distintas entre sí.
  */
 function perfilDerivado(species: HueSpecies, nombre: string): Morph {
-  const promedio = species === 'gato' ? GATO_PROMEDIO : PERRO_PROMEDIO;
+  const promedio = promedioBase(species);
   const h = hashString(`${species}:${slugRaza(nombre)}`);
   const spread = (shift: number, amp: number) => (((h >> shift) & 0xff) / 255 - 0.5) * 2 * amp;
   const hue = species === 'gato' ? 20 + ((h >> 3) % 34) : 18 + ((h >> 3) % 30);
@@ -451,11 +451,13 @@ export function resolveBreedProfile(
   /** Id de la variante de pelaje elegida a mano en el editor. */
   variantId?: string | null
 ): ResolvedBreed {
-  const promedio = species === 'gato' ? GATO_PROMEDIO : PERRO_PROMEDIO;
+  const promedio = promedioBase(species);
   const raw = (nombre ?? '').trim();
   const slug = slugRaza(raw);
   // "Sin raza" existe para perro y gato con el mismo nombre: desambiguar.
   const key = slug === 'sin_raza' ? `sin_raza_${species}` : slug;
+  // El catálogo de razas hoy sólo tiene entradas de perro/gato: para el resto
+  // de las especies esto siempre da `undefined` y cae a `perfilDerivado`.
   const entrada = RAZAS[key] ?? RAZAS[matchAproximado(species, slug) ?? ''];
 
   let morph: Morph;
@@ -466,10 +468,6 @@ export function resolveBreedProfile(
     morph = perfilDerivado(species, raw);
   } else {
     morph = promedio;
-  }
-
-  if (species === 'tortuga' || species === 'otro') {
-    morph = { ...morph, ...(species === 'tortuga' ? TORTUGA : OTRO) };
   }
 
   // La variante elegida a mano pisa los colores de la tabla, no las proporciones.
@@ -503,12 +501,108 @@ export function resolveBreedProfile(
 
   return {
     ...morph,
-    nombre: raw || (species === 'gato' ? 'Gato' : 'Perro'),
+    nombre: raw || nombreGenericoPorEspecie(species),
     species,
     scale,
     ageStage: age,
   };
 }
+
+/**
+ * Nombre genérico cuando no hay raza cargada — este archivo no tiene acceso
+ * al hook de i18n (son funciones puras fuera de React), así que va en
+ * castellano a mano, mismo criterio que el resto de los literales acá.
+ */
+function nombreGenericoPorEspecie(species: HueSpecies): string {
+  switch (species) {
+    case 'gato': return 'Gato';
+    case 'perro': return 'Perro';
+    case 'conejo': return 'Conejo';
+    case 'ave': return 'Ave';
+    case 'pez': return 'Pez';
+    case 'hamster': return 'Hámster';
+    case 'cobayo': return 'Cobayo';
+    case 'tortuga': return 'Tortuga';
+    case 'huron': return 'Hurón';
+    default: return 'Mascota';
+  }
+}
+
+/** Promedio por especie: usado como base tanto por una raza catalogada como por una derivada por hash. */
+export function promedioBase(species: HueSpecies): Morph {
+  switch (species) {
+    case 'gato': return GATO_PROMEDIO;
+    case 'conejo': return CONEJO_PROMEDIO;
+    case 'ave': return AVE_PROMEDIO;
+    case 'pez': return PEZ_PROMEDIO;
+    case 'hamster': return HAMSTER_PROMEDIO;
+    case 'cobayo': return COBAYO_PROMEDIO;
+    case 'huron': return HURON_PROMEDIO;
+    case 'tortuga': return { ...PERRO_PROMEDIO, ...TORTUGA };
+    case 'otro': return { ...PERRO_PROMEDIO, ...OTRO };
+    default: return PERRO_PROMEDIO; // perro
+  }
+}
+
+const CONEJO_PROMEDIO: Morph = {
+  weightKg: 2,
+  bodyWidth: 0.92, bodyHeight: 0.85, bodyLength: 0.82, legLength: 0.5,
+  headSize: 1.02, snoutLength: 0.14, earSize: 1.5, earStyle: 'larga_conejo',
+  tailLength: 0.14, tailFluff: 1, fluff: 0.72,
+  base: '#D9C7A8', accent: '#B29B78', belly: '#F5EEDF', eye: '#4A3226', nose: '#D98B9E',
+  pattern: 'solido',
+};
+
+const HURON_PROMEDIO: Morph = {
+  weightKg: 1.4,
+  bodyWidth: 0.78, bodyHeight: 0.78, bodyLength: 1.58, legLength: 0.4,
+  headSize: 0.85, snoutLength: 0.5, earSize: 0.68, earStyle: 'erecta_redonda',
+  tailLength: 1.1, tailFluff: 0.5, fluff: 0.35,
+  base: '#E8DCC0', accent: '#4A3A2A', belly: '#F5EFE0', eye: '#2B2320', nose: '#3A2A22',
+  pattern: 'mascara',
+};
+
+const HAMSTER_PROMEDIO: Morph = {
+  weightKg: 0.05,
+  bodyWidth: 1.55, bodyHeight: 1.28, bodyLength: 0.6, legLength: 0.02,
+  headSize: 1.3, snoutLength: 0.06, earSize: 0.5, earStyle: 'erecta_redonda',
+  tailLength: 0.02, tailFluff: 0, fluff: 0.55,
+  base: '#D9A45C', accent: '#B87F3A', belly: '#F2E2C4', eye: '#2B2320', nose: '#8A5A3A',
+  pattern: 'solido',
+};
+
+const COBAYO_PROMEDIO: Morph = {
+  weightKg: 1,
+  bodyWidth: 1.42, bodyHeight: 1.1, bodyLength: 0.98, legLength: 0.04,
+  headSize: 1.1, snoutLength: 0.14, earSize: 0.42, earStyle: 'caida',
+  tailLength: 0.01, tailFluff: 0, fluff: 0.62,
+  base: '#C97B3C', accent: '#8A5A2A', belly: '#EFD9B8', eye: '#2B2320', nose: '#6B4630',
+  pattern: 'manchado',
+};
+
+/**
+ * Ave y pez no usan la mayoría de estos campos (no tienen patas de mamífero
+ * ni orejas) — el archetype propio los reinterpreta (`snoutLength` → largo
+ * de pico, `tailLength` → cola de plumas / aleta). Igual se completan todos
+ * para que el tipo `Morph` no quede parcial.
+ */
+const AVE_PROMEDIO: Morph = {
+  weightKg: 0.3,
+  bodyWidth: 0.88, bodyHeight: 1, bodyLength: 0.78, legLength: 0.6,
+  headSize: 0.9, snoutLength: 0.4, earSize: 0, earStyle: 'erecta_redonda',
+  tailLength: 0.6, tailFluff: 0.3, fluff: 0.2,
+  base: '#5AA8D6', accent: '#3A7CA8', belly: '#F2E7C8', eye: '#2B2320', nose: '#E8A83A',
+  pattern: 'solido',
+};
+
+const PEZ_PROMEDIO: Morph = {
+  weightKg: 0.05,
+  bodyWidth: 0.6, bodyHeight: 0.9, bodyLength: 1.3, legLength: 0,
+  headSize: 0.7, snoutLength: 0.1, earSize: 0, earStyle: 'caida',
+  tailLength: 1, tailFluff: 0, fluff: 0,
+  base: '#F2A33E', accent: '#D9781E', belly: '#FCE3B0', eye: '#1C1A19', nose: '#B85A2A',
+  pattern: 'rayado',
+};
 
 const TORTUGA: Partial<Morph> = {
   weightKg: 3,
