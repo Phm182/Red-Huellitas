@@ -1,0 +1,15 @@
+# EAS Build resuelve el ignore-file relativo a la raíz del repo git (acá,
+# no dentro de app-movil/), aunque el proyecto que se buildea sea
+# app-movil/. Sin este archivo, `eas build` subía la carpeta nativa
+# generada localmente (app-movil/android/, ~7.5G de intermediates de
+# Gradle) y el archivo pasaba el límite de 2GB de EAS Build.
+node_modules/
+app-movil/node_modules/
+app-movil/android/
+app-movil/ios/
+app-movil/.expo/
+app-movil/dist/
+.git/
+vendor/
+uploads/
+inc/storage/

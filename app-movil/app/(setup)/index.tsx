@@ -160,7 +160,18 @@ export default function SetupBienvenidaScreen() {
           </Text>
         </Pressable>
 
-        <AppButton label={t('setup.continue')} onPress={onContinuar} disabled={!acepta} />
+        {/* No se le pasa `disabled` al AppButton a propósito: con Reanimated 4 +
+            Fabric el prop `disabled` de un AnimatedPressable queda "pegado" al
+            valor del primer render y nunca se vuelve a evaluar — el botón se
+            monta con `acepta=false` y se queda sordo a los toques para
+            siempre, aunque el checkbox de arriba sí se marque bien. El gate
+            real es el `if (!acepta) return` de `onContinuar`; acá sólo se
+            imita el look apagado mientras no se aceptó. */}
+        <AppButton
+          label={t('setup.continue')}
+          onPress={onContinuar}
+          style={{ opacity: acepta ? 1 : 0.5 }}
+        />
       </ScrollView>
     </Atmosphere>
   );

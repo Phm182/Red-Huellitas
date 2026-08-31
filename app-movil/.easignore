@@ -1,0 +1,18 @@
+# EAS Build empaqueta este directorio entero para subirlo al build remoto.
+# Sin este archivo, EAS intenta heredar las reglas de `.gitignore`, pero acá
+# eso no funciona: `app-movil/` no tiene su propio `.git` (es una subcarpeta
+# del repo raíz "Red Huellitas"), así que node_modules/ (10G) y android/ (7.5G,
+# generado por los builds locales con Gradle) terminaban subiéndose enteros y
+# el archivo pasaba el límite de 2GB de EAS. Con esto el build no re-sube
+# nada que igual se regenera en el servidor (node_modules) o que no hace
+# falta para un build administrado por Expo (la carpeta android/ nativa).
+
+node_modules/
+android/
+ios/
+.expo/
+dist/
+.git/
+.idea/
+*.apk
+*.aab

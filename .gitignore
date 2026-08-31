@@ -25,6 +25,8 @@ node_modules/
 app-movil/node_modules/
 app-movil/.expo/
 app-movil/dist/
+app-movil/android/
+app-movil/ios/
 .env
 .env.local
 

@@ -48,13 +48,22 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
 - **Estado**: no ejecutado todavía. Ojo: sin el item 6 de acá abajo, el script corre bien pero no hay tokens a los que mandar.
 
 ### 6. Expo — `eas.projectId` para que funcione el push (arrastra desde Fase 4b)
-- **Qué**: `src/hooks/usePushNotifications.ts` corta temprano (`if (!projectId) return`) porque `app.json` no tiene `extra.eas.projectId`. Sin eso **ningún dispositivo registra su token**, así que `Usuario.ExpoPushToken` siempre queda en NULL y **todo el push del proyecto está inactivo** (campañas, perdidos, match y ahora el minijuego).
-- **Por qué pendiente**: el projectId lo genera EAS contra una cuenta de Expo del usuario. No es un valor que se pueda inventar — poner uno falso es peor que no tenerlo, porque saltea el guard del hook y hace fallar `getExpoPushTokenAsync`.
+- **Qué**: `src/hooks/usePushNotifications.ts` corta temprano (`if (!projectId) return`) si `app.json` no tiene `extra.eas.projectId`. Sin eso **ningún dispositivo registra su token**, así que `Usuario.ExpoPushToken` siempre queda en NULL y **todo el push del proyecto está inactivo** (campañas, perdidos, match y ahora el minijuego).
+- **Estado**: **hecho (2026-08-29)**. `app.json` ya tiene `extra.eas.projectId` (`36791264-d5e8-4e54-a86a-85962eb7eeab`, cuenta `pab182`). El APK instalado en el celular de prueba hasta el 2026-08-30 era anterior a este cambio (`versionCode=1`), así que nunca llegó a registrar un token real — quedaba pendiente el rebuild.
+
+### 6b. FCM V1 — credencial de Firebase para que Android reciba el push de verdad
+- **Qué**: desde que Google apagó la API legacy de FCM (mediados de 2024), el servicio de push de Expo necesita que **cada proyecto** suba su propia clave de cuenta de servicio de Firebase (Google Cloud) para poder entregar notificaciones a Android — sin esto, `getExpoPushTokenAsync()` puede devolver un token igual, pero el envío real (`rh_enviar_push()` → `exp.host/--/api/v2/push/send`) no llega al dispositivo aunque la request a Expo devuelva 200.
+- **Por qué pendiente**: no hay ningún `google-services.json` ni proyecto de Firebase en el repo — nunca se creó. Es un paso que sólo puede hacer el dueño de la cuenta de Google/Firebase, y la subida de la clave a EAS es interactiva (`eas credentials`, menú TUI), no scripteable sin acceso a una terminal real.
 - **Pasos**:
-  1. Crear cuenta en [expo.dev](https://expo.dev) si no hay.
-  2. Desde `app-movil/`: `npx eas init` — escribe `extra.eas.projectId` en `app.json` automáticamente.
-  3. Para probar de verdad hace falta un build de EAS en un dispositivo físico: el push **no funciona en web ni en Expo Go**.
-- **Estado**: no ejecutado. Es la razón por la que el push nunca se pudo verificar end-to-end en ninguna fase.
+  1. Crear (o reusar) un proyecto en [Firebase Console](https://console.firebase.google.com/), agregar una app Android con el package `com.redhuellitas.app`.
+  2. En ese proyecto de Firebase → Configuración del proyecto → Cuentas de servicio → generar una clave privada nueva para "Firebase Admin SDK" (rol con permiso de FCM). Se descarga un `.json`.
+  3. Desde `app-movil/`: `npx eas credentials` → Android → seleccionar el build profile → "Push Notifications: Manage your FCM API Key" → subir ese `.json`.
+  4. Verificar con una push real (ver item 6c) que llega a la barra de notificaciones de Android.
+- **Estado**: no ejecutado. Es el único paso que falta para que el push llegue de verdad al dispositivo.
+
+### 6c. Rebuild + instalación del APK con el `projectId` correcto
+- **Qué**: el APK que había en el celular de prueba (`versionCode=1`) es anterior al `eas.projectId`, así que nunca pudo registrar un token real. Se lanzó un build nuevo (profile `apk`) el 2026-08-31 para volver a instalar y probar.
+- **Estado**: en curso / a verificar en la próxima sesión si no quedó confirmado en esta.
 
 ### 7. Tarea programada — Turnos vencidos de HuePlay (Damas y los juegos de turnos que vengan)
 - **Qué**: corre `inc/cli/juego_turnos_vencidos.php`, que cierra por inacción los desafíos por turnos (Damas, HueConecta) cuyo plazo de respuesta venció — pierde quien tenía el turno y no jugó a tiempo. El mismo resultado ya se resuelve solo, de forma perezosa, cuando cualquiera de los dos abre la bandeja de desafíos; este cron cubre a quien no vuelve a abrir la app, para que la notificación de "perdiste por no responder" le llegue igual.
