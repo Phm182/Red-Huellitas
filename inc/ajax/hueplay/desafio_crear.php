@@ -104,7 +104,15 @@ if ($modo === 'turnos') {
     } elseif ($codigo === 'hueajedrez') {
         $tablero = rh_ajedrez_inicial();
     } elseif ($codigo === 'huesoccer') {
-        $tablero = rh_soccer_inicial();
+        // Meta de goles configurable (además del plazo, ya genérico arriba):
+        // sólo aplica a HueSoccer, así que se lee acá y no como un campo más
+        // de JuegoDesafio — mismo criterio que el resto de la mecánica de
+        // este juego, que vive en el JSON de Tablero.
+        $metaGoles = isset($_POST['metaGoles']) ? (int) $_POST['metaGoles'] : RH_SOCCER_GOLES_PARA_GANAR_DEFAULT;
+        if ($metaGoles < RH_SOCCER_GOLES_MIN || $metaGoles > RH_SOCCER_GOLES_MAX) {
+            json_error('La meta de goles debe ser entre ' . RH_SOCCER_GOLES_MIN . ' y ' . RH_SOCCER_GOLES_MAX);
+        }
+        $tablero = rh_soccer_inicial($metaGoles);
     } else {
         $tablero = rh_c4_vacio();
     }

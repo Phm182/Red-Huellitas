@@ -74,6 +74,7 @@ $cancha = $anterior['cancha'] ?? [
 ];
 $turnoEmpezoEnAntes = (int) ($anterior['turnoEmpezoEn'] ?? time());
 $segundosNetosAntes = (int) ($anterior['segundosNetosUsados'] ?? 0);
+$metaGoles = (int) ($anterior['metaGoles'] ?? RH_SOCCER_GOLES_PARA_GANAR_DEFAULT);
 
 // El gol lo decide el servidor mirando la posición REAL donde terminó la
 // pelota (antes de recortarla a la cancha) — ver rh_soccer_gol_en().
@@ -101,7 +102,7 @@ $movimientos = (int) $d['Movimientos'] + 1;
 // rh_juego_serializar_desafio: '1' retador, '2' retado).
 // Prioridad 1: llegar a los goles necesarios cierra el partido, aunque el
 // mismo tiro también hubiera agotado el reloj neto.
-$ganoPorGoles = $golesJ1 >= RH_SOCCER_GOLES_PARA_GANAR || $golesJ2 >= RH_SOCCER_GOLES_PARA_GANAR;
+$ganoPorGoles = $golesJ1 >= $metaGoles || $golesJ2 >= $metaGoles;
 // Prioridad 2 (sólo si no ganó por goles): se acabó el tiempo neto del
 // partido — gana quien tenga más goles ahora mismo, empate si están igual.
 $terminoPorTiempo = !$ganoPorGoles && $segundosNetos >= RH_SOCCER_TOPE_SEGUNDOS_NETOS;
@@ -117,6 +118,7 @@ $estadoGuardar = [
     // consistencia del shape.
     'turnoEmpezoEn' => time(),
     'segundosNetosUsados' => $segundosNetos,
+    'metaGoles' => $metaGoles,
 ];
 $tablero = rh_soccer_codificar($estadoGuardar);
 
@@ -140,7 +142,7 @@ $progreso = null;
 $resultadoPropio = null;
 
 if ($ganoPorGoles) {
-    $ganador = $golesJ1 >= RH_SOCCER_GOLES_PARA_GANAR ? $retador : $retado;
+    $ganador = $golesJ1 >= $metaGoles ? $retador : $retado;
     $puntosRetador = rh_soccer_puntos($ganador === $retador);
     $puntosRetado = rh_soccer_puntos($ganador === $retado);
     $d['Tablero'] = $tablero;

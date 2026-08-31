@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { usePathname } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { hubPorKey } from '../../navigation/hubs';
+import { pushUnica } from '../../navigation/pushUnica';
 import { elevation, radii } from '../../theme/elevation';
 import { centeredContent } from '../../theme/layout';
 import { fonts, type } from '../../theme/typography';
@@ -27,6 +28,7 @@ type Props = {
 export function HubScreen({ hubKey, descripcion }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const pathname = usePathname();
   const hub = hubPorKey(hubKey);
 
   if (!hub) return null;
@@ -54,7 +56,7 @@ export function HubScreen({ hubKey, descripcion }: Props) {
               <Pressable
                 onPress={() => {
                   hapticLeve();
-                  router.push(item.route as never);
+                  pushUnica(pathname, item.route);
                 }}
                 style={[
                   styles.tile,

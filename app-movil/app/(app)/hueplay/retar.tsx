@@ -3,19 +3,24 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
+import { GOLES_MAX, GOLES_MIN, GOLES_PARA_GANAR_DEFAULT } from '../../../src/juego/huesoccer/motor';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { FilterChip } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
 import { HuePlayDesafio, HuePlayRival } from '../../../src/types/hueplay';
-import { radii } from '../../../src/theme/elevation';
+import { elevation, radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
-import { fonts } from '../../../src/theme/typography';
+import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
-import { hapticExito, hapticMedio } from '../../../src/utils/haptics';
+import { hapticExito, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
+
+/** Presets de "a cuántos goles" — el rango real (1-10) lo valida el backend. */
+const PRESETS_GOLES = [1, 3, 5, 7, 10];
 
 /** A qué pantalla se navega apenas se crea el desafío, por juego. */
 function rutaDelDesafio(d: HuePlayDesafio): { pathname: string; params: Record<string, string | number> } {
@@ -85,13 +90,25 @@ export default function RetarScreen() {
   const esDeTurnos = JUEGOS_TURNOS.includes(JUEGO);
   const tieneIA = JUEGOS_IA.includes(JUEGO);
 
+  const esSoccer = JUEGO === 'huesoccer';
+
   const [busqueda, setBusqueda] = useState('');
   const [rivales, setRivales] = useState<HuePlayRival[]>([]);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState<number | null>(null);
-  const [contraIA, setContraIA] = useState(false);
   const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
+  const [metaGoles, setMetaGoles] = useState(GOLES_PARA_GANAR_DEFAULT);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Rival al que se le tocó "Retar", pendiente de confirmar en el modal.
+   *
+   * Antes el plazo (y ahora también la meta de goles) se mostraban siempre
+   * arriba de la pantalla, antes de elegir con quién jugar — poco claro,
+   * porque no quedaba antes de "a quién" sino de "cómo". Ahora el modal se
+   * abre recién al tocar Retar sobre alguien puntual, y confirmar ahí es lo
+   * que manda el desafío.
+   */
+  const [rivalPendiente, setRivalPendiente] = useState<HuePlayRival | null>(null);
 
   const cargar = useCallback((q: string) => {
     setLoading(true);
@@ -109,13 +126,13 @@ export default function RetarScreen() {
 
   const retar = async (r: HuePlayRival) => {
     hapticMedio();
+    setRivalPendiente(null);
     setEnviando(r.userId);
     setError(null);
-    const res = await hueplayApi.crearDesafio(
-      JUEGO,
-      r.userId,
-      esDeTurnos ? { plazoTurnoMinutos } : undefined
-    );
+    const res = await hueplayApi.crearDesafio(JUEGO, r.userId, {
+      ...(esDeTurnos ? { plazoTurnoMinutos } : {}),
+      ...(esSoccer ? { metaGoles } : {}),
+    });
     setEnviando(null);
 
     if (res.success && res.data) {
@@ -129,6 +146,16 @@ export default function RetarScreen() {
       setError(res.message ?? t('common.error'));
       cargar(busqueda.trim());
     }
+  };
+
+  /** Toque en "Retar" de una fila: si el juego tiene algo que configurar, abre el modal; si no, va directo. */
+  const onTocarRetar = (r: HuePlayRival) => {
+    if (esDeTurnos) {
+      hapticLeve();
+      setRivalPendiente(r);
+      return;
+    }
+    retar(r);
   };
 
   const jugarContraIA = async () => {
@@ -148,15 +175,6 @@ export default function RetarScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {esDeTurnos ? (
-        <View style={styles.plazoBloque}>
-          <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 6 }}>
-            {t('hueplay.plazoTurno')}
-          </Text>
-          <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
-        </View>
-      ) : null}
-
       {tieneIA ? (
         <Pressable
           disabled={enviando !== null}
@@ -221,7 +239,7 @@ export default function RetarScreen() {
 
               <Pressable
                 disabled={enviando !== null}
-                onPress={() => retar(r)}
+                onPress={() => onTocarRetar(r)}
                 style={[styles.retar, { backgroundColor: colors.primary, opacity: enviando ? 0.5 : 1 }]}
               >
                 {enviando === r.userId ? (
@@ -236,6 +254,57 @@ export default function RetarScreen() {
           ))}
         </ScrollView>
       )}
+
+      <Modal
+        visible={rivalPendiente !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRivalPendiente(null)}
+      >
+        <View style={styles.backdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setRivalPendiente(null)} />
+          <View style={[styles.dialog, elevation.lg, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[type.titleSm, { color: colors.text, marginBottom: 2 }]}>
+              {t('hueplay.configurarDuelo')}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
+              {rivalPendiente?.username ? `@${rivalPendiente.username}` : rivalPendiente?.nombreCompleto}
+            </Text>
+
+            <Text style={[type.label, { color: colors.textMuted, marginBottom: 8 }]}>
+              {t('hueplay.plazoTurno')}
+            </Text>
+            <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+
+            {esSoccer ? (
+              <>
+                <Text style={[type.label, { color: colors.textMuted, marginTop: 18, marginBottom: 8 }]}>
+                  {t('hueplay.soccer.metaGoles')}
+                </Text>
+                <View style={styles.chipsGoles}>
+                  {PRESETS_GOLES.map((g) => (
+                    <FilterChip key={g} label={String(g)} activo={metaGoles === g} onPress={() => setMetaGoles(g)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            <Pressable
+              disabled={enviando !== null}
+              onPress={() => rivalPendiente && retar(rivalPendiente)}
+              style={[styles.botonConfirmar, { backgroundColor: colors.primary, marginTop: 22 }]}
+            >
+              {enviando !== null ? (
+                <ActivityIndicator size="small" color={colors.primaryText} />
+              ) : (
+                <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 15 }}>
+                  {t('hueplay.retar')}
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -254,7 +323,6 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20 },
   avatarVacio: { alignItems: 'center', justifyContent: 'center' },
   retar: { borderRadius: radii.pill, paddingHorizontal: 18, paddingVertical: 9, minWidth: 74, alignItems: 'center' },
-  plazoBloque: { paddingHorizontal: 16, paddingTop: 12 },
   botonIA: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,4 +334,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 12,
   },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    padding: 20,
+  },
+  chipsGoles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  botonConfirmar: { borderRadius: radii.pill, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
 });

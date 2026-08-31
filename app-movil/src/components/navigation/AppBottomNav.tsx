@@ -6,6 +6,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_TAB_BAR_HEIGHT } from '../../navigation/chrome';
 import { HUBS, type Hub } from '../../navigation/hubs';
+import { pushUnica } from '../../navigation/pushUnica';
 import { radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -76,7 +77,7 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                   // con `navigate` el router actualizaba la URL pero dejaba la
                   // pantalla en display:none — hay que empujarlas.
                   if (hub.key === 'huelligram') router.navigate(hub.route as never);
-                  else router.push(hub.route as never);
+                  else pushUnica(pathname, hub.route);
                 }}
                 onLongPress={() => {
                   hapticMedio();

@@ -23,7 +23,15 @@ const RH_SOCCER_ANCHO = 300;
 const RH_SOCCER_ALTO = 500;
 const RH_SOCCER_RADIO_FICHA = 18;
 const RH_SOCCER_RADIO_PELOTA = 10;
-const RH_SOCCER_GOLES_PARA_GANAR = 3;
+/**
+ * Meta de goles configurable por partido (pedido del usuario: además del
+ * tope de tiempo, poder elegir a cuántos goles termina). Se guarda en el
+ * `Tablero` de cada desafío (`metaGoles`, ver `rh_soccer_inicial()`) — este
+ * valor es sólo el default para cuando no se elige nada.
+ */
+const RH_SOCCER_GOLES_PARA_GANAR_DEFAULT = 3;
+const RH_SOCCER_GOLES_MIN = 1;
+const RH_SOCCER_GOLES_MAX = 10;
 /** Ancho del arco, centrado en cada borde angosto — igual que en el motor TS. */
 const RH_SOCCER_ANCHO_ARCO = RH_SOCCER_ANCHO * 0.4;
 /**
@@ -46,8 +54,9 @@ const RH_SOCCER_TOPE_SEGUNDOS_NETOS = 180;
  * `app-movil/src/juego/huesoccer/motor.ts::tableroInicial()` — tienen que
  * coincidir.
  */
-function rh_soccer_inicial(): string
+function rh_soccer_inicial(int $metaGoles = RH_SOCCER_GOLES_PARA_GANAR_DEFAULT): string
 {
+    $metaGoles = max(RH_SOCCER_GOLES_MIN, min(RH_SOCCER_GOLES_MAX, $metaGoles));
     $ancho = RH_SOCCER_ANCHO;
     $alto = RH_SOCCER_ALTO;
     $estado = [
@@ -75,6 +84,7 @@ function rh_soccer_inicial(): string
         ],
         'turnoEmpezoEn' => time(),
         'segundosNetosUsados' => 0,
+        'metaGoles' => $metaGoles,
     ];
     return json_encode($estado);
 }

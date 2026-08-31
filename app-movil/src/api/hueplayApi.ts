@@ -92,7 +92,7 @@ export const hueplayApi = {
   crearDesafio: (
     juegoCodigo: string,
     rivalUserId?: number,
-    opciones?: { plazoTurnoMinutos?: number; contraIA?: boolean }
+    opciones?: { plazoTurnoMinutos?: number; contraIA?: boolean; metaGoles?: number }
   ) =>
     apiPost<{ desafio: HuePlayDesafio }>(
       'ajax/hueplay/desafio_crear.php',
@@ -101,6 +101,7 @@ export const hueplayApi = {
         ...(rivalUserId ? { rivalUserId } : {}),
         ...(opciones?.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
         ...(opciones?.contraIA ? { contraIA: '1' } : {}),
+        ...(opciones?.metaGoles ? { metaGoles: opciones.metaGoles } : {}),
       },
       true
     ),

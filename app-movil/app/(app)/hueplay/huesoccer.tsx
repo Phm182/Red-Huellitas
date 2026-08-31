@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDi
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
-import { GOLES_PARA_GANAR, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
+import { GOLES_PARA_GANAR_DEFAULT, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
 import {
   SKIN_FICHA_DEFAULT,
   SKIN_PELOTA_DEFAULT,
@@ -316,7 +316,7 @@ export default function HueSoccerScreen() {
       </View>
 
       <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 }}>
-        {t('hueplay.golesParaGanar', { n: GOLES_PARA_GANAR })}
+        {t('hueplay.golesParaGanar', { n: tablero.metaGoles ?? GOLES_PARA_GANAR_DEFAULT })}
       </Text>
       <Text style={{ color: colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 2 }}>
         {t('hueplay.soccer.tiempoNeto', { usados: tablero.segundosNetosUsados, tope: TOPE_SEGUNDOS_NETOS })}

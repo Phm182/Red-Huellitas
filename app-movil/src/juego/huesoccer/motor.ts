@@ -30,6 +30,14 @@ export type TableroSoccer = {
   turnoEmpezoEn: number;
   /** Acumulado compartido entre los dos jugadores, tope TOPE_SEGUNDOS_NETOS. */
   segundosNetosUsados: number;
+  /**
+   * A cuántos goles termina el partido, elegido al crear el duelo (ver
+   * `retar.tsx`). Opcional en el tipo porque un desafío creado ANTES de que
+   * esto existiera tiene su Tablero guardado sin esta clave — mismo criterio
+   * de compatibilidad que ya usa el servidor
+   * (`$anterior['metaGoles'] ?? RH_SOCCER_GOLES_PARA_GANAR_DEFAULT`).
+   */
+  metaGoles?: number;
 };
 
 export const CANCHA: Cancha = {
@@ -43,7 +51,14 @@ export const CANCHA: Cancha = {
   // el comentario de rebotePared().
   profundidadArco: 60,
 };
-export const GOLES_PARA_GANAR = 3;
+/**
+ * Default de la meta de goles cuando no se eligió nada (o el duelo es viejo
+ * y su Tablero no tiene `metaGoles` guardado) — el valor real por partido lo
+ * elige quien reta, ver `retar.tsx` y `RH_SOCCER_GOLES_MIN/MAX` en el PHP.
+ */
+export const GOLES_PARA_GANAR_DEFAULT = 3;
+export const GOLES_MIN = 1;
+export const GOLES_MAX = 10;
 /** Ancho del arco, centrado en cada borde angosto de la cancha. */
 export const ANCHO_ARCO = CANCHA.ancho * 0.4;
 /** Cuánto tiempo real tiene cada jugador para tirar una vez que le toca. */
@@ -66,7 +81,7 @@ function magnitud(v: Vector): number {
  * Tablero inicial: 5 fichas por jugador (2 atrás + 3 adelante, formación
  * espejada), pelota al centro. `j:1` ataca hacia `y=alto`, `j:2` hacia `y=0`.
  */
-export function tableroInicial(): TableroSoccer {
+export function tableroInicial(metaGoles: number = GOLES_PARA_GANAR_DEFAULT): TableroSoccer {
   const { ancho, alto } = CANCHA;
   const fichas: FichaSoccer[] = [
     // j:1 — atrás cerca de su propio arco (y=0), adelante más lejos de él.
@@ -90,6 +105,7 @@ export function tableroInicial(): TableroSoccer {
     cancha: CANCHA,
     turnoEmpezoEn: Math.floor(Date.now() / 1000),
     segundosNetosUsados: 0,
+    metaGoles: Math.max(GOLES_MIN, Math.min(GOLES_MAX, metaGoles)),
   };
 }
 

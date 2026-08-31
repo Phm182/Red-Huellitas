@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
-import { T_MOVER } from '../../../src/juego/huematch/Celda';
+import { T_CAE, T_MOVER, T_ROMPER } from '../../../src/juego/huematch/Celda';
 import { TableroHueMatch } from '../../../src/juego/huematch/Tablero';
 import {
   Celda,
@@ -34,10 +34,6 @@ import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 
 const SEGUNDOS = 60;
 const JUEGO = 'huematch';
-
-/** Pausas de la animación de cascada, en ms. */
-const T_EXPLOTA = 150;
-const T_CAE = 130;
 
 type Fase = 'listo' | 'jugando' | 'enviando' | 'fin';
 
@@ -210,7 +206,11 @@ export default function HueMatchScreen() {
           setCombo({ puntos: paso.puntos, cascada: paso.cascada });
           hapticMedio();
         }
-        await esperar(T_EXPLOTA);
+        // Hay que esperar la animación ENTERA de cada fase (ver constantes en
+        // Celda.tsx) antes de pisar el tablero con el próximo paso — si no,
+        // una cascada encadenada corta la explosión o la caída a mitad de
+        // camino y todo se ve como un solo parpadeo en vez de una secuencia.
+        await esperar(T_ROMPER);
         if (!vivoRef.current) return;
         setTablero(paso.resultado);
         setPuntos((p) => {

@@ -1001,6 +1001,7 @@
     "tuRecord": "Ton record : {{n}}",
     "retarA": "Défier quelqu'un",
     "retar": "Défier",
+    "configurarDuelo": "Configurer le duel",
     "jugar": "Jouer",
     "volver": "Retour à HuePlay",
     "golesParaGanar": "Le premier à {{n}} buts gagne",
@@ -1201,7 +1202,8 @@
         "tricolor": "Tricolore",
         "arcoiris": "Arc-en-ciel",
         "lunar": "Lunaire"
-      }
+      },
+      "metaGoles": "Objectif de buts"
     },
     "trivia": {
       "comoSeJuega": "{{n}} questions sur les soins aux animaux, {{s}} secondes chacune. À la fin tu vois tes réponses et pourquoi.",

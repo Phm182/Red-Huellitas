@@ -6,6 +6,7 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { APP_HEADER_HEIGHT, isAppTabRoot, tabIconForPath } from '../../navigation/chrome';
+import { pushUnica } from '../../navigation/pushUnica';
 import { titleForPath } from '../../navigation/routeTitles';
 import { useTituloHeader } from '../../navigation/tituloHeaderStore';
 import { fonts, type } from '../../theme/typography';
@@ -119,7 +120,7 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
             </Pressable>
 
             <Pressable
-              onPress={() => router.push('/(app)/configuracion' as never)}
+              onPress={() => pushUnica(pathname, '/(app)/configuracion')}
               style={styles.configBtn}
               hitSlop={6}
               accessibilityRole="button"
@@ -129,7 +130,7 @@ export function AppTopHeader({ columnWidth, columnLeft }: Props) {
             </Pressable>
 
             <Pressable
-              onPress={() => router.push('/(app)/perfil')}
+              onPress={() => pushUnica(pathname, '/(app)/perfil')}
               style={[styles.avatarBtn, { borderColor: colors.border }]}
               accessibilityRole="button"
               accessibilityLabel={t('perfil.myProfile')}

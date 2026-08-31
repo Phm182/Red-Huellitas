@@ -185,9 +185,32 @@ export function CanchaSoccer({
   const arcoX = px(cancha.ancho / 2 - anchoArco / 2);
   const arcoAncho = px(anchoArco);
 
+  // Franjas de pasto cortado, como en cualquier cancha de verdad (y en la
+  // referencia de Soccer Star) — antes era un rectángulo verde parejo, que
+  // sin nada más encima se leía chato.
+  const FRANJAS = 9;
+  const anchoFranja = lado / FRANJAS;
+
   return (
     <View style={[styles.cancha, { width: lado, height: altoTotal, backgroundColor: '#1F6B3A' }]}>
       <Svg width={lado} height={altoTotal} style={StyleSheet.absoluteFill} pointerEvents="none">
+        {Array.from({ length: FRANJAS }, (_, i) => (
+          <Rect
+            key={i}
+            x={i * anchoFranja}
+            y={offsetY}
+            width={anchoFranja}
+            height={altoJuego}
+            fill={i % 2 === 0 ? '#1F6B3A' : '#226F3E'}
+          />
+        ))}
+
+        {/* Paneles de fondo de cada arco, con el color de quien lo defiende —
+            mismo lenguaje que la referencia (paneles de colores detrás de la
+            red), y ayuda a leer de un vistazo cuál arco es el propio. */}
+        <Rect x={arcoX} y={0} width={arcoAncho} height={offsetY} fill={COLOR_J1} opacity={0.22} />
+        <Rect x={arcoX} y={offsetY + altoJuego} width={arcoAncho} height={offsetY} fill={COLOR_J2} opacity={0.22} />
+
         {/* Redes, detrás de cada línea de arco. */}
         <Red x={arcoX} y={0} ancho={arcoAncho} alto={offsetY} />
         <Red x={arcoX} y={offsetY + altoJuego} ancho={arcoAncho} alto={offsetY} />
@@ -257,7 +280,77 @@ export function CanchaSoccer({
           </View>
         );
       })()}
+
+      {/* Flecha de tiro: aparece mientras se arrastra, apuntando hacia donde
+          va a salir la ficha (el lado OPUESTO al arrastre, mismo "hondazo"
+          que calcula el gesto) y creciendo con la potencia. Va en un <Svg>
+          aparte, DESPUÉS de las fichas/pelota en el árbol, para pintar
+          encima de todo — si viviera en el <Svg> de las líneas de cancha
+          (que va antes) quedaría tapada por cualquier ficha de por medio. */}
+      {arrastre ? <FlechaTiro arrastre={arrastre} fichas={fichas} posiciones={posiciones} px={px} py={py} lado={lado} altoTotal={altoTotal} /> : null}
     </View>
+  );
+}
+
+/** Ver el comentario en el punto de uso, arriba. */
+function FlechaTiro({
+  arrastre,
+  fichas,
+  posiciones,
+  px,
+  py,
+  lado,
+  altoTotal,
+}: {
+  arrastre: { fichaId: string; dx: number; dy: number };
+  fichas: FichaSoccer[];
+  posiciones: Posiciones;
+  px: (x: number) => number;
+  py: (y: number) => number;
+  lado: number;
+  altoTotal: number;
+}) {
+  const f = fichas.find((ff) => idFicha(ff) === arrastre.fichaId);
+  if (!f) return null;
+  const base = posiciones[arrastre.fichaId] ?? { x: f.x, y: f.y };
+  const dist = Math.sqrt(arrastre.dx ** 2 + arrastre.dy ** 2);
+  if (dist < 4) return null;
+
+  // Mismo cálculo que `onEnd` del gesto: el tiro sale al lado OPUESTO de
+  // hacia dónde se arrastró, con potencia proporcional a cuánto se estiró.
+  const dirX = -arrastre.dx / dist;
+  const dirY = -arrastre.dy / dist;
+  const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
+  // Largo EN PANTALLA, no en unidades de física: crece con la potencia pero
+  // siempre visible desde el primer milímetro de arrastre (pedido: "mientras
+  // mas tires hacia atras, mas fuerte debe salir y la flecha mas larga").
+  const largo = 24 + (potencia / POTENCIA_MAXIMA) * 100;
+
+  // La ficha ya está dibujada en su posición "tirada hacia atrás" (offset =
+  // arrastre.dx/dy) — la flecha arranca ahí, no en la posición de reposo.
+  const cx = px(base.x) + arrastre.dx;
+  const cy = py(base.y) + arrastre.dy;
+  const puntaX = cx + dirX * largo;
+  const puntaY = cy + dirY * largo;
+
+  const angulo = Math.atan2(dirY, dirX);
+  const alaLargo = 13;
+  const alaAngulo = 0.5;
+  const ala1X = puntaX - alaLargo * Math.cos(angulo - alaAngulo);
+  const ala1Y = puntaY - alaLargo * Math.sin(angulo - alaAngulo);
+  const ala2X = puntaX - alaLargo * Math.cos(angulo + alaAngulo);
+  const ala2Y = puntaY - alaLargo * Math.sin(angulo + alaAngulo);
+
+  // Más roja cuanto más cerca del tiro máximo — mismo lenguaje visual que el
+  // resto de la app usa para "al límite" (ver el reloj de HueSoccer).
+  const color = potencia >= POTENCIA_MAXIMA * 0.85 ? '#FF4136' : '#FFFFFF';
+
+  return (
+    <Svg width={lado} height={altoTotal} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Line x1={cx} y1={cy} x2={puntaX} y2={puntaY} stroke={color} strokeWidth={4} strokeLinecap="round" opacity={0.95} />
+      <Line x1={puntaX} y1={puntaY} x2={ala1X} y2={ala1Y} stroke={color} strokeWidth={4} strokeLinecap="round" opacity={0.95} />
+      <Line x1={puntaX} y1={puntaY} x2={ala2X} y2={ala2Y} stroke={color} strokeWidth={4} strokeLinecap="round" opacity={0.95} />
+    </Svg>
   );
 }
 

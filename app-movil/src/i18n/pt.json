@@ -1001,6 +1001,7 @@
     "tuRecord": "Seu recorde: {{n}}",
     "retarA": "Desafiar alguém",
     "retar": "Desafiar",
+    "configurarDuelo": "Configurar duelo",
     "jugar": "Jogar",
     "volver": "Voltar ao HuePlay",
     "golesParaGanar": "Quem chegar primeiro a {{n}} gols vence",
@@ -1201,7 +1202,8 @@
         "tricolor": "Tricolor",
         "arcoiris": "Arco-íris",
         "lunar": "Lunar"
-      }
+      },
+      "metaGoles": "Meta de gols"
     },
     "trivia": {
       "comoSeJuega": "{{n}} perguntas sobre cuidado animal, {{s}} segundos cada. No final você vê o que acertou e por quê.",

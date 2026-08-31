@@ -995,6 +995,7 @@
     "tuRecord": "최고 기록: {{n}}",
     "retarA": "도전하기",
     "retar": "도전",
+    "configurarDuelo": "대결 설정",
     "jugar": "플레이",
     "volver": "HuePlay로 돌아가기",
     "golesParaGanar": "{{n}}골을 먼저 넣으면 승리",
@@ -1195,7 +1196,8 @@
         "tricolor": "삼색",
         "arcoiris": "레인보우",
         "lunar": "루나"
-      }
+      },
+      "metaGoles": "목표 골 수"
     },
     "trivia": {
       "comoSeJuega": "동물 돌봄 문제 {{n}}개, 각 {{s}}초입니다. 끝나면 맞힌 문제와 이유를 볼 수 있습니다.",

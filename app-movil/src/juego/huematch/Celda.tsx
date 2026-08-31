@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Ficha } from './Ficha';
-import { VACIO } from './motor';
+import { FILAS, VACIO } from './motor';
 
 type Props = {
   tipo: number;
@@ -33,9 +33,27 @@ type Props = {
   arrastreVivo?: { dx: number; dy: number } | null;
 };
 
-/** Cuánto dura la desintegración y cuánto la caída. */
-const T_ROMPER = 230;
-const T_CAER = 220;
+/**
+ * Cuánto dura la desintegración de una ficha que se rompe. Exportada: la
+ * pantalla que orquesta la cascada (`huematch.tsx`) tiene que esperar AL
+ * MENOS esto antes de tocar el tablero de nuevo, o la corta a mitad.
+ */
+export const T_ROMPER = 230;
+/**
+ * Cuánto hay que esperar, como mínimo, después de que caen fichas nuevas
+ * (`VACIO` → ficha) para que el escalonado por fila y el resorte de cada una
+ * terminen de asentarse. `(FILAS-1)*26` es el retraso de la fila más de
+ * arriba (la última en arrancar); el resto es lo que tarda el resorte en
+ * asentarse una vez que arranca.
+ *
+ * Antes `huematch.tsx` esperaba mucho menos que esto entre pasos de una
+ * cascada — con matches encadenados, el paso siguiente pisaba esta animación
+ * a mitad de camino y arriba le montaba la explosión del próximo match, así
+ * que todo se leía como un solo parpadeo en vez de una cascada. Exportar la
+ * cuenta acá evita que las dos pantallas vuelvan a desincronizarse adivinando
+ * cada una un número distinto.
+ */
+export const T_CAE = (FILAS - 1) * 26 + 320;
 /** Lo que tarda una ficha en llegar al lugar de su vecina, y en volver. */
 export const T_MOVER = 150;
 

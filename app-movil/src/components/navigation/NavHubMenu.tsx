@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { usePathname } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import type { Hub } from '../../navigation/hubs';
+import { pushUnica } from '../../navigation/pushUnica';
 import { elevation, radii } from '../../theme/elevation';
 import { fonts, type } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -32,6 +33,7 @@ const ANCHO = 232;
 export function NavHubMenu({ hub, anclaX, desdeAbajo, onCerrar }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const pathname = usePathname();
 
   // En web el gesto no cancela con Escape solo; sin esto quedás encerrado en
   // el menú si no acertás a tocar afuera.
@@ -80,7 +82,7 @@ export function NavHubMenu({ hub, anclaX, desdeAbajo, onCerrar }: Props) {
               onPress={() => {
                 hapticLeve();
                 onCerrar();
-                router.push(item.route as never);
+                pushUnica(pathname, item.route);
               }}
             >
               <View style={[styles.icono, { backgroundColor: colors.primarySoft }]}>

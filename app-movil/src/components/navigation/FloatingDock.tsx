@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useGlobalSearchParams, usePathname } from 'expo-router';
+import { useGlobalSearchParams, usePathname } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContadores } from '../../hooks/useContadores';
 import { accionCrearPara } from '../../navigation/accionCrear';
 import { APP_COMPOSER_HEIGHT, APP_TAB_BAR_HEIGHT, chromeForPath } from '../../navigation/chrome';
+import { pushUnica } from '../../navigation/pushUnica';
 import { elevation, radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -164,19 +165,19 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
           icon="notifications-outline"
           label={t('notificaciones.titulo')}
           badge={contadores.notificaciones}
-          onPress={() => router.push('/(app)/notificaciones' as never)}
+          onPress={() => pushUnica(pathname, '/(app)/notificaciones')}
         />
         <BotonFlotante
           icon="chatbubble-ellipses-outline"
           label={t('chat.titulo')}
           badge={contadores.mensajes + contadores.solicitudesChat}
-          onPress={() => router.push('/(app)/chat' as never)}
+          onPress={() => pushUnica(pathname, '/(app)/chat')}
         />
         <BotonFlotante
           icon="paw-outline"
           label={t('mascotas.title')}
           badge={contadores.mascotas}
-          onPress={() => router.push('/(app)/mascotas' as never)}
+          onPress={() => pushUnica(pathname, '/(app)/mascotas')}
         />
         {/* El `+` es contextual: en Mis Mascotas crea una mascota, en Adopción
             una publicación de adopción. Un solo botón de crear, siempre en el
@@ -184,7 +185,7 @@ export function FloatingDock({ columnWidth, columnLeft, tabBarVisible }: Props) 
         <BotonFlotante
           icon={crear.icon}
           label={t(crear.labelKey)}
-          onPress={() => router.push(crear.route as never)}
+          onPress={() => pushUnica(pathname, crear.route)}
           principal
         />
         </Animated.View>

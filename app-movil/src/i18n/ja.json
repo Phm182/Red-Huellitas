@@ -995,6 +995,7 @@
     "tuRecord": "自己ベスト: {{n}}",
     "retarA": "誰かに挑戦",
     "retar": "挑戦",
+    "configurarDuelo": "対戦を設定",
     "jugar": "プレイ",
     "volver": "HuePlay に戻る",
     "golesParaGanar": "先に {{n}} ゴール決めた方が勝ち",
@@ -1195,7 +1196,8 @@
         "tricolor": "トリコロール",
         "arcoiris": "レインボー",
         "lunar": "ルナー"
-      }
+      },
+      "metaGoles": "目標ゴール数"
     },
     "trivia": {
       "comoSeJuega": "動物のケアに関する {{n}} 問、1問 {{s}} 秒です。最後に正解と理由を確認できます。",

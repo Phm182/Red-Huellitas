@@ -1001,6 +1001,7 @@
     "tuRecord": "Dein Rekord: {{n}}",
     "retarA": "Jemanden herausfordern",
     "retar": "Fordern",
+    "configurarDuelo": "Duell einrichten",
     "jugar": "Spielen",
     "volver": "Zurück zu HuePlay",
     "golesParaGanar": "Wer zuerst {{n}} Tore erzielt, gewinnt",
@@ -1201,7 +1202,8 @@
         "tricolor": "Dreifarbig",
         "arcoiris": "Regenbogen",
         "lunar": "Mond"
-      }
+      },
+      "metaGoles": "Torziel"
     },
     "trivia": {
       "comoSeJuega": "{{n}} Fragen zur Tierpflege, je {{s}} Sekunden. Am Ende siehst du, was richtig war und warum.",
