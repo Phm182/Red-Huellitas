@@ -245,12 +245,7 @@ export function CanchaSoccer({
         const skinInfo = skinsPorJugador[f.j];
 
         const ficha = (
-          <View
-            style={[
-              styles.ficha,
-              { width: diametro, height: diametro, left, top, borderColor: esMia ? colors.primary : 'transparent' },
-            ]}
-          >
+          <View style={[styles.ficha, { width: diametro, height: diametro, left, top }]}>
             <FichaSkinSvg
               skin={skinInfo.skin}
               variante={skinInfo.variante}
@@ -356,6 +351,6 @@ function FlechaTiro({
 
 const styles = StyleSheet.create({
   cancha: { position: 'relative', alignSelf: 'center', borderRadius: 8, overflow: 'hidden' },
-  ficha: { position: 'absolute', borderWidth: 3, borderRadius: 999 },
+  ficha: { position: 'absolute', borderRadius: 999 },
   pelota: { position: 'absolute' },
 });

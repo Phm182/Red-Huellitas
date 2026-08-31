@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
@@ -36,6 +37,29 @@ function skinFichaValida(v: string | undefined): SkinFichaId {
 }
 function skinPelotaValida(v: string | undefined): SkinPelotaId {
   return v && esSkinPelotaValida(v) ? v : SKIN_PELOTA_DEFAULT;
+}
+
+/**
+ * Punto que titila al lado del marcador de quien tiene el turno.
+ *
+ * Antes esto lo marcaba un anillo alrededor de CADA ficha propia
+ * (`esMia` en `CanchaSoccer.tsx`) — con el color de equipo rosa (que es el
+ * mismo `colors.primary` del anillo) quedaba un doble círculo rosa feo
+ * encima de las fichas rosas. El color de equipo ya alcanza para saber
+ * cuáles son las tuyas; de quién es el turno se indica acá, una sola vez,
+ * no ficha por ficha.
+ */
+function PuntoTurno() {
+  const { colors } = useTheme();
+  const opacidad = useSharedValue(1);
+
+  useEffect(() => {
+    opacidad.value = withRepeat(withTiming(0.25, { duration: 550 }), -1, true);
+  }, [opacidad]);
+
+  const estilo = useAnimatedStyle(() => ({ opacity: opacidad.value }));
+
+  return <Animated.View style={[styles.puntoTurno, { backgroundColor: colors.success }, estilo]} />;
 }
 
 /**
@@ -279,12 +303,18 @@ export default function HueSoccerScreen() {
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
       <View style={[styles.marcador, centeredContent]}>
         <View style={styles.marcadorLado}>
-          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ1')}</Text>
+          <View style={styles.marcadorLabelFila}>
+            <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ1')}</Text>
+            {desafio.esMiTurno ? <PuntoTurno /> : null}
+          </View>
           <Text style={[styles.marcadorValor, { color: colors.text }]}>{misGoles}</Text>
         </View>
         <Text style={[styles.marcadorGuion, { color: colors.textMuted }]}>-</Text>
         <View style={styles.marcadorLado}>
-          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ2')}</Text>
+          <View style={styles.marcadorLabelFila}>
+            <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ2')}</Text>
+            {!desafio.esMiTurno ? <PuntoTurno /> : null}
+          </View>
           <Text style={[styles.marcadorValor, { color: colors.text }]}>{susGoles}</Text>
         </View>
       </View>
@@ -334,6 +364,8 @@ const styles = StyleSheet.create({
   juego: { flex: 1, paddingTop: 8 },
   marcador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 4 },
   marcadorLado: { alignItems: 'center' },
+  marcadorLabelFila: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  puntoTurno: { width: 8, height: 8, borderRadius: 4 },
   marcadorLabel: { fontSize: 11, textTransform: 'uppercase' },
   marcadorValor: { fontSize: 30, fontFamily: fonts.displaySemi },
   marcadorGuion: { fontSize: 22, fontFamily: fonts.displaySemi, marginTop: 14 },
