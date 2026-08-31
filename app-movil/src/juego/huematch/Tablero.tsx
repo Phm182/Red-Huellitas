@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 import { radii } from '../../theme/elevation';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -58,6 +58,16 @@ export function TableroHueMatch({
   vivo.current = { celda, bloqueado, onCelda, onDeslizar };
 
   const desde = useRef<CeldaCoord | null>(null);
+  // Eje al que quedó "enganchado" el arrastre en curso: se decide apenas el
+  // dedo se mueve lo suficiente y no cambia hasta soltar — sin esto un
+  // arrastre nunca sale perfectamente recto y la ficha temblaría en diagonal.
+  const eje = useRef<'x' | 'y' | null>(null);
+  // Offset en vivo, en píxeles, de la ficha que se está arrastrando ahora
+  // mismo — es lo que hace que la ficha siga al dedo en vez de recién
+  // moverse al soltar.
+  const [arrastre, setArrastre] = useState<{ origen: CeldaCoord; dx: number; dy: number } | null>(
+    null
+  );
 
   const pan = useMemo(
     () =>
@@ -69,14 +79,38 @@ export function TableroHueMatch({
         onPanResponderGrant: (e) => {
           const { celda: c } = vivo.current;
           const { locationX, locationY } = e.nativeEvent;
-          desde.current = {
+          const origen = {
             fila: Math.min(FILAS - 1, Math.max(0, Math.floor(locationY / c))),
             col: Math.min(COLUMNAS - 1, Math.max(0, Math.floor(locationX / c))),
           };
+          desde.current = origen;
+          eje.current = null;
+          setArrastre({ origen, dx: 0, dy: 0 });
+        },
+        onPanResponderMove: (_e, g) => {
+          const origen = desde.current;
+          if (!origen || vivo.current.bloqueado) return;
+          const c = vivo.current.celda;
+
+          if (!eje.current) {
+            // Umbral chico sólo para decidir el eje — el de "esto ya es un
+            // arrastre y no un toque" se evalúa recién al soltar.
+            if (Math.abs(g.dx) > c * 0.12 || Math.abs(g.dy) > c * 0.12) {
+              eje.current = Math.abs(g.dx) > Math.abs(g.dy) ? 'x' : 'y';
+            }
+          }
+
+          // No se arrastra más de una casilla: no hay a dónde ir más lejos.
+          const limite = c;
+          const dx = eje.current === 'x' ? Math.max(-limite, Math.min(limite, g.dx)) : 0;
+          const dy = eje.current === 'y' ? Math.max(-limite, Math.min(limite, g.dy)) : 0;
+          setArrastre({ origen, dx, dy });
         },
         onPanResponderRelease: (_e, g) => {
           const origen = desde.current;
           desde.current = null;
+          eje.current = null;
+          setArrastre(null);
           if (!origen) return;
 
           const { celda: c, bloqueado: bloq, onCelda: tocar, onDeslizar: deslizar } = vivo.current;
@@ -98,6 +132,11 @@ export function TableroHueMatch({
               ? { df: 0, dc: g.dx > 0 ? 1 : -1 }
               : { df: g.dy > 0 ? 1 : -1, dc: 0 };
           deslizar(origen, dir);
+        },
+        onPanResponderTerminate: () => {
+          desde.current = null;
+          eje.current = null;
+          setArrastre(null);
         },
       }),
     []
@@ -122,7 +161,9 @@ export function TableroHueMatch({
     >
       {tablero.map((fila, f) =>
         fila.map((tipo, c) => {
-          const activa = seleccionada?.fila === f && seleccionada?.col === c;
+          const activa =
+            (seleccionada?.fila === f && seleccionada?.col === c) ||
+            (arrastre?.origen.fila === f && arrastre?.origen.col === c);
           const mal = esRechazada(f, c);
           return (
             <View
@@ -153,6 +194,11 @@ export function TableroHueMatch({
                   fila={f}
                   seleccionada={activa}
                   desplaza={desplazamiento(f, c)}
+                  arrastreVivo={
+                    arrastre && arrastre.origen.fila === f && arrastre.origen.col === c
+                      ? { dx: arrastre.dx, dy: arrastre.dy }
+                      : null
+                  }
                 />
               </View>
             </View>

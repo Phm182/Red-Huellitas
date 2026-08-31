@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Vie
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
+import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
 import { HuePlayRival, PoliticaAbandonoSala } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -15,7 +16,6 @@ import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticExito, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
 
-const PLAZOS = [1, 6, 12, 24];
 const POLITICAS: PoliticaAbandonoSala[] = ['espera', 'ia', 'expulsa'];
 
 /**
@@ -33,7 +33,7 @@ export default function SalaCrearScreen() {
   const [maxJugadores, setMaxJugadores] = useState(4);
   const [completarConIA, setCompletarConIA] = useState(true);
   const [politicaAbandono, setPoliticaAbandono] = useState<PoliticaAbandonoSala>('espera');
-  const [plazoTurnoHoras, setPlazoTurnoHoras] = useState(24);
+  const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
 
   const [busqueda, setBusqueda] = useState('');
   const [rivales, setRivales] = useState<HuePlayRival[]>([]);
@@ -67,7 +67,7 @@ export default function SalaCrearScreen() {
       maxJugadores,
       completarConIA,
       politicaAbandono,
-      plazoTurnoHoras,
+      plazoTurnoMinutos,
       invitadosUserIds: invitados.map((i) => i.userId),
     });
     setCreando(false);
@@ -117,12 +117,7 @@ export default function SalaCrearScreen() {
       </Text>
 
       <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoTurno')}</Text>
-      <ChipRow
-        opciones={PLAZOS.map((h) => ({ valor: h, label: t('hueplay.plazoHoras', { n: h }) }))}
-        seleccionado={plazoTurnoHoras}
-        onSelect={setPlazoTurnoHoras}
-        scrollable={false}
-      />
+      <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
 
       <Text style={[styles.seccion, { color: colors.textMuted }]}>
         {t('hueplay.sala.invitarGente', { n: cuposLibres })}

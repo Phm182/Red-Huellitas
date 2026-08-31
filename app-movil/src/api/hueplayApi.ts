@@ -90,14 +90,14 @@ export const hueplayApi = {
   crearDesafio: (
     juegoCodigo: string,
     rivalUserId?: number,
-    opciones?: { plazoTurnoHoras?: number; contraIA?: boolean }
+    opciones?: { plazoTurnoMinutos?: number; contraIA?: boolean }
   ) =>
     apiPost<{ desafio: HuePlayDesafio }>(
       'ajax/hueplay/desafio_crear.php',
       {
         juegoCodigo,
         ...(rivalUserId ? { rivalUserId } : {}),
-        ...(opciones?.plazoTurnoHoras ? { plazoTurnoHoras: opciones.plazoTurnoHoras } : {}),
+        ...(opciones?.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
         ...(opciones?.contraIA ? { contraIA: '1' } : {}),
       },
       true
@@ -188,7 +188,7 @@ export const hueplayApi = {
       maxJugadores: number;
       completarConIA: boolean;
       politicaAbandono: PoliticaAbandonoSala;
-      plazoTurnoHoras: number;
+      plazoTurnoMinutos: number;
       invitadosUserIds?: number[];
     }
   ) =>
@@ -199,7 +199,7 @@ export const hueplayApi = {
         maxJugadores: opciones.maxJugadores,
         completarConIA: opciones.completarConIA ? '1' : '0',
         politicaAbandono: opciones.politicaAbandono,
-        plazoTurnoHoras: opciones.plazoTurnoHoras,
+        plazoTurnoMinutos: opciones.plazoTurnoMinutos,
         ...(opciones.invitadosUserIds?.length
           ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }
           : {}),

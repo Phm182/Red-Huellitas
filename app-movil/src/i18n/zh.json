@@ -678,7 +678,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "你还没有关注任何人",
+      "cancelar": "取消",
+      "mascotasDe": "{{nombre}}的宠物",
+      "sinMascotas": "还没有添加宠物",
+      "volver": "返回"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -981,7 +986,7 @@
     "partidas": "场次",
     "ganados": "获胜",
     "perdidos": "失败",
-    "desafios": "对战",
+    "desafios": "多人游戏 / 挑战",
     "desafiosBajada": "与其他用户对决",
     "juegos": "游戏",
     "ranking": "排行榜",
@@ -1179,6 +1184,13 @@
       "rankingVacio": "这个时间段还没有分数。",
       "diasJugados": "{{dias}} 天",
       "tuPuesto": "你的排名：第 {{puesto}} 名，{{puntos}} 分"
-    }
+    },
+    "plazoPersonalizado": "自定义",
+    "unidad": {
+      "min": "分钟",
+      "h": "小时",
+      "d": "天"
+    },
+    "seleccionarJuego": "选择一个游戏"
   }
 }

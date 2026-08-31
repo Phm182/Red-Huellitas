@@ -30,6 +30,10 @@ type Props = {
   clock: number;
 };
 
+/** Tinta del contorno: fija, no un tono del pelo — se lee igual de firme en
+ * un animal claro que en uno oscuro, como en las referencias de estilo. */
+const INK = '#2E2620';
+
 const GROUND_Y = 150;
 /**
  * Escala interna del personaje dentro del viewBox. Deja margen para cola,
@@ -80,7 +84,7 @@ export function ProceduralPet({
   if (viewMode === 'frente' || viewMode === 'espalda') {
     return (
       <Svg width={size} height={size} viewBox="0 0 200 200">
-        <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+        <G transform={`translate(100 ${GROUND_Y}) scale(${PET_FIT}) translate(-100 ${-GROUND_Y})`}>
           <VistaOrtogonal
             breed={b}
             pose={pose}
@@ -102,7 +106,11 @@ export function ProceduralPet({
   const lie = pose.lie ?? 0;
 
   // ------------------------------------------------------- esqueleto
-  const legH = (11 + 27 * b.legLength) * S;
+  // Patas más cortas que antes: con la proporción "real" (11 + 27*legLength)
+  // el bicho quedaba muy parado en zancos comparado con el estilo cartoon
+  // de referencia, y además una pata larga es la que más se nota rara al
+  // plegarse para sentarse.
+  const legHBase = (5 + 13 * b.legLength) * S;
   const torsoH = 26 * b.bodyHeight * S;
   const torsoLen = 62 * b.bodyLength * S;
   // La silueta de la cabeza abarca ~2.5 radios (cráneo + morro). Con radio 18
@@ -113,10 +121,21 @@ export function ProceduralPet({
   const muzLen = headR * (0.22 + 1.0 * b.snoutLength);
   const muzDrop = headR * (0.24 + 0.1 * b.snoutLength);
 
-  // Sentado: se hunde la cadera y las patas traseras se pliegan.
-  // Acostado: se aplasta más hacia el piso.
-  const sitDrop = (sit * 0.55 + lie * 0.35) * torsoH;
-  const legHTras = legH * (1 - sit * 0.72) * (1 - lie * 0.55);
+  // Sentado: un animal sentado no es "parado con la cadera más abajo" — se
+  // PLIEGA el muslo trasero como una bisagra, así que la cadera se acerca al
+  // pecho de costado (el torso se ve más corto) y a la vez queda bastante
+  // alta, apoyada sobre el muslo doblado, no aplastada contra el piso. Las
+  // patas delanteras se quedan rectas: son las que sostienen el pecho.
+  //
+  // Acostado: acá el error anterior era que sólo bajaba la grupa y el pecho
+  // se quedaba a altura de "parado" — medio cuerpo en el aire, la otra
+  // mitad hundida, ilegible. Cuando de verdad se acuesta TODO el lomo baja
+  // parejo: las patas delanteras se acortan igual que las traseras, no hace
+  // falta acercar la cadera (el cuerpo no se pliega, se aplana entero).
+  const tuck = sit * 0.4;
+  const legH = legHBase * (1 - lie * 0.72);
+  const legHTras = legHBase * (1 - sit * 0.55) * (1 - lie * 0.75);
+  const sitDrop = sit * 0.22 * torsoH;
 
   const torsoBottom = GROUND_Y - legH;
   const torsoTop = torsoBottom - torsoH;
@@ -126,6 +145,9 @@ export function ProceduralPet({
   const anchoTotal = torsoLen + headR * 1.5 + muzLen;
   const rumpX = 100 - anchoTotal / 2 + headR * 0.25;
   const chestX = rumpX + torsoLen;
+  // Ancla del tramo trasero (grupa, patas traseras, cola): se acerca al
+  // pecho con `tuck` en vez de quedarse en `rumpX` de "parado".
+  const rumpXAnclado = rumpX + (chestX - rumpX) * tuck;
 
   const headCx = chestX + headR * 0.16;
   const headCy = torsoTop - headR * 0.36;
@@ -134,20 +156,31 @@ export function ProceduralPet({
   const arco = esGato ? -torsoH * 0.1 : torsoH * 0.04;
   const panza = torsoH * (0.06 + (b.bodyWidth - 1) * 0.42);
 
-  const dark = shade(b.base, -34);
-  const darker = shade(b.base, -58);
-  const light = shade(b.base, 30);
+  // Estilo plano tipo ilustración vectorial: casi sin degradé (antes era muy
+  // "peluche 3D") y un trazo grueso de tinta oscura fija, no un tono más
+  // oscuro del pelo — así el contorno se lee igual de firme en un gato
+  // blanco que en uno negro, como en las referencias de estilo.
+  const dark = shade(b.base, -14);
+  const darker = shade(b.base, -30);
+  const light = shade(b.base, 10);
   const contorno = shade(b.base, -72);
+  const ink = '#2E2620';
+  const trazo = 2.4 * S;
 
   // ------------------------------------------------------- silueta del torso
+  // El lomo entre el hombro (altura fija) y la grupa (baja `sitDrop` entera
+  // al sentarse) se reparte en rampa — antes esos dos puntos intermedios se
+  // quedaban a la altura de "parado" y saltaban de golpe al punto de la
+  // grupa ya sentada, y el Catmull-Rom de `curvaCerrada` leía ese escalón
+  // como un quiebre de columna en vez de una curva continua.
   const torso: Pt[] = [
     // Cruz y hombro: sin este par el frente quedaba como una pared vertical.
     [chestX - torsoLen * 0.12, torsoTop - torsoH * 0.06],
-    [chestX - torsoLen * 0.34, torsoTop + arco * 0.5],
-    [chestX - torsoLen * 0.62, torsoTop + arco],
-    [rumpX + torsoLen * 0.05, torsoTopTras + torsoH * 0.08],
-    [rumpX - torsoH * 0.12, torsoTopTras + torsoH * 0.5],
-    [rumpX + torsoH * 0.2, torsoBottomTras],
+    [chestX - torsoLen * 0.34, torsoTop + arco * 0.5 + sitDrop * 0.12],
+    [chestX - torsoLen * 0.62, torsoTop + arco + sitDrop * 0.45],
+    [rumpXAnclado + torsoLen * 0.05, torsoTopTras + torsoH * 0.08],
+    [rumpXAnclado - torsoH * 0.12, torsoTopTras + torsoH * 0.5],
+    [rumpXAnclado + torsoH * 0.2, torsoBottomTras],
     [chestX - torsoLen * 0.46, torsoBottom + panza],
     [chestX - torsoH * 0.12, torsoBottom - torsoH * 0.02],
     // Pecho: sale hacia adelante y hacia arriba, marcando el pectoral.
@@ -200,16 +233,6 @@ export function ProceduralPet({
   return (
     <Svg width={size} height={size} viewBox="0 0 200 200">
       <Defs>
-        <LinearGradient id={id('pelo')} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor={light} />
-          <Stop offset="52%" stopColor={b.base} />
-          <Stop offset="100%" stopColor={dark} />
-        </LinearGradient>
-        <RadialGradient id={id('craneo')} cx="38%" cy="26%" r="76%">
-          <Stop offset="0%" stopColor={light} />
-          <Stop offset="60%" stopColor={b.base} />
-          <Stop offset="100%" stopColor={dark} />
-        </RadialGradient>
         <LinearGradient id={id('panza')} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0%" stopColor={b.belly} stopOpacity="0" />
           <Stop offset="60%" stopColor={b.belly} stopOpacity="0.9" />
@@ -224,7 +247,7 @@ export function ProceduralPet({
       </Defs>
 
       {/* Margen interno: cola / saltos / stretch no tocan el borde del stage. */}
-      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+      <G transform={`translate(100 ${GROUND_Y}) scale(${PET_FIT}) translate(-100 ${-GROUND_Y})`}>
       {/* Sombra en el piso: no acompaña el salto, se achica. */}
       <Sombra pose={pose} rumpX={rumpX} chestX={chestX} S={S} />
 
@@ -241,18 +264,18 @@ export function ProceduralPet({
       >
         {/* ---------- patas del lado lejano (más oscuras, detrás) ---------- */}
         <G opacity={0.72}>
-          {pataTrasera(rumpX - 3 * S, torsoBottomTras, GROUND_Y, torsoH, legHTras, grosorPata, darker, 0)}
+          {pataTrasera(rumpXAnclado - 3 * S, torsoBottomTras, GROUND_Y, torsoH, legHTras, grosorPata, darker, sit)}
           {pataDelantera(chestX - torsoH * 0.34, torsoBottom, GROUND_Y, legH, grosorPata, darker, 0)}
         </G>
 
         {/* ---------- cola (detrás del cuerpo) ---------- */}
-        <Cola b={b} rumpX={rumpX} y={torsoTopTras + torsoH * 0.18} S={S} pose={pose} clock={clock} />
+        <Cola b={b} rumpX={rumpXAnclado} y={torsoTopTras + torsoH * 0.18} S={S} pose={pose} clock={clock} />
 
         {/* ---------- cuello (debajo del torso y la cabeza) ---------- */}
         <Path d={curvaCerrada(cuello)} fill={b.pattern === 'colorpoint' ? shade(b.base, -8) : b.base} />
 
         {/* ---------- torso ---------- */}
-        <Path d={curvaCerrada(torso)} fill={`url(#${id('pelo')})`} stroke={contorno} strokeWidth={1.4 * S} strokeOpacity={0.5} />
+        <Path d={curvaCerrada(torso)} fill={b.base} stroke={ink} strokeWidth={trazo} strokeLinejoin="round" />
         <G clipPath={`url(#${id('clipTorso')})`}>
           {/* Panza clara */}
           <Rect
@@ -269,7 +292,7 @@ export function ProceduralPet({
         ) : null}
 
         {/* ---------- patas del lado cercano ---------- */}
-        {pataTrasera(rumpX + 3 * S, torsoBottomTras, GROUND_Y, torsoH, legHTras, grosorPata, colorPata(b, dark), sit)}
+        {pataTrasera(rumpXAnclado + 3 * S, torsoBottomTras, GROUND_Y, torsoH, legHTras, grosorPata, colorPata(b, dark), sit)}
         {pataDelantera(chestX - torsoH * 0.08, torsoBottom, GROUND_Y, legH, grosorPata, colorPata(b, b.base), pose.pawLift)}
 
         {/* ---------- cabeza ---------- */}
@@ -284,7 +307,7 @@ export function ProceduralPet({
             {oreja(b, headCx - headR * 0.66, headCy - headR * 0.52, headR, pose.earFlap, -1, darker)}
           </G>
 
-          <Path d={curvaCerrada(cabeza)} fill={`url(#${id('craneo')})`} stroke={contorno} strokeWidth={1.4 * S} strokeOpacity={0.5} />
+          <Path d={curvaCerrada(cabeza)} fill={b.base} stroke={ink} strokeWidth={trazo} strokeLinejoin="round" />
           <G clipPath={`url(#${id('clipCabeza')})`}>
             {patronCabeza(b, headCx, headCy, headR, muzLen, muzDrop)}
           </G>
@@ -359,15 +382,11 @@ function pataDelantera(
   const pie = ground - alzado;
   const codo: Pt = [x + grosor * 0.15, top + legH * 0.42];
   const rot = lift * -34;
+  const d = `M${x} ${top - grosor * 0.4} Q${codo[0]} ${codo[1]}, ${x + grosor * 0.05} ${pie - grosor * 0.35}`;
   return (
     <G transform={`rotate(${rot} ${x} ${top})`}>
-      <Path
-        d={`M${x} ${top - grosor * 0.4} Q${codo[0]} ${codo[1]}, ${x + grosor * 0.05} ${pie - grosor * 0.35}`}
-        stroke={color}
-        strokeWidth={grosor}
-        strokeLinecap="round"
-        fill="none"
-      />
+      <Path d={d} stroke={INK} strokeWidth={grosor + grosor * 0.34} strokeLinecap="round" fill="none" />
+      <Path d={d} stroke={color} strokeWidth={grosor} strokeLinecap="round" fill="none" />
       <Pata cx={x + grosor * 0.05} cy={pie} grosor={grosor} color={shade(color, -14)} />
     </G>
   );
@@ -391,24 +410,16 @@ function pataTrasera(
   const rodilla: Pt = [x + torsoH * 0.46 + sit * torsoH * 0.2, top + legH * 0.34];
   const corvejon: Pt = [x + torsoH * 0.06 - sit * torsoH * 0.15, top + legH * 0.68];
   const pie: Pt = [x + torsoH * 0.3, ground];
+  const dMuslo = `M${cadera[0]} ${cadera[1]} Q${rodilla[0] + grosor * 0.3} ${rodilla[1] - legH * 0.1}, ${rodilla[0]} ${rodilla[1]}`;
+  const dCana = `M${rodilla[0]} ${rodilla[1]} L${corvejon[0]} ${corvejon[1]} L${pie[0]} ${pie[1] - grosor * 0.35}`;
   return (
     <G>
+      {/* Contorno de tinta detrás, para las dos partes de la pata. */}
+      <Path d={dMuslo} stroke={INK} strokeWidth={grosor * 1.55 + grosor * 0.3} strokeLinecap="round" fill="none" />
+      <Path d={dCana} stroke={INK} strokeWidth={grosor + grosor * 0.34} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       {/* Muslo: más ancho que la caña */}
-      <Path
-        d={`M${cadera[0]} ${cadera[1]} Q${rodilla[0] + grosor * 0.3} ${rodilla[1] - legH * 0.1}, ${rodilla[0]} ${rodilla[1]}`}
-        stroke={color}
-        strokeWidth={grosor * 1.55}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <Path
-        d={`M${rodilla[0]} ${rodilla[1]} L${corvejon[0]} ${corvejon[1]} L${pie[0]} ${pie[1] - grosor * 0.35}`}
-        stroke={color}
-        strokeWidth={grosor}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
+      <Path d={dMuslo} stroke={color} strokeWidth={grosor * 1.55} strokeLinecap="round" fill="none" />
+      <Path d={dCana} stroke={color} strokeWidth={grosor} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <Pata cx={pie[0]} cy={pie[1]} grosor={grosor} color={shade(color, -14)} />
     </G>
   );
@@ -422,6 +433,9 @@ function Pata({ cx, cy, grosor, color }: { cx: number; cy: number; grosor: numbe
       <Path
         d={`M${cx - w * 0.75} ${cy} Q${cx - w * 0.8} ${cy - grosor * 0.75}, ${cx + w * 0.35} ${cy - grosor * 0.7} Q${cx + w * 0.95} ${cy - grosor * 0.6}, ${cx + w * 0.9} ${cy} Z`}
         fill={color}
+        stroke={INK}
+        strokeWidth={grosor * 0.22}
+        strokeLinejoin="round"
       />
       <Path
         d={`M${cx - w * 0.3} ${cy} l0 ${-grosor * 0.34} M${cx + w * 0.22} ${cy} l0 ${-grosor * 0.34}`}
@@ -463,8 +477,15 @@ function Cola({
   const x0 = rumpX + 2;
   const cx1 = rumpX - len * (alta ? 0.12 : 0.28);
   const cy1 = y - len * (alta ? 0.52 : 0.32);
-  const tx = rumpX + len * (alta ? 0.1 : -0.42);
-  const ty = y - len * (alta ? 0.88 : 0.5);
+  // Sentado o acostado: la cola se enrosca al piso junto a la cadera en vez
+  // de seguir el arco de "parado" — si no, quedaba estirada de punta hacia
+  // donde estaban las patas antes de encogerse, y con el lomo ya más abajo
+  // se leía como cortada contra el cuerpo.
+  const tuck = Math.max(pose.sit, pose.lie ?? 0);
+  const txStand = rumpX + len * (alta ? 0.1 : -0.42);
+  const tyStand = y - len * (alta ? 0.88 : 0.5);
+  const tx = txStand + (rumpX + len * 0.22 - txStand) * tuck;
+  const ty = tyStand + (y + len * 0.3 - tyStand) * tuck;
 
   // Silueta cónica en vez de un trazo de grosor fijo: una cola de espesor
   // constante se veía como una varilla clavada en la grupa.
@@ -477,8 +498,8 @@ function Cola({
   return (
     <G transform={`rotate(${wag} ${x0} ${y})`}>
       {/* Base redondeada: funde el arranque de la cola con la grupa. */}
-      <Ellipse cx={x0 + base * 0.2} cy={y} rx={base * 0.75} ry={base * 0.62} fill={color} />
-      <Path d={d} fill={color} stroke={shade(color, -46)} strokeWidth={0.9} strokeOpacity={0.35} />
+      <Ellipse cx={x0 + base * 0.2} cy={y} rx={base * 0.75} ry={base * 0.62} fill={color} stroke={INK} strokeWidth={S * 1.6} />
+      <Path d={d} fill={color} stroke={INK} strokeWidth={S * 1.9} strokeLinejoin="round" />
       {b.tailFluff > 0.7 ? (
         <Ellipse cx={tx} cy={ty} rx={punta * 1.05} ry={punta * 1.25} fill={shade(color, 14)} />
       ) : null}
@@ -512,7 +533,8 @@ function oreja(
   if (b.earSize <= 0.01) return null;
   const e = b.earSize;
   const rot = flap * lado * 0.8;
-  const borde = shade(color, -50);
+  const borde = '#2E2620';
+  const grosorTrazo = headR * 0.09;
   let pts: Pt[];
 
   // Las orejas puntiagudas van como polígono, sin suavizar: al pasarlas por
@@ -522,14 +544,18 @@ function oreja(
     const x0 = bx - headR * ancho * 0.42;
     const x1 = bx + headR * ancho * 0.58;
     const tip = bx + headR * ancho * 0.06;
+    // Punta con un pelín de curva en vez de un vértice matemático — en la
+    // referencia la oreja no termina en una aguja perfecta.
+    const tipY = by - headR * alto;
+    const tipL: Pt = [tip - headR * ancho * 0.05, tipY + headR * 0.05];
+    const tipR: Pt = [tip + headR * ancho * 0.05, tipY + headR * 0.05];
     return (
       <G transform={`rotate(${rot} ${bx} ${by})`}>
         <Path
-          d={`M${x0} ${by + headR * 0.26} L${tip} ${by - headR * alto} L${x1} ${by + headR * 0.18} Z`}
+          d={`M${x0} ${by + headR * 0.26} L${tipL[0]} ${tipL[1]} Q${tip} ${tipY - headR * 0.03}, ${tipR[0]} ${tipR[1]} L${x1} ${by + headR * 0.18} Z`}
           fill={color}
           stroke={borde}
-          strokeWidth={0.9}
-          strokeOpacity={0.4}
+          strokeWidth={grosorTrazo}
           strokeLinejoin="round"
         />
         {interior ? (
@@ -575,7 +601,7 @@ function oreja(
       ];
       return (
         <G transform={`rotate(${rot + leanExtra} ${bx} ${by})`}>
-          <Path d={curvaCerrada(pinna)} fill={color} stroke={shade(color, -50)} strokeWidth={0.9} strokeOpacity={0.4} />
+          <Path d={curvaCerrada(pinna)} fill={color} stroke={borde} strokeWidth={grosorTrazo} strokeLinejoin="round" />
           <Path d={curvaCerrada(interior)} fill="#E8A0B0" opacity={0.65} />
         </G>
       );
@@ -589,9 +615,8 @@ function oreja(
             rx={headR * 0.36 * e}
             ry={headR * 0.6 * e}
             fill={color}
-            stroke={shade(color, -50)}
-            strokeWidth={0.9}
-            strokeOpacity={0.4}
+            stroke={borde}
+            strokeWidth={grosorTrazo}
           />
           <Ellipse cx={bx + headR * 0.06} cy={by - headR * 0.34 * e} rx={headR * 0.2 * e} ry={headR * 0.38 * e} fill={shade(color, -28)} opacity={0.55} />
         </G>
@@ -619,7 +644,7 @@ function oreja(
 
   return (
     <G transform={`rotate(${rot} ${bx} ${by})`}>
-      <Path d={curvaCerrada(pts)} fill={color} stroke={shade(color, -50)} strokeWidth={0.9} strokeOpacity={0.4} />
+      <Path d={curvaCerrada(pts)} fill={color} stroke={borde} strokeWidth={grosorTrazo} strokeLinejoin="round" />
     </G>
   );
 }
@@ -658,9 +683,13 @@ function Cara({
   // quedar sobre el cráneo, no encima de la nariz, que es como quedaba antes.
   const ex = headCx + headR * (0.13 + 0.24 * b.snoutLength);
   const ey = headCy - headR * 0.16;
-  const eR = headR * (b.snoutLength < 0.2 ? 0.23 : 0.2);
-  const px = ex + lookX * eR * 0.42;
-  const py = ey + lookY * eR * 0.34;
+  // Ojo grande: es el rasgo que más "tierno" lee en un dibujo para chicos —
+  // antes era chico (0.2-0.23) y el bicho leía más "de verdad" que de
+  // personaje. Con esto ocupa buena parte de la cara, como en las
+  // referencias de estilo (@kevinfm_art / Faith&Freedom).
+  const eR = headR * (b.snoutLength < 0.2 ? 0.32 : 0.28);
+  const px = ex + lookX * eR * 0.4;
+  const py = ey + lookY * eR * 0.32;
 
   return (
     <>
@@ -686,9 +715,8 @@ function Cara({
       ) : null}
       <Path
         d={`M${nx - headR * 0.04} ${ny + headR * 0.22} Q${nx - muzLen * 0.45} ${ny + headR * 0.36}, ${headCx + headR * 0.34} ${ny + headR * 0.26}`}
-        stroke={contorno}
-        strokeWidth={headR * 0.06}
-        strokeOpacity={0.65}
+        stroke={INK}
+        strokeWidth={headR * 0.05}
         fill="none"
         strokeLinecap="round"
       />
@@ -703,8 +731,16 @@ function Cara({
       ) : null}
 
       {/* Nariz sobre la punta del morro */}
-      <Ellipse cx={nx - headR * 0.05} cy={ny - headR * 0.02} rx={headR * 0.17} ry={headR * 0.14} fill={b.nose} />
-      <Ellipse cx={nx - headR * 0.09} cy={ny - headR * 0.06} rx={headR * 0.05} ry={headR * 0.035} fill="#FFFFFF" opacity={0.5} />
+      <Ellipse
+        cx={nx - headR * 0.05}
+        cy={ny - headR * 0.02}
+        rx={headR * 0.17}
+        ry={headR * 0.14}
+        fill={b.nose}
+        stroke={INK}
+        strokeWidth={headR * 0.045}
+      />
+      <Ellipse cx={nx - headR * 0.09} cy={ny - headR * 0.06} rx={headR * 0.05} ry={headR * 0.035} fill="#FFFFFF" opacity={0.6} />
 
       {/* Bigotes */}
       {b.species === 'gato'
@@ -740,15 +776,23 @@ function Cara({
         />
       ) : (
         <G>
-          <Ellipse cx={ex} cy={ey} rx={eR} ry={eR * abierto} fill="#FFFDF8" stroke={contorno} strokeWidth={0.7} strokeOpacity={0.45} />
-          <Circle cx={px} cy={py} r={eR * 0.62 * abierto + eR * 0.1} fill={b.eye} />
-          {/* Pupila: rendija vertical en gatos, redonda en perros */}
-          {b.species === 'gato' ? (
-            <Ellipse cx={px} cy={py} rx={eR * 0.16} ry={eR * 0.52 * abierto} fill="#141110" />
-          ) : (
-            <Circle cx={px} cy={py} r={eR * 0.34 * abierto + eR * 0.06} fill="#141110" />
-          )}
-          <Circle cx={px - eR * 0.26} cy={py - eR * 0.3} r={eR * 0.19} fill="#FFFFFF" opacity={0.95} />
+          <Ellipse cx={ex} cy={ey} rx={eR} ry={eR * abierto} fill="#FFFDF8" stroke={INK} strokeWidth={headR * 0.05} />
+          <Circle cx={px} cy={py} r={eR * 0.66 * abierto + eR * 0.1} fill={b.eye} />
+          {/* Pupila redonda y grande para los dos — más tierna que la rendija
+              felina real, que en este dibujo (pensado para chicos) leía duro. */}
+          <Circle cx={px} cy={py} r={eR * 0.4 * abierto + eR * 0.08} fill="#141110" />
+          {/* Brillos: uno grande arriba-izquierda y uno chico abajo-derecha —
+              es lo que hace que el ojo lea "vivo" en vez de una bolita plana. */}
+          <Circle cx={px - eR * 0.28} cy={py - eR * 0.32} r={eR * 0.24} fill="#FFFFFF" />
+          <Circle cx={px + eR * 0.22} cy={py + eR * 0.24} r={eR * 0.1} fill="#FFFFFF" opacity={0.85} />
+          {/* Párpado superior: un trazo curvo marcado, no sólo el borde del óvalo. */}
+          <Path
+            d={`M${ex - eR * 0.95} ${ey - eR * 0.12} Q${ex} ${ey - eR * (1.05 * abierto)}, ${ex + eR * 0.95} ${ey - eR * 0.16}`}
+            stroke={INK}
+            strokeWidth={headR * 0.045}
+            fill="none"
+            strokeLinecap="round"
+          />
         </G>
       )}
     </>
@@ -775,7 +819,7 @@ function patronTorso(
           d={`M${rumpX + w * f} ${torsoTop - 4} Q${rumpX + w * f + 7} ${midY}, ${rumpX + w * f - 2} ${torsoBottom + 6}`}
           stroke={b.accent}
           strokeWidth={4.6 * S}
-          opacity={0.58}
+          opacity={0.92}
           fill="none"
         />
       ));
@@ -885,7 +929,7 @@ function Tortuga({
           <Stop offset="100%" stopColor={dark} />
         </RadialGradient>
       </Defs>
-      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+      <G transform={`translate(100 ${GROUND_Y}) scale(${PET_FIT}) translate(-100 ${-GROUND_Y})`}>
       <Ellipse cx={cx} cy={GROUND_Y + 3} rx={rx * 1.05} ry={5 * S} fill="#101010" opacity={0.24} />
       <G transform={`translate(${100 + pose.bodyX * facing} ${pose.bodyY}) scale(${facing} 1) translate(${-100} 0)`}>
         {/* Patas */}
@@ -945,7 +989,7 @@ function Ave({
           <Stop offset="100%" stopColor={dark} />
         </RadialGradient>
       </Defs>
-      <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
+      <G transform={`translate(100 ${GROUND_Y}) scale(${PET_FIT}) translate(-100 ${-GROUND_Y})`}>
         {/* Ramita */}
         <Path d={`M${cx - 42 * S} ${GROUND_Y + 2} Q${cx} ${GROUND_Y - 3}, ${cx + 42 * S} ${GROUND_Y + 2}`} stroke="#8A6440" strokeWidth={4 * S} strokeLinecap="round" fill="none" />
         <Ellipse cx={cx} cy={GROUND_Y + 5} rx={bodyR * 0.8} ry={4 * S} fill="#101010" opacity={0.2} />
@@ -1094,6 +1138,8 @@ function Pez({
           <Stop offset="100%" stopColor={dark} />
         </RadialGradient>
       </Defs>
+      {/* El pez no toca piso — nada en el agua, así que acá el margen se
+          escala desde el centro, no desde GROUND_Y como en los demás. */}
       <G transform={`translate(100 100) scale(${PET_FIT}) translate(-100 -100)`}>
         <Ellipse cx={cx} cy={cy + bodyRy + 20} rx={bodyRx * 0.9} ry={6 * S} fill="#101010" opacity={0.12} />
 

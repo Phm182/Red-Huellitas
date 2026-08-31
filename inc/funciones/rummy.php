@@ -475,7 +475,7 @@ function rh_rummy_sala_resolver_ia_en_cadena(mysqli $conn, array $sala, array $j
         $activos = array_values(array_filter($jugadores, fn ($j) => $j['Estado'] === 'jugando'));
         $siguiente = rh_sala_siguiente_jugador($activos, $posicion);
         if ($siguiente !== null) {
-            rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoHoras']);
+            rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
         }
 
         $sala = rh_sala_obtener($conn, $salaId);

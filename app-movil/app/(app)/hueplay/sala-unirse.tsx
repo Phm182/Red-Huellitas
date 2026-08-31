@@ -88,5 +88,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 280,
   },
-  boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 40, marginTop: 20 },
+  boton: {
+    borderRadius: radii.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

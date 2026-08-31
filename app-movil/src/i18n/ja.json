@@ -678,7 +678,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "まだ誰もフォローしていません",
+      "cancelar": "キャンセル",
+      "mascotasDe": "{{nombre}}のペット",
+      "sinMascotas": "まだペットが登録されていません",
+      "volver": "戻る"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -981,7 +986,7 @@
     "partidas": "プレイ数",
     "ganados": "勝ち",
     "perdidos": "負け",
-    "desafios": "対戦",
+    "desafios": "マルチプレイヤー / チャレンジ",
     "desafiosBajada": "他のユーザーとの対決",
     "juegos": "ゲーム",
     "ranking": "ランキング",
@@ -1179,6 +1184,13 @@
       "rankingVacio": "この期間のスコアはまだありません。",
       "diasJugados": "{{dias}}日",
       "tuPuesto": "あなたの順位：{{puesto}}位・{{puntos}}ポイント"
-    }
+    },
+    "plazoPersonalizado": "カスタム",
+    "unidad": {
+      "min": "分",
+      "h": "時間",
+      "d": "日"
+    },
+    "seleccionarJuego": "ゲームを選択"
   }
 }

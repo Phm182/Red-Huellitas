@@ -794,7 +794,12 @@
     "visit": {
       "invite": "Invitar amigo",
       "clear": "Despedir visita",
-      "guest": "{{name}} visita · {{outcome}}"
+      "guest": "{{name}} visita · {{outcome}}",
+      "sinAmigos": "No seguís a nadie todavía",
+      "cancelar": "Cancelar",
+      "mascotasDe": "Mascotas de {{nombre}}",
+      "sinMascotas": "Todavía no tiene mascotas cargadas",
+      "volver": "Volver"
     },
     "weather": {
       "night": "Es de noche: busca su cama…",
@@ -1132,8 +1137,9 @@
     "partidas": "Partidas",
     "ganados": "Ganados",
     "perdidos": "Perdidos",
-    "desafios": "Desafíos",
+    "desafios": "Multiplayer / Desafíos",
     "desafiosBajada": "Duelos contra otros usuarios",
+    "seleccionarJuego": "Seleccioná un juego",
     "juegos": "Juegos",
     "ranking": "Ranking",
     "proximamente": "Próximamente",
@@ -1158,8 +1164,10 @@
     "sinRivalesDesc": "Probá buscando por nombre o usuario.",
     "loSeguis": "lo seguís",
     "subisteDeNivel": "¡subiste de nivel!",
-    "plazoTurno": "Plazo por turno",
+    "plazoTurno": "Plazo máximo por turno",
     "plazoHoras": "{{n}} h",
+    "plazoPersonalizado": "Personalizado",
+    "unidad": { "min": "min", "h": "h", "d": "días" },
     "venceEn": "vence en {{texto}}",
     "jugarContraIA": "Jugar contra la app",
     "jugandoContraIA": "La app",

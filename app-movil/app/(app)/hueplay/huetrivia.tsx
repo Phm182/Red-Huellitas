@@ -259,7 +259,8 @@ export default function HueTriviaScreen() {
         ) : null}
 
         <View style={styles.botonera}>
-          {!desafioId ? (
+          {/* El reto diario es 1 por día: no se ofrece "otra vez" acá. */}
+          {!desafioId && !esDiario ? (
             <Pressable
               onPress={() => router.replace('/(app)/hueplay/huetrivia')}
               style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}
@@ -319,9 +320,12 @@ export default function HueTriviaScreen() {
           La `key` es el índice: al cambiar, React desmonta y vuelve a montar,
           y la animación de entrada se dispara sola en cada pregunta. Sin eso
           el texto se reemplazaba de golpe y no se notaba que habías avanzado. */}
+      {/* Sin `.springify()`: eso le mete rebote de resorte (pasa de largo y
+          vuelve), que en un texto que hay que leer marea más que ayuda. Con
+          sólo `.duration()` va directo a su posición final, en línea recta. */}
       <Animated.View
         key={indice}
-        entering={SlideInRight.duration(260).springify().damping(18)}
+        entering={SlideInRight.duration(260)}
       >
       <Text style={[styles.pregunta, { color: colors.text }]}>{p.texto}</Text>
 
@@ -384,7 +388,14 @@ const styles = StyleSheet.create({
   },
   repaso: { borderWidth: 1, borderRadius: radii.md, padding: 12, marginBottom: 8 },
   repasoTitulo: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 34, marginTop: 22 },
+  boton: {
+    borderRadius: radii.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 34,
+    marginTop: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botonSec: { borderWidth: 1, backgroundColor: 'transparent' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' },
   botonera: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', maxWidth: 460 },

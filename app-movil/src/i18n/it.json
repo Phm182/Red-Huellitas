@@ -680,7 +680,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "Non segui ancora nessuno",
+      "cancelar": "Annulla",
+      "mascotasDe": "Animali di {{nombre}}",
+      "sinMascotas": "Nessun animale ancora aggiunto",
+      "volver": "Indietro"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -987,7 +992,7 @@
     "partidas": "Partite",
     "ganados": "Vinte",
     "perdidos": "Perse",
-    "desafios": "Sfide",
+    "desafios": "Multiplayer / Sfide",
     "desafiosBajada": "Duelli contro altri utenti",
     "juegos": "Giochi",
     "ranking": "Classifica",
@@ -1185,6 +1190,13 @@
       "rankingVacio": "Ancora nessun punteggio in questo periodo.",
       "diasJugados": "{{dias}} giorni",
       "tuPuesto": "La tua posizione: {{puesto}}° con {{puntos}} punti"
-    }
+    },
+    "plazoPersonalizado": "Personalizzato",
+    "unidad": {
+      "min": "min",
+      "h": "h",
+      "d": "giorni"
+    },
+    "seleccionarJuego": "Scegli un gioco"
   }
 }

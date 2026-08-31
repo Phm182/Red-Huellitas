@@ -21,6 +21,12 @@ const ACCIONES: { tipo: JuegoAccion; icono: string }[] = [
   { tipo: 'dormir', icono: '😴' },
 ];
 
+// Avatar real generado por IA: pedido explícito de ocultarlo por ahora
+// (todavía no está listo para publicarse). Dejar el resto del código
+// intacto — sólo se corta el fetch y el render — para prenderlo de nuevo
+// cambiando esta única constante.
+const AVATAR_IA_HABILITADO = false;
+
 /** "1h 20m" / "45m" / "30s" — para el contador de cooldown. */
 function formatearEspera(segundos: number): string {
   if (segundos >= 3600) {
@@ -59,6 +65,7 @@ export default function JuegoScreen() {
   const leidoEn = useRef(Date.now());
 
   const cargarAvatar = useCallback(() => {
+    if (!AVATAR_IA_HABILITADO) return;
     juegoApi.avatarEstado(Number(mascotaId)).then((res) => {
       if (res.success && res.data) {
         setAvatar(res.data.avatar);
@@ -180,13 +187,19 @@ export default function JuegoScreen() {
   const progresoNivel = (juego.experienciaNivel / juego.experienciaPorNivel) * 100;
 
   return (
-    <ScrollView contentContainerStyle={[styles.contenedor, { backgroundColor: colors.background }, centeredContent]}>
+    // Antes las acciones (dar de comer, jugar, bañar, descansar) quedaban al
+    // final del ScrollView, después de las tarjetas de nivel y stats — había
+    // que bajar y perder de vista al animal para tocarlas. Ahora quedan
+    // fijas abajo, siempre visibles junto al animal, y sólo el resto del
+    // contenido (tarjetas, nivel) scrollea por detrás.
+    <View style={[styles.pantalla, { backgroundColor: colors.background }]}>
+    <ScrollView contentContainerStyle={[styles.contenedor, centeredContent]}>
       <View style={styles.avatarZona}>
         <MascotaAnimada juego={juego} accion={actuando} tamano={300} />
 
         {/* Avatar IA: sólo se muestra algo si hay una acción posible o un
             motivo que valga la pena explicar. Nunca un botón muerto. */}
-        {avatarBusy === 'generar' ? (
+        {!AVATAR_IA_HABILITADO ? null : avatarBusy === 'generar' ? (
           <View style={styles.avatarAccion}>
             <ActivityIndicator color={colors.primary} />
             <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6, textAlign: 'center' }}>
@@ -270,6 +283,17 @@ export default function JuegoScreen() {
         <StatBar etiqueta={t('juego.stats.higiene')} valor={juego.stats.higiene} icono="water" />
       </View>
 
+    </ScrollView>
+
+    <View
+      style={[
+        styles.piePegado,
+        { backgroundColor: colors.background, borderTopColor: colors.border },
+      ]}
+    >
+      {mensaje ? (
+        <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>{mensaje}</Text>
+      ) : null}
       <View style={styles.acciones}>
         {ACCIONES.map(({ tipo, icono }) => {
           const restante = Math.max(0, juego.cooldowns[tipo] - segundosPasados);
@@ -311,17 +335,21 @@ export default function JuegoScreen() {
           );
         })}
       </View>
-
-      {mensaje ? (
-        <Text style={{ color: colors.text, textAlign: 'center', marginTop: 14 }}>{mensaje}</Text>
-      ) : null}
-    </ScrollView>
+    </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  contenedor: { flexGrow: 1, padding: 20 },
+  pantalla: { flex: 1 },
+  contenedor: { flexGrow: 1, padding: 20, paddingBottom: 8 },
+  piePegado: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 14,
+  },
   avatarZona: { alignItems: 'center', marginBottom: 20, marginTop: 8 },
   nombre: { fontSize: 22, fontWeight: '700', marginTop: 14 },
   avatarAccion: { alignItems: 'center', marginTop: 12 },

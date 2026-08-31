@@ -109,13 +109,13 @@ if ($gano) {
 } elseif ((int) $dado === 6) {
     // Sacó 6: sigue siendo tu turno. Se refresca el plazo para que la
     // tirada extra tenga el mismo tiempo completo que cualquier otra.
-    rh_sala_avanzar_turno($conn, $salaId, (int) $miAsiento['SalaJugadorId'], (int) $sala['PlazoTurnoHoras']);
+    rh_sala_avanzar_turno($conn, $salaId, (int) $miAsiento['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
     $sala = rh_sala_obtener($conn, $salaId);
 } else {
     $activos = array_values(array_filter($jugadores, fn ($j) => $j['Estado'] === 'jugando'));
     $siguiente = rh_sala_siguiente_jugador($activos, $miPosicion);
     if ($siguiente !== null) {
-        rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoHoras']);
+        rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
     }
     $sala = rh_sala_obtener($conn, $salaId);
     $jugadores = rh_sala_jugadores($conn, $salaId);

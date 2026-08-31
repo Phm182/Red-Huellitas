@@ -29,9 +29,9 @@ if (!in_array($politicaAbandono, ['ia', 'espera', 'expulsa'], true)) {
     json_error('Política de abandono desconocida');
 }
 
-$plazoTurnoHoras = (int) ($_POST['plazoTurnoHoras'] ?? 24);
-if ($plazoTurnoHoras < 1 || $plazoTurnoHoras > 24) {
-    json_error('El plazo debe ser entre 1 y 24 horas');
+$plazoTurnoMinutos = (int) ($_POST['plazoTurnoMinutos'] ?? 1440);
+if ($plazoTurnoMinutos < 3 || $plazoTurnoMinutos > 10080) {
+    json_error('El plazo debe ser entre 3 minutos y 7 días');
 }
 
 $invitadosUserIds = [];
@@ -55,7 +55,7 @@ $sala = rh_sala_crear(
     $maxJugadores,
     $completarConIA,
     $politicaAbandono,
-    $plazoTurnoHoras,
+    $plazoTurnoMinutos,
     $invitadosUserIds
 );
 

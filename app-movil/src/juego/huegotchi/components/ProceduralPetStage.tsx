@@ -97,7 +97,11 @@ export function ProceduralPetStage({
   // Acción en curso, difuminada al entrar y salir para que no pegue un salto.
   if (actionTrigger && actionStartedAt != null) {
     const dur = poseDuration(actionTrigger);
-    const t = (Date.now() - actionStartedAt) / dur;
+    // `actionStartedAt` se guarda con `performance.now()` (useHueGotchiController.react()),
+    // no con `Date.now()`: son dos relojes distintos (el segundo es época Unix,
+    // gigante). Compararlos daba un t astronómico y la pose de la acción nunca
+    // se llegaba a aplicar — quedaba siempre en el idle.
+    const t = (performance.now() - actionStartedAt) / dur;
     if (t >= 0 && t <= 1.15) {
       const fade = Math.min(1, Math.min(t / 0.12, (1.05 - t) / 0.15));
       pose = blendPose(pose, poseForSpecies(actionTrigger, t, especie), Math.max(0, fade));
@@ -105,8 +109,9 @@ export function ProceduralPetStage({
   }
 
   // La boca sigue al audio: si el maullido dura 2s, la boca se mueve 2s.
+  // (mismo cuidado que arriba: voiceMouth.startedAt también es performance.now()).
   if (voiceMouth) {
-    const abierta = mouthFromVoice(Date.now() - voiceMouth.startedAt, voiceMouth.durationMs, especie);
+    const abierta = mouthFromVoice(performance.now() - voiceMouth.startedAt, voiceMouth.durationMs, especie);
     if (abierta > 0) pose = { ...pose, mouthOpen: Math.max(pose.mouthOpen, abierta) };
   }
 

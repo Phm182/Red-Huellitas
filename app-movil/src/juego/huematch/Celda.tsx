@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -24,10 +25,16 @@ type Props = {
    * ficha se devuelve sola por el mismo camino.
    */
   desplaza?: { dx: number; dy: number } | null;
+  /**
+   * Mientras el dedo sostiene y arrastra ESTA ficha: el offset en píxeles
+   * crudos (no en casillas), para que la siga 1 a 1 sin resorte de por medio
+   * — el resorte es para cuando se suelta, no mientras se sostiene.
+   */
+  arrastreVivo?: { dx: number; dy: number } | null;
 };
 
 /** Cuánto dura la desintegración y cuánto la caída. */
-const T_ROMPER = 170;
+const T_ROMPER = 230;
 const T_CAER = 220;
 /** Lo que tarda una ficha en llegar al lugar de su vecina, y en volver. */
 export const T_MOVER = 150;
@@ -44,7 +51,7 @@ export const T_MOVER = 150;
  * es lo que hacía que el juego se sintiera estático aunque el motor estuviera
  * encadenando cascadas.
  */
-export function Celda({ tipo, lado, fila, seleccionada, desplaza }: Props) {
+export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo }: Props) {
   const anterior = useRef(tipo);
 
   const escala = useSharedValue(tipo === VACIO ? 0 : 1);
@@ -57,31 +64,45 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza }: Props) {
   const dy = desplaza?.dy ?? 0;
 
   useEffect(() => {
+    // Arrastre en curso: sigue al dedo directo, sin animación — la animación
+    // (resorte) es para cuando se suelta, acá se quiere respuesta 1 a 1.
+    if (arrastreVivo) {
+      despX.value = arrastreVivo.dx;
+      despY.value = arrastreVivo.dy;
+      return;
+    }
     // El mismo camino de ida y de vuelta: cuando el desplazamiento vuelve a
     // cero —porque la jugada no armaba línea— la ficha regresa sola, y eso es
     // exactamente el rebote que uno espera al equivocarse.
     despX.value = withTiming(dx * lado, { duration: T_MOVER });
     despY.value = withTiming(dy * lado, { duration: T_MOVER });
-  }, [dx, dy, lado, despX, despY]);
+  }, [dx, dy, lado, despX, despY, arrastreVivo]);
 
   useEffect(() => {
     const antes = anterior.current;
     anterior.current = tipo;
 
-    // Se rompió: encoge girando y se apaga.
+    // Se rompió: se desvanece suave. Antes giraba 180° a la vez que encogía
+    // en sólo 170ms — muy rápido y con el giro superpuesto se leía como un
+    // parpadeo/tirón en vez de una desaparición prolija. Ahora es sólo
+    // escala+opacidad (van de la mano, `estilo` usa `escala.value` para las
+    // dos), con envión al final (`withTiming` con easing suave) y sin giro.
     if (antes !== VACIO && tipo === VACIO) {
-      escala.value = withTiming(0, { duration: T_ROMPER });
-      giro.value = withTiming(0.5, { duration: T_ROMPER });
+      giro.value = 0;
+      escala.value = withTiming(0, { duration: T_ROMPER, easing: Easing.out(Easing.quad) });
       return;
     }
 
     // Cayó una nueva: entra desde arriba. El retraso por fila hace que la
     // columna caiga de a una en vez de aparecer todo el bloque junto.
+    // `damping` más alto que antes (13→20): con 13 rebotaba varias veces de
+    // ida y vuelta antes de asentarse, que es justo lo que confundía — con
+    // 20 pega un único envión chico y para.
     if (antes === VACIO && tipo !== VACIO) {
       giro.value = 0;
       caida.value = -1;
       escala.value = 1;
-      caida.value = withDelay(fila * 26, withSpring(0, { damping: 13, stiffness: 190 }));
+      caida.value = withDelay(fila * 26, withSpring(0, { damping: 20, stiffness: 190 }));
       return;
     }
 
@@ -98,9 +119,9 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza }: Props) {
       { rotate: `${giro.value * 180}deg` },
     ],
     opacity: escala.value,
-    // La ficha que viaja pasa por encima de sus vecinas, si no se ve cortada
-    // al cruzar el borde de la casilla.
-    zIndex: dx !== 0 || dy !== 0 ? 2 : 1,
+    // La ficha que viaja (o que arrastra el dedo) pasa por encima de sus
+    // vecinas, si no se ve cortada al cruzar el borde de la casilla.
+    zIndex: dx !== 0 || dy !== 0 || arrastreVivo ? 2 : 1,
   }));
 
   return (

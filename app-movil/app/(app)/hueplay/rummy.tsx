@@ -388,5 +388,13 @@ const styles = StyleSheet.create({
   mano: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', alignSelf: 'stretch' },
   accionesFila: { flexDirection: 'row', gap: 10, marginTop: 16 },
   botonAccion: { borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 11 },
-  boton: { borderWidth: 1, borderRadius: radii.pill, paddingVertical: 13, paddingHorizontal: 30, marginTop: 22 },
+  boton: {
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingVertical: 13,
+    paddingHorizontal: 30,
+    marginTop: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

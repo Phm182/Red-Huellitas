@@ -334,7 +334,7 @@ function rh_ludo_sala_resolver_ia_en_cadena(mysqli $conn, array $sala, array $ju
         $activos = array_values(array_filter($jugadores, fn ($j) => $j['Estado'] === 'jugando'));
         $siguiente = rh_sala_siguiente_jugador($activos, (int) $actual['Posicion']);
         if ($siguiente !== null) {
-            rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoHoras']);
+            rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
         }
 
         $sala = rh_sala_obtener($conn, $salaId);

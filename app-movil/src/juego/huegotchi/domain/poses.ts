@@ -484,16 +484,18 @@ export function idlePose(tSec: number, opts: {
     p.bodyRot = 0;
     p.headRot = 4;
     p.tailWag = 1.6;
-    p.eyeClose = 0.85;
+    p.eyeClose = 0.05;
     p.headRot += Math.sin(tSec * 0.6) * 4 * opts.fidget;
     return p;
   }
 
-  // Parpadeo / ojos felices: el chibi por defecto lleva ojitos cerrados
-  // (como la ref). Sólo se abren un instante al parpadear "al revés".
-  const blinkCycle = tSec % 5.5;
-  const eyesOpenFlash = blinkCycle > 4.9 && blinkCycle < 5.15;
-  p.eyeClose = eyesOpenFlash ? 0 : 0.85;
+  // Parpadeo natural: ojos abiertos casi siempre, con un pestañeo breve y
+  // periódico (no al revés — la versión chibi vieja llevaba los ojos
+  // cerrados por defecto "como ^_^" y sólo los abría un instante; con el
+  // dibujo realista actual eso leía como un animal dormido o roto).
+  const blinkCycle = tSec % 4.4;
+  const blinking = blinkCycle > 4.25 && blinkCycle < 4.4;
+  p.eyeClose = blinking ? 0.95 : 0.04;
 
   const f = opts.fidget;
   p.headRot = Math.sin(tSec * 0.7) * 5 * f;
@@ -503,7 +505,6 @@ export function idlePose(tSec: number, opts: {
   if (opts.happy) {
     p.tailWag = 3.2;
     p.mouthOpen = 0.15 + Math.sin(tSec * 2) * 0.04;
-    p.eyeClose = 0.9;
     const hopPhase = (tSec % 3.4) / 3.4;
     if (hopPhase < 0.14) p.bodyY -= Math.sin((hopPhase / 0.14) * Math.PI) * 5;
   } else if (opts.sad) {

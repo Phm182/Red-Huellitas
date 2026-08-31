@@ -96,6 +96,20 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
   5. El build corre en la nube de Expo (tarda ~15-25 min) y al terminar da un link para descargar el `.app`/`.ipa` y (para el simulador) instrucciones para arrastrarlo al Simulator, o (para dispositivo real) un QR para instalarlo directo si el dispositivo está registrado.
 - **Estado**: nada de esto se pudo ejecutar — necesita que el usuario haga el login una vez. Todo lo demás (bundle identifier, perfiles de build) ya está listo.
 
+### 10. `android/gradle.properties` — el heap de Gradle se resetea con cada `expo prebuild`
+- **Qué**: `app-movil/android/` está en `.gitignore` (línea `/android` de `app-movil/.gitignore`) porque Expo lo regenera desde cero con `npx expo prebuild`. Eso significa que cualquier edición manual a `android/gradle.properties` **se pierde** la próxima vez que se corra prebuild (limpieza de caché, `eas build` local, etc.).
+- **Por qué importa**: `org.gradle.jvmargs` viene por defecto en `-Xmx2048m -XX:MaxMetaspaceSize=512m`, y con eso R8 revienta con `OutOfMemoryError: Java heap space` en cuanto corre en frío (no cacheado) sobre un build release real — pasó la noche del 2026-08-29 armando el APK de prueba en el celular. El fix fue subirlo a `-Xmx6144m -XX:MaxMetaspaceSize=1024m` (la PC tiene ~40GB de RAM, sobra margen).
+- **Cómo evitar perderlo**: si se vuelve a generar `android/` desde cero, reaplicar a mano esa línea en `android/gradle.properties` antes de compilar en release. Ideal a futuro: mover esto a un config plugin de Expo (`expo-build-properties` no trae un campo directo para `gradle.properties`; haría falta un plugin propio en `app.json` que lo parchee post-prebuild) para que sobreviva la regeneración — no se hizo todavía porque no es urgente mientras el build de referencia (EAS Cloud) tiene su propio heap y no pega este error.
+
+### 11. Migración `sql/054_hueplay_plazo_minutos.sql` — **HECHA en producción (2026-08-30)**
+- **Qué**: `PlazoTurnoHoras` (horas enteras 1-24) pasó a `PlazoTurnoMinutos` (3 min a 7 días) en `JuegoDesafio` y `JuegoSala`, para que el plazo por turno se pueda elegir en minutos/horas/días y no sólo en horas cerradas. Ya corrida y verificada en local (build/verify del schema OK, probado de punta a punta con un desafío y una sala reales).
+- **Por qué importa**: si se hace deploy del código nuevo sin correr esta migración antes, `desafio_crear.php`/`sala_crear.php` van a fallar el INSERT (columna `PlazoTurnoMinutos` inexistente).
+- **Qué hacer**: correr `sql/054_hueplay_plazo_minutos.sql` contra la base de producción ANTES o junto con el deploy de este código. Es idempotente (se puede correr de nuevo sin romper nada) y no toca partidas en curso — sólo convierte el valor de configuración, no los vencimientos ya calculados.
+
+### 12. Notificaciones de "te toca jugar" — nuevas, revisar volumen
+- **Qué**: `rh_juego_avanzar_turno()` y `rh_sala_avanzar_turno()` ahora mandan una notificación (push + campanita) cada vez que le pasa el turno a alguien, en duelos 1v1 y en salas. Antes esto no avisaba nada — el usuario tenía que volver a abrir la app para enterarse.
+- **Por qué importa**: en partidas rápidas (con los plazos nuevos de 3-5-10 min) esto puede generar bastantes notificaciones seguidas si dos personas están jugando rápido. No se puso ningún throttling — vale la pena mirar en producción si hace falta agrupar/limitar.
+
 ## Antes de ir a producción (no urgente en desarrollo local)
 
 ### 4. Revisar límites de `php.ini` para producción

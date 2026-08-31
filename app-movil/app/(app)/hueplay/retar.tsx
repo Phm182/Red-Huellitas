@@ -5,9 +5,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
+import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
 import { HuePlayDesafio, HuePlayRival } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -43,7 +43,6 @@ const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez'];
 /** Juegos con modo solitario contra la IA de la app. */
 const JUEGOS_IA = ['huedamas', 'hueajedrez'];
 
-const PLAZOS = [1, 6, 12, 24];
 
 /**
  * A quién retar.
@@ -70,7 +69,7 @@ export default function RetarScreen() {
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState<number | null>(null);
   const [contraIA, setContraIA] = useState(false);
-  const [plazoTurnoHoras, setPlazoTurnoHoras] = useState(24);
+  const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback((q: string) => {
@@ -94,7 +93,7 @@ export default function RetarScreen() {
     const res = await hueplayApi.crearDesafio(
       JUEGO,
       r.userId,
-      esDeTurnos ? { plazoTurnoHoras } : undefined
+      esDeTurnos ? { plazoTurnoMinutos } : undefined
     );
     setEnviando(null);
 
@@ -133,12 +132,7 @@ export default function RetarScreen() {
           <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 6 }}>
             {t('hueplay.plazoTurno')}
           </Text>
-          <ChipRow
-            opciones={PLAZOS.map((h) => ({ valor: h, label: t('hueplay.plazoHoras', { n: h }) }))}
-            seleccionado={plazoTurnoHoras}
-            onSelect={setPlazoTurnoHoras}
-            scrollable={false}
-          />
+          <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
         </View>
       ) : null}
 

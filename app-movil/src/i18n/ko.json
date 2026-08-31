@@ -678,7 +678,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "아직 아무도 팔로우하지 않았어요",
+      "cancelar": "취소",
+      "mascotasDe": "{{nombre}}의 반려동물",
+      "sinMascotas": "아직 등록된 반려동물이 없어요",
+      "volver": "뒤로"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -981,7 +986,7 @@
     "partidas": "판수",
     "ganados": "승",
     "perdidos": "패",
-    "desafios": "대결",
+    "desafios": "멀티플레이어 / 도전",
     "desafiosBajada": "다른 사용자와의 대결",
     "juegos": "게임",
     "ranking": "랭킹",
@@ -1179,6 +1184,13 @@
       "rankingVacio": "이 기간에는 아직 점수가 없어요.",
       "diasJugados": "{{dias}}일",
       "tuPuesto": "내 순위: {{puesto}}위 · {{puntos}}점"
-    }
+    },
+    "plazoPersonalizado": "직접 설정",
+    "unidad": {
+      "min": "분",
+      "h": "시간",
+      "d": "일"
+    },
+    "seleccionarJuego": "게임 선택"
   }
 }

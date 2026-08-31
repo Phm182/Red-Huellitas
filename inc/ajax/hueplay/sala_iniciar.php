@@ -38,12 +38,12 @@ if ($juegoCodigo === 'hueludo') {
 
 usort($jugadores, fn ($a, $b) => (int) $a['Posicion'] <=> (int) $b['Posicion']);
 $primerTurno = (int) $jugadores[0]['SalaJugadorId'];
-$plazo = (int) $sala['PlazoTurnoHoras'];
+$plazo = (int) $sala['PlazoTurnoMinutos'];
 
 $stmt = $conn->prepare(
     "UPDATE JuegoSala
         SET Tablero = ?, Estado = 'jugando', TurnoDeSalaJugadorId = ?,
-            TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? HOUR), IniciadaEn = NOW()
+            TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), IniciadaEn = NOW()
       WHERE SalaId = ?"
 );
 $stmt->bind_param('siii', $tablero, $primerTurno, $plazo, $salaId);

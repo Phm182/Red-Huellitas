@@ -351,7 +351,10 @@ export default function HueMemoScreen() {
         ) : null}
 
         <View style={styles.botonera}>
-          {!desafioId ? (
+          {/* El reto diario es 1 por día: si jugó el diario, no se ofrece
+              "otra vez" acá — para volver a jugar libre tiene que entrar
+              por HuePlay como partida suelta, no repetir el mismo reto. */}
+          {!desafioId && !esDiario ? (
             <Pressable
               onPress={() => router.replace('/(app)/hueplay/huememo')}
               style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}
@@ -464,7 +467,14 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     maxWidth: 420,
   },
-  boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 34, marginTop: 24 },
+  boton: {
+    borderRadius: radii.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 34,
+    marginTop: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botonSec: { borderWidth: 1, backgroundColor: 'transparent' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' },
   botonera: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', maxWidth: 420 },

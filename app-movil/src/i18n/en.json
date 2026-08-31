@@ -780,7 +780,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "You're not following anyone yet",
+      "cancelar": "Cancel",
+      "mascotasDe": "{{nombre}}'s pets",
+      "sinMascotas": "No pets added yet",
+      "volver": "Back"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -1118,7 +1123,7 @@
     "partidas": "Games",
     "ganados": "Won",
     "perdidos": "Lost",
-    "desafios": "Challenges",
+    "desafios": "Multiplayer / Challenges",
     "desafiosBajada": "Duels against other users",
     "juegos": "Games",
     "ranking": "Leaderboard",
@@ -1316,6 +1321,13 @@
       "rankingVacio": "No scores yet for this period.",
       "diasJugados": "{{dias}} days",
       "tuPuesto": "Your spot: {{puesto}} with {{puntos}} points"
-    }
+    },
+    "plazoPersonalizado": "Custom",
+    "unidad": {
+      "min": "min",
+      "h": "h",
+      "d": "days"
+    },
+    "seleccionarJuego": "Pick a game"
   }
 }

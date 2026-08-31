@@ -100,7 +100,7 @@ const JUEGOS: JuegoDef[] = [
     // Tiene su propia bandeja (salas armándose, invitaciones, en curso) en vez
     // de ir directo a crear: con hasta 4 jugadores hay más que gestionar que
     // en un duelo 1 contra 1.
-    ruta: '/(app)/hueplay/salas',
+    ruta: '/(app)/hueplay/salas?juego=hueludo',
     duelo: true,
   },
   {
@@ -109,7 +109,7 @@ const JUEGOS: JuegoDef[] = [
     bajada: 'El Rummy de cartas de siempre, en salas de hasta 4 con código para compartir.',
     icono: 'albums',
     color: '#4CC3A5',
-    ruta: '/(app)/hueplay/salas',
+    ruta: '/(app)/hueplay/salas?juego=huerummy',
     duelo: true,
   },
   {

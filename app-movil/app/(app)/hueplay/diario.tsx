@@ -383,7 +383,13 @@ const styles = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   icono: { width: 44, height: 44, borderRadius: radii.md, alignItems: 'center', justifyContent: 'center' },
   juegoTitulo: { fontSize: 16, fontFamily: fonts.bodySemi },
-  boton: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: radii.pill },
+  boton: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botonTexto: { color: '#fff', fontFamily: fonts.bodySemi, fontSize: 13 },
   listo: {
     width: 34,

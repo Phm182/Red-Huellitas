@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { JuegoAccion, JuegoAnimo, MascotaJuego } from '../../../types';
+import { JuegoAccion, JuegoAnimo, Mascota, MascotaJuego, UsuarioResumen } from '../../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../../auth/AuthProvider';
+import { mascotasApi } from '../../../api/mascotasApi';
+import { seguimientoApi } from '../../../api/seguimientoApi';
 import { petVoice } from '../audio/PetVoiceEngine';
 import { resolveBreedProfile, variantesDeRaza } from '../domain/breeds';
 import {
@@ -23,7 +26,7 @@ import {
   buildEnvironment,
   fetchLocalWeather,
 } from '../systems/environment';
-import { createGuestVisit, DEMO_FRIENDS, visitTrigger } from '../systems/social';
+import { createGuestVisit, visitTrigger } from '../systems/social';
 import {
   buildTrickInstance,
   gestureFromSwipe,
@@ -53,6 +56,7 @@ type VoiceMouth = { startedAt: number; durationMs: number };
  * posturas sostenidas, orientación y sync de boca.
  */
 export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion | null) {
+  const { user } = useAuth();
   const identity = useMemo(() => identityFromJuego(juego), [juego]);
   const [coatId, setCoatId] = useState<string | null>(null);
   const breed = useMemo(
@@ -308,12 +312,14 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
           };
           requestAnimationFrame(spin);
         }
-        const hold = TRICKS_QUE_SOSTIENEN[def.riveTrigger];
-        if (hold) {
-          setHeldStance(hold);
-        } else {
-          setTimeout(() => react(RIVE_TRIGGERS.trickSuccess), 700);
-        }
+        // TRICKS_QUE_SOSTIENEN (sentado/acostado) está desactivado a
+        // propósito: esa pose sostenida todavía se ve deforme (ver el
+        // `hide: true` de la pestaña Postura en HueGotchiExperience). Hasta
+        // que se rehaga el plegado de patas, cualquier truco reacciona igual
+        // que los que no sostienen postura, en vez de dejar al animal
+        // "trabado" en una pose rota.
+        void TRICKS_QUE_SOSTIENEN;
+        setTimeout(() => react(RIVE_TRIGGERS.trickSuccess), 700);
         setTrickMsg(`¡Lo hizo! +${def.xpReward} XP`);
         setTrickPasos(def.pattern.length);
         trainer.cancelar();
@@ -418,15 +424,59 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     [physics, evaluarGesto, sleepLocked, trainer]
   );
 
-  const inviteFriend = useCallback(() => {
+  // Visita de amigos: antes era un pool inventado (DEMO_FRIENDS) porque no
+  // estaba cableada la API real. Ahora es en dos pasos — elegís a quién
+  // seguís, después cuál de sus mascotas invitás — y la visita usa el
+  // nombre/especie/raza de verdad de esa mascota, no un bicho de mentira.
+  const [socialPicker, setSocialPicker] = useState<'cerrado' | 'amigos' | 'mascotas'>('cerrado');
+  const [amigos, setAmigos] = useState<UsuarioResumen[]>([]);
+  const [amigosCargando, setAmigosCargando] = useState(false);
+  const [amigoElegido, setAmigoElegido] = useState<UsuarioResumen | null>(null);
+  const [mascotasAmigo, setMascotasAmigo] = useState<Mascota[]>([]);
+  const [mascotasAmigoCargando, setMascotasAmigoCargando] = useState(false);
+
+  const abrirInvitarAmigo = useCallback(() => {
     if (sleepLocked) return;
-    const friend = DEMO_FRIENDS[Math.floor(Math.random() * DEMO_FRIENDS.length)]!;
-    const visit = createGuestVisit(friend);
-    setGuest(visit);
-    setHeldStance('none');
-    react(RIVE_TRIGGERS.guestArrive);
-    react(visitTrigger(visit.outcome));
-  }, [react, sleepLocked]);
+    setSocialPicker('amigos');
+    setAmigoElegido(null);
+    setMascotasAmigo([]);
+    const miUserId = user?.userId;
+    if (!miUserId) return;
+    setAmigosCargando(true);
+    void seguimientoApi.seguidos(miUserId).then((res) => {
+      setAmigosCargando(false);
+      if (res.success && res.data) setAmigos(res.data.usuarios);
+    });
+  }, [sleepLocked, user?.userId]);
+
+  const elegirAmigo = useCallback((amigo: UsuarioResumen) => {
+    setAmigoElegido(amigo);
+    setSocialPicker('mascotas');
+    setMascotasAmigoCargando(true);
+    void mascotasApi.listarUsuario(amigo.userId).then((res) => {
+      setMascotasAmigoCargando(false);
+      if (res.success && res.data) setMascotasAmigo(res.data.mascotas);
+    });
+  }, []);
+
+  const elegirMascotaAmigo = useCallback(
+    (m: Mascota) => {
+      const visit = createGuestVisit({
+        mascotaId: m.mascotaId,
+        nombre: m.nombre,
+        especie: m.especie,
+        raza: m.raza,
+      });
+      setGuest(visit);
+      setHeldStance('none');
+      react(RIVE_TRIGGERS.guestArrive);
+      react(visitTrigger(visit.outcome));
+      setSocialPicker('cerrado');
+    },
+    [react]
+  );
+
+  const cerrarSocialPicker = useCallback(() => setSocialPicker('cerrado'), []);
 
   const clearGuest = useCallback(() => setGuest(null), []);
 
@@ -488,7 +538,16 @@ export function useHueGotchiController(juego: MascotaJuego, accion: JuegoAccion 
     place,
     setPlace,
     guest,
-    inviteFriend,
+    socialPicker,
+    amigos,
+    amigosCargando,
+    amigoElegido,
+    mascotasAmigo,
+    mascotasAmigoCargando,
+    abrirInvitarAmigo,
+    elegirAmigo,
+    elegirMascotaAmigo,
+    cerrarSocialPicker,
     clearGuest,
     setStageRect,
     onPointerMove,

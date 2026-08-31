@@ -397,5 +397,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 30,
     marginTop: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

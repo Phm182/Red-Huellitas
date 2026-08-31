@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   LayoutChangeEvent,
   Platform,
   Pressable,
@@ -125,7 +126,12 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
 
   const tabs: { id: Exclude<PanelId, null>; label: string; hide?: boolean }[] = [
     { id: 'entertain', label: t('juego.entertain.title') },
-    { id: 'stance', label: t('juego.stance.title') },
+    // Sentado/acostado ocultos a propósito: la silueta procedural (curva
+    // continua reutilizada de "parado") no logra una pose creíble todavía —
+    // se ve deforme en vez de sentado. Mejor no mostrarla rota que dejarla
+    // así; falta un rediseño real del plegado de patas, no un ajuste de
+    // coeficientes más.
+    { id: 'stance', label: t('juego.stance.title'), hide: true },
     { id: 'coat', label: t('juego.coat.title'), hide: c.coats.length === 0 },
     { id: 'place', label: t('juego.panel.place') },
     { id: 'tricks', label: t('juego.tricks.title') },
@@ -234,43 +240,17 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
         {t('juego.petHint')}
       </Text>
 
-      {/* Pelaje siempre visible: no queda escondido en el acordeón. */}
-      {c.coats.length > 0 ? (
-        <View style={styles.coatRow}>
-          <Text style={{ color: colors.textMuted, fontSize: 11, marginRight: 4 }}>
-            {t('juego.coat.title')}
-          </Text>
-          {c.coats.map((v) => {
-            const on = (c.coatId ?? c.coats[0]!.id) === v.id;
-            return (
-              <Pressable
-                key={v.id}
-                onPress={() => c.setCoat(v.id)}
-                style={[
-                  styles.swatchMini,
-                  {
-                    borderColor: on ? colors.primary : colors.border,
-                    borderWidth: on ? 3 : 1,
-                  },
-                ]}
-                accessibilityLabel={v.nombre}
-              >
-                <View style={[styles.swatchColorMini, { backgroundColor: v.base }]}>
-                  <View style={{ height: 8, backgroundColor: v.accent }} />
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
+      {/* El selector de pelaje vive sólo en la pestaña "Pelaje" del acordeón
+          de abajo — tenerlo duplicado acá arriba también no sumaba nada. */}
 
       <View style={styles.nameRow}>
         <Pressable
           onPress={() => {
-            if (otrasMascotas.length < 2) {
-              router.push('/(app)/juego/mascotas' as never);
-              return;
-            }
+            // Antes, con menos de 2 mascotas, esto mandaba a
+            // `/juego/mascotas` — una pantalla que con 1 sola mascota hace
+            // `router.replace` de vuelta a esta misma acá mismo: un salto
+            // que no llevaba a ningún lado. Ahora siempre abre el mismo
+            // menú en el lugar, tenga las mascotas que tenga.
             setPanel(null);
             setPetMenu((v) => !v);
           }}
@@ -309,16 +289,35 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
                 }}
                 style={[
                   styles.petMenuItem,
+                  styles.petMenuItemFila,
                   on && { backgroundColor: colors.primarySoft },
                 ]}
               >
-                <Text style={{ color: on ? colors.primary : colors.text, fontSize: 14 }}>
-                  {m.nombre}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 11 }}>{m.especie}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: on ? colors.primary : colors.text, fontSize: 14 }}>
+                    {m.nombre}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>{m.especie}</Text>
+                </View>
+                {on ? <Ionicons name="checkmark-circle" size={18} color={colors.primary} /> : null}
               </Pressable>
             );
           })}
+          {/* Siempre al final: entrar acá era el único lugar donde se podía
+              tocar el nombre y no pasaba nada útil si tenías una sola
+              mascota — ahora éste es el paso natural para sumar otra. */}
+          <Pressable
+            onPress={() => {
+              setPetMenu(false);
+              router.push('/(app)/mascotas/nueva' as never);
+            }}
+            style={[styles.petMenuItem, styles.petMenuItemFila, { borderBottomWidth: 0 }]}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>
+              {t('mascotas.addPet')}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
       <Text style={{ color: colors.textMuted, textAlign: 'center' }}>
@@ -367,12 +366,10 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
                       borderColor: on ? colors.primary : 'transparent',
                       backgroundColor: on ? colors.primarySoft : 'transparent',
                     },
-                    on && panel ? styles.tabConnected : null,
                   ]}
                 >
                   <Text
                     style={{ color: on ? colors.primary : colors.text, fontSize: 11, fontWeight: on ? '700' : '400' }}
-                    numberOfLines={1}
                   >
                     {tab.label}
                   </Text>
@@ -513,11 +510,11 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
               </View>
             ) : null}
 
-            {panel === 'social' ? (
+            {panel === 'social' && c.socialPicker === 'cerrado' ? (
               <View style={styles.panel}>
                 <Pressable
                   disabled={c.sleepLocked}
-                  onPress={c.inviteFriend}
+                  onPress={c.abrirInvitarAmigo}
                   style={[styles.chip, chip(true), c.sleepLocked && styles.disabled]}
                 >
                   <Text style={{ color: colors.primary, fontSize: 12 }}>{t('juego.visit.invite')}</Text>
@@ -542,6 +539,73 @@ export function HueGotchiExperience({ juego, accion, tamano = 300 }: Props) {
                     <Text style={{ color: colors.text, fontSize: 12 }}>{t('juego.catchFood')}</Text>
                   </Pressable>
                 ) : null}
+              </View>
+            ) : null}
+
+            {/* Paso 1: a quién seguís — antes esto era un pool de mascotas
+                inventadas (DEMO_FRIENDS); ahora es gente real que seguís. */}
+            {panel === 'social' && c.socialPicker === 'amigos' ? (
+              <View style={styles.panelCol}>
+                {c.amigosCargando ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : c.amigos.length === 0 ? (
+                  <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center' }}>
+                    {t('juego.visit.sinAmigos')}
+                  </Text>
+                ) : (
+                  <View style={styles.panelListaAmigos}>
+                    {c.amigos.map((a) => (
+                      <Pressable
+                        key={a.userId}
+                        onPress={() => c.elegirAmigo(a)}
+                        style={[styles.filaAmigo, { borderColor: colors.border }]}
+                      >
+                        <Text style={{ color: colors.text, fontSize: 13 }}>{a.nombreCompleto}</Text>
+                        {a.username ? (
+                          <Text style={{ color: colors.textMuted, fontSize: 11 }}>@{a.username}</Text>
+                        ) : null}
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <Pressable onPress={c.cerrarSocialPicker} style={{ marginTop: 8 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('juego.visit.cancelar')}</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {/* Paso 2: cuál de sus mascotas invitás — nombre, especie y raza
+                de verdad, no un bicho de mentira. */}
+            {panel === 'social' && c.socialPicker === 'mascotas' ? (
+              <View style={styles.panelCol}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginBottom: 6 }}>
+                  {t('juego.visit.mascotasDe', { nombre: c.amigoElegido?.nombreCompleto ?? '' })}
+                </Text>
+                {c.mascotasAmigoCargando ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : c.mascotasAmigo.length === 0 ? (
+                  <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center' }}>
+                    {t('juego.visit.sinMascotas')}
+                  </Text>
+                ) : (
+                  <View style={styles.panelListaAmigos}>
+                    {c.mascotasAmigo.map((m) => (
+                      <Pressable
+                        key={m.mascotaId}
+                        onPress={() => c.elegirMascotaAmigo(m)}
+                        style={[styles.filaAmigo, { borderColor: colors.border }]}
+                      >
+                        <Text style={{ color: colors.text, fontSize: 13 }}>{m.nombre}</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                          {m.raza ? `${m.especie} · ${m.raza}` : m.especie}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <Pressable onPress={c.abrirInvitarAmigo} style={{ marginTop: 8 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('juego.visit.volver')}</Text>
+                </Pressable>
               </View>
             ) : null}
           </View>
@@ -607,23 +671,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.08)',
   },
-  coatRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: '100%',
-  },
-  swatchMini: { borderRadius: 14, padding: 2 },
-  swatchColorMini: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
+  petMenuItemFila: { flexDirection: 'row', alignItems: 'center' },
   accordion: {
     marginTop: 14,
     width: '100%',
@@ -639,28 +687,25 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    flexWrap: 'nowrap',
-    gap: 4,
+    flexWrap: 'wrap',
+    gap: 6,
     width: '100%',
-    justifyContent: 'space-evenly',
-    paddingHorizontal: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
     paddingTop: 8,
     paddingBottom: 8,
   },
+  // Antes la pestaña activa "abría" hacia el panel de abajo (sin radio
+  // inferior, fundida con el panel) — con el renglón de pestañas haciendo
+  // wrap a veces la activa no quedaba pegada al panel, y el borde recto
+  // solo, sin nada con qué fundirse, se veía como una media luna. Ahora la
+  // pestaña activa es un botón normal, redondeado entero, como cualquier
+  // otro chip de la pantalla.
   tab: {
     borderWidth: 1.5,
     borderRadius: radii.pill,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 7,
-    flexShrink: 1,
-  },
-  /** Pestaña activa “abre” hacia el panel: sin radio inferior. */
-  tabConnected: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomWidth: 0,
-    marginBottom: -1,
-    zIndex: 2,
   },
   panelConnected: {
     borderTopWidth: 2,
@@ -670,6 +715,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   panelCol: { width: '100%', alignItems: 'center' },
+  panelListaAmigos: { width: '100%', maxWidth: 320 },
+  filaAmigo: {
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   panel: {
     flexDirection: 'row',
     flexWrap: 'wrap',

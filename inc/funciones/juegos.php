@@ -400,23 +400,36 @@ function rh_juego_semilla(): int
  * armar el duelo. El `WHERE TurnoDeUserId = ?` es el mismo guard de
  * concurrencia que ya usaba `turno_jugar.php`: si dos jugadas llegaran a la
  * vez, la segunda no encuentra fila para actualizar.
+ *
+ * Además avisa al que le toca — antes esto quedaba mudo: el turno pasaba
+ * pero nadie se enteraba hasta volver a abrir la app.
  */
 function rh_juego_avanzar_turno(
     mysqli $conn,
     int $desafioId,
     int $siguienteUserId,
     int $movidaDeUserId,
-    int $plazoTurnoHoras
+    int $plazoTurnoMinutos
 ): void {
     $stmt = $conn->prepare(
         "UPDATE JuegoDesafio
             SET TurnoDeUserId = ?, Estado = 'aceptado',
-                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? HOUR)
+                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? MINUTE)
           WHERE DesafioId = ? AND TurnoDeUserId = ?"
     );
-    $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoHoras, $desafioId, $movidaDeUserId);
+    $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoMinutos, $desafioId, $movidaDeUserId);
     $stmt->execute();
     $stmt->close();
+
+    require_once __DIR__ . '/notificaciones.php';
+    rh_notificar(
+        $conn,
+        [$siguienteUserId],
+        'juego_tu_turno',
+        '¡Te toca jugar!',
+        'Tenés un movimiento esperando.',
+        '/(app)/hueplay/desafios'
+    );
 }
 
 /** Puntos de consuelo cuando el duelo se cierra solo, por inacción de alguien. */
@@ -701,7 +714,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],
-        'plazoTurnoHoras' => (int) ($d['PlazoTurnoHoras'] ?? 24),
+        'plazoTurnoMinutos' => (int) ($d['PlazoTurnoMinutos'] ?? 1440),
         'esRivalIA' => rh_juego_es_bot($conn, $otroId),
     ];
 }

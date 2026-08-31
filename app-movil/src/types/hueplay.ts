@@ -170,7 +170,7 @@ export interface HuePlayDesafio {
   creadoEn: string;
   expiraEn: string;
   /** Horas que tiene el rival para responder cada movimiento (1-24). */
-  plazoTurnoHoras: number;
+  plazoTurnoMinutos: number;
   /** Si el rival es la IA de la app y no otro usuario. */
   esRivalIA: boolean;
 }
@@ -331,7 +331,7 @@ export interface HuePlaySala {
   maxJugadores: number;
   completarConIA: boolean;
   politicaAbandono: PoliticaAbandonoSala;
-  plazoTurnoHoras: number;
+  plazoTurnoMinutos: number;
   codigoInvitacion: string;
   estado: EstadoSala;
   /** JSON crudo (Ludo) o null antes de arrancar. */

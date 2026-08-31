@@ -72,17 +72,17 @@ function rh_sala_crear(
     int $maxJugadores,
     bool $completarConIA,
     string $politicaAbandono,
-    int $plazoTurnoHoras,
+    int $plazoTurnoMinutos,
     array $invitadosUserIds
 ): array {
     $codigo = rh_sala_codigo_nuevo($conn);
     $completarConIAInt = $completarConIA ? 1 : 0;
 
     $stmt = $conn->prepare(
-        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoHoras, CodigoInvitacion)
+        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoMinutos, CodigoInvitacion)
          VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->bind_param('siiisis', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoHoras, $codigo);
+    $stmt->bind_param('siiisis', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoMinutos, $codigo);
     $stmt->execute();
     $salaId = $conn->insert_id;
     $stmt->close();
@@ -119,7 +119,7 @@ function rh_sala_crear(
             'juego_desafio',
             'Te invitaron a jugar',
             rh_juego_nombre($conn, $userId) . ' te invitó a una sala de ' . rh_juego_titulo($juegoCodigo),
-            '/(app)/hueplay/desafios',
+            '/(app)/hueplay/sala-lobby/' . $salaId,
             ['actorUserId' => $userId]
         );
     }
@@ -389,12 +389,22 @@ function rh_sala_resolver_turno_vencido(mysqli $conn, array $sala): array
     $siguienteId = (int) $siguiente['SalaJugadorId'];
 
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? HOUR) WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE SalaId = ?'
     );
-    $plazo = (int) $sala['PlazoTurnoHoras'];
+    $plazo = (int) $sala['PlazoTurnoMinutos'];
     $stmt->bind_param('iii', $siguienteId, $plazo, $salaId);
     $stmt->execute();
     $stmt->close();
+
+    require_once __DIR__ . '/notificaciones.php';
+    rh_notificar(
+        $conn,
+        [(int) $siguiente['UserId']],
+        'juego_tu_turno',
+        '¡Te toca jugar!',
+        'Tenés un turno esperando en ' . rh_juego_titulo($sala['JuegoCodigo']) . '.',
+        '/(app)/hueplay/sala-lobby/' . $salaId
+    );
 
     return ['politica' => $politica, 'salaJugadorAfectado' => $afectado, 'cerrada' => false, 'siguienteSalaJugadorId' => $siguienteId];
 }
@@ -415,14 +425,40 @@ function rh_sala_siguiente_jugador(array $activos, int $posicionActual): ?array
 }
 
 /** Pasa el turno de la sala al asiento indicado y le da un plazo nuevo. */
-function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJugadorId, int $plazoTurnoHoras): void
+function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJugadorId, int $plazoTurnoMinutos): void
 {
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? HOUR) WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE SalaId = ?'
     );
-    $stmt->bind_param('iii', $siguienteSalaJugadorId, $plazoTurnoHoras, $salaId);
+    $stmt->bind_param('iii', $siguienteSalaJugadorId, $plazoTurnoMinutos, $salaId);
     $stmt->execute();
     $stmt->close();
+
+    // Avisa al que le toca — antes esto quedaba mudo hasta que volviera a
+    // abrir la app. El bot no tiene a quién avisarle: si el siguiente asiento
+    // es la IA, `UserId` es la cuenta reservada y `rh_notificar` no le manda
+    // nada porque no tiene push token, así que llamarla igual es inofensivo.
+    $stmt = $conn->prepare(
+        'SELECT JuegoSalaJugador.UserId, JuegoSala.JuegoCodigo
+           FROM JuegoSalaJugador JOIN JuegoSala ON JuegoSala.SalaId = JuegoSalaJugador.SalaId
+          WHERE JuegoSalaJugador.SalaJugadorId = ?'
+    );
+    $stmt->bind_param('i', $siguienteSalaJugadorId);
+    $stmt->execute();
+    $fila = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($fila) {
+        require_once __DIR__ . '/notificaciones.php';
+        rh_notificar(
+            $conn,
+            [(int) $fila['UserId']],
+            'juego_tu_turno',
+            '¡Te toca jugar!',
+            'Tenés un turno esperando en ' . rh_juego_titulo($fila['JuegoCodigo']) . '.',
+            '/(app)/hueplay/sala-lobby/' . $salaId
+        );
+    }
 }
 
 /** Serializa una sala + sus asientos para el front, desde la perspectiva de $yo. */
@@ -475,7 +511,7 @@ function rh_sala_serializar(mysqli $conn, array $sala, array $jugadores, int $yo
         'maxJugadores' => (int) $sala['MaxJugadores'],
         'completarConIA' => (bool) $sala['CompletarConIA'],
         'politicaAbandono' => $sala['PoliticaAbandono'],
-        'plazoTurnoHoras' => (int) $sala['PlazoTurnoHoras'],
+        'plazoTurnoMinutos' => (int) $sala['PlazoTurnoMinutos'],
         'codigoInvitacion' => $sala['CodigoInvitacion'],
         'estado' => $sala['Estado'],
         // El tablero NO va acá: en juegos con información oculta (HueRummy,

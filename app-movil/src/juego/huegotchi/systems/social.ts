@@ -38,13 +38,7 @@ export function visitTrigger(outcome: SocialVisitOutcome): string {
   }
 }
 
-/** Pool demo hasta cablear amigos reales de la API. */
-// Los nombres de raza tienen que coincidir con `RazaCatalogo` para que caigan
-// en la tabla de morfología en vez del perfil derivado por hash.
-export const DEMO_FRIENDS: FriendPetLite[] = [
-  { mascotaId: -101, nombre: 'Luna', especie: 'gato', raza: 'Siamés' },
-  { mascotaId: -102, nombre: 'Rocky', especie: 'perro', raza: 'Salchicha (Dachshund)' },
-  { mascotaId: -103, nombre: 'Kira', especie: 'perro', raza: 'Husky Siberiano' },
-  { mascotaId: -104, nombre: 'Mora', especie: 'gato', raza: 'Persa' },
-  { mascotaId: -105, nombre: 'Tina', especie: 'tortuga', raza: null },
-];
+// El pool DEMO_FRIENDS que vivía acá (mascotas inventadas) se sacó: ahora
+// `useHueGotchiController.abrirInvitarAmigo()` pide de verdad a quién seguís
+// (`seguimientoApi.seguidos`) y sus mascotas (`mascotasApi.listarUsuario`),
+// y arma el `FriendPetLite` con esos datos reales.

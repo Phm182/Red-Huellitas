@@ -680,7 +680,12 @@
     "visit": {
       "invite": "Invite friend",
       "clear": "End visit",
-      "guest": "{{name}} visiting · {{outcome}}"
+      "guest": "{{name}} visiting · {{outcome}}",
+      "sinAmigos": "Ты пока ни за кем не следишь",
+      "cancelar": "Отмена",
+      "mascotasDe": "Питомцы {{nombre}}",
+      "sinMascotas": "Питомцы ещё не добавлены",
+      "volver": "Назад"
     },
     "weather": {
       "night": "Night time — heading to bed…",
@@ -983,7 +988,7 @@
     "partidas": "Партии",
     "ganados": "Победы",
     "perdidos": "Поражения",
-    "desafios": "Дуэли",
+    "desafios": "Мультиплеер / Испытания",
     "desafiosBajada": "Поединки с другими пользователями",
     "juegos": "Игры",
     "ranking": "Рейтинг",
@@ -1181,6 +1186,13 @@
       "rankingVacio": "За этот период пока нет очков.",
       "diasJugados": "{{dias}} дн.",
       "tuPuesto": "Твоё место: {{puesto}} с {{puntos}} очками"
-    }
+    },
+    "plazoPersonalizado": "Свой вариант",
+    "unidad": {
+      "min": "мин",
+      "h": "ч",
+      "d": "дн"
+    },
+    "seleccionarJuego": "Выбери игру"
   }
 }

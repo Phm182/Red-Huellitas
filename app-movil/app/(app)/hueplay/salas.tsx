@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,6 +17,14 @@ import { hapticLeve } from '../../../src/utils/haptics';
 export default function SalasScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  // El juego llega por parámetro (desde la tarjeta de HueLudo o de HueRummy
+  // en HuePlay): antes esta pantalla mostraba SIEMPRE los dos botones de
+  // crear, sin importar desde cuál juego se entró — confuso, porque entrando
+  // desde HueLudo no tiene sentido ver "Crear sala de HueRummy" ahí. La
+  // bandeja de abajo sigue mostrando las salas de los dos juegos juntas: eso
+  // sí tiene sentido, es "todas mis salas".
+  const params = useLocalSearchParams<{ juego?: string }>();
+  const juegoCodigo = params.juego === 'huerummy' ? 'huerummy' : 'hueludo';
   const [bandeja, setBandeja] = useState<HuePlaySalasBandeja | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -88,25 +96,25 @@ export default function SalasScreen() {
         <Pressable
           onPress={() => {
             hapticLeve();
-            router.push('/(app)/hueplay/sala-crear?juego=hueludo' as never);
+            router.push(`/(app)/hueplay/sala-crear?juego=${juegoCodigo}` as never);
           }}
           style={[styles.botonCrear, { backgroundColor: colors.primary }]}
         >
           <Ionicons name="add-circle" size={18} color={colors.primaryText} />
           <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 14 }}>
-            {t('hueplay.sala.crearDe', { juego: 'HueLudo' })}
+            {t('hueplay.sala.crearSala')}
           </Text>
         </Pressable>
         <Pressable
           onPress={() => {
             hapticLeve();
-            router.push('/(app)/hueplay/sala-crear?juego=huerummy' as never);
+            router.push('/(app)/hueplay/sala-unirse' as never);
           }}
-          style={[styles.botonCrear, { backgroundColor: colors.primary }]}
+          style={[styles.botonCrear, styles.botonUnirse, { borderColor: colors.border }]}
         >
-          <Ionicons name="add-circle" size={18} color={colors.primaryText} />
-          <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 14 }}>
-            {t('hueplay.sala.crearDe', { juego: 'HueRummy' })}
+          <Ionicons name="key-outline" size={18} color={colors.text} />
+          <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+            {t('hueplay.sala.tenesCodigo')}
           </Text>
         </Pressable>
       </View>
@@ -179,6 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingVertical: 12,
   },
+  botonUnirse: { backgroundColor: 'transparent', borderWidth: 1 },
   seccion: { fontSize: 12, fontFamily: fonts.bodySemi, marginTop: 20, marginBottom: 8, textTransform: 'uppercase' },
   fila: {
     flexDirection: 'row',

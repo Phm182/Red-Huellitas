@@ -140,7 +140,7 @@ if ($gane || $tablas) {
         $stmt->close();
     }
 } else {
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoHoras']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos']);
     rh_notificar($conn, [$rival], 'juego_desafio', $jaque ? '¡Te hicieron jaque!' : 'Te toca jugar',
         rh_juego_nombre($conn, $userId) . ' ya movió en Ajedrez', '/(app)/hueplay/desafios',
         ['actorUserId' => $userId]);
