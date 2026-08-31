@@ -227,6 +227,20 @@ export default function DesafiosScreen() {
                   {t('hueplay.retar')}
                 </Text>
               </Pressable>
+              {j.codigo === 'huesoccer' ? (
+                <Pressable
+                  onPress={() => {
+                    hapticLeve();
+                    router.push('/(app)/ajustes/huesoccer-skins' as never);
+                  }}
+                  style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
+                >
+                  <Ionicons name="color-palette-outline" size={16} color={colors.text} />
+                  <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                    {t('hueplay.soccer.skinsTitulo')}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           );
         })()

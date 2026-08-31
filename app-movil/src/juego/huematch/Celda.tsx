@@ -31,6 +31,23 @@ type Props = {
    * — el resorte es para cuando se suelta, no mientras se sostiene.
    */
   arrastreVivo?: { dx: number; dy: number } | null;
+  /**
+   * `true` mientras `huematch.tsx` está reproduciendo los pasos de una
+   * cascada (`animar()`). Hace falta para distinguir DOS causas distintas de
+   * "esta celda cambió de figura sin pasar por `VACIO`":
+   *
+   * 1. El propio intercambio del jugador (`desplaza` ya lo animó, acá no hay
+   *    que hacer nada más) — pasa con `cascadaActiva=false`.
+   * 2. Una ficha SUPERVIVIENTE que bajó de lugar en la cascada porque algo
+   *    de abajo se limpió — `caerYRellenar()` reacomoda el array por
+   *    POSICIÓN, no por identidad de cada ficha, así que la celda que
+   *    queda arriba del hueco recibe directamente el valor de la ficha de
+   *    más abajo sin pasar por `VACIO` en SU propia celda. Sin distinguir
+   *    este caso del anterior, esa ficha cambiaba de golpe sin ninguna
+   *    animación — es lo que se veía como "colapsa/parpadea" en cascadas de
+   *    2 pasos o más.
+   */
+  cascadaActiva?: boolean;
 };
 
 /**
@@ -69,7 +86,7 @@ export const T_MOVER = 150;
  * es lo que hacía que el juego se sintiera estático aunque el motor estuviera
  * encadenando cascadas.
  */
-export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo }: Props) {
+export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, cascadaActiva }: Props) {
   const anterior = useRef(tipo);
 
   const escala = useSharedValue(tipo === VACIO ? 0 : 1);
@@ -111,12 +128,15 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo }
       return;
     }
 
-    // Cayó una nueva: entra desde arriba. El retraso por fila hace que la
-    // columna caiga de a una en vez de aparecer todo el bloque junto.
-    // `damping` más alto que antes (13→20): con 13 rebotaba varias veces de
-    // ida y vuelta antes de asentarse, que es justo lo que confundía — con
-    // 20 pega un único envión chico y para.
-    if (antes === VACIO && tipo !== VACIO) {
+    // Cayó una nueva ficha (VACIO→figura), O una superviviente bajó de lugar
+    // durante la cascada (figura→OTRA figura distinta, sin pasar por VACIO
+    // en esta celda puntual — ver el comentario de `cascadaActiva` arriba):
+    // las dos entran "desde arriba" con la misma animación. El retraso por
+    // fila hace que la columna caiga de a una en vez de aparecer todo el
+    // bloque junto. `damping` más alto que antes (13→20): con 13 rebotaba
+    // varias veces de ida y vuelta antes de asentarse, que es justo lo que
+    // confundía — con 20 pega un único envión chico y para.
+    if (tipo !== VACIO && (antes === VACIO || cascadaActiva)) {
       giro.value = 0;
       caida.value = -1;
       escala.value = 1;
@@ -124,10 +144,11 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo }
       return;
     }
 
-    // Cambió de figura sin pasar por vacío: es el final de un intercambio, y
-    // el movimiento ya lo contó el deslizamiento. No se anima nada más acá; un
-    // pulso encima se leería como un segundo evento.
-  }, [tipo, fila, escala, giro, caida]);
+    // Cambió de figura sin pasar por vacío Y fuera de una cascada: es el
+    // final de un intercambio, y el movimiento ya lo contó el deslizamiento.
+    // No se anima nada más acá; un pulso encima se leería como un segundo
+    // evento.
+  }, [tipo, fila, escala, giro, caida, cascadaActiva]);
 
   const estilo = useAnimatedStyle(() => ({
     transform: [

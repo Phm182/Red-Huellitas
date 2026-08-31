@@ -73,6 +73,14 @@ export default function HueMatchScreen() {
   const [puntos, setPuntos] = useState(0);
   const [restante, setRestante] = useState(SEGUNDOS);
   const [combo, setCombo] = useState<{ puntos: number; cascada: number } | null>(null);
+  /**
+   * `true` mientras `animar()` está reproduciendo los pasos de una jugada
+   * (desde el primer match, no sólo si encadena). Se lo pasa a `Celda.tsx`
+   * — ahí está el comentario completo de por qué hace falta: sin esto, una
+   * ficha superviviente que sólo baja de lugar (sin ser ella la que
+   * explota) cambiaba de golpe sin ninguna animación.
+   */
+  const [cascadaActiva, setCascadaActiva] = useState(false);
   const [resultado, setResultado] = useState<{
     progreso: HuePlayProgreso;
     record?: number;
@@ -199,6 +207,7 @@ export default function HueMatchScreen() {
   /** Anima los pasos de una jugada: explota, cae, y encadena si hay cascada. */
   const animar = useCallback(
     async (pasos: ReturnType<typeof resolverIntercambio>['pasos']) => {
+      if (pasos.length > 0) setCascadaActiva(true);
       for (const paso of pasos) {
         if (!vivoRef.current) return;
         setTablero(paso.explotando);
@@ -220,7 +229,10 @@ export default function HueMatchScreen() {
         });
         await esperar(T_CAE);
       }
-      if (vivoRef.current) setCombo(null);
+      if (vivoRef.current) {
+        setCombo(null);
+        setCascadaActiva(false);
+      }
     },
     []
   );
@@ -540,6 +552,7 @@ export default function HueMatchScreen() {
           onCelda={onCelda}
           onDeslizar={onDeslizar}
           bloqueado={bloqueado}
+          cascadaActiva={cascadaActiva}
         />
         {combo ? (
           <View style={[styles.combo, { backgroundColor: colors.primary }]}>

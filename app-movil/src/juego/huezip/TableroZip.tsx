@@ -90,32 +90,6 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
 
   return (
     <View {...pan.panHandlers} style={[styles.grilla, { width: lado, height: lado }]}>
-      {visitadas.length > 1 ? (
-        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Un segmento por tramo, con el matiz avanzando de a poco (0°→300°)
-              a lo largo de todo el camino — así el color de cada tramo marca
-              en qué parte del recorrido total va el dedo, no sólo "visitado
-              sí/no" (pedido: "linea interna... de colores tipo arcoiris que
-              ayude a ver bien claro el camino"). */}
-          {visitadas.slice(1).map((c, i) => {
-            const a = centro(visitadas[i]!);
-            const b = centro(c);
-            const hue = Math.round((i / Math.max(1, puzzle.totalCeldas - 1)) * 300);
-            return (
-              <Line
-                key={i}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                stroke={`hsl(${hue}, 85%, 55%)`}
-                strokeWidth={celda * 0.14}
-                strokeLinecap="round"
-              />
-            );
-          })}
-        </Svg>
-      ) : null}
       {puzzle.celdas.map((fila, f) =>
         fila.map((cp, c) => {
           const visitada = esVisitada(f, c);
@@ -166,6 +140,41 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
           );
         })
       )}
+
+      {/* La línea va DESPUÉS de las celdas a propósito: cada celda tiene un
+          fondo opaco (`styles.fondo`), así que si el <Svg> se dibuja antes
+          en el árbol queda TAPADO por esos fondos y sólo se le ve un
+          pedacito por la rendija del 8% de margen entre celdas — que es
+          justo lo que pasaba antes ("no hace la línea que atraviesa los
+          cuadrados"). Pintándola encima sí cruza cada celda de punta a
+          punta, bien visible. `pointerEvents="none"` para que el gesto de
+          abajo le siga llegando a la grilla sin que este overlay lo tape. */}
+      {visitadas.length > 1 ? (
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* Un segmento por tramo, con el matiz avanzando de a poco (0°→300°)
+              a lo largo de todo el camino — así el color de cada tramo marca
+              en qué parte del recorrido total va el dedo, no sólo "visitado
+              sí/no" (pedido: "linea interna... de colores tipo arcoiris que
+              ayude a ver bien claro el camino"). */}
+          {visitadas.slice(1).map((c, i) => {
+            const a = centro(visitadas[i]!);
+            const b = centro(c);
+            const hue = Math.round((i / Math.max(1, puzzle.totalCeldas - 1)) * 300);
+            return (
+              <Line
+                key={i}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke={`hsl(${hue}, 85%, 55%)`}
+                strokeWidth={celda * 0.14}
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </Svg>
+      ) : null}
     </View>
   );
 }

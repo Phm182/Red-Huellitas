@@ -20,6 +20,8 @@ type Props = {
   /** Arrastre: la ficha de `desde` se cambia con la vecina en esa dirección. */
   onDeslizar: (desde: CeldaCoord, dir: Direccion) => void;
   bloqueado: boolean;
+  /** Ver el comentario de `cascadaActiva` en `Celda.tsx`. */
+  cascadaActiva: boolean;
 };
 
 /**
@@ -47,6 +49,7 @@ export function TableroHueMatch({
   onCelda,
   onDeslizar,
   bloqueado,
+  cascadaActiva,
 }: Props) {
   const { colors } = useTheme();
   const celda = lado / COLUMNAS;
@@ -194,6 +197,7 @@ export function TableroHueMatch({
                   fila={f}
                   seleccionada={activa}
                   desplaza={desplazamiento(f, c)}
+                  cascadaActiva={cascadaActiva}
                   arrastreVivo={
                     arrastre && arrastre.origen.fila === f && arrastre.origen.col === c
                       ? { dx: arrastre.dx, dy: arrastre.dy }

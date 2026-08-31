@@ -301,6 +301,19 @@ export default function HueSoccerScreen() {
 
   return (
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
+      <Pressable
+        onPress={() => {
+          hapticLeve();
+          router.push('/(app)/ajustes/huesoccer-skins' as never);
+        }}
+        style={[styles.botonSkins, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('hueplay.soccer.skinsTitulo')}
+      >
+        <Ionicons name="color-palette-outline" size={18} color={colors.textMuted} />
+      </Pressable>
+
       <View style={[styles.marcador, centeredContent]}>
         <View style={styles.marcadorLado}>
           <View style={styles.marcadorLabelFila}>
@@ -361,7 +374,19 @@ const styles = StyleSheet.create({
   veredicto: { fontSize: 24, fontFamily: fonts.displaySemi, marginTop: 12 },
   boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 34, alignItems: 'center', justifyContent: 'center' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15 },
-  juego: { flex: 1, paddingTop: 8 },
+  juego: { flex: 1, paddingTop: 8, position: 'relative' },
+  botonSkins: {
+    position: 'absolute',
+    top: 4,
+    right: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
   marcador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 4 },
   marcadorLado: { alignItems: 'center' },
   marcadorLabelFila: { flexDirection: 'row', alignItems: 'center', gap: 5 },
