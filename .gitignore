@@ -27,6 +27,7 @@ app-movil/.expo/
 app-movil/dist/
 app-movil/android/
 app-movil/ios/
+app-movil/google-services.json
 .env
 .env.local
 
