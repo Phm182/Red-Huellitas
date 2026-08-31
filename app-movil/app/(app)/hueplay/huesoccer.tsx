@@ -314,6 +314,16 @@ export default function HueSoccerScreen() {
   }
 
   const tiempoUrgente = restanteTurno <= 5;
+  // El servidor sólo manda `segundosNetosUsados` actualizado al cerrarse un
+  // turno — entre medio quedaba clavado, aunque el reloj de arriba sí corre
+  // segundo a segundo (pedido: "debe verse como avanza"). Mientras es MI
+  // turno, se le suma lo que ya pasó de este turno (mismo reloj que ya
+  // tenemos, `restanteTurno`) para que fluya en vivo; del turno del rival no
+  // hay forma honesta de estimarlo desde acá (no tengo su reloj), así que
+  // ahí se deja el último valor que mandó el servidor.
+  const segundosNetosMostrado = desafio.esMiTurno
+    ? Math.min(TOPE_SEGUNDOS_NETOS, tablero.segundosNetosUsados + (SEGUNDOS_TURNO - restanteTurno))
+    : tablero.segundosNetosUsados;
 
   return (
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
@@ -368,7 +378,7 @@ export default function HueSoccerScreen() {
         {t('hueplay.golesParaGanar', { n: tablero.metaGoles ?? GOLES_PARA_GANAR_DEFAULT })}
       </Text>
       <Text style={{ color: colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 2 }}>
-        {t('hueplay.soccer.tiempoNeto', { usados: tablero.segundosNetosUsados, tope: TOPE_SEGUNDOS_NETOS })}
+        {t('hueplay.soccer.tiempoNeto', { usados: segundosNetosMostrado, tope: TOPE_SEGUNDOS_NETOS })}
       </Text>
 
       <View style={styles.canchaWrap}>

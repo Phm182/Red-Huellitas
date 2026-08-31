@@ -12,7 +12,7 @@ import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { HuePlayDesafio, HuePlayDesafiosBandeja } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
-import { fonts } from '../../../src/theme/typography';
+import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticLeve, hapticMedio } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
@@ -37,11 +37,16 @@ export default function DesafiosScreen() {
   // activos de ESE juego (antes se saltaba directo a "retar", sin mostrar
   // nada de lo que ya tenías en curso).
   const params = useLocalSearchParams<{ juego?: string }>();
+  const juegoFijoInicial = JUEGOS_CATALOGO.some((j) => j.codigo === params.juego) ? (params.juego as string) : null;
   const [bandeja, setBandeja] = useState<HuePlayDesafiosBandeja | null>(null);
   const [loading, setLoading] = useState(true);
-  const [juegoElegido, setJuegoElegido] = useState<string | null>(() =>
-    JUEGOS_CATALOGO.some((j) => j.codigo === params.juego) ? (params.juego as string) : null
-  );
+  const [juegoElegido, setJuegoElegido] = useState<string | null>(juegoFijoInicial);
+  // Si se llegó desde la tarjeta de un juego puntual (no desde "Multiplayer
+  // / Desafíos" a secas), no tiene sentido mostrar la grilla de los 13
+  // juegos para elegir de nuevo — tocar "HueSoccer" en el hub tiene que ir
+  // directo a HueSoccer. La grilla queda un toque atrás, por si de verdad
+  // quiere cambiar de juego desde acá.
+  const [mostrarPicker, setMostrarPicker] = useState(!juegoFijoInicial);
 
   const cargar = useCallback(() => {
     hueplayApi.desafios().then((res) => {
@@ -177,49 +182,75 @@ export default function DesafiosScreen() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.contenido, centeredContent]}
     >
-      {/* Elegir juego primero, después qué hacer con él — antes eran 6 botones
-          angostos en una sola fila (con HueLudo/HueRummy aparte, ni entraban)
-          y todos con el mismo ícono de rayo genérico en vez del propio de
-          cada juego: con seis nombres largos ahí apretados, texto e ícono se
-          superponían. Ahora es una grilla que hace wrap, con el mismo
-          ícono/color que ya usa la lista principal de HuePlay. */}
-      <Text style={[styles.seccion, { color: colors.textMuted, marginTop: 0 }]}>
-        {t('hueplay.seleccionarJuego')}
-      </Text>
-      <View style={styles.juegosGrilla}>
-        {JUEGOS_CATALOGO.map((j) => {
-          const activo = juegoElegido === j.codigo;
+      {!mostrarPicker && juegoElegido ? (
+        (() => {
+          const j = JUEGOS_CATALOGO.find((g) => g.codigo === juegoElegido);
+          if (!j) return null;
           return (
             <Pressable
-              key={j.codigo}
               onPress={() => {
                 hapticLeve();
-                setJuegoElegido((cur) => (cur === j.codigo ? null : j.codigo));
+                setMostrarPicker(true);
               }}
-              style={[
-                styles.juegoBoton,
-                {
-                  backgroundColor: activo ? j.color : colors.surface,
-                  borderColor: activo ? j.color : colors.border,
-                },
-              ]}
+              style={[styles.headerJuegoFijo, { borderColor: colors.border, backgroundColor: colors.surface }]}
             >
-              <MaterialCommunityIcons name={j.icono} size={16} color={activo ? '#FFFFFF' : j.color} />
-              <Text
-                numberOfLines={1}
-                style={{
-                  color: activo ? '#FFFFFF' : colors.text,
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 12,
-                  flexShrink: 1,
-                }}
-              >
-                {j.titulo}
-              </Text>
+              <View style={[styles.headerJuegoIcono, { backgroundColor: `${j.color}22` }]}>
+                <MaterialCommunityIcons name={j.icono} size={22} color={j.color} />
+              </View>
+              <Text style={[type.titleSm, { color: colors.text, flex: 1 }]}>{j.titulo}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.cambiarJuego')}</Text>
             </Pressable>
           );
-        })}
-      </View>
+        })()
+      ) : (
+        <>
+          {/* Elegir juego primero, después qué hacer con él — antes eran 6
+              botones angostos en una sola fila (con HueLudo/HueRummy aparte,
+              ni entraban) y todos con el mismo ícono de rayo genérico en vez
+              del propio de cada juego: con seis nombres largos ahí
+              apretados, texto e ícono se superponían. Ahora es una grilla
+              que hace wrap, con el mismo ícono/color que ya usa la lista
+              principal de HuePlay. */}
+          <Text style={[styles.seccion, { color: colors.textMuted, marginTop: 0 }]}>
+            {t('hueplay.seleccionarJuego')}
+          </Text>
+          <View style={styles.juegosGrilla}>
+            {JUEGOS_CATALOGO.map((j) => {
+              const activo = juegoElegido === j.codigo;
+              return (
+                <Pressable
+                  key={j.codigo}
+                  onPress={() => {
+                    hapticLeve();
+                    setJuegoElegido((cur) => (cur === j.codigo ? null : j.codigo));
+                    setMostrarPicker(false);
+                  }}
+                  style={[
+                    styles.juegoBoton,
+                    {
+                      backgroundColor: activo ? j.color : colors.surface,
+                      borderColor: activo ? j.color : colors.border,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons name={j.icono} size={16} color={activo ? '#FFFFFF' : j.color} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: activo ? '#FFFFFF' : colors.text,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      flexShrink: 1,
+                    }}
+                  >
+                    {j.titulo}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {juegoElegido ? (
         (() => {
@@ -450,6 +481,16 @@ const styles = StyleSheet.create({
   // Grilla, no una fila fija: con 8 juegos (6 duelos + Ludo + Rummy) uno
   // solo hace wrap sin achicar el texto ni superponer el ícono.
   juegosGrilla: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  headerJuegoFijo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    padding: 12,
+    marginBottom: 4,
+  },
+  headerJuegoIcono: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   juegoBoton: {
     flexDirection: 'row',
     alignItems: 'center',

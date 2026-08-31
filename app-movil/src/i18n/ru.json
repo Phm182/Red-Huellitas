@@ -998,6 +998,7 @@
     "retarA": "Бросить вызов",
     "retar": "Вызвать",
     "configurarDuelo": "Настроить дуэль",
+    "cambiarJuego": "Сменить",
     "jugar": "Играть",
     "volver": "Назад в HuePlay",
     "golesParaGanar": "Кто первым забьёт {{n}} гола, побеждает",

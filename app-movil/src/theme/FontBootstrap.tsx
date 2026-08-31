@@ -13,6 +13,7 @@ import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import { Pacifico_400Regular } from '@expo-google-fonts/pacifico';
 import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import { SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -31,6 +32,15 @@ export function FontBootstrap({ children }: { children: React.ReactNode }) {
     Nunito_500Medium,
     Nunito_600SemiBold,
     Nunito_700Bold,
+    // Los sets de íconos (`@expo/vector-icons`) normalmente se cargan solos,
+    // lazy, la primera vez que se monta un ícono de esa familia — funciona
+    // así para Ionicons hace rato sin que nadie lo pidiera acá. Pero
+    // MaterialCommunityIcons (sumado recién, para los íconos de juego de
+    // HuePlay) se vio como cuadrados vacíos en el celular: precargarlo acá,
+    // bloqueando el primer render igual que las tipografías de marca, saca
+    // de encima cualquier carrera entre el montaje del ícono y que la
+    // fuente termine de cargar.
+    ...MaterialCommunityIcons.font,
   });
 
   const [storyLoaded] = useFonts({

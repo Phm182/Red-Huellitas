@@ -1133,6 +1133,7 @@
     "retarA": "Challenge someone",
     "retar": "Challenge",
     "configurarDuelo": "Set up match",
+    "cambiarJuego": "Change",
     "jugar": "Play",
     "volver": "Back to HuePlay",
     "golesParaGanar": "First to {{n}} goals wins",
