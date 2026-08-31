@@ -1165,13 +1165,43 @@
       "completo": "Percorso completato, con {{reinicios}} riavvii",
       "incompleto": "Hai raggiunto {{n}} celle su {{total}}"
     },
+    "doku": {
+      "comoSeJuega": "Completa la griglia senza ripetere numeri in nessuna riga, colonna o riquadro. Vince chi la risolve più velocemente.",
+      "elegirDificultad": "Scegli la difficoltà",
+      "variante6": "6x6 (veloce)",
+      "variante9facil": "9x9 facile",
+      "variante9dificil": "9x9 difficile",
+      "avisoDuelo": "Duello: il tuo rivale risolve esattamente la stessa griglia.",
+      "errores": "Errori",
+      "celdas": "Celle",
+      "completo": "Risolto in {{segundos}}s, con {{errores}} errori"
+    },
     "soccer": {
-      "comoSeJuega": "Trascina le tue pedine all'indietro e rilascia per calciare: segna nella porta del rivale prima che arrivi a 3 gol. Si gioca a turni.",
+      "comoSeJuega": "Trascina le tue pedine all'indietro e rilascia per calciare: la palla deve attraversare tutta la linea di porta avversaria prima che il rivale arrivi a 3 gol. 5 pedine per squadra, 20 secondi per tirare nel tuo turno, e la partita si chiude a 3 minuti netti di gioco.",
       "golesJ1": "Tu",
       "golesJ2": "Rivale",
       "tuTurno": "Il tuo turno: scegli una pedina e tira",
       "turnoRival": "Turno di {{rival}}",
-      "gol": "Gol!"
+      "gol": "Gol!",
+      "tiempoNeto": "Tempo netto usato: {{usados}}/{{tope}}s",
+      "skinsTitulo": "Skin di HueSoccer",
+      "skinsAyuda": "Scegli l'aspetto delle tue pedine e della palla. È una preferenza dell'account, si applica a tutte le tue partite.",
+      "skinsFichaTitulo": "Pedine",
+      "skinsPelotaTitulo": "Palla",
+      "skinsFicha": {
+        "clasica": "Classica",
+        "rayada": "A righe",
+        "lunares": "A pois",
+        "bicolor": "Bicolore",
+        "estrella": "Stella"
+      },
+      "skinsPelota": {
+        "clasica": "Classica",
+        "cueroRetro": "Pelle retrò",
+        "tricolor": "Tricolore",
+        "arcoiris": "Arcobaleno",
+        "lunar": "Lunare"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} domande sulla cura degli animali, {{s}} secondi ciascuna. Alla fine vedi cosa hai indovinato e perché.",

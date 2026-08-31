@@ -222,17 +222,32 @@ export function estaCompleto(puzzle: Puzzle, progreso: ProgresoZip): boolean {
  * Puntaje final. `celdasCompletadas` paga siempre (aunque no haya terminado
  * a tiempo); el bono de eficiencia y de tiempo sólo se suman si el camino
  * quedó completo. Mismo estilo que `huememo/motor.ts::puntaje()`.
+ *
+ * Diseñada para que gane ESTRICTAMENTE el más rápido: entre dos partidas
+ * completas, la de menor `segundosUsados` siempre da más puntos, sin
+ * excepción. Los reinicios sólo desempatan diferencias de tiempo mínimas —
+ * `TOPE_REINICIOS_PENALIZADOS * PENALIDAD_REINICIO` (45) es menor que
+ * `RESOLUCION_TIEMPO` (50, el costo de UN solo segundo), así que ningún
+ * número de reinicios puede dar vuelta una diferencia de 1 segundo real.
  */
+const RESOLUCION_TIEMPO = 50;
+const PENALIDAD_REINICIO = 5;
+const TOPE_REINICIOS_PENALIZADOS = 9;
+const BASE_COMPLETO = 5000;
+
 export function puntaje(
   celdasCompletadas: number,
   reinicios: number,
   segundosUsados: number,
   totalCeldas: number = N * N,
+  /** Ya no se usa en el cálculo (ver comentario de arriba) — se mantiene el parámetro para no romper los call sites existentes. */
   limiteSegundos: number = SEGUNDOS
 ): number {
-  const porCeldas = celdasCompletadas * 40;
-  if (celdasCompletadas !== totalCeldas) return porCeldas;
-  const eficiencia = Math.max(0, 300 - reinicios * 50);
-  const tiempo = Math.max(0, (limiteSegundos - segundosUsados) * 8);
-  return porCeldas + eficiencia + tiempo;
+  // Incompleto: banda baja, muy por debajo de cualquier partida completa
+  // (una completa perfecta da 5000; la peor completa posible, con el techo
+  // de tiempo típico, sigue dando más que 25*10=250).
+  if (celdasCompletadas !== totalCeldas) return celdasCompletadas * 10;
+  const penalidadTiempo = segundosUsados * RESOLUCION_TIEMPO;
+  const penalidadReinicios = Math.min(reinicios, TOPE_REINICIOS_PENALIZADOS) * PENALIDAD_REINICIO;
+  return Math.max(0, BASE_COMPLETO - penalidadTiempo - penalidadReinicios);
 }

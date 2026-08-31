@@ -4,8 +4,19 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { CanchaSoccer, Posiciones, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
-import { GOLES_PARA_GANAR, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
+import { useAuth } from '../../../src/auth/AuthProvider';
+import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
+import { GOLES_PARA_GANAR, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
+import {
+  SKIN_FICHA_DEFAULT,
+  SKIN_PELOTA_DEFAULT,
+  SkinFichaId,
+  SkinPelotaId,
+  esSkinFichaValida,
+  esSkinPelotaValida,
+  resolverSkinsPartido,
+  skinPelotaDelPartido,
+} from '../../../src/juego/huesoccer/skins';
 import { HuePlayDesafio } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -17,6 +28,15 @@ import { hapticCelebracion, hapticError, hapticLeve, hapticMedio } from '../../.
 const POLL_MS = 4000;
 /** Duración fija de cualquier animación de tiro, mío o del rival. */
 const DURACION_ANIM_MS = 900;
+/** Segundos reales que tiene el jugador activo para tirar. */
+const SEGUNDOS_TURNO = 20;
+
+function skinFichaValida(v: string | undefined): SkinFichaId {
+  return v && esSkinFichaValida(v) ? v : SKIN_FICHA_DEFAULT;
+}
+function skinPelotaValida(v: string | undefined): SkinPelotaId {
+  return v && esSkinPelotaValida(v) ? v : SKIN_PELOTA_DEFAULT;
+}
 
 /**
  * HueSoccer: duelo de física por turnos, tipo "Soccer Star".
@@ -31,6 +51,7 @@ const DURACION_ANIM_MS = 900;
 export default function HueSoccerScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ desafioId?: string }>();
   const desafioId = params.desafioId ? Number(params.desafioId) : 0;
@@ -42,11 +63,13 @@ export default function HueSoccerScreen() {
   const [enviando, setEnviando] = useState(false);
   const [animando, setAnimando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resultado, setResultado] = useState<{ gane: boolean; perdiste: boolean; gol: 1 | 2 | null } | null>(null);
+  const [resultado, setResultado] = useState<{ resultado: 'gane' | 'perdiste' | 'empate'; gol: 1 | 2 | null } | null>(null);
+  const [restanteTurno, setRestanteTurno] = useState(SEGUNDOS_TURNO);
 
   const vivoRef = useRef(true);
   const cancelarAnimRef = useRef<(() => void) | null>(null);
   const movimientosVistosRef = useRef<number | null>(null);
+  const vencidoEnviadoRef = useRef(false);
 
   useEffect(() => {
     vivoRef.current = true;
@@ -111,9 +134,46 @@ export default function HueSoccerScreen() {
     return () => clearInterval(id);
   }, [desafio, cargar]);
 
+  // Reloj de 20 segundos: arranca/reinicia cada vez que pasa a ser mi
+  // turno, puramente visual/local (el servidor es la autoridad real, ver
+  // el guard de `soccerTurnoVencido`).
+  useEffect(() => {
+    const terminado = desafio?.estado === 'terminado' || desafio?.estado === 'expirado';
+    if (!desafio || terminado || !desafio.esMiTurno || enviando || animando) return;
+
+    setRestanteTurno(SEGUNDOS_TURNO);
+    vencidoEnviadoRef.current = false;
+    const id = setInterval(() => {
+      setRestanteTurno((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desafio?.esMiTurno, desafio?.movimientos, enviando, animando]);
+
+  useEffect(() => {
+    if (restanteTurno !== 0 || vencidoEnviadoRef.current || !desafio?.esMiTurno) return;
+    if (enviando || animando) return;
+    vencidoEnviadoRef.current = true;
+    hapticError();
+    hueplayApi.soccerTurnoVencido(desafioId).then((res) => {
+      if (!vivoRef.current) return;
+      if (res.success && res.data) {
+        const d = res.data.desafio;
+        movimientosVistosRef.current = d.movimientos;
+        setDesafio(d);
+        const t2: TableroSoccer | null = d.tablero ? JSON.parse(d.tablero) : null;
+        setTablero(t2);
+        if (t2) setPosiciones(posicionesDeTablero(t2));
+        if (res.data.resultado) setResultado({ resultado: res.data.resultado, gol: null });
+      } else {
+        cargar();
+      }
+    });
+  }, [restanteTurno, desafio?.esMiTurno, desafioId, enviando, animando, cargar]);
+
   const onTiro = useCallback(
     (fichaId: string, impulso: Vector) => {
-      if (!desafio || !tablero || !desafio.esMiTurno || enviando || animando) return;
+      if (!desafio || !tablero || !desafio.esMiTurno || enviando || animando || restanteTurno <= 0) return;
       hapticMedio();
 
       const r = simularTiro(tablero, fichaId, impulso);
@@ -131,8 +191,6 @@ export default function HueSoccerScreen() {
         if (!res.success || !res.data) {
           hapticError();
           setError(res.message ?? t('common.error'));
-          // El servidor manda la verdad: se recarga para no quedar con un
-          // estado local que ya no coincide (ej. si rechazó el tiro).
           cargar();
           return;
         }
@@ -144,12 +202,12 @@ export default function HueSoccerScreen() {
         setTablero(tableroServidor);
         if (tableroServidor) setPosiciones(posicionesDeTablero(tableroServidor));
 
-        if (res.data.gane) {
-          setResultado({ gane: res.data.gane, perdiste: res.data.perdiste, gol: res.data.gol });
+        if (res.data.resultado) {
+          setResultado({ resultado: res.data.resultado, gol: res.data.gol });
         }
       });
     },
-    [desafio, tablero, enviando, animando, desafioId, cargar, t]
+    [desafio, tablero, enviando, animando, restanteTurno, desafioId, cargar, t]
   );
 
   if (cargando) {
@@ -173,14 +231,34 @@ export default function HueSoccerScreen() {
   const susGoles = desafio.miFicha === '1' ? tablero.golesJ2 : tablero.golesJ1;
   const lado = Math.min(width - 32, 340);
 
+  // Skins: siempre determinístico por soyRetador — los dos clientes
+  // calculan lo mismo sin negociar nada por red (ver skins.ts).
+  const miSkinFicha = skinFichaValida(user?.huesoccerSkinFicha);
+  const susSkinFicha = skinFichaValida(desafio.otro.skinFicha);
+  const skinRetador = desafio.soyRetador ? miSkinFicha : susSkinFicha;
+  const skinRetado = desafio.soyRetador ? susSkinFicha : miSkinFicha;
+  const variantes = resolverSkinsPartido(skinRetador, skinRetado);
+  const skinsPorJugador: Record<1 | 2, SkinDeJugador> = {
+    1: { skin: skinRetador, variante: variantes.retador },
+    2: { skin: skinRetado, variante: variantes.retado },
+  };
+  const miSkinPelota = skinPelotaValida(user?.huesoccerSkinPelota);
+  const susSkinPelota = skinPelotaValida(desafio.otro.skinPelota);
+  const skinPelotaRetador = desafio.soyRetador ? miSkinPelota : susSkinPelota;
+  const skinPelota = skinPelotaDelPartido(skinPelotaRetador);
+
   if (terminado || resultado) {
-    const gane = resultado?.gane ?? desafio.ganadorUserId !== null;
-    const perdiste = resultado?.perdiste ?? false;
+    const r = resultado?.resultado ?? (desafio.ganadorUserId === null ? 'empate' : 'perdiste');
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
         <Ionicons name="football" size={56} color={colors.primary} />
-        <Text style={[styles.veredicto, { color: perdiste ? colors.danger : colors.success }]}>
-          {perdiste ? t('hueplay.match.perdiste') : t('hueplay.match.ganaste')}
+        <Text
+          style={[
+            styles.veredicto,
+            { color: r === 'gane' ? colors.success : r === 'perdiste' ? colors.danger : colors.text },
+          ]}
+        >
+          {r === 'gane' ? t('hueplay.match.ganaste') : r === 'perdiste' ? t('hueplay.match.perdiste') : t('hueplay.match.empate')}
         </Text>
         <Text style={{ color: colors.textMuted, fontSize: 15, marginTop: 6 }}>
           {misGoles} - {susGoles}
@@ -194,6 +272,8 @@ export default function HueSoccerScreen() {
       </ScrollView>
     );
   }
+
+  const tiempoUrgente = restanteTurno <= 5;
 
   return (
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
@@ -209,9 +289,15 @@ export default function HueSoccerScreen() {
         </View>
       </View>
 
-      <Text style={[styles.turno, { color: desafio.esMiTurno ? colors.primary : colors.textMuted }]}>
-        {desafio.esMiTurno ? t('hueplay.soccer.tuTurno') : t('hueplay.soccer.turnoRival', { rival: desafio.otro.username || desafio.otro.nombreCompleto })}
-      </Text>
+      {desafio.esMiTurno ? (
+        <Text style={[styles.turno, { color: tiempoUrgente ? colors.danger : colors.primary }]}>
+          {t('hueplay.soccer.tuTurno')} · {restanteTurno}s
+        </Text>
+      ) : (
+        <Text style={[styles.turno, { color: colors.textMuted }]}>
+          {t('hueplay.soccer.turnoRival', { rival: desafio.otro.username || desafio.otro.nombreCompleto })}
+        </Text>
+      )}
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 6 }}>{error}</Text> : null}
 
@@ -221,14 +307,19 @@ export default function HueSoccerScreen() {
           fichas={tablero.fichas}
           posiciones={posiciones}
           miFicha={desafio.miFicha === '1' ? 1 : 2}
-          activo={desafio.esMiTurno && !enviando && !animando}
+          activo={desafio.esMiTurno && !enviando && !animando && restanteTurno > 0}
           lado={lado}
           onTiro={onTiro}
+          skinsPorJugador={skinsPorJugador}
+          skinPelota={skinPelota}
         />
       </View>
 
       <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 }}>
         {t('hueplay.golesParaGanar', { n: GOLES_PARA_GANAR })}
+      </Text>
+      <Text style={{ color: colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 2 }}>
+        {t('hueplay.soccer.tiempoNeto', { usados: tablero.segundosNetosUsados, tope: TOPE_SEGUNDOS_NETOS })}
       </Text>
     </View>
   );

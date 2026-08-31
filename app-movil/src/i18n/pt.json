@@ -1165,13 +1165,43 @@
       "completo": "Caminho completo, com {{reinicios}} reinícios",
       "incompleto": "Você chegou a {{n}} de {{total}} células"
     },
+    "doku": {
+      "comoSeJuega": "Complete a grade sem repetir números em nenhuma linha, coluna ou quadrado. Vence quem resolver mais rápido.",
+      "elegirDificultad": "Escolha a dificuldade",
+      "variante6": "6x6 (rápido)",
+      "variante9facil": "9x9 fácil",
+      "variante9dificil": "9x9 difícil",
+      "avisoDuelo": "Duelo: seu rival resolve exatamente a mesma grade.",
+      "errores": "Erros",
+      "celdas": "Células",
+      "completo": "Resolvido em {{segundos}}s, com {{errores}} erros"
+    },
     "soccer": {
-      "comoSeJuega": "Arraste suas peças para trás e solte para chutar: marque no gol do rival antes que ele chegue a 3 gols. Jogado por turnos.",
+      "comoSeJuega": "Arraste suas peças para trás e solte para chutar: a bola precisa cruzar totalmente a linha do gol do rival antes que ele chegue a 3 gols. 5 peças por lado, 20 segundos para chutar na sua vez, e a partida encerra em 3 minutos líquidos de jogo.",
       "golesJ1": "Você",
       "golesJ2": "Rival",
       "tuTurno": "Sua vez: escolha uma peça e chute",
       "turnoRival": "Vez de {{rival}}",
-      "gol": "Gol!"
+      "gol": "Gol!",
+      "tiempoNeto": "Tempo líquido usado: {{usados}}/{{tope}}s",
+      "skinsTitulo": "Skins do HueSoccer",
+      "skinsAyuda": "Escolha a aparência das suas peças e da sua bola. É uma preferência da sua conta, aplicada a todas as suas partidas.",
+      "skinsFichaTitulo": "Peças",
+      "skinsPelotaTitulo": "Bola",
+      "skinsFicha": {
+        "clasica": "Clássica",
+        "rayada": "Listrada",
+        "lunares": "Poá",
+        "bicolor": "Bicolor",
+        "estrella": "Estrela"
+      },
+      "skinsPelota": {
+        "clasica": "Clássica",
+        "cueroRetro": "Couro retrô",
+        "tricolor": "Tricolor",
+        "arcoiris": "Arco-íris",
+        "lunar": "Lunar"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} perguntas sobre cuidado animal, {{s}} segundos cada. No final você vê o que acertou e por quê.",

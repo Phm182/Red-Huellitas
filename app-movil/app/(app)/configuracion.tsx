@@ -151,6 +151,7 @@ export default function ConfiguracionScreen() {
     { labelKey: 'perfil.myProfile', route: '/(app)/perfil', icon: 'person-outline' },
     { labelKey: 'settings.verificationStatusTitle', route: '/(app)/ajustes/verificacion-estado', icon: 'shield-checkmark-outline' },
     { labelKey: 'settings.whatsappTitle', route: '/(app)/ajustes/whatsapp', icon: 'logo-whatsapp' },
+    { labelKey: 'hueplay.soccer.skinsTitulo', route: '/(app)/ajustes/huesoccer-skins', icon: 'football-outline' },
     { labelKey: 'suscripcion.tituloLista', route: '/(app)/suscripcion', icon: 'diamond-outline' },
   ];
 

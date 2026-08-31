@@ -1159,13 +1159,43 @@
       "completo": "道を完成しました（やり直し {{reinicios}} 回）",
       "incompleto": "{{total}} マス中 {{n}} マスに到達"
     },
+    "doku": {
+      "comoSeJuega": "同じ行・列・ブロックに数字が重ならないようにグリッドを埋めてください。最速で解いた人の勝ちです。",
+      "elegirDificultad": "難易度を選んでください",
+      "variante6": "6x6（速い）",
+      "variante9facil": "9x9 簡単",
+      "variante9dificil": "9x9 難しい",
+      "avisoDuelo": "対戦: 相手とまったく同じグリッドを解きます。",
+      "errores": "ミス",
+      "celdas": "マス",
+      "completo": "{{segundos}}秒で解答（ミス {{errores}} 回）"
+    },
     "soccer": {
-      "comoSeJuega": "自分の駒を後ろに引いて離すと蹴られます。相手が3ゴール決める前に相手のゴールに入れましょう。ターン制です。",
+      "comoSeJuega": "自分の駒を後ろに引いて離すと蹴られます。ボールが完全に相手のゴールラインを越えたらゴールです。相手が3ゴール決める前に決めましょう。各チーム5個の駒、自分の番では20秒以内にシュート、試合は正味3分で終了します。",
       "golesJ1": "あなた",
       "golesJ2": "相手",
       "tuTurno": "あなたの番: 駒を選んで蹴ってください",
       "turnoRival": "{{rival}}の番",
-      "gol": "ゴール！"
+      "gol": "ゴール！",
+      "tiempoNeto": "使用した正味時間: {{usados}}/{{tope}}秒",
+      "skinsTitulo": "HueSoccerのスキン",
+      "skinsAyuda": "駒とボールの見た目を選べます。アカウント設定なので、すべての試合に適用されます。",
+      "skinsFichaTitulo": "駒",
+      "skinsPelotaTitulo": "ボール",
+      "skinsFicha": {
+        "clasica": "クラシック",
+        "rayada": "ストライプ",
+        "lunares": "水玉",
+        "bicolor": "ツートン",
+        "estrella": "スター"
+      },
+      "skinsPelota": {
+        "clasica": "クラシック",
+        "cueroRetro": "レトロレザー",
+        "tricolor": "トリコロール",
+        "arcoiris": "レインボー",
+        "lunar": "ルナー"
+      }
     },
     "trivia": {
       "comoSeJuega": "動物のケアに関する {{n}} 問、1問 {{s}} 秒です。最後に正解と理由を確認できます。",

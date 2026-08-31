@@ -1165,13 +1165,43 @@
       "completo": "Chemin terminé, avec {{reinicios}} redémarrages",
       "incompleto": "Tu as atteint {{n}} cases sur {{total}}"
     },
+    "doku": {
+      "comoSeJuega": "Remplis la grille sans répéter un chiffre dans une ligne, une colonne ou un carré. Le plus rapide à la résoudre gagne.",
+      "elegirDificultad": "Choisis la difficulté",
+      "variante6": "6x6 (rapide)",
+      "variante9facil": "9x9 facile",
+      "variante9dificil": "9x9 difficile",
+      "avisoDuelo": "Duel : ton adversaire résout exactement la même grille.",
+      "errores": "Erreurs",
+      "celdas": "Cases",
+      "completo": "Résolu en {{segundos}}s, avec {{errores}} erreurs"
+    },
     "soccer": {
-      "comoSeJuega": "Tire tes pions vers l'arrière et relâche pour tirer : marque dans le but adverse avant qu'il n'atteigne 3 buts. Ça se joue au tour par tour.",
+      "comoSeJuega": "Tire tes pions vers l'arrière et relâche pour tirer : le ballon doit franchir entièrement la ligne de but adverse avant que l'adversaire n'atteigne 3 buts. 5 pions par équipe, 20 secondes pour tirer à ton tour, et le match s'arrête à 3 minutes de jeu net.",
       "golesJ1": "Toi",
       "golesJ2": "Adversaire",
       "tuTurno": "Ton tour : choisis un pion et tire",
       "turnoRival": "Tour de {{rival}}",
-      "gol": "But !"
+      "gol": "But !",
+      "tiempoNeto": "Temps de jeu net utilisé : {{usados}}/{{tope}}s",
+      "skinsTitulo": "Skins HueSoccer",
+      "skinsAyuda": "Choisis l'apparence de tes pions et de ton ballon. C'est une préférence de compte, appliquée à tous tes matchs.",
+      "skinsFichaTitulo": "Pions",
+      "skinsPelotaTitulo": "Ballon",
+      "skinsFicha": {
+        "clasica": "Classique",
+        "rayada": "Rayée",
+        "lunares": "À pois",
+        "bicolor": "Bicolore",
+        "estrella": "Étoile"
+      },
+      "skinsPelota": {
+        "clasica": "Classique",
+        "cueroRetro": "Cuir rétro",
+        "tricolor": "Tricolore",
+        "arcoiris": "Arc-en-ciel",
+        "lunar": "Lunaire"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} questions sur les soins aux animaux, {{s}} secondes chacune. À la fin tu vois tes réponses et pourquoi.",

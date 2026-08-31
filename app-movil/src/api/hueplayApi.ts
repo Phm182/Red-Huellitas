@@ -146,6 +146,18 @@ export const hueplayApi = {
   soccerMover: (desafioId: number, tableroNuevo: string) =>
     apiPost<HuePlaySoccerTurno>('ajax/hueplay/soccer_mover.php', { desafioId, tableroNuevo }, true),
 
+  /** Se agotaron los 20 segundos del turno: el servidor valida de verdad que pasó el tiempo. */
+  soccerTurnoVencido: (desafioId: number) =>
+    apiPost<HuePlaySoccerTurno>('ajax/hueplay/soccer_turno_vencido.php', { desafioId }, true),
+
+  /** Preferencia fija de skin de HueSoccer (fichas/pelota), se usa en todos los partidos. */
+  guardarHueSoccerSkin: (skinFicha?: string, skinPelota?: string) =>
+    apiPost<{ skinFicha: string; skinPelota: string }>(
+      'ajax/perfil/huesoccer_skin_guardar.php',
+      { ...(skinFicha ? { skinFicha } : {}), ...(skinPelota ? { skinPelota } : {}) },
+      true
+    ),
+
   /** Estado de un duelo de Ajedrez, con los movimientos legales y si estoy en jaque. */
   verDesafioAjedrez: (desafioId: number) =>
     apiGet<HuePlayAjedrezVista>('ajax/hueplay/ajedrez_ver.php', { desafioId }, true),

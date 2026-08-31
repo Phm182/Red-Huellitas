@@ -132,6 +132,17 @@ const JUEGOS: JuegoDef[] = [
     duelo: true,
   },
   {
+    id: 'huedoku6',
+    titulo: 'HueDoku',
+    bajada: 'Sudoku de 6x6 o 9x9, con dificultad a elegir. Se puede jugar en duelo.',
+    icono: 'grid-outline',
+    color: '#D9834F',
+    // Una sola tarjeta para las 3 variantes: el selector de dificultad vive
+    // adentro de huedoku.tsx (ver plan C5), no hace falta triplicar la tarjeta.
+    ruta: '/(app)/hueplay/huedoku',
+    duelo: true,
+  },
+  {
     id: 'huegotchi',
     titulo: 'HueGotchi',
     bajada: 'Cuidá a tu mascota: alimentala, jugá, bañala y enseñale trucos.',
@@ -293,6 +304,19 @@ export default function HuePlayScreen() {
               />
             ) : null}
           </View>
+          {j.id === 'huesoccer' ? (
+            <Pressable
+              hitSlop={10}
+              onPress={(e) => {
+                e.stopPropagation();
+                hapticLeve();
+                router.push('/(app)/ajustes/huesoccer-skins' as never);
+              }}
+              style={[styles.skinBoton, { backgroundColor: colors.primarySoft }]}
+            >
+              <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
+            </Pressable>
+          ) : null}
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
       ))}
@@ -393,6 +417,7 @@ const styles = StyleSheet.create({
   },
   tarjetaOff: { opacity: 0.6 },
   icono: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  skinBoton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   texto: { flex: 1 },
   tarjetaTitulo: { fontSize: 16, fontFamily: fonts.bodySemi, marginBottom: 2 },
   badge: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },

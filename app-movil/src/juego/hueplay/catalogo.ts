@@ -27,6 +27,9 @@ export const JUEGOS_CATALOGO: JuegoCatalogoItem[] = [
   { codigo: 'hueajedrez', titulo: 'HueAjedrez', icono: 'grid-outline', color: '#7B9463' },
   { codigo: 'hueludo', titulo: 'HueLudo', icono: 'dice', color: '#B36FE0', esSala: true },
   { codigo: 'huerummy', titulo: 'HueRummy', icono: 'albums', color: '#4CC3A5', esSala: true },
+  { codigo: 'huedoku6', titulo: 'HueDoku 6x6', icono: 'grid-outline', color: '#D9834F' },
+  { codigo: 'huedoku9facil', titulo: 'HueDoku 9x9 Fácil', icono: 'grid-outline', color: '#D9834F' },
+  { codigo: 'huedoku9dificil', titulo: 'HueDoku 9x9 Difícil', icono: 'grid-outline', color: '#D9834F' },
 ];
 
 export function juegoDelCatalogo(codigo: string): JuegoCatalogoItem | undefined {

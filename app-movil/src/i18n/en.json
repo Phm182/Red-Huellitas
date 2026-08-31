@@ -1296,13 +1296,43 @@
       "completo": "You completed the path, with {{reinicios}} restarts",
       "incompleto": "You reached {{n}} of {{total}} cells"
     },
+    "doku": {
+      "comoSeJuega": "Fill the grid without repeating any number in a row, column, or box. Whoever solves it fastest wins.",
+      "elegirDificultad": "Choose the difficulty",
+      "variante6": "6x6 (quick)",
+      "variante9facil": "9x9 easy",
+      "variante9dificil": "9x9 hard",
+      "avisoDuelo": "Duel: your rival solves the exact same grid.",
+      "errores": "Errors",
+      "celdas": "Cells",
+      "completo": "Solved in {{segundos}}s, with {{errores}} errors"
+    },
     "soccer": {
-      "comoSeJuega": "Drag your pieces backward and release to kick them: score in your rival's goal before they reach 3 goals. Played in turns.",
+      "comoSeJuega": "Drag your pieces backward and release to kick them: get the ball fully across your rival's goal line before they reach 3 goals. 5 pieces per side, 20 seconds to shoot on your turn, and the match cuts off at 3 net minutes of play.",
       "golesJ1": "You",
       "golesJ2": "Rival",
       "tuTurno": "Your turn: pick a piece and shoot",
       "turnoRival": "{{rival}}'s turn",
-      "gol": "Goal!"
+      "gol": "Goal!",
+      "tiempoNeto": "Net time used: {{usados}}/{{tope}}s",
+      "skinsTitulo": "HueSoccer skins",
+      "skinsAyuda": "Choose how your pieces and ball look. It's an account preference, applied to all your matches.",
+      "skinsFichaTitulo": "Pieces",
+      "skinsPelotaTitulo": "Ball",
+      "skinsFicha": {
+        "clasica": "Classic",
+        "rayada": "Striped",
+        "lunares": "Polka dot",
+        "bicolor": "Two-tone",
+        "estrella": "Star"
+      },
+      "skinsPelota": {
+        "clasica": "Classic",
+        "cueroRetro": "Retro leather",
+        "tricolor": "Tri-color",
+        "arcoiris": "Rainbow",
+        "lunar": "Lunar"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} animal-care questions, {{s}} seconds each. At the end you see what you got right and why.",

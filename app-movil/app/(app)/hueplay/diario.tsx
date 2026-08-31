@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { DiarioHoy, DiarioPeriodo, DiarioRanking, DiarioRankingPeriodo, DiarioReto } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -20,18 +21,30 @@ const RUTAS: Record<string, string> = {
   huematch: '/(app)/hueplay/huematch',
   huememo: '/(app)/hueplay/huememo',
   huetrivia: '/(app)/hueplay/huetrivia',
+  huezip: '/(app)/hueplay/huezip',
+  huedoku6: '/(app)/hueplay/huedoku',
+  huedoku9facil: '/(app)/hueplay/huedoku',
+  huedoku9dificil: '/(app)/hueplay/huedoku',
 };
 
 const COLORES: Record<string, string> = {
   huematch: '#E8577E',
   huememo: '#4CC3A5',
   huetrivia: '#B36FE0',
+  huezip: '#F0A830',
+  huedoku6: '#D9834F',
+  huedoku9facil: '#D9834F',
+  huedoku9dificil: '#D9834F',
 };
 
 const ICONOS: Record<string, keyof typeof Ionicons.glyphMap> = {
   huematch: 'grid',
   huememo: 'copy',
   huetrivia: 'help-circle',
+  huezip: 'trail-sign',
+  huedoku6: 'grid-outline',
+  huedoku9facil: 'grid-outline',
+  huedoku9dificil: 'grid-outline',
 };
 
 /**
@@ -132,7 +145,11 @@ export default function DiarioScreen() {
     // mismo tablero que el de todos. Si no vino, es porque ya se jugó.
     if (!ruta || reto.semilla === undefined) return;
     hapticLeve();
-    router.push(`${ruta}?diario=1&semilla=${reto.semilla}` as never);
+    // Las 3 variantes de HueDoku comparten pantalla (`huedoku.tsx`) — la
+    // variante viaja como parámetro aparte, derivada del propio juegoCodigo.
+    const variante = variantePorJuegoCodigo(reto.juegoCodigo);
+    const extra = variante ? `&variante=${variante}` : '';
+    router.push(`${ruta}?diario=1&semilla=${reto.semilla}${extra}` as never);
   }, []);
 
   if (cargando) {

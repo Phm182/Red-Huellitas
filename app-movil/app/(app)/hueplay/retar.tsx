@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
@@ -29,6 +30,10 @@ function rutaDelDesafio(d: HuePlayDesafio): { pathname: string; params: Record<s
   }
   if (d.juegoCodigo === 'huesoccer') {
     return { pathname: '/(app)/hueplay/huesoccer', params: { desafioId: d.desafioId } };
+  }
+  const varianteDoku = variantePorJuegoCodigo(d.juegoCodigo);
+  if (varianteDoku) {
+    return { pathname: '/(app)/hueplay/huedoku', params: { desafioId: d.desafioId, semilla: d.semilla, variante: varianteDoku } };
   }
   const rutas: Record<string, string> = {
     huememo: '/(app)/hueplay/huememo',
@@ -63,7 +68,19 @@ export default function RetarScreen() {
   // El juego llega por parámetro: se puede tener un duelo abierto de HueMatch y
   // otro de HueConecta con la misma persona, así que la lista de rivales
   // depende de cuál se está por retar.
-  const CODIGOS = ['huematch', 'huememo', 'huetrivia', 'huezip', 'hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
+  const CODIGOS = [
+    'huematch',
+    'huememo',
+    'huetrivia',
+    'huezip',
+    'hueconecta',
+    'huedamas',
+    'hueajedrez',
+    'huesoccer',
+    'huedoku6',
+    'huedoku9facil',
+    'huedoku9dificil',
+  ];
   const JUEGO = CODIGOS.includes(params.juego ?? '') ? params.juego! : 'huematch';
   const esDeTurnos = JUEGOS_TURNOS.includes(JUEGO);
   const tieneIA = JUEGOS_IA.includes(JUEGO);

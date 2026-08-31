@@ -1159,13 +1159,43 @@
       "completo": "경로를 완성했습니다 (재시작 {{reinicios}}회)",
       "incompleto": "{{total}}칸 중 {{n}}칸 도달"
     },
+    "doku": {
+      "comoSeJuega": "같은 행, 열, 박스에 숫자가 겹치지 않도록 격자를 채우세요. 가장 빨리 푸는 사람이 승리합니다.",
+      "elegirDificultad": "난이도를 선택하세요",
+      "variante6": "6x6 (빠름)",
+      "variante9facil": "9x9 쉬움",
+      "variante9dificil": "9x9 어려움",
+      "avisoDuelo": "대결: 상대와 완전히 같은 격자를 풉니다.",
+      "errores": "오류",
+      "celdas": "칸",
+      "completo": "{{segundos}}초에 해결 (오류 {{errores}}회)"
+    },
     "soccer": {
-      "comoSeJuega": "말을 뒤로 당겼다 놓아서 슛하세요: 상대가 3골을 넣기 전에 상대 골대에 넣으세요. 턴제로 진행됩니다.",
+      "comoSeJuega": "말을 뒤로 당겼다 놓아서 슛하세요: 공이 상대 골라인을 완전히 넘어야 골입니다. 상대가 3골을 넣기 전에 넣으세요. 팀당 말 5개, 내 차례에는 슛까지 20초, 경기는 순 3분이 지나면 종료됩니다.",
       "golesJ1": "나",
       "golesJ2": "상대",
       "tuTurno": "당신의 차례: 말을 골라 슛하세요",
       "turnoRival": "{{rival}}의 차례",
-      "gol": "골!"
+      "gol": "골!",
+      "tiempoNeto": "사용한 순 시간: {{usados}}/{{tope}}초",
+      "skinsTitulo": "HueSoccer 스킨",
+      "skinsAyuda": "말과 공의 모양을 선택하세요. 계정 설정이라 모든 경기에 적용됩니다.",
+      "skinsFichaTitulo": "말",
+      "skinsPelotaTitulo": "공",
+      "skinsFicha": {
+        "clasica": "클래식",
+        "rayada": "줄무늬",
+        "lunares": "물방울무늬",
+        "bicolor": "투톤",
+        "estrella": "별"
+      },
+      "skinsPelota": {
+        "clasica": "클래식",
+        "cueroRetro": "레트로 가죽",
+        "tricolor": "삼색",
+        "arcoiris": "레인보우",
+        "lunar": "루나"
+      }
     },
     "trivia": {
       "comoSeJuega": "동물 돌봄 문제 {{n}}개, 각 {{s}}초입니다. 끝나면 맞힌 문제와 이유를 볼 수 있습니다.",

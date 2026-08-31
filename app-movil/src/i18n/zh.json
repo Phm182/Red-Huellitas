@@ -1159,13 +1159,43 @@
       "completo": "路径完成，重新开始 {{reinicios}} 次",
       "incompleto": "已到达 {{total}} 格中的 {{n}} 格"
     },
+    "doku": {
+      "comoSeJuega": "填满网格，让每行、每列、每个宫格里的数字都不重复。谁先解出来谁赢。",
+      "elegirDificultad": "选择难度",
+      "variante6": "6x6（快速）",
+      "variante9facil": "9x9 简单",
+      "variante9dificil": "9x9 困难",
+      "avisoDuelo": "对战：对手要解的网格和你的完全一样。",
+      "errores": "错误",
+      "celdas": "格数",
+      "completo": "用时 {{segundos}} 秒完成，错误 {{errores}} 次"
+    },
     "soccer": {
-      "comoSeJuega": "把你的棋子向后拖再松手即可射门：在对手打进3球之前先攻入对方球门。回合制进行。",
+      "comoSeJuega": "把你的棋子向后拖再松手即可射门：球必须完全越过对方球门线才算进球，要在对手打进3球之前完成。每方5个棋子，轮到你时有20秒时间射门，比赛净时长达到3分钟即结束。",
       "golesJ1": "你",
       "golesJ2": "对手",
       "tuTurno": "轮到你：选一个棋子射门",
       "turnoRival": "轮到{{rival}}",
-      "gol": "进球！"
+      "gol": "进球！",
+      "tiempoNeto": "已用净时长：{{usados}}/{{tope}}秒",
+      "skinsTitulo": "HueSoccer 皮肤",
+      "skinsAyuda": "选择你的棋子和球的外观。这是账户偏好设置，会应用到你所有的比赛。",
+      "skinsFichaTitulo": "棋子",
+      "skinsPelotaTitulo": "球",
+      "skinsFicha": {
+        "clasica": "经典",
+        "rayada": "条纹",
+        "lunares": "波点",
+        "bicolor": "双色",
+        "estrella": "星形"
+      },
+      "skinsPelota": {
+        "clasica": "经典",
+        "cueroRetro": "复古皮革",
+        "tricolor": "三色",
+        "arcoiris": "彩虹",
+        "lunar": "月球"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} 道动物照护题，每题 {{s}} 秒。结束后可以看到答对了哪些以及原因。",

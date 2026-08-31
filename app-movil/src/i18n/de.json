@@ -1165,13 +1165,43 @@
       "completo": "Pfad abgeschlossen, mit {{reinicios}} Neustarts",
       "incompleto": "{{n}} von {{total}} Feldern erreicht"
     },
+    "doku": {
+      "comoSeJuega": "Fülle das Raster, ohne eine Zahl in einer Zeile, Spalte oder einem Block zu wiederholen. Wer es am schnellsten löst, gewinnt.",
+      "elegirDificultad": "Wähle den Schwierigkeitsgrad",
+      "variante6": "6x6 (schnell)",
+      "variante9facil": "9x9 leicht",
+      "variante9dificil": "9x9 schwer",
+      "avisoDuelo": "Duell: Dein Gegner löst genau dasselbe Raster.",
+      "errores": "Fehler",
+      "celdas": "Felder",
+      "completo": "Gelöst in {{segundos}}s, mit {{errores}} Fehlern"
+    },
     "soccer": {
-      "comoSeJuega": "Ziehe deine Figuren nach hinten und lass los, um zu schießen: erziele ein Tor im gegnerischen Tor, bevor der Gegner 3 Tore erzielt. Rundenbasiert.",
+      "comoSeJuega": "Ziehe deine Figuren nach hinten und lass los, um zu schießen: Der Ball muss komplett die gegnerische Torlinie überqueren, bevor der Gegner 3 Tore erzielt. 5 Figuren pro Seite, 20 Sekunden Zeit zum Schießen pro Zug, und das Spiel endet nach 3 Minuten reiner Spielzeit.",
       "golesJ1": "Du",
       "golesJ2": "Gegner",
       "tuTurno": "Dein Zug: wähle eine Figur und schieße",
       "turnoRival": "Zug von {{rival}}",
-      "gol": "Tor!"
+      "gol": "Tor!",
+      "tiempoNeto": "Genutzte Spielzeit: {{usados}}/{{tope}}s",
+      "skinsTitulo": "HueSoccer-Skins",
+      "skinsAyuda": "Wähle, wie deine Figuren und dein Ball aussehen. Das ist eine Kontoeinstellung, die für alle deine Spiele gilt.",
+      "skinsFichaTitulo": "Figuren",
+      "skinsPelotaTitulo": "Ball",
+      "skinsFicha": {
+        "clasica": "Klassisch",
+        "rayada": "Gestreift",
+        "lunares": "Gepunktet",
+        "bicolor": "Zweifarbig",
+        "estrella": "Stern"
+      },
+      "skinsPelota": {
+        "clasica": "Klassisch",
+        "cueroRetro": "Retro-Leder",
+        "tricolor": "Dreifarbig",
+        "arcoiris": "Regenbogen",
+        "lunar": "Mond"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} Fragen zur Tierpflege, je {{s}} Sekunden. Am Ende siehst du, was richtig war und warum.",

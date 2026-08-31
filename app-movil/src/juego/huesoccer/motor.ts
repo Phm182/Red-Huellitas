@@ -11,7 +11,14 @@
  */
 
 export type Vector = { x: number; y: number };
-export type Cancha = { ancho: number; alto: number; radioFicha: number; radioPelota: number };
+export type Cancha = {
+  ancho: number;
+  alto: number;
+  radioFicha: number;
+  radioPelota: number;
+  /** Cuánto se extiende el arco (y la red) por FUERA de la cancha de siempre. */
+  profundidadArco: number;
+};
 export type FichaSoccer = { j: 1 | 2; n: number; x: number; y: number };
 export type TableroSoccer = {
   fichas: FichaSoccer[];
@@ -19,12 +26,30 @@ export type TableroSoccer = {
   golesJ1: number;
   golesJ2: number;
   cancha: Cancha;
+  /** Epoch segundos de cuándo arrancó el turno actual — lo pisa el servidor en cada avance. */
+  turnoEmpezoEn: number;
+  /** Acumulado compartido entre los dos jugadores, tope TOPE_SEGUNDOS_NETOS. */
+  segundosNetosUsados: number;
 };
 
-export const CANCHA: Cancha = { ancho: 300, alto: 500, radioFicha: 18, radioPelota: 10 };
+export const CANCHA: Cancha = {
+  ancho: 300,
+  alto: 500,
+  radioFicha: 18,
+  radioPelota: 10,
+  // Bien más grande que 2*radioPelota (lo que hace falta para cruzar
+  // entera la línea y ya ser gol) a propósito: es un guard defensivo para
+  // casos patológicos, nunca debería intervenir en una jugada real — ver
+  // el comentario de rebotePared().
+  profundidadArco: 60,
+};
 export const GOLES_PARA_GANAR = 3;
 /** Ancho del arco, centrado en cada borde angosto de la cancha. */
 export const ANCHO_ARCO = CANCHA.ancho * 0.4;
+/** Cuánto tiempo real tiene cada jugador para tirar una vez que le toca. */
+export const SEGUNDOS_POR_TURNO = 20;
+/** Tope de tiempo neto de juego del partido entero, sumado entre los dos. */
+export const TOPE_SEGUNDOS_NETOS = 180;
 
 const FRICCION = 0.96;
 const VEL_MINIMA = 0.05;
@@ -37,18 +62,35 @@ function magnitud(v: Vector): number {
   return Math.sqrt(v.x * v.x + v.y * v.y);
 }
 
-/** Tablero inicial: 3 fichas por jugador en formación fija, pelota al centro. */
+/**
+ * Tablero inicial: 5 fichas por jugador (2 atrás + 3 adelante, formación
+ * espejada), pelota al centro. `j:1` ataca hacia `y=alto`, `j:2` hacia `y=0`.
+ */
 export function tableroInicial(): TableroSoccer {
   const { ancho, alto } = CANCHA;
   const fichas: FichaSoccer[] = [
-    { j: 1, n: 0, x: ancho * 0.3, y: alto * 0.22 },
-    { j: 1, n: 1, x: ancho * 0.5, y: alto * 0.14 },
-    { j: 1, n: 2, x: ancho * 0.7, y: alto * 0.22 },
-    { j: 2, n: 0, x: ancho * 0.3, y: alto * 0.78 },
-    { j: 2, n: 1, x: ancho * 0.5, y: alto * 0.86 },
-    { j: 2, n: 2, x: ancho * 0.7, y: alto * 0.78 },
+    // j:1 — atrás cerca de su propio arco (y=0), adelante más lejos de él.
+    { j: 1, n: 0, x: ancho * 0.35, y: alto * 0.08 },
+    { j: 1, n: 1, x: ancho * 0.65, y: alto * 0.08 },
+    { j: 1, n: 2, x: ancho * 0.2, y: alto * 0.24 },
+    { j: 1, n: 3, x: ancho * 0.5, y: alto * 0.24 },
+    { j: 1, n: 4, x: ancho * 0.8, y: alto * 0.24 },
+    // j:2 — espejo vertical de lo de arriba.
+    { j: 2, n: 0, x: ancho * 0.35, y: alto * 0.92 },
+    { j: 2, n: 1, x: ancho * 0.65, y: alto * 0.92 },
+    { j: 2, n: 2, x: ancho * 0.2, y: alto * 0.76 },
+    { j: 2, n: 3, x: ancho * 0.5, y: alto * 0.76 },
+    { j: 2, n: 4, x: ancho * 0.8, y: alto * 0.76 },
   ];
-  return { fichas, pelota: { x: ancho / 2, y: alto / 2 }, golesJ1: 0, golesJ2: 0, cancha: CANCHA };
+  return {
+    fichas,
+    pelota: { x: ancho / 2, y: alto / 2 },
+    golesJ1: 0,
+    golesJ2: 0,
+    cancha: CANCHA,
+    turnoEmpezoEn: Math.floor(Date.now() / 1000),
+    segundosNetosUsados: 0,
+  };
 }
 
 function idFicha(f: FichaSoccer): string {
@@ -72,15 +114,27 @@ function dentroDeLaFranjaDelArco(x: number, cancha: Cancha): boolean {
 }
 
 /**
- * Rebote elástico contra las 4 paredes, salvo que sea la pelota cruzando la
- * franja del arco por un borde angosto — ahí es gol, no rebote.
+ * Rebote elástico contra las 4 paredes — salvo la pelota dentro de la
+ * franja del arco, donde hay dos zonas en vez de una pared simple:
  *
- * El chequeo de gol usa EXACTAMENTE la misma condición de borde que el
- * rebote (`pos ± radio` cruzando el límite de la cancha), no un umbral
- * aparte: si se usaran dos umbrales distintos, el que se cruza primero
- * "gana" sin que tenga que ver con si la pelota entró o no — el rebote
- * podía terminar interceptando la pelota antes de que llegara a contarse
- * como gol.
+ * 1. Campo abierto, o tocó la línea FUERA de la franja del arco: rebote de
+ *    banda de siempre (ahí no hay arco).
+ * 2. Tocó la línea DENTRO de la franja del arco:
+ *    a. Si el borde TRASERO de la pelota ya cruzó esa línea (la pelota
+ *       entera ya pasó) → gol, se corta ahí.
+ *    b. Si no, sigue de largo sin rebotar — va "entrando" a la red, y una
+ *       pelota que ya tocó la línea sólo puede seguir de largo (cruzar del
+ *       todo) o frenarse por fricción antes de cruzar (queda en reposo
+ *       dentro de la red sin haber sido gol — caso raro y aceptado, ver
+ *       plan). Nunca "rebota hacia afuera": un arco de verdad no funciona
+ *       así, y las fichas nunca entran a esta zona (no las hay ahí atrás)
+ *       así que no hay con qué chocar tampoco.
+ *    c. Guard puramente defensivo, no una mecánica real: si por algún
+ *       impulso extremo la pelota igual llegara más allá de
+ *       `profundidadArco` (mucho más lejos de lo que cualquier tiro
+ *       necesita para ya haber sido gol — cruzar entera son sólo
+ *       `2*radioPelota`), se la frena en seco ahí (clamp + velocidad en
+ *       cero) para que nunca se vaya de la cancha en un caso patológico.
  */
 function rebotePared(c: Cuerpo, cancha: Cancha, esPelota: boolean): 1 | 2 | null {
   if (c.pos.x - c.radio < 0) {
@@ -91,15 +145,39 @@ function rebotePared(c: Cuerpo, cancha: Cancha, esPelota: boolean): 1 | 2 | null
     c.vel.x = -Math.abs(c.vel.x);
   }
 
+  const enFranja = esPelota && dentroDeLaFranjaDelArco(c.pos.x, cancha);
+  const fondo = cancha.profundidadArco;
+
+  // Arco de arriba (y=0), gol para j:2.
   if (c.pos.y - c.radio < 0) {
-    if (esPelota && dentroDeLaFranjaDelArco(c.pos.x, cancha)) return 2; // cruzó el arco de arriba (de j:1) -> gol para j:2
-    c.pos.y = c.radio;
-    c.vel.y = Math.abs(c.vel.y);
-  } else if (c.pos.y + c.radio > cancha.alto) {
-    if (esPelota && dentroDeLaFranjaDelArco(c.pos.x, cancha)) return 1; // cruzó el arco de abajo (de j:2) -> gol para j:1
-    c.pos.y = cancha.alto - c.radio;
-    c.vel.y = -Math.abs(c.vel.y);
+    if (!enFranja) {
+      c.pos.y = c.radio;
+      c.vel.y = Math.abs(c.vel.y);
+      return null;
+    }
+    if (c.pos.y + c.radio < 0) return 2; // borde trasero ya cruzó: gol
+    if (c.pos.y - c.radio <= -fondo) {
+      c.pos.y = -fondo + c.radio; // guard defensivo, no una mecánica real
+      c.vel = { x: 0, y: 0 };
+    }
+    return null;
   }
+
+  // Arco de abajo (y=alto), gol para j:1.
+  if (c.pos.y + c.radio > cancha.alto) {
+    if (!enFranja) {
+      c.pos.y = cancha.alto - c.radio;
+      c.vel.y = -Math.abs(c.vel.y);
+      return null;
+    }
+    if (c.pos.y - c.radio > cancha.alto) return 1; // borde trasero ya cruzó: gol
+    if (c.pos.y + c.radio >= cancha.alto + fondo) {
+      c.pos.y = cancha.alto + fondo - c.radio; // guard defensivo, no una mecánica real
+      c.vel = { x: 0, y: 0 };
+    }
+    return null;
+  }
+
   return null;
 }
 
@@ -205,6 +283,10 @@ export function simularTiro(estadoInicial: TableroSoccer, fichaId: string, impul
   // este motor) y recién ahí recentra la pelota y suma el contador antes de
   // guardar. Si el cliente recentrara acá, el servidor ya no tendría cómo
   // verificar nada: sólo vería una pelota prolijamente en el medio.
+  //
+  // `turnoEmpezoEn`/`segundosNetosUsados` tampoco los toca la física — los
+  // decide el servidor al persistir (ver soccer_mover.php), así que viajan
+  // sin cambios desde el estado inicial.
   return {
     estadoFinal: {
       fichas,
@@ -212,6 +294,8 @@ export function simularTiro(estadoInicial: TableroSoccer, fichaId: string, impul
       golesJ1: estadoInicial.golesJ1,
       golesJ2: estadoInicial.golesJ2,
       cancha,
+      turnoEmpezoEn: estadoInicial.turnoEmpezoEn,
+      segundosNetosUsados: estadoInicial.segundosNetosUsados,
     },
     trayectorias,
     gol,

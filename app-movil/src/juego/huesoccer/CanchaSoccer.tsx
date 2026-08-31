@@ -4,7 +4,10 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeProvider';
+import { FichaSkinSvg } from './FichaSkinSvg';
 import { Cancha, FichaSoccer, TableroSoccer, Vector } from './motor';
+import { PelotaSkinSvg } from './PelotaSkinSvg';
+import { SkinFichaId, SkinPelotaId, VarianteSkin } from './skins';
 
 export type Posiciones = Record<string, Vector>;
 
@@ -78,6 +81,8 @@ export function reproducir(
   };
 }
 
+export type SkinDeJugador = { skin: SkinFichaId; variante: VarianteSkin };
+
 type Props = {
   cancha: Cancha;
   fichas: FichaSoccer[];
@@ -87,11 +92,31 @@ type Props = {
   activo: boolean;
   lado: number;
   onTiro: (fichaId: string, impulso: Vector) => void;
+  skinsPorJugador: Record<1 | 2, SkinDeJugador>;
+  skinPelota: SkinPelotaId;
 };
 
 /** Cuánto se estira el arrastre antes de tirar: más lejos, más potencia. */
 const FACTOR_POTENCIA = 0.18;
 const POTENCIA_MAXIMA = 22;
+const COLOR_J1 = '#E8577E';
+const COLOR_J2 = '#5B9AD6';
+
+/** Patrón de red: unas líneas cruzadas dentro del rectángulo del arco. */
+function Red({ x, y, ancho, alto }: { x: number; y: number; ancho: number; alto: number }) {
+  const lineas = 6;
+  const els = [];
+  for (let i = 0; i <= lineas; i++) {
+    const fx = x + (ancho / lineas) * i;
+    els.push(<Line key={`v${i}`} x1={fx} y1={y} x2={fx} y2={y + alto} stroke="#ffffff40" strokeWidth={1} />);
+  }
+  const filas = 4;
+  for (let i = 0; i <= filas; i++) {
+    const fy = y + (alto / filas) * i;
+    els.push(<Line key={`h${i}`} x1={x} y1={fy} x2={x + ancho} y2={fy} stroke="#ffffff40" strokeWidth={1} />);
+  }
+  return <>{els}</>;
+}
 
 /**
  * Cancha de HueSoccer y el gesto de tiro.
@@ -106,16 +131,35 @@ const POTENCIA_MAXIMA = 22;
  * contraria a donde se quiere tirar) y al soltar sale disparada hacia el
  * lado opuesto al arrastre, con una potencia proporcional a cuánto se
  * estiró.
+ *
+ * La cancha de juego (`cancha.ancho x cancha.alto`) no cambia de escala —
+ * la "profundidad de arco" (donde vive la pelota cuando entra a la boca
+ * del arco, ver el motor) se dibuja como una franja EXTRA arriba y abajo,
+ * nunca escala el resto.
  */
-export function CanchaSoccer({ cancha, fichas, posiciones, miFicha, activo, lado, onTiro }: Props) {
+export function CanchaSoccer({
+  cancha,
+  fichas,
+  posiciones,
+  miFicha,
+  activo,
+  lado,
+  onTiro,
+  skinsPorJugador,
+  skinPelota,
+}: Props) {
   const { colors } = useTheme();
   const escala = lado / cancha.ancho;
-  const altoRender = cancha.alto * escala;
+  const altoJuego = cancha.alto * escala;
+  const offsetY = cancha.profundidadArco * escala;
+  const altoTotal = altoJuego + offsetY * 2;
 
   const [arrastre, setArrastre] = useState<{ fichaId: string; dx: number; dy: number } | null>(null);
 
   const px = (x: number) => x * escala;
-  const py = (y: number) => y * escala;
+  // Todo lo que se dibuja en coordenadas de cancha se corre `offsetY` hacia
+  // abajo, para dejarle lugar a la franja del arco de arriba.
+  const py = (y: number) => y * escala + offsetY;
 
   const gestoDe = (fichaId: string) =>
     Gesture.Pan()
@@ -138,29 +182,32 @@ export function CanchaSoccer({ cancha, fichas, posiciones, miFicha, activo, lado
       });
 
   const anchoArco = cancha.ancho * 0.4;
+  const arcoX = px(cancha.ancho / 2 - anchoArco / 2);
+  const arcoAncho = px(anchoArco);
 
   return (
-    <View style={[styles.cancha, { width: lado, height: altoRender, backgroundColor: '#1F6B3A' }]}>
-      <Svg width={lado} height={altoRender} style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Rect x={0} y={0} width={lado} height={altoRender} fill="none" stroke="#ffffff55" strokeWidth={2} />
-        <Line x1={0} y1={altoRender / 2} x2={lado} y2={altoRender / 2} stroke="#ffffff55" strokeWidth={2} />
-        <Circle cx={lado / 2} cy={altoRender / 2} r={px(40)} fill="none" stroke="#ffffff55" strokeWidth={2} />
-        {/* Arco de arriba (j:1) y de abajo (j:2). */}
+    <View style={[styles.cancha, { width: lado, height: altoTotal, backgroundColor: '#1F6B3A' }]}>
+      <Svg width={lado} height={altoTotal} style={StyleSheet.absoluteFill} pointerEvents="none">
+        {/* Redes, detrás de cada línea de arco. */}
+        <Red x={arcoX} y={0} ancho={arcoAncho} alto={offsetY} />
+        <Red x={arcoX} y={offsetY + altoJuego} ancho={arcoAncho} alto={offsetY} />
+
+        <Rect x={0} y={offsetY} width={lado} height={altoJuego} fill="none" stroke="#ffffff55" strokeWidth={2} />
+        <Line x1={0} y1={offsetY + altoJuego / 2} x2={lado} y2={offsetY + altoJuego / 2} stroke="#ffffff55" strokeWidth={2} />
+        <Circle cx={lado / 2} cy={offsetY + altoJuego / 2} r={px(40)} fill="none" stroke="#ffffff55" strokeWidth={2} />
+
+        {/* Postes: el marco de cada arco. */}
+        <Rect x={arcoX} y={0} width={arcoAncho} height={offsetY} fill="none" stroke="#ffffffb0" strokeWidth={3} />
+        <Rect x={arcoX} y={offsetY + altoJuego} width={arcoAncho} height={offsetY} fill="none" stroke="#ffffffb0" strokeWidth={3} />
+        {/* Línea de gol, arriba y abajo. */}
+        <Line x1={arcoX} y1={offsetY} x2={arcoX + arcoAncho} y2={offsetY} stroke={colors.primary} strokeWidth={4} />
         <Line
-          x1={(cancha.ancho / 2 - anchoArco / 2) * escala}
-          y1={2}
-          x2={(cancha.ancho / 2 + anchoArco / 2) * escala}
-          y2={2}
+          x1={arcoX}
+          y1={offsetY + altoJuego}
+          x2={arcoX + arcoAncho}
+          y2={offsetY + altoJuego}
           stroke={colors.primary}
-          strokeWidth={5}
-        />
-        <Line
-          x1={(cancha.ancho / 2 - anchoArco / 2) * escala}
-          y1={altoRender - 2}
-          x2={(cancha.ancho / 2 + anchoArco / 2) * escala}
-          y2={altoRender - 2}
-          stroke={colors.primary}
-          strokeWidth={5}
+          strokeWidth={4}
         />
       </Svg>
 
@@ -169,25 +216,25 @@ export function CanchaSoccer({ cancha, fichas, posiciones, miFicha, activo, lado
         const pos = posiciones[id] ?? { x: f.x, y: f.y };
         const esMia = f.j === miFicha;
         const off = arrastre?.fichaId === id ? { x: arrastre.dx, y: arrastre.dy } : { x: 0, y: 0 };
-        const left = px(pos.x) - px(cancha.radioFicha) + off.x;
-        const top = py(pos.y) - px(cancha.radioFicha) + off.y;
         const diametro = px(cancha.radioFicha) * 2;
+        const left = px(pos.x) - diametro / 2 + off.x;
+        const top = py(pos.y) - diametro / 2 + off.y;
+        const skinInfo = skinsPorJugador[f.j];
 
         const ficha = (
           <View
             style={[
               styles.ficha,
-              {
-                width: diametro,
-                height: diametro,
-                borderRadius: diametro / 2,
-                left,
-                top,
-                backgroundColor: f.j === 1 ? '#E8577E' : '#5B9AD6',
-                borderColor: esMia ? colors.primary : 'transparent',
-              },
+              { width: diametro, height: diametro, left, top, borderColor: esMia ? colors.primary : 'transparent' },
             ]}
-          />
+          >
+            <FichaSkinSvg
+              skin={skinInfo.skin}
+              variante={skinInfo.variante}
+              colorEquipo={f.j === 1 ? COLOR_J1 : COLOR_J2}
+              size={diametro}
+            />
+          </View>
         );
 
         if (!esMia) return <React.Fragment key={id}>{ficha}</React.Fragment>;
@@ -204,17 +251,10 @@ export function CanchaSoccer({ cancha, fichas, posiciones, miFicha, activo, lado
         return (
           <View
             pointerEvents="none"
-            style={[
-              styles.pelota,
-              {
-                width: diametro,
-                height: diametro,
-                borderRadius: diametro / 2,
-                left: px(pos.x) - diametro / 2,
-                top: py(pos.y) - diametro / 2,
-              },
-            ]}
-          />
+            style={[styles.pelota, { width: diametro, height: diametro, left: px(pos.x) - diametro / 2, top: py(pos.y) - diametro / 2 }]}
+          >
+            <PelotaSkinSvg skin={skinPelota} size={diametro} />
+          </View>
         );
       })()}
     </View>
@@ -223,6 +263,6 @@ export function CanchaSoccer({ cancha, fichas, posiciones, miFicha, activo, lado
 
 const styles = StyleSheet.create({
   cancha: { position: 'relative', alignSelf: 'center', borderRadius: 8, overflow: 'hidden' },
-  ficha: { position: 'absolute', borderWidth: 3 },
-  pelota: { position: 'absolute', backgroundColor: '#ffffff' },
+  ficha: { position: 'absolute', borderWidth: 3, borderRadius: 999 },
+  pelota: { position: 'absolute' },
 });

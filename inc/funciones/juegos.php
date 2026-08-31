@@ -29,9 +29,10 @@ const RH_JUEGOS = [
     // Una partida perfecta de HueMemo da ~1880 (800 por pares + 600 de
     // eficiencia + hasta 480 de tiempo). El techo deja margen y corta lo demás.
     'huememo' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
-    // Un HueZip perfecto (25 celdas x40 + 300 de eficiencia + 90*8 de tiempo)
-    // da 2020. Mismo margen relativo que HueMemo.
-    'huezip' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
+    // Puntaje pensado para que gane ESTRICTAMENTE el más rápido (ver
+    // huezip/motor.ts::puntaje) — 5000 es el techo exacto de la fórmula
+    // (0 segundos, 0 reinicios), no un margen arbitrario.
+    'huezip' => ['modo' => 'puntaje', 'maxPuntos' => 5000, 'minSegundos' => 8],
     // 'turnos': un solo tablero que los dos van modificando. Acá `maxPuntos` no
     // aplica porque el puntaje lo pone el servidor, no el cliente.
     'hueconecta' => ['modo' => 'turnos'],
@@ -47,6 +48,14 @@ const RH_JUEGOS = [
     // HueTrivia tampoco necesita techo: el puntaje lo calcula el servidor a
     // partir de las respuestas, el cliente no informa ningún número.
     'huetrivia' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 0],
+    // HueDoku: 3 variantes = 3 juegoCodigo, cada una con su propio ranking
+    // (nunca compiten entre sí). Mismo criterio de "gana el más rápido" que
+    // HueZip (ver huedoku/motor.ts::puntaje), techo 3000 = 0s/0 errores. Los
+    // pisos de minSegundos son conservadores por variante (no revalidan la
+    // partida jugada a jugada, igual criterio que el resto del catálogo).
+    'huedoku6' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 10],
+    'huedoku9facil' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 45],
+    'huedoku9dificil' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 90],
     // HueGotchi no se juega por partidas: suma de a poco con cada acción de
     // cuidado. No se puede retar, y el puntaje lo pone el servidor.
     'huegotchi' => ['modo' => 'cuidado', 'maxPuntos' => 100, 'minSegundos' => 0],
@@ -129,6 +138,9 @@ function rh_juego_titulo(string $codigo): string
         'huerummy' => 'HueRummy',
         'huezip' => 'HueZip',
         'huesoccer' => 'HueSoccer',
+        'huedoku6' => 'HueDoku 6x6',
+        'huedoku9facil' => 'HueDoku 9x9 Fácil',
+        'huedoku9dificil' => 'HueDoku 9x9 Difícil',
     ];
     return $nombres[$codigo] ?? $codigo;
 }
@@ -678,7 +690,13 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
         $susPuntos = null;
     }
 
-    $stmt = $conn->prepare('SELECT UserId, NombreCompleto, Username, AvatarPath FROM Usuario WHERE UserId = ?');
+    // HueSoccerSkinFicha/Pelota se traen siempre (no sólo para HueSoccer): es
+    // una sola consulta ya existente, el costo de 2 columnas más es
+    // despreciable — más simple que ramificar por JuegoCodigo.
+    $stmt = $conn->prepare(
+        'SELECT UserId, NombreCompleto, Username, AvatarPath, HueSoccerSkinFicha, HueSoccerSkinPelota
+           FROM Usuario WHERE UserId = ?'
+    );
     $stmt->bind_param('i', $otroId);
     $stmt->execute();
     $otro = $stmt->get_result()->fetch_assoc();
@@ -719,6 +737,8 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
             'nombreCompleto' => $otro['NombreCompleto'] ?? '',
             'username' => $otro['Username'] ?? '',
             'avatarPath' => $otro['AvatarPath'] ?? null,
+            'skinFicha' => $otro['HueSoccerSkinFicha'] ?? 'clasica',
+            'skinPelota' => $otro['HueSoccerSkinPelota'] ?? 'clasica',
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],

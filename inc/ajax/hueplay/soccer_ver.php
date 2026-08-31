@@ -5,7 +5,7 @@
  * Lo consulta la pantalla mientras espera el tiro del rival (sin websockets
  * en el hosting, el refresco es preguntando cada tanto). No hace falta
  * ningún campo extra más allá de `rh_juego_serializar_desafio()`: el JSON
- * del tablero ya trae las posiciones de las 6 fichas, la pelota y los
+ * del tablero ya trae las posiciones de las 10 fichas, la pelota y los
  * goles — todo lo que el cliente necesita para dibujar y animar.
  */
 require_once __DIR__ . '/../../funciones/bd.php';

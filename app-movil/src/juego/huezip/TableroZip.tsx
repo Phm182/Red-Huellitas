@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { PanResponder, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Line } from 'react-native-svg';
 import { radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -80,12 +80,6 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
   );
 
   const centro = (c: Celda) => ({ x: c.col * celda + celda / 2, y: c.fila * celda + celda / 2 });
-  const pathD = visitadas
-    .map((c, i) => {
-      const { x, y } = centro(c);
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    })
-    .join(' ');
 
   const esVisitada = (f: number, c: number) => visitadas.some((v) => v.fila === f && v.col === c);
   const esRechazada = (f: number, c: number) => rechazada?.fila === f && rechazada?.col === c;
@@ -98,7 +92,28 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
     <View {...pan.panHandlers} style={[styles.grilla, { width: lado, height: lado }]}>
       {visitadas.length > 1 ? (
         <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Path d={pathD} stroke={colors.primary} strokeWidth={celda * 0.14} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* Un segmento por tramo, con el matiz avanzando de a poco (0°→300°)
+              a lo largo de todo el camino — así el color de cada tramo marca
+              en qué parte del recorrido total va el dedo, no sólo "visitado
+              sí/no" (pedido: "linea interna... de colores tipo arcoiris que
+              ayude a ver bien claro el camino"). */}
+          {visitadas.slice(1).map((c, i) => {
+            const a = centro(visitadas[i]!);
+            const b = centro(c);
+            const hue = Math.round((i / Math.max(1, puzzle.totalCeldas - 1)) * 300);
+            return (
+              <Line
+                key={i}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke={`hsl(${hue}, 85%, 55%)`}
+                strokeWidth={celda * 0.14}
+                strokeLinecap="round"
+              />
+            );
+          })}
         </Svg>
       ) : null}
       {puzzle.celdas.map((fila, f) =>

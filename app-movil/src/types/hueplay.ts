@@ -166,6 +166,9 @@ export interface HuePlayDesafio {
     nombreCompleto: string;
     username: string;
     avatarPath: string | null;
+    /** Skin fijo de HueSoccer del rival (aunque el duelo no sea de HueSoccer, siempre viaja). */
+    skinFicha: string;
+    skinPelota: string;
   };
   creadoEn: string;
   expiraEn: string;
@@ -256,10 +259,11 @@ export interface HuePlayDamasTurno {
 
 /**
  * HueSoccer: `desafio.tablero` es un JSON (no un string fijo como
- * Damas/Ajedrez) con las posiciones de las 6 fichas, la pelota y los goles
- * — ver `app-movil/src/juego/huesoccer/motor.ts` (`TableroSoccer`) para el
- * shape exacto. Acá no se repite el tipo: se decodifica con `JSON.parse` en
- * la pantalla y se tipa con el `TableroSoccer` del motor.
+ * Damas/Ajedrez) con las posiciones de las 10 fichas, la pelota, los goles
+ * y el reloj de turno/tope de partido — ver `app-movil/src/juego/
+ * huesoccer/motor.ts` (`TableroSoccer`) para el shape exacto. Acá no se
+ * repite el tipo: se decodifica con `JSON.parse` en la pantalla y se tipa
+ * con el `TableroSoccer` del motor.
  */
 export interface HuePlaySoccerVista {
   desafio: HuePlayDesafio;
@@ -268,8 +272,8 @@ export interface HuePlaySoccerVista {
 export interface HuePlaySoccerTurno {
   desafio: HuePlayDesafio;
   gol: 1 | 2 | null;
-  gane: boolean;
-  perdiste: boolean;
+  /** null = el partido sigue. */
+  resultado: 'gane' | 'perdiste' | 'empate' | null;
   progreso: HuePlayProgreso | null;
 }
 

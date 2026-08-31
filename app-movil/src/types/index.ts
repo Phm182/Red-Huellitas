@@ -15,6 +15,9 @@ export interface Usuario {
   avatarPath: string | null;
   /** mtime del archivo; para cache-bust al servir por media/avatar.php */
   avatarBust?: number | null;
+  /** Preferencia fija de skin de HueSoccer (fichas/pelota), la misma en todos los partidos. */
+  huesoccerSkinFicha: string;
+  huesoccerSkinPelota: string;
   onboardingCompleto: boolean;
   /** AAAA-MM-DD, o null en cuentas creadas antes de que el campo existiera. */
   fechaNacimiento: string | null;
