@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +8,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { JUEGOS_CATALOGO } from '../../../src/juego/hueplay/catalogo';
+import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { HuePlayDesafio, HuePlayDesafiosBandeja } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -23,14 +24,24 @@ import { rhAvatarUrl } from '../../../src/utils/media';
  * juegues, después los que esperan al rival y al final el historial. Una lista
  * cronológica dejaría lo accionable mezclado con lo terminado.
  */
+/** Juegos de tablero por turnos: no tienen modo solo, sólo duelo. */
+const JUEGOS_SIN_SOLO = ['hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
+
 export default function DesafiosScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
   const yoId = user?.userId ?? 0;
+  // Se puede llegar con `?juego=X` desde la tarjeta de un juego puntual en
+  // el hub de HuePlay — así, entrar a un juego muestra de una tus duelos
+  // activos de ESE juego (antes se saltaba directo a "retar", sin mostrar
+  // nada de lo que ya tenías en curso).
+  const params = useLocalSearchParams<{ juego?: string }>();
   const [bandeja, setBandeja] = useState<HuePlayDesafiosBandeja | null>(null);
   const [loading, setLoading] = useState(true);
-  const [juegoElegido, setJuegoElegido] = useState<string | null>(null);
+  const [juegoElegido, setJuegoElegido] = useState<string | null>(() =>
+    JUEGOS_CATALOGO.some((j) => j.codigo === params.juego) ? (params.juego as string) : null
+  );
 
   const cargar = useCallback(() => {
     hueplayApi.desafios().then((res) => {
@@ -78,6 +89,14 @@ export default function DesafiosScreen() {
       });
       return;
     }
+    const varianteDoku = variantePorJuegoCodigo(d.juegoCodigo);
+    if (varianteDoku) {
+      router.push({
+        pathname: '/(app)/hueplay/huedoku',
+        params: { desafioId: d.desafioId, semilla: d.semilla, variante: varianteDoku },
+      });
+      return;
+    }
     // Los de modo puntaje comparten la forma de entrar: id del duelo + semilla.
     const rutas: Record<string, string> = {
       huememo: '/(app)/hueplay/huememo',
@@ -90,6 +109,27 @@ export default function DesafiosScreen() {
     });
   };
 
+  /** Practicar solo, sin desafío — sólo los juegos que no están en `JUEGOS_SIN_SOLO`. */
+  const jugarSolo = (codigo: string) => {
+    hapticLeve();
+    const varianteDoku = variantePorJuegoCodigo(codigo);
+    if (varianteDoku) {
+      router.push({ pathname: '/(app)/hueplay/huedoku', params: { variante: varianteDoku } });
+      return;
+    }
+    const rutas: Record<string, string> = {
+      huematch: '/(app)/hueplay/huematch',
+      huememo: '/(app)/hueplay/huememo',
+      huetrivia: '/(app)/hueplay/huetrivia',
+      huezip: '/(app)/hueplay/huezip',
+    };
+    router.push((rutas[codigo] ?? '/(app)/hueplay/huematch') as never);
+  };
+
+  /** Con un juego elegido, sólo se muestran SUS duelos — es la lista que pidió ver quien entra a un juego puntual. */
+  const filtrar = <T extends { juegoCodigo: string }>(lista: T[]): T[] =>
+    juegoElegido ? lista.filter((d) => d.juegoCodigo === juegoElegido) : lista;
+
   /** Nombre visible del juego, para no mostrar el código crudo. */
   const nombreJuego = (codigo: string) =>
     ({
@@ -101,6 +141,9 @@ export default function DesafiosScreen() {
       huedamas: 'HueDamas',
       hueajedrez: 'HueAjedrez',
       huesoccer: 'HueSoccer',
+      huedoku6: 'HueDoku 6x6',
+      huedoku9facil: 'HueDoku 9x9 Fácil',
+      huedoku9dificil: 'HueDoku 9x9 Difícil',
     })[codigo] ?? codigo;
 
   /** "Vence en 3h" — sólo tiene sentido en duelos abiertos, no contra la IA. */
@@ -124,6 +167,10 @@ export default function DesafiosScreen() {
     );
 
   const nombre = (d: HuePlayDesafio) => (d.otro.username ? `@${d.otro.username}` : d.otro.nombreCompleto);
+
+  const miTurno = filtrar(bandeja?.miTurno ?? []);
+  const esperando = filtrar(bandeja?.esperando ?? []);
+  const terminados = filtrar(bandeja?.terminados ?? []);
 
   return (
     <ScrollView
@@ -157,7 +204,7 @@ export default function DesafiosScreen() {
                 },
               ]}
             >
-              <Ionicons name={j.icono} size={16} color={activo ? '#FFFFFF' : j.color} />
+              <MaterialCommunityIcons name={j.icono} size={16} color={activo ? '#FFFFFF' : j.color} />
               <Text
                 numberOfLines={1}
                 style={{
@@ -227,6 +274,17 @@ export default function DesafiosScreen() {
                   {t('hueplay.retar')}
                 </Text>
               </Pressable>
+              {!JUEGOS_SIN_SOLO.includes(j.codigo) ? (
+                <Pressable
+                  onPress={() => jugarSolo(j.codigo)}
+                  style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
+                >
+                  <Ionicons name="play" size={16} color={colors.text} />
+                  <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                    {t('hueplay.match.empezar')}
+                  </Text>
+                </Pressable>
+              ) : null}
               {j.codigo === 'huesoccer' ? (
                 <Pressable
                   onPress={() => {
@@ -248,10 +306,7 @@ export default function DesafiosScreen() {
 
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
-      ) : !bandeja ||
-        (bandeja.miTurno.length === 0 &&
-          bandeja.esperando.length === 0 &&
-          bandeja.terminados.length === 0) ? (
+      ) : !bandeja || (miTurno.length === 0 && esperando.length === 0 && terminados.length === 0) ? (
         <EmptyState
           icon="flash-outline"
           titulo={t('hueplay.sinDesafios')}
@@ -259,10 +314,10 @@ export default function DesafiosScreen() {
         />
       ) : (
         <>
-          {bandeja.miTurno.length > 0 ? (
+          {miTurno.length > 0 ? (
             <>
               <Text style={[styles.seccion, { color: colors.primary }]}>{t('hueplay.teToca')}</Text>
-              {bandeja.miTurno.map((d) => (
+              {miTurno.map((d) => (
                 <View
                   key={d.desafioId}
                   style={[styles.fila, { backgroundColor: colors.surface, borderColor: colors.primary }]}
@@ -299,10 +354,10 @@ export default function DesafiosScreen() {
             </>
           ) : null}
 
-          {bandeja.esperando.length > 0 ? (
+          {esperando.length > 0 ? (
             <>
               <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.esperando')}</Text>
-              {bandeja.esperando.map((d) => (
+              {esperando.map((d) => (
                 <View
                   key={d.desafioId}
                   style={[styles.fila, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -326,10 +381,10 @@ export default function DesafiosScreen() {
             </>
           ) : null}
 
-          {bandeja.terminados.length > 0 ? (
+          {terminados.length > 0 ? (
             <>
               <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.historial')}</Text>
-              {bandeja.terminados.map((d) => {
+              {terminados.map((d) => {
                 const vencido = d.estado === 'expirado';
 
                 // En turnos no hay puntajes que comparar: el resultado sale de

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ type JuegoDef = {
   id: string;
   titulo: string;
   bajada: string;
-  icono: keyof typeof Ionicons.glyphMap;
+  icono: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
   ruta?: string;
   /** Los que se pueden jugar contra otro. */
@@ -32,89 +32,96 @@ type JuegoDef = {
  * HuePlay es la sección; los juegos van adentro. Sumar el próximo es agregar
  * una entrada acá y una pantalla: el nivel, el ranking y los desafíos ya son
  * compartidos y los hereda sin tocar backend.
+ *
+ * `MaterialCommunityIcons`, no `Ionicons` — es el set que trae íconos de
+ * juego reales (`chess-knight`, `cards-playing-outline`…), ver el comentario
+ * más largo en `juego/hueplay/catalogo.ts` (mismo criterio, mismos íconos).
+ *
+ * Todas las tarjetas —salvo las de sala y HueGotchi— llevan ahora a la
+ * bandeja de desafíos filtrada a ESE juego (`desafios.tsx?juego=X`) en vez
+ * de saltar directo a "retar" o al tablero: entrar a un juego puntual tiene
+ * que mostrar de una tus duelos activos ahí, no sólo dejar arrancar uno
+ * nuevo a ciegas. Mismo criterio que ya usan HueLudo/HueRummy con su propia
+ * bandeja de salas.
  */
 const JUEGOS: JuegoDef[] = [
   {
     id: 'huematch',
     titulo: 'HueCrush',
     bajada: 'Alineá 3 huellas o más contra reloj. Se puede jugar en duelo.',
-    icono: 'grid',
+    icono: 'view-grid',
     color: '#E8577E',
-    ruta: '/(app)/hueplay/huematch',
+    ruta: '/(app)/hueplay/desafios?juego=huematch',
     duelo: true,
   },
   {
     id: 'hueconecta',
     titulo: 'HueConecta',
     bajada: 'Cuatro huellas en línea, por turnos contra otra persona.',
-    icono: 'ellipse',
+    icono: 'circle-multiple',
     color: '#5B9AD6',
-    // No tiene modo solo: sin rival no hay partida, así que se entra retando.
-    ruta: '/(app)/hueplay/retar?juego=hueconecta',
+    ruta: '/(app)/hueplay/desafios?juego=hueconecta',
     duelo: true,
   },
   {
     id: 'huememo',
     titulo: 'HueMemo',
     bajada: 'Encontrá los 8 pares antes de que se acabe el tiempo.',
-    icono: 'copy',
+    icono: 'cards',
     color: '#4CC3A5',
-    ruta: '/(app)/hueplay/huememo',
+    ruta: '/(app)/hueplay/desafios?juego=huememo',
     duelo: true,
   },
   {
     id: 'huetrivia',
     titulo: 'HueTrivia',
     bajada: 'Diez preguntas de cuidado animal contra reloj.',
-    icono: 'help-circle',
+    icono: 'comment-question-outline',
     color: '#B36FE0',
-    ruta: '/(app)/hueplay/huetrivia',
+    ruta: '/(app)/hueplay/desafios?juego=huetrivia',
     duelo: true,
   },
   {
     id: 'huezip',
     titulo: 'HueZip',
     bajada: 'Dibujá un solo camino que pase por toda la grilla, en orden.',
-    icono: 'trail-sign',
+    icono: 'gesture-swipe',
     color: '#F0A830',
-    ruta: '/(app)/hueplay/huezip',
+    ruta: '/(app)/hueplay/desafios?juego=huezip',
     duelo: true,
   },
   {
     id: 'huedamas',
     titulo: 'HueDamas',
     bajada: 'Las damas de siempre, por turnos contra otra persona o contra la app.',
-    icono: 'apps',
+    icono: 'checkerboard',
     color: '#6B4226',
-    // Igual que HueConecta: sin rival no hay partida, así que se entra retando
-    // (ahí también está la opción de jugar contra la app).
-    ruta: '/(app)/hueplay/retar?juego=huedamas',
+    ruta: '/(app)/hueplay/desafios?juego=huedamas',
     duelo: true,
   },
   {
     id: 'hueajedrez',
     titulo: 'HueAjedrez',
     bajada: 'Ajedrez completo (jaque, enroque, al paso) contra otra persona o contra la app.',
-    icono: 'grid-outline',
+    icono: 'chess-knight',
     color: '#7B9463',
-    ruta: '/(app)/hueplay/retar?juego=hueajedrez',
+    ruta: '/(app)/hueplay/desafios?juego=hueajedrez',
     duelo: true,
   },
   {
     id: 'huesoccer',
     titulo: 'HueSoccer',
     bajada: 'Meté la pelota en el arco del rival a lo Soccer Star, por turnos.',
-    icono: 'football',
+    icono: 'soccer',
     color: '#3D9970',
-    // Sin rival no hay partida, como Damas/Ajedrez/Conecta4.
-    ruta: '/(app)/hueplay/retar?juego=huesoccer',
+    ruta: '/(app)/hueplay/desafios?juego=huesoccer',
     duelo: true,
   },
   {
     id: 'hueludo',
     titulo: 'HueLudo',
     bajada: 'El clásico de mesa hasta con 4 personas, en salas con código para compartir.',
-    icono: 'dice',
+    icono: 'dice-multiple',
     color: '#B36FE0',
     // Tiene su propia bandeja (salas armándose, invitaciones, en curso) en vez
     // de ir directo a crear: con hasta 4 jugadores hay más que gestionar que
@@ -126,7 +133,7 @@ const JUEGOS: JuegoDef[] = [
     id: 'huerummy',
     titulo: 'HueRummy',
     bajada: 'El Rummy de cartas de siempre, en salas de hasta 4 con código para compartir.',
-    icono: 'albums',
+    icono: 'cards-playing-outline',
     color: '#4CC3A5',
     ruta: '/(app)/hueplay/salas?juego=huerummy',
     duelo: true,
@@ -135,11 +142,11 @@ const JUEGOS: JuegoDef[] = [
     id: 'huedoku6',
     titulo: 'HueDoku',
     bajada: 'Sudoku de 6x6 o 9x9, con dificultad a elegir. Se puede jugar en duelo.',
-    icono: 'grid-outline',
+    icono: 'view-grid-outline',
     color: '#D9834F',
     // Una sola tarjeta para las 3 variantes: el selector de dificultad vive
     // adentro de huedoku.tsx (ver plan C5), no hace falta triplicar la tarjeta.
-    ruta: '/(app)/hueplay/huedoku',
+    ruta: '/(app)/hueplay/desafios?juego=huedoku6',
     duelo: true,
   },
   {
@@ -281,7 +288,7 @@ export default function HuePlayScreen() {
             {j.id === 'huematch' ? (
               <Ficha tipo={0} size={30} />
             ) : (
-              <Ionicons name={j.icono} size={24} color={j.color} />
+              <MaterialCommunityIcons name={j.icono} size={24} color={j.color} />
             )}
           </View>
           <View style={styles.texto}>
@@ -370,7 +377,7 @@ export default function HuePlayScreen() {
           style={[styles.tarjeta, styles.tarjetaOff, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
           <View style={[styles.icono, { backgroundColor: `${j.color}18` }]}>
-            <Ionicons name={j.icono} size={24} color={j.color} />
+            <MaterialCommunityIcons name={j.icono} size={24} color={j.color} />
           </View>
           <View style={styles.texto}>
             <Text style={[styles.tarjetaTitulo, { color: colors.textMuted }]}>{j.titulo}</Text>

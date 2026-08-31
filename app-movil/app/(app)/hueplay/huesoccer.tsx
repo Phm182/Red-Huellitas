@@ -76,7 +76,7 @@ export default function HueSoccerScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const params = useLocalSearchParams<{ desafioId?: string }>();
   const desafioId = params.desafioId ? Number(params.desafioId) : 0;
 
@@ -253,7 +253,23 @@ export default function HueSoccerScreen() {
   const terminado = desafio.estado === 'terminado' || desafio.estado === 'expirado';
   const misGoles = desafio.miFicha === '1' ? tablero.golesJ1 : tablero.golesJ2;
   const susGoles = desafio.miFicha === '1' ? tablero.golesJ2 : tablero.golesJ1;
-  const lado = Math.min(width - 32, 340);
+  // La cancha (300x500 + la franja de profundidadArco arriba y abajo) es
+  // bien más alta que ancha — `lado` no puede salir sólo del ancho de
+  // pantalla como antes: en una pantalla baja (o con mucho HUD arriba,
+  // header+marcador+turno+meta+tiempo neto) una cancha de 340 de ancho
+  // renderiza ~700px de alto y se sale de lo que le queda, superpuesta con
+  // lo que esté arriba (`justifyContent:'center'` de `canchaWrap` la centra
+  // y el sobrante desborda para los dos lados) o con la barra de abajo. Se
+  // calcula también un tope por alto disponible y se usa el menor de los
+  // dos.
+  const { ancho: canchaAncho, alto: canchaAlto, profundidadArco } = tablero.cancha;
+  const relacionAltoAncho = (canchaAlto + profundidadArco * 2) / canchaAncho;
+  // ~230px para header + marcador + turno + las 2 líneas de meta/tiempo +
+  // la barra de navegación de abajo — aproximado a propósito (no vale la
+  // pena medir cada pieza del HUD en píxeles exactos para esto).
+  const altoDisponible = height - 230;
+  const ladoPorAlto = altoDisponible / relacionAltoAncho;
+  const lado = Math.max(200, Math.min(width - 32, 340, ladoPorAlto));
 
   // Skins: siempre determinístico por soyRetador — los dos clientes
   // calculan lo mismo sin negociar nada por red (ver skins.ts).
@@ -344,6 +360,17 @@ export default function HueSoccerScreen() {
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 6 }}>{error}</Text> : null}
 
+      {/* Antes iba DEBAJO de la cancha: con `canchaWrap` en flex:1 quedaba
+          pegado al piso de la pantalla, justo donde asoma el botón flotante
+          del planeta (`PlanetaFab`, en `AppBottomNav.tsx`) — tapado. Acá
+          arriba, junto al resto del HUD, nunca compite con eso. */}
+      <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 6 }}>
+        {t('hueplay.golesParaGanar', { n: tablero.metaGoles ?? GOLES_PARA_GANAR_DEFAULT })}
+      </Text>
+      <Text style={{ color: colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 2 }}>
+        {t('hueplay.soccer.tiempoNeto', { usados: tablero.segundosNetosUsados, tope: TOPE_SEGUNDOS_NETOS })}
+      </Text>
+
       <View style={styles.canchaWrap}>
         <CanchaSoccer
           cancha={tablero.cancha}
@@ -357,13 +384,6 @@ export default function HueSoccerScreen() {
           skinPelota={skinPelota}
         />
       </View>
-
-      <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 }}>
-        {t('hueplay.golesParaGanar', { n: tablero.metaGoles ?? GOLES_PARA_GANAR_DEFAULT })}
-      </Text>
-      <Text style={{ color: colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 2 }}>
-        {t('hueplay.soccer.tiempoNeto', { usados: tablero.segundosNetosUsados, tope: TOPE_SEGUNDOS_NETOS })}
-      </Text>
     </View>
   );
 }
@@ -395,5 +415,11 @@ const styles = StyleSheet.create({
   marcadorValor: { fontSize: 30, fontFamily: fonts.displaySemi },
   marcadorGuion: { fontSize: 22, fontFamily: fonts.displaySemi, marginTop: 14 },
   turno: { textAlign: 'center', fontFamily: fonts.bodySemi, fontSize: 13, marginTop: 4 },
-  canchaWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // `justifyContent:'flex-start'` y no `'center'`: centrar una cancha más
+  // alta que el espacio que le queda la desborda para los DOS lados (mitad
+  // arriba, mitad abajo) — la mitad de arriba tapaba el texto del HUD que
+  // va justo encima (meta de goles / tiempo neto). Con flex-start el
+  // desborde, si lo hay, se va entero para abajo, donde en el peor caso
+  // toca el pasto vacío del fondo de la cancha, no texto.
+  canchaWrap: { flex: 1, alignItems: 'center', justifyContent: 'flex-start' },
 });

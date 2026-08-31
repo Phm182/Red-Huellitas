@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -37,14 +37,14 @@ const COLORES: Record<string, string> = {
   huedoku9dificil: '#D9834F',
 };
 
-const ICONOS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  huematch: 'grid',
-  huememo: 'copy',
-  huetrivia: 'help-circle',
-  huezip: 'trail-sign',
-  huedoku6: 'grid-outline',
-  huedoku9facil: 'grid-outline',
-  huedoku9dificil: 'grid-outline',
+const ICONOS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  huematch: 'view-grid',
+  huememo: 'cards',
+  huetrivia: 'comment-question-outline',
+  huezip: 'gesture-swipe',
+  huedoku6: 'view-grid-outline',
+  huedoku9facil: 'view-grid-outline',
+  huedoku9dificil: 'view-grid-outline',
 };
 
 /**
@@ -206,7 +206,7 @@ export default function DiarioScreen() {
           >
             <View style={styles.fila}>
               <View style={[styles.icono, { backgroundColor: color + '22' }]}>
-                <Ionicons name={ICONOS[reto.juegoCodigo] ?? 'game-controller'} size={22} color={color} />
+                <MaterialCommunityIcons name={ICONOS[reto.juegoCodigo] ?? 'gamepad-variant'} size={22} color={color} />
               </View>
 
               <View style={{ flex: 1 }}>

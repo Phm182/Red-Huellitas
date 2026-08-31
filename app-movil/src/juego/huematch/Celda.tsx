@@ -117,6 +117,17 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
     const antes = anterior.current;
     anterior.current = tipo;
 
+    // Nada cambió PARA ESTA celda puntual: no animar nada. Hace falta este
+    // guard explícito porque `cascadaActiva` es una de las dependencias de
+    // abajo y es la MISMA prop para las 49 celdas del tablero — en cuanto
+    // pasa a `true` (arranca una cascada), este efecto se re-ejecuta en
+    // TODAS a la vez, no sólo en las que de verdad cambiaron de figura. Sin
+    // este corte, el chequeo de más abajo (`tipo !== VACIO && cascadaActiva`)
+    // se cumplía también para las celdas quietas y hacía que el tablero
+    // ENTERO reprodujera la animación de caída de golpe en cada match — el
+    // "se mueven TODAS las piezas" que se reportó.
+    if (antes === tipo) return;
+
     // Se rompió: se desvanece suave. Antes giraba 180° a la vez que encogía
     // en sólo 170ms — muy rápido y con el giro superpuesto se leía como un
     // parpadeo/tirón en vez de una desaparición prolija. Ahora es sólo
