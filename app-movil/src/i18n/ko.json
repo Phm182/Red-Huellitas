@@ -997,6 +997,7 @@
     "retar": "도전",
     "jugar": "플레이",
     "volver": "HuePlay로 돌아가기",
+    "golesParaGanar": "{{n}}골을 먼저 넣으면 승리",
     "sinDesafios": "대결이 없습니다",
     "sinDesafiosDesc": "누군가에게 도전해 같은 보드로 겨뤄보세요.",
     "teToca": "내 차례",
@@ -1150,6 +1151,21 @@
       "completo": "모두 찾았습니다. 실수 {{fallos}}회",
       "incompleto": "{{total}}쌍 중 {{n}}쌍 발견",
       "carta": "카드 {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "손가락으로 격자의 모든 칸을 한 번씩 지나는 하나의 경로를 그리며 숫자를 순서대로 방문하세요. 언제든 숫자 1을 터치하면 다시 시작합니다.",
+      "avisoDuelo": "대결: 상대와 완전히 같은 격자입니다.",
+      "celdas": "칸",
+      "completo": "경로를 완성했습니다 (재시작 {{reinicios}}회)",
+      "incompleto": "{{total}}칸 중 {{n}}칸 도달"
+    },
+    "soccer": {
+      "comoSeJuega": "말을 뒤로 당겼다 놓아서 슛하세요: 상대가 3골을 넣기 전에 상대 골대에 넣으세요. 턴제로 진행됩니다.",
+      "golesJ1": "나",
+      "golesJ2": "상대",
+      "tuTurno": "당신의 차례: 말을 골라 슛하세요",
+      "turnoRival": "{{rival}}의 차례",
+      "gol": "골!"
     },
     "trivia": {
       "comoSeJuega": "동물 돌봄 문제 {{n}}개, 각 {{s}}초입니다. 끝나면 맞힌 문제와 이유를 볼 수 있습니다.",

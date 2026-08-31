@@ -997,6 +997,7 @@
     "retar": "挑戦",
     "jugar": "プレイ",
     "volver": "HuePlay に戻る",
+    "golesParaGanar": "先に {{n}} ゴール決めた方が勝ち",
     "sinDesafios": "対戦はありません",
     "sinDesafiosDesc": "誰かに挑戦して同じ盤面で勝負しよう。",
     "teToca": "あなたの番",
@@ -1150,6 +1151,21 @@
       "completo": "全部見つけました（ミス {{fallos}} 回）",
       "incompleto": "{{total}} 組中 {{n}} 組を発見",
       "carta": "カード {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "指でグリッドの全マスをちょうど1回ずつ通る1本の道を描き、数字を順番に通ってください。いつでも数字の1をタップするとやり直せます。",
+      "avisoDuelo": "対戦: 相手とまったく同じグリッドです。",
+      "celdas": "マス",
+      "completo": "道を完成しました（やり直し {{reinicios}} 回）",
+      "incompleto": "{{total}} マス中 {{n}} マスに到達"
+    },
+    "soccer": {
+      "comoSeJuega": "自分の駒を後ろに引いて離すと蹴られます。相手が3ゴール決める前に相手のゴールに入れましょう。ターン制です。",
+      "golesJ1": "あなた",
+      "golesJ2": "相手",
+      "tuTurno": "あなたの番: 駒を選んで蹴ってください",
+      "turnoRival": "{{rival}}の番",
+      "gol": "ゴール！"
     },
     "trivia": {
       "comoSeJuega": "動物のケアに関する {{n}} 問、1問 {{s}} 秒です。最後に正解と理由を確認できます。",

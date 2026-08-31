@@ -71,10 +71,18 @@ export default function DesafiosScreen() {
       });
       return;
     }
+    if (d.juegoCodigo === 'huesoccer') {
+      router.push({
+        pathname: '/(app)/hueplay/huesoccer',
+        params: { desafioId: d.desafioId },
+      });
+      return;
+    }
     // Los de modo puntaje comparten la forma de entrar: id del duelo + semilla.
     const rutas: Record<string, string> = {
       huememo: '/(app)/hueplay/huememo',
       huetrivia: '/(app)/hueplay/huetrivia',
+      huezip: '/(app)/hueplay/huezip',
     };
     router.push({
       pathname: (rutas[d.juegoCodigo] ?? '/(app)/hueplay/huematch') as never,
@@ -89,8 +97,10 @@ export default function DesafiosScreen() {
       hueconecta: 'HueConecta',
       huememo: 'HueMemo',
       huetrivia: 'HueTrivia',
+      huezip: 'HueZip',
       huedamas: 'HueDamas',
       hueajedrez: 'HueAjedrez',
+      huesoccer: 'HueSoccer',
     })[codigo] ?? codigo;
 
   /** "Vence en 3h" — sólo tiene sentido en duelos abiertos, no contra la IA. */

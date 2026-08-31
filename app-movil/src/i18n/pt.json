@@ -1003,6 +1003,7 @@
     "retar": "Desafiar",
     "jugar": "Jogar",
     "volver": "Voltar ao HuePlay",
+    "golesParaGanar": "Quem chegar primeiro a {{n}} gols vence",
     "sinDesafios": "Sem duelos",
     "sinDesafiosDesc": "Desafie alguém e jogue o mesmo tabuleiro.",
     "teToca": "Sua vez",
@@ -1156,6 +1157,21 @@
       "completo": "Encontrou todos, com {{fallos}} erros",
       "incompleto": "Encontrou {{n}} de {{total}} pares",
       "carta": "Carta {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "Arraste o dedo desenhando um único caminho que passe por TODAS as células da grade, visitando os números em ordem. Toque no número 1 a qualquer momento para recomeçar.",
+      "avisoDuelo": "Duelo: seu rival tem exatamente a mesma grade.",
+      "celdas": "Células",
+      "completo": "Caminho completo, com {{reinicios}} reinícios",
+      "incompleto": "Você chegou a {{n}} de {{total}} células"
+    },
+    "soccer": {
+      "comoSeJuega": "Arraste suas peças para trás e solte para chutar: marque no gol do rival antes que ele chegue a 3 gols. Jogado por turnos.",
+      "golesJ1": "Você",
+      "golesJ2": "Rival",
+      "tuTurno": "Sua vez: escolha uma peça e chute",
+      "turnoRival": "Vez de {{rival}}",
+      "gol": "Gol!"
     },
     "trivia": {
       "comoSeJuega": "{{n}} perguntas sobre cuidado animal, {{s}} segundos cada. No final você vê o que acertou e por quê.",

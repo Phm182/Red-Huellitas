@@ -23,6 +23,8 @@ import {
   HuePlaySalaMover,
   HuePlaySalasBandeja,
   HuePlaySalaTirar,
+  HuePlaySoccerTurno,
+  HuePlaySoccerVista,
   HuePlayTurno,
   HuePlayVista,
   PoliticaAbandonoSala,
@@ -131,6 +133,18 @@ export const hueplayApi = {
       { desafioId, dFila: desde.fila, dCol: desde.col, hFila: hasta.fila, hCol: hasta.col },
       true
     ),
+
+  /** Estado de un duelo de HueSoccer. `desafio.tablero` es el JSON del `TableroSoccer`. */
+  verDesafioSoccer: (desafioId: number) =>
+    apiGet<HuePlaySoccerVista>('ajax/hueplay/soccer_ver.php', { desafioId }, true),
+
+  /**
+   * Un tiro de HueSoccer: `tableroNuevo` es el `TableroSoccer` ya simulado
+   * en el cliente (ver `src/juego/huesoccer/motor.ts`), serializado a JSON.
+   * El servidor decide el gol por su cuenta, no confía en un flag acá.
+   */
+  soccerMover: (desafioId: number, tableroNuevo: string) =>
+    apiPost<HuePlaySoccerTurno>('ajax/hueplay/soccer_mover.php', { desafioId, tableroNuevo }, true),
 
   /** Estado de un duelo de Ajedrez, con los movimientos legales y si estoy en jaque. */
   verDesafioAjedrez: (desafioId: number) =>

@@ -1,0 +1,251 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { hueplayApi } from '../../../src/api/hueplayApi';
+import { CanchaSoccer, Posiciones, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
+import { GOLES_PARA_GANAR, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
+import { HuePlayDesafio } from '../../../src/types/hueplay';
+import { radii } from '../../../src/theme/elevation';
+import { centeredContent } from '../../../src/theme/layout';
+import { fonts } from '../../../src/theme/typography';
+import { useTheme } from '../../../src/theme/ThemeProvider';
+import { hapticCelebracion, hapticError, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
+
+/** Cada cuánto se pregunta si el rival ya tiró, mientras es su turno. */
+const POLL_MS = 4000;
+/** Duración fija de cualquier animación de tiro, mío o del rival. */
+const DURACION_ANIM_MS = 900;
+
+/**
+ * HueSoccer: duelo de física por turnos, tipo "Soccer Star".
+ *
+ * A diferencia de HueDamas/HueAjedrez (donde el servidor decide la jugada),
+ * acá **el que tira simula la física en su propio celular** (no hay
+ * librería de física en el proyecto — ver `src/juego/huesoccer/motor.ts`) y
+ * manda el resultado final; el servidor sólo recorta límites de cancha y
+ * decide el gol por su cuenta. Ver ese archivo y `inc/funciones/soccer.php`
+ * para el porqué completo.
+ */
+export default function HueSoccerScreen() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const params = useLocalSearchParams<{ desafioId?: string }>();
+  const desafioId = params.desafioId ? Number(params.desafioId) : 0;
+
+  const [desafio, setDesafio] = useState<HuePlayDesafio | null>(null);
+  const [tablero, setTablero] = useState<TableroSoccer | null>(null);
+  const [posiciones, setPosiciones] = useState<Posiciones>({});
+  const [cargando, setCargando] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [animando, setAnimando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resultado, setResultado] = useState<{ gane: boolean; perdiste: boolean; gol: 1 | 2 | null } | null>(null);
+
+  const vivoRef = useRef(true);
+  const cancelarAnimRef = useRef<(() => void) | null>(null);
+  const movimientosVistosRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    vivoRef.current = true;
+    return () => {
+      vivoRef.current = false;
+      cancelarAnimRef.current?.();
+    };
+  }, []);
+
+  const cargar = useCallback(async () => {
+    if (!desafioId) return;
+    const res = await hueplayApi.verDesafioSoccer(desafioId);
+    if (!vivoRef.current) return;
+    if (res.success && res.data) {
+      const d = res.data.desafio;
+      const nuevoTablero: TableroSoccer | null = d.tablero ? JSON.parse(d.tablero) : null;
+      setError(null);
+
+      if (nuevoTablero) {
+        // Si `movimientos` avanzó y no fue por algo que ya animamos acá
+        // mismo (mi propio tiro), es que el rival tiró mientras esperábamos
+        // por polling: se anima el tween de la posición vieja a la nueva.
+        const vistoAntes = movimientosVistosRef.current;
+        const esCambioDelRival = vistoAntes !== null && d.movimientos > vistoAntes && !animando;
+        movimientosVistosRef.current = d.movimientos;
+
+        if (esCambioDelRival) {
+          const nuevaPos = posicionesDeTablero(nuevoTablero);
+          const trayectorias: Record<string, Vector[]> = {};
+          for (const id of Object.keys(nuevaPos)) {
+            const desde = posiciones[id] ?? nuevaPos[id]!;
+            trayectorias[id] = [desde, nuevaPos[id]!];
+          }
+          setAnimando(true);
+          cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
+            if (!vivoRef.current) return;
+            setAnimando(false);
+          });
+        } else if (movimientosVistosRef.current === d.movimientos && Object.keys(posiciones).length === 0) {
+          setPosiciones(posicionesDeTablero(nuevoTablero));
+        }
+      }
+
+      setTablero(nuevoTablero);
+      setDesafio(d);
+    } else {
+      setError(res.message ?? t('common.error'));
+    }
+    setCargando(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desafioId, t]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  useEffect(() => {
+    if (!desafio) return;
+    const terminado = desafio.estado === 'terminado' || desafio.estado === 'expirado';
+    if (terminado || desafio.esMiTurno) return;
+    const id = setInterval(cargar, POLL_MS);
+    return () => clearInterval(id);
+  }, [desafio, cargar]);
+
+  const onTiro = useCallback(
+    (fichaId: string, impulso: Vector) => {
+      if (!desafio || !tablero || !desafio.esMiTurno || enviando || animando) return;
+      hapticMedio();
+
+      const r = simularTiro(tablero, fichaId, impulso);
+      setAnimando(true);
+      cancelarAnimRef.current = reproducir(r.trayectorias, DURACION_ANIM_MS, setPosiciones, async () => {
+        if (!vivoRef.current) return;
+        if (r.gol) hapticCelebracion();
+
+        setEnviando(true);
+        const res = await hueplayApi.soccerMover(desafioId, JSON.stringify(r.estadoFinal));
+        if (!vivoRef.current) return;
+        setEnviando(false);
+        setAnimando(false);
+
+        if (!res.success || !res.data) {
+          hapticError();
+          setError(res.message ?? t('common.error'));
+          // El servidor manda la verdad: se recarga para no quedar con un
+          // estado local que ya no coincide (ej. si rechazó el tiro).
+          cargar();
+          return;
+        }
+
+        const d = res.data.desafio;
+        const tableroServidor: TableroSoccer | null = d.tablero ? JSON.parse(d.tablero) : null;
+        movimientosVistosRef.current = d.movimientos;
+        setDesafio(d);
+        setTablero(tableroServidor);
+        if (tableroServidor) setPosiciones(posicionesDeTablero(tableroServidor));
+
+        if (res.data.gane) {
+          setResultado({ gane: res.data.gane, perdiste: res.data.perdiste, gol: res.data.gol });
+        }
+      });
+    },
+    [desafio, tablero, enviando, animando, desafioId, cargar, t]
+  );
+
+  if (cargando) {
+    return (
+      <View style={[styles.centro, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!desafio || !tablero) {
+    return (
+      <View style={[styles.centro, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.danger }}>{error ?? t('common.error')}</Text>
+      </View>
+    );
+  }
+
+  const terminado = desafio.estado === 'terminado' || desafio.estado === 'expirado';
+  const misGoles = desafio.miFicha === '1' ? tablero.golesJ1 : tablero.golesJ2;
+  const susGoles = desafio.miFicha === '1' ? tablero.golesJ2 : tablero.golesJ1;
+  const lado = Math.min(width - 32, 340);
+
+  if (terminado || resultado) {
+    const gane = resultado?.gane ?? desafio.ganadorUserId !== null;
+    const perdiste = resultado?.perdiste ?? false;
+    return (
+      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
+        <Ionicons name="football" size={56} color={colors.primary} />
+        <Text style={[styles.veredicto, { color: perdiste ? colors.danger : colors.success }]}>
+          {perdiste ? t('hueplay.match.perdiste') : t('hueplay.match.ganaste')}
+        </Text>
+        <Text style={{ color: colors.textMuted, fontSize: 15, marginTop: 6 }}>
+          {misGoles} - {susGoles}
+        </Text>
+        <Pressable
+          onPress={() => router.replace('/(app)/hueplay')}
+          style={[styles.boton, { backgroundColor: colors.primary, marginTop: 24 }]}
+        >
+          <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.volver')}</Text>
+        </Pressable>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <View style={[styles.juego, { backgroundColor: colors.background }]}>
+      <View style={[styles.marcador, centeredContent]}>
+        <View style={styles.marcadorLado}>
+          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ1')}</Text>
+          <Text style={[styles.marcadorValor, { color: colors.text }]}>{misGoles}</Text>
+        </View>
+        <Text style={[styles.marcadorGuion, { color: colors.textMuted }]}>-</Text>
+        <View style={styles.marcadorLado}>
+          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ2')}</Text>
+          <Text style={[styles.marcadorValor, { color: colors.text }]}>{susGoles}</Text>
+        </View>
+      </View>
+
+      <Text style={[styles.turno, { color: desafio.esMiTurno ? colors.primary : colors.textMuted }]}>
+        {desafio.esMiTurno ? t('hueplay.soccer.tuTurno') : t('hueplay.soccer.turnoRival', { rival: desafio.otro.username || desafio.otro.nombreCompleto })}
+      </Text>
+
+      {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 6 }}>{error}</Text> : null}
+
+      <View style={styles.canchaWrap}>
+        <CanchaSoccer
+          cancha={tablero.cancha}
+          fichas={tablero.fichas}
+          posiciones={posiciones}
+          miFicha={desafio.miFicha === '1' ? 1 : 2}
+          activo={desafio.esMiTurno && !enviando && !animando}
+          lado={lado}
+          onTiro={onTiro}
+        />
+      </View>
+
+      <Text style={{ color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 }}>
+        {t('hueplay.golesParaGanar', { n: GOLES_PARA_GANAR })}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  intro: { padding: 20, alignItems: 'center', paddingTop: 60, paddingBottom: 40 },
+  veredicto: { fontSize: 24, fontFamily: fonts.displaySemi, marginTop: 12 },
+  boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 34, alignItems: 'center', justifyContent: 'center' },
+  botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15 },
+  juego: { flex: 1, paddingTop: 8 },
+  marcador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 4 },
+  marcadorLado: { alignItems: 'center' },
+  marcadorLabel: { fontSize: 11, textTransform: 'uppercase' },
+  marcadorValor: { fontSize: 30, fontFamily: fonts.displaySemi },
+  marcadorGuion: { fontSize: 22, fontFamily: fonts.displaySemi, marginTop: 14 },
+  turno: { textAlign: 'center', fontFamily: fonts.bodySemi, fontSize: 13, marginTop: 4 },
+  canchaWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+});

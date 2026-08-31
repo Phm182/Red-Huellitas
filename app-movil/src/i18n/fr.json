@@ -1003,6 +1003,7 @@
     "retar": "Défier",
     "jugar": "Jouer",
     "volver": "Retour à HuePlay",
+    "golesParaGanar": "Le premier à {{n}} buts gagne",
     "sinDesafios": "Aucun duel",
     "sinDesafiosDesc": "Défie quelqu'un et jouez le même plateau.",
     "teToca": "À toi de jouer",
@@ -1156,6 +1157,21 @@
       "completo": "Tu les as toutes trouvées, avec {{fallos}} erreurs",
       "incompleto": "Tu as trouvé {{n}} paires sur {{total}}",
       "carta": "Carte {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "Trace avec ton doigt un seul chemin qui passe par TOUTES les cases de la grille, en visitant les numéros dans l'ordre. Touche le 1 à tout moment pour recommencer.",
+      "avisoDuelo": "Duel : ton adversaire a exactement la même grille.",
+      "celdas": "Cases",
+      "completo": "Chemin terminé, avec {{reinicios}} redémarrages",
+      "incompleto": "Tu as atteint {{n}} cases sur {{total}}"
+    },
+    "soccer": {
+      "comoSeJuega": "Tire tes pions vers l'arrière et relâche pour tirer : marque dans le but adverse avant qu'il n'atteigne 3 buts. Ça se joue au tour par tour.",
+      "golesJ1": "Toi",
+      "golesJ2": "Adversaire",
+      "tuTurno": "Ton tour : choisis un pion et tire",
+      "turnoRival": "Tour de {{rival}}",
+      "gol": "But !"
     },
     "trivia": {
       "comoSeJuega": "{{n}} questions sur les soins aux animaux, {{s}} secondes chacune. À la fin tu vois tes réponses et pourquoi.",

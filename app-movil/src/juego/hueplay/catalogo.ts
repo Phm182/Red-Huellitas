@@ -21,6 +21,8 @@ export const JUEGOS_CATALOGO: JuegoCatalogoItem[] = [
   { codigo: 'hueconecta', titulo: 'HueConecta', icono: 'ellipse', color: '#5B9AD6' },
   { codigo: 'huememo', titulo: 'HueMemo', icono: 'copy', color: '#4CC3A5' },
   { codigo: 'huetrivia', titulo: 'HueTrivia', icono: 'help-circle', color: '#B36FE0' },
+  { codigo: 'huezip', titulo: 'HueZip', icono: 'trail-sign', color: '#F0A830' },
+  { codigo: 'huesoccer', titulo: 'HueSoccer', icono: 'football', color: '#3D9970' },
   { codigo: 'huedamas', titulo: 'HueDamas', icono: 'apps', color: '#6B4226' },
   { codigo: 'hueajedrez', titulo: 'HueAjedrez', icono: 'grid-outline', color: '#7B9463' },
   { codigo: 'hueludo', titulo: 'HueLudo', icono: 'dice', color: '#B36FE0', esSala: true },

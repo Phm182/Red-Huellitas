@@ -27,9 +27,13 @@ function rutaDelDesafio(d: HuePlayDesafio): { pathname: string; params: Record<s
   if (d.juegoCodigo === 'hueajedrez') {
     return { pathname: '/(app)/hueplay/ajedrez', params: { desafioId: d.desafioId } };
   }
+  if (d.juegoCodigo === 'huesoccer') {
+    return { pathname: '/(app)/hueplay/huesoccer', params: { desafioId: d.desafioId } };
+  }
   const rutas: Record<string, string> = {
     huememo: '/(app)/hueplay/huememo',
     huetrivia: '/(app)/hueplay/huetrivia',
+    huezip: '/(app)/hueplay/huezip',
   };
   return {
     pathname: rutas[d.juegoCodigo] ?? '/(app)/hueplay/huematch',
@@ -38,7 +42,7 @@ function rutaDelDesafio(d: HuePlayDesafio): { pathname: string; params: Record<s
 }
 
 /** Juegos de tablero por turnos: son los únicos donde el plazo de respuesta tiene sentido. */
-const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez'];
+const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
 
 /** Juegos con modo solitario contra la IA de la app. */
 const JUEGOS_IA = ['huedamas', 'hueajedrez'];
@@ -59,7 +63,7 @@ export default function RetarScreen() {
   // El juego llega por parámetro: se puede tener un duelo abierto de HueMatch y
   // otro de HueConecta con la misma persona, así que la lista de rivales
   // depende de cuál se está por retar.
-  const CODIGOS = ['huematch', 'huememo', 'huetrivia', 'hueconecta', 'huedamas', 'hueajedrez'];
+  const CODIGOS = ['huematch', 'huememo', 'huetrivia', 'huezip', 'hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
   const JUEGO = CODIGOS.includes(params.juego ?? '') ? params.juego! : 'huematch';
   const esDeTurnos = JUEGOS_TURNOS.includes(JUEGO);
   const tieneIA = JUEGOS_IA.includes(JUEGO);

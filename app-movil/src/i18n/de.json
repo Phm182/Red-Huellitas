@@ -1003,6 +1003,7 @@
     "retar": "Fordern",
     "jugar": "Spielen",
     "volver": "Zurück zu HuePlay",
+    "golesParaGanar": "Wer zuerst {{n}} Tore erzielt, gewinnt",
     "sinDesafios": "Keine Duelle",
     "sinDesafiosDesc": "Fordere jemanden heraus und spielt dasselbe Feld.",
     "teToca": "Du bist dran",
@@ -1156,6 +1157,21 @@
       "completo": "Alle gefunden, mit {{fallos}} Fehlern",
       "incompleto": "{{n}} von {{total}} Paaren gefunden",
       "carta": "Karte {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "Ziehe mit dem Finger einen einzigen Pfad durch JEDE Zelle des Rasters und besuche die Zahlen der Reihe nach. Tippe jederzeit auf die 1, um neu zu starten.",
+      "avisoDuelo": "Duell: Dein Gegner hat genau dasselbe Raster.",
+      "celdas": "Felder",
+      "completo": "Pfad abgeschlossen, mit {{reinicios}} Neustarts",
+      "incompleto": "{{n}} von {{total}} Feldern erreicht"
+    },
+    "soccer": {
+      "comoSeJuega": "Ziehe deine Figuren nach hinten und lass los, um zu schießen: erziele ein Tor im gegnerischen Tor, bevor der Gegner 3 Tore erzielt. Rundenbasiert.",
+      "golesJ1": "Du",
+      "golesJ2": "Gegner",
+      "tuTurno": "Dein Zug: wähle eine Figur und schieße",
+      "turnoRival": "Zug von {{rival}}",
+      "gol": "Tor!"
     },
     "trivia": {
       "comoSeJuega": "{{n}} Fragen zur Tierpflege, je {{s}} Sekunden. Am Ende siehst du, was richtig war und warum.",

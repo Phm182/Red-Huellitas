@@ -1149,6 +1149,7 @@
     "retar": "Retar",
     "jugar": "Jugar",
     "volver": "Volver a HuePlay",
+    "golesParaGanar": "Primero en llegar a {{n}} goles gana",
     "sinDesafios": "No tenés duelos",
     "sinDesafiosDesc": "Retá a alguien y jugá el mismo tablero.",
     "teToca": "Te toca jugar",
@@ -1304,6 +1305,21 @@
       "completo": "Los encontraste todos, con {{fallos}} errores",
       "incompleto": "Encontraste {{n}} de {{total}} pares",
       "carta": "Carta {{n}}"
+    },
+    "zip": {
+      "comoSeJuega": "Dibujá con el dedo un solo camino que pase por TODAS las celdas de la grilla, visitando los números en orden. Tocá el número 1 en cualquier momento para volver a empezar.",
+      "avisoDuelo": "Duelo: tu rival tiene exactamente la misma grilla.",
+      "celdas": "Celdas",
+      "completo": "Completaste el camino, con {{reinicios}} reinicios",
+      "incompleto": "Llegaste a {{n}} de {{total}} celdas"
+    },
+    "soccer": {
+      "comoSeJuega": "Arrastrá tus fichas hacia atrás y soltá para patearlas: metela en el arco del rival antes de que llegue a 3 goles. Se juega por turnos.",
+      "golesJ1": "Vos",
+      "golesJ2": "Rival",
+      "tuTurno": "Tu turno: elegí una ficha y tirá",
+      "turnoRival": "Turno de {{rival}}",
+      "gol": "¡Gol!"
     },
     "trivia": {
       "comoSeJuega": "{{n}} preguntas de cuidado animal, {{s}} segundos cada una. Al final ves cuáles acertaste y por qué.",

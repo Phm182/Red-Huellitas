@@ -255,6 +255,25 @@ export interface HuePlayDamasTurno {
 }
 
 /**
+ * HueSoccer: `desafio.tablero` es un JSON (no un string fijo como
+ * Damas/Ajedrez) con las posiciones de las 6 fichas, la pelota y los goles
+ * — ver `app-movil/src/juego/huesoccer/motor.ts` (`TableroSoccer`) para el
+ * shape exacto. Acá no se repite el tipo: se decodifica con `JSON.parse` en
+ * la pantalla y se tipa con el `TableroSoccer` del motor.
+ */
+export interface HuePlaySoccerVista {
+  desafio: HuePlayDesafio;
+}
+
+export interface HuePlaySoccerTurno {
+  desafio: HuePlayDesafio;
+  gol: 1 | 2 | null;
+  gane: boolean;
+  perdiste: boolean;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
  * HueAjedrez: el tablero es un string de 70 caracteres — 64 de casillas
  * (fila*8+col, fila 0 arriba) con letras de pieza (mayúscula el retador,
  * minúscula el retado, P/N/B/R/Q/K, '.' vacío) más 6 de estado extra

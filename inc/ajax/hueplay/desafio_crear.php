@@ -18,6 +18,7 @@ require_once __DIR__ . '/../../funciones/juegos.php';
 require_once __DIR__ . '/../../funciones/hueconecta.php';
 require_once __DIR__ . '/../../funciones/damas.php';
 require_once __DIR__ . '/../../funciones/ajedrez.php';
+require_once __DIR__ . '/../../funciones/soccer.php';
 
 $userId = rh_require_auth($conn);
 
@@ -102,6 +103,8 @@ if ($modo === 'turnos') {
         $tablero = rh_damas_inicial();
     } elseif ($codigo === 'hueajedrez') {
         $tablero = rh_ajedrez_inicial();
+    } elseif ($codigo === 'huesoccer') {
+        $tablero = rh_soccer_inicial();
     } else {
         $tablero = rh_c4_vacio();
     }

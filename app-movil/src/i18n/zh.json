@@ -997,6 +997,7 @@
     "retar": "挑战",
     "jugar": "开始",
     "volver": "返回 HuePlay",
+    "golesParaGanar": "先进 {{n}} 球者获胜",
     "sinDesafios": "还没有对战",
     "sinDesafiosDesc": "挑战某人，玩同一个棋盘。",
     "teToca": "轮到你了",
@@ -1150,6 +1151,21 @@
       "completo": "全部找到，失误 {{fallos}} 次",
       "incompleto": "找到 {{total}} 对中的 {{n}} 对",
       "carta": "第 {{n}} 张牌"
+    },
+    "zip": {
+      "comoSeJuega": "用手指画出一条经过网格中每一格的单一路径，按顺序经过数字。随时点击数字1可以重新开始。",
+      "avisoDuelo": "对战：对手的网格和你的完全一样。",
+      "celdas": "格数",
+      "completo": "路径完成，重新开始 {{reinicios}} 次",
+      "incompleto": "已到达 {{total}} 格中的 {{n}} 格"
+    },
+    "soccer": {
+      "comoSeJuega": "把你的棋子向后拖再松手即可射门：在对手打进3球之前先攻入对方球门。回合制进行。",
+      "golesJ1": "你",
+      "golesJ2": "对手",
+      "tuTurno": "轮到你：选一个棋子射门",
+      "turnoRival": "轮到{{rival}}",
+      "gol": "进球！"
     },
     "trivia": {
       "comoSeJuega": "{{n}} 道动物照护题，每题 {{s}} 秒。结束后可以看到答对了哪些以及原因。",

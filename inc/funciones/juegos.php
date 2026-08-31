@@ -29,11 +29,17 @@ const RH_JUEGOS = [
     // Una partida perfecta de HueMemo da ~1880 (800 por pares + 600 de
     // eficiencia + hasta 480 de tiempo). El techo deja margen y corta lo demás.
     'huememo' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
+    // Un HueZip perfecto (25 celdas x40 + 300 de eficiencia + 90*8 de tiempo)
+    // da 2020. Mismo margen relativo que HueMemo.
+    'huezip' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
     // 'turnos': un solo tablero que los dos van modificando. Acá `maxPuntos` no
     // aplica porque el puntaje lo pone el servidor, no el cliente.
     'hueconecta' => ['modo' => 'turnos'],
     'huedamas' => ['modo' => 'turnos'],
     'hueajedrez' => ['modo' => 'turnos'],
+    // HueSoccer también es 'turnos': el tablero (posiciones de fichas/pelota)
+    // lo va escribiendo el que tira, un tiro por turno — ver inc/funciones/soccer.php.
+    'huesoccer' => ['modo' => 'turnos'],
     // 'sala': hasta 4 jugadores sobre `JuegoSala`/`JuegoSalaJugador`, no
     // `JuegoDesafio` — el puntaje también lo pone el servidor.
     'hueludo' => ['modo' => 'sala'],
@@ -121,6 +127,8 @@ function rh_juego_titulo(string $codigo): string
         'hueajedrez' => 'HueAjedrez',
         'hueludo' => 'HueLudo',
         'huerummy' => 'HueRummy',
+        'huezip' => 'HueZip',
+        'huesoccer' => 'HueSoccer',
     ];
     return $nombres[$codigo] ?? $codigo;
 }

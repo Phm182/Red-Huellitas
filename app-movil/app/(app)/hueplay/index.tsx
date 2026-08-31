@@ -72,6 +72,15 @@ const JUEGOS: JuegoDef[] = [
     duelo: true,
   },
   {
+    id: 'huezip',
+    titulo: 'HueZip',
+    bajada: 'Dibujá un solo camino que pase por toda la grilla, en orden.',
+    icono: 'trail-sign',
+    color: '#F0A830',
+    ruta: '/(app)/hueplay/huezip',
+    duelo: true,
+  },
+  {
     id: 'huedamas',
     titulo: 'HueDamas',
     bajada: 'Las damas de siempre, por turnos contra otra persona o contra la app.',
@@ -89,6 +98,16 @@ const JUEGOS: JuegoDef[] = [
     icono: 'grid-outline',
     color: '#7B9463',
     ruta: '/(app)/hueplay/retar?juego=hueajedrez',
+    duelo: true,
+  },
+  {
+    id: 'huesoccer',
+    titulo: 'HueSoccer',
+    bajada: 'Meté la pelota en el arco del rival a lo Soccer Star, por turnos.',
+    icono: 'football',
+    color: '#3D9970',
+    // Sin rival no hay partida, como Damas/Ajedrez/Conecta4.
+    ruta: '/(app)/hueplay/retar?juego=huesoccer',
     duelo: true,
   },
   {
