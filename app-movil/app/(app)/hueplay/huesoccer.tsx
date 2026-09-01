@@ -29,8 +29,33 @@ import { hapticCelebracion, hapticError, hapticLeve, hapticMedio } from '../../.
 
 /** Cada cuánto se pregunta si el rival ya tiró, mientras es su turno. */
 const POLL_MS = 4000;
-/** Duración fija de cualquier animación de tiro, mío o del rival. */
+/**
+ * Duración del tiro del RIVAL, que llega por polling sin cuadros
+ * intermedios (sólo posición vieja y nueva) — no hay forma de saber cuánto
+ * duró de verdad su física sin volver a simularla del lado del cliente, así
+ * que acá se usa un valor fijo razonable (documentado hace rato en
+ * `CanchaSoccer.tsx::reproducir`).
+ */
 const DURACION_ANIM_MS = 900;
+/**
+ * Cuánto dura, en pantalla, cada cuadro de físca de MI tiro — a diferencia
+ * del rival, acá SÍ hay una trayectoria real, cuadro a cuadro (ver
+ * `simularTiro`). Antes la animación entera duraba siempre 900ms fueran
+ * cuales fueran esos cuadros, así que un tiro suave y uno a pleno poder
+ * tardaban exactamente lo mismo en pantalla — no se sentía "de billar",
+ * donde un golpe flojo para rápido y uno fuerte tarda más en asentarse.
+ * Multiplicando por la cantidad real de cuadros, la duración total queda
+ * proporcional a cuánto tardó la física de verdad en frenar la pelota.
+ */
+const MS_POR_CUADRO_FISICA = 9;
+const DURACION_MIN_MS = 450;
+const DURACION_MAX_MS = 2200;
+
+function duracionDeMiTiro(trayectorias: Record<string, Vector[]>): number {
+  let cuadros = 0;
+  for (const arr of Object.values(trayectorias)) cuadros = Math.max(cuadros, arr.length);
+  return Math.max(DURACION_MIN_MS, Math.min(DURACION_MAX_MS, cuadros * MS_POR_CUADRO_FISICA));
+}
 /** Segundos reales que tiene el jugador activo para tirar. */
 const SEGUNDOS_TURNO = 20;
 
@@ -207,7 +232,7 @@ export default function HueSoccerScreen() {
 
       const r = simularTiro(tablero, fichaId, impulso);
       setAnimando(true);
-      cancelarAnimRef.current = reproducir(r.trayectorias, DURACION_ANIM_MS, setPosiciones, async () => {
+      cancelarAnimRef.current = reproducir(r.trayectorias, duracionDeMiTiro(r.trayectorias), setPosiciones, async () => {
         if (!vivoRef.current) return;
         if (r.gol) hapticCelebracion();
 
