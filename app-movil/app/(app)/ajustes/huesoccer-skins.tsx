@@ -129,7 +129,7 @@ export default function HueSoccerSkinsScreen() {
                 { borderColor: activo ? colors.primary : colors.border, backgroundColor: colors.surface },
               ]}
             >
-              <FichaSkinSvg skin={s.id} colorEquipo={hexDeColorFicha(colorFicha)} size={TAMANO_MUESTRA} />
+              <FichaSkinSvg skin={s.id} colorEquipo={hexDeColorFicha(colorFicha)} size={TAMANO_MUESTRA} idInstancia={`preview_${s.id}`} />
               <Text style={[styles.tarjetaTexto, { color: activo ? colors.primary : colors.text }]}>{t(s.claveI18n)}</Text>
             </Pressable>
           );

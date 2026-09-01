@@ -48,31 +48,44 @@ export function PelotaSkinSvg({ skin, size }: Props) {
     );
   }
   if (skin === 'tricolor') {
+    // Antes eran 3 gajos que llenaban TODA la pelota — a los ~20px que mide
+    // en cancha eso se leía como una ruleta/torta de colores, no como una
+    // pelota ("las skins no son nada que ver [con una pelota]"). Ahora usa
+    // el mismo lenguaje que 'clasica' (base clara + parches con forma de
+    // pentágono, como los paneles de una pelota de verdad), sólo que en
+    // color en vez de negro.
     return (
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        <Circle cx={50} cy={50} r={46} fill="#FFFFFF" stroke="#22223B" strokeWidth={2} />
-        <Path d="M50 50 L50 4 A46 46 0 0 1 90 27 Z" fill="#3D9970" />
-        <Path d="M50 50 L90 27 A46 46 0 0 1 90 73 Z" fill="#E8577E" />
-        <Path d="M50 50 L90 73 A46 46 0 0 1 50 96 Z" fill="#5B9AD6" />
-        <Circle cx={50} cy={50} r={10} fill="#FFD34D" />
+        <Circle cx={50} cy={50} r={46} fill="#F5F5F5" stroke="#22223B" strokeWidth={2} />
+        <Path d="M50 26 L66 37 L60 56 L40 56 L34 37 Z" fill="#3D9970" />
+        <Path d="M14 46 L26 33 L20 56 Z" fill="#E8577E" />
+        <Path d="M86 46 L74 33 L80 56 Z" fill="#5B9AD6" />
+        <Path d="M30 88 L38 66 L58 66 L66 88 Z" fill="#3D9970" opacity={0.85} />
         <SombraEsfera />
       </Svg>
     );
   }
   if (skin === 'arcoiris') {
-    const colores = ['#E8577E', '#F0A830', '#F5E663', '#3D9970', '#5B9AD6', '#B36FE0'];
+    // Mismo motivo que 'tricolor': la rueda de 6 gajos enteros se veía como
+    // un ícono de "color wheel", no como una pelota. Ahora son parches
+    // chicos con forma de pentágono (como los paneles negros de 'clasica'),
+    // uno por color, sobre base blanca — se lee como pelota primero, y
+    // "de muchos colores" segundo, en vez de al revés.
+    const colores = ['#E8577E', '#F0A830', '#3D9970', '#5B9AD6', '#B36FE0', '#F5E663'];
+    const parches = [
+      'M50 26 L66 37 L60 56 L40 56 L34 37 Z', // central
+      'M14 46 L26 33 L20 56 Z', // izquierda
+      'M86 46 L74 33 L80 56 Z', // derecha
+      'M30 88 L38 66 L58 66 L66 88 Z', // abajo
+      'M22 16 L34 12 L36 24 L24 28 Z', // arriba-izquierda
+      'M78 16 L66 12 L64 24 L76 28 Z', // arriba-derecha
+    ];
     return (
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        <Circle cx={50} cy={50} r={46} fill="#111" />
-        {colores.map((c, i) => {
-          const a0 = (i / colores.length) * Math.PI * 2 - Math.PI / 2;
-          const a1 = ((i + 1) / colores.length) * Math.PI * 2 - Math.PI / 2;
-          const x0 = 50 + 46 * Math.cos(a0);
-          const y0 = 50 + 46 * Math.sin(a0);
-          const x1 = 50 + 46 * Math.cos(a1);
-          const y1 = 50 + 46 * Math.sin(a1);
-          return <Path key={c} d={`M50 50 L${x0} ${y0} A46 46 0 0 1 ${x1} ${y1} Z`} fill={c} />;
-        })}
+        <Circle cx={50} cy={50} r={46} fill="#F5F5F5" stroke="#22223B" strokeWidth={2} />
+        {parches.map((d, i) => (
+          <Path key={colores[i]} d={d} fill={colores[i]} />
+        ))}
         <SombraEsfera />
       </Svg>
     );

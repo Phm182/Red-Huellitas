@@ -263,7 +263,7 @@ export function CanchaSoccer({
               { width: diametro * escalaSostenida, height: diametro * escalaSostenida, left, top },
             ]}
           >
-            <FichaSkinSvg skin={skinInfo.skin} colorEquipo={skinInfo.color} size={diametro * escalaSostenida} />
+            <FichaSkinSvg skin={skinInfo.skin} colorEquipo={skinInfo.color} size={diametro * escalaSostenida} idInstancia={id} />
           </View>
         );
 

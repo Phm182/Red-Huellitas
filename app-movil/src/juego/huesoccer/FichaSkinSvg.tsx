@@ -12,6 +12,18 @@ type Props = {
    */
   colorEquipo: string;
   size: number;
+  /**
+   * Id único de ESTA ficha en la cancha (ej. "f1_0", de `idFicha()`) — hace
+   * falta para que los `<RadialGradient>` de abajo tengan un `id` distinto
+   * por ficha. Antes las 10 fichas en pantalla compartían el mismo id fijo
+   * ("fichaBulto"); en SVG los ids de `<Defs>` tienen que ser únicos en
+   * TODO el documento, no por componente — con 10 definiciones repitiendo
+   * el mismo id, no está garantizado cuál gana, y es la sospecha más
+   * concreta para "se ve plana, sin el brillo/3D de antes" reportado en el
+   * celular (en el preview web, que sí lo mostraba bien, cada `<Svg>` es un
+   * documento aparte y no se nota). De paso, es simplemente lo correcto.
+   */
+  idInstancia: string;
 };
 
 /** Cuántas muescas tiene el borde, como una ficha de casino de verdad. */
@@ -30,10 +42,10 @@ const MUESCAS = 12;
  * `resolverColorFicha`), así que el patrón sólo necesita leerse bien contra
  * SU PROPIO color, sin pensar en el rival.
  */
-export function FichaSkinSvg({ skin, colorEquipo, size }: Props) {
+export function FichaSkinSvg({ skin, colorEquipo, size, idInstancia }: Props) {
   const acento = colorContrastante(colorEquipo);
-  const idGrad = `fichaBulto`;
-  const idBorde = `fichaBorde`;
+  const idGrad = `fichaBulto_${idInstancia}`;
+  const idBorde = `fichaBorde_${idInstancia}`;
 
   const muescas = Array.from({ length: MUESCAS }, (_, i) => {
     const a = (i / MUESCAS) * Math.PI * 2;
@@ -62,7 +74,7 @@ export function FichaSkinSvg({ skin, colorEquipo, size }: Props) {
       {/* Cuerpo: color de equipo parejo, muescas de "canto de ficha" encima. */}
       <Circle cx={50} cy={50} r={46} fill={colorEquipo} stroke="rgba(0,0,0,0.3)" strokeWidth={1.5} />
       {muescas}
-      <Circle cx={50} cy={50} r={46} fill="url(#fichaBorde)" />
+      <Circle cx={50} cy={50} r={46} fill={`url(#${idBorde})`} />
 
       {/* Disco interno: acá va el patrón del skin, como el "valor" grabado de una ficha real. */}
       <Circle cx={50} cy={50} r={30} fill={colorEquipo} stroke={acento} strokeWidth={2.5} opacity={0.94} />
@@ -96,7 +108,7 @@ export function FichaSkinSvg({ skin, colorEquipo, size }: Props) {
       )}
 
       {/* Brillo/bulto general encima de todo: es lo que da la sensación de 3D. */}
-      <Circle cx={50} cy={50} r={46} fill="url(#fichaBulto)" />
+      <Circle cx={50} cy={50} r={46} fill={`url(#${idGrad})`} />
     </Svg>
   );
 }
