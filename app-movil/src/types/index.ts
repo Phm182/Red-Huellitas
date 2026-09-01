@@ -287,10 +287,20 @@ export interface Post {
   duracionSegundos: number | null;
   conteos: PostConteos;
   miReaccion: ReaccionTipo | null;
+  totalComentarios: number;
   esDueno: boolean;
   estado: 'A' | 'I';
   createdAt: string;
   origen?: 'seguido' | 'recomendado';
+}
+
+export interface Comentario {
+  comentarioId: number;
+  postId: number;
+  autor: UsuarioResumen | null;
+  texto: string;
+  esDueno: boolean;
+  createdAt: string;
 }
 
 export type TipoMediaHistoria = 'foto' | 'video';
@@ -702,6 +712,23 @@ export interface Transito {
   /** Sólo viene si esDueno: false cuando está marcado como acordado. */
   editable?: boolean;
   motivoNoEditable?: string | null;
+  /** Sólo viene si esDueno. */
+  totalInteresados?: number;
+}
+
+/** "Me interesa" recibido, tal como lo ve el dueño de la publicación. */
+export interface Interesado {
+  usuario: UsuarioResumen;
+  mensaje: string | null;
+  createdAt: string;
+}
+
+export interface TransitoInteresado extends Interesado {
+  transitoInteresId: number;
+}
+
+export interface DonacionInteresado extends Interesado {
+  donacionInteresId: number;
 }
 
 export type TipoDonacion = 'necesito' | 'ofrezco';
@@ -735,6 +762,8 @@ export interface Donacion {
   /** Sólo viene si esDueno: false cuando está marcada como acordada. */
   editable?: boolean;
   motivoNoEditable?: string | null;
+  /** Sólo viene si esDueno. */
+  totalInteresados?: number;
 }
 
 export interface VeterinariaFoto {
@@ -1040,7 +1069,8 @@ export type DenunciaContenidoTipo =
   | 'transito'
   | 'donacion'
   | 'veterinaria'
-  | 'producto';
+  | 'producto'
+  | 'comentario';
 
 export interface DenunciaContenido {
   tipo: DenunciaContenidoTipo;

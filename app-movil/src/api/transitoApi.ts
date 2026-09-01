@@ -1,6 +1,6 @@
 import { apiGet, apiPost } from './client';
 import { appendImageFile, appendOrdenFotos } from '../utils/upload';
-import { Especie, EstadoTransito, Sexo, Transito, TipoTransito } from '../types';
+import { Especie, EstadoTransito, Sexo, Transito, TipoTransito, TransitoInteresado } from '../types';
 
 interface TransitoListaResultado {
   listados: Transito[];
@@ -128,6 +128,21 @@ export const transitoApi = {
     apiPost<{ estadoTransito: EstadoTransito }>(
       'ajax/transito/estado_actualizar.php',
       { transitoId, estadoTransito },
+      true
+    ),
+
+  /** "Levantar la mano" -- mensaje opcional de una línea, sin cuestionario. */
+  interesar: (transitoId: number, mensaje?: string) =>
+    apiPost<{ transitoInteresId: number }>(
+      'ajax/transito/interesar.php',
+      { transitoId, ...(mensaje ? { mensaje } : {}) },
+      true
+    ),
+
+  interesadosListar: (transitoId: number) =>
+    apiGet<{ interesados: TransitoInteresado[] }>(
+      'ajax/transito/interesados_listar.php',
+      { transitoId },
       true
     ),
 };

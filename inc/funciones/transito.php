@@ -52,6 +52,18 @@ function rh_transito_fotos(mysqli $conn, array $t): array
     return $fotos;
 }
 
+/** Cantidad de "me interesa" recibidos, sólo se muestra al dueño. */
+function rh_transito_total_interesados(mysqli $conn, int $transitoId): int
+{
+    $stmt = $conn->prepare('SELECT COUNT(*) AS total FROM TransitoInteres WHERE TransitoId = ?');
+    $stmt->bind_param('i', $transitoId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return (int) $row['total'];
+}
+
 /**
  * Serializa un row de Transito (array asociativo de la DB, con columnas de
  * Usuario y de Mascota -- vía LEFT JOIN con alias MascotaNombre/MascotaSexo/
@@ -117,6 +129,7 @@ function rh_transito_publico(mysqli $conn, array $t, int $viewerUserId, ?float $
         $bloqueo = rh_transito_motivo_bloqueo_edicion($t);
         $data['editable'] = $bloqueo === null;
         $data['motivoNoEditable'] = $bloqueo;
+        $data['totalInteresados'] = rh_transito_total_interesados($conn, $transitoId);
     }
 
     return $data;

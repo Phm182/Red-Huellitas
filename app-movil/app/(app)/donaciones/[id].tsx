@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, Style
 import { donacionesApi } from '../../../src/api/donacionesApi';
 import { BotonEditarPublicacion } from '../../../src/components/BotonEditarPublicacion';
 import { DenunciaButtonStub } from '../../../src/components/DenunciaButtonStub';
+import { MeInteresaButton } from '../../../src/components/MeInteresaButton';
 import { Donacion } from '../../../src/types';
 import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
@@ -134,14 +135,28 @@ export default function DonacionDetalleScreen() {
             editable={donacion.editable}
             motivoNoEditable={donacion.motivoNoEditable}
           />
+          <Pressable
+            style={[styles.button, styles.verInteresadosButton, { borderColor: colors.primary }]}
+            onPress={() => router.push(`/(app)/donaciones/${donacion.donacionId}/interesados` as never)}
+          >
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>
+              {t('donaciones.verInteresados')} ({donacion.totalInteresados ?? 0})
+            </Text>
+          </Pressable>
           <Pressable onPress={onEliminar} style={styles.eliminarLink}>
             <Text style={{ color: colors.danger, fontSize: 12 }}>{t('donaciones.eliminarButton')}</Text>
           </Pressable>
         </>
       ) : (
-        <View style={styles.denunciaRow}>
-          <DenunciaButtonStub userId={donacion.autor.userId} donacionId={donacion.donacionId} />
-        </View>
+        <>
+          <MeInteresaButton
+            ns="donaciones"
+            onEnviar={(mensaje) => donacionesApi.interesar(donacion.donacionId, mensaje)}
+          />
+          <View style={styles.denunciaRow}>
+            <DenunciaButtonStub userId={donacion.autor.userId} donacionId={donacion.donacionId} />
+          </View>
+        </>
       )}
     </ScrollView>
   );
@@ -153,6 +168,7 @@ const styles = StyleSheet.create({
   foto: { width: 260, height: 220, borderRadius: 12, marginRight: 8 },
   whatsappButton: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 16 },
   button: { borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 12 },
+  verInteresadosButton: { backgroundColor: 'transparent', borderWidth: 1 },
   eliminarLink: { marginTop: 4, alignItems: 'center' },
   denunciaRow: { marginTop: 16, alignItems: 'center' },
 });

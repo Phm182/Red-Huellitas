@@ -201,6 +201,7 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
 
       <View style={styles.actions}>
         <ReactionsBar
+          style={{ flexShrink: 1 }}
           miReaccion={miReaccion}
           conteos={conteos}
           busy={reaccionBusy}
@@ -208,6 +209,17 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
         />
         <Pressable style={styles.actionButton} onPress={onCompartir}>
           <Ionicons name="paper-plane-outline" size={21} color={colors.textMuted} />
+        </Pressable>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => router.push(`/(app)/publicaciones/${post.postId}`)}
+        >
+          <Ionicons name="chatbubble-outline" size={19} color={colors.textMuted} />
+          {post.totalComentarios > 0 ? (
+            <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: fonts.bodyMedium }}>
+              {post.totalComentarios}
+            </Text>
+          ) : null}
         </Pressable>
         <View style={{ flex: 1 }} />
         {esDueno ? (

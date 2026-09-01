@@ -82,6 +82,39 @@ function rh_post_mi_reaccion(mysqli $conn, int $postId, int $viewerUserId): ?str
     return $row ? $row['Tipo'] : null;
 }
 
+/** Cantidad de comentarios activos de un post, para el shape público. */
+function rh_post_total_comentarios(mysqli $conn, int $postId): int
+{
+    $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM Comentario WHERE PostId = ? AND Estado = 'A'");
+    $stmt->bind_param('i', $postId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return (int) $row['total'];
+}
+
+/**
+ * Serializa un row de Comentario (array asociativo de la DB, con columnas de
+ * Usuario ya incluidas vía JOIN) al shape público.
+ */
+function rh_comentario_publico(array $c, int $viewerUserId): array
+{
+    return [
+        'comentarioId' => (int) $c['ComentarioId'],
+        'postId' => (int) $c['PostId'],
+        'autor' => rh_usuario_resumen([
+            'UserId' => $c['UserId'],
+            'Username' => $c['Username'],
+            'NombreCompleto' => $c['NombreCompleto'],
+            'AvatarPath' => $c['AvatarPath'],
+        ]),
+        'texto' => $c['Texto'],
+        'esDueno' => (int) $c['UserId'] === $viewerUserId,
+        'createdAt' => $c['CreatedAt'],
+    ];
+}
+
 function rh_post_autor_seguido(mysqli $conn, int $autorId, int $viewerUserId): bool
 {
     if ($autorId === $viewerUserId) {
@@ -122,6 +155,7 @@ function rh_post_publico(mysqli $conn, array $p, int $viewerUserId): array
             : null,
         'conteos' => rh_post_conteos($conn, $postId),
         'miReaccion' => rh_post_mi_reaccion($conn, $postId, $viewerUserId),
+        'totalComentarios' => rh_post_total_comentarios($conn, $postId),
         'esDueno' => $autorId === $viewerUserId,
         'estado' => $p['Estado'],
         'createdAt' => $p['CreatedAt'],

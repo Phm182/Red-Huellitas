@@ -34,6 +34,7 @@ interface DenunciaButtonStubProps {
   donacionId?: number;
   veterinariaId?: number;
   productoId?: number;
+  comentarioId?: number;
   /** Compacto: sólo el ícono (p. ej. en el visor de historias). */
   compacto?: boolean;
 }
@@ -53,6 +54,7 @@ export function DenunciaButtonStub({
   donacionId,
   veterinariaId,
   productoId,
+  comentarioId,
   compacto = false,
 }: DenunciaButtonStubProps) {
   const { t } = useTranslation();
@@ -74,7 +76,8 @@ export function DenunciaButtonStub({
     transitoId ||
     donacionId ||
     veterinariaId ||
-    productoId
+    productoId ||
+    comentarioId
   );
 
   const cerrar = () => {
@@ -104,6 +107,7 @@ export function DenunciaButtonStub({
       donacionId,
       veterinariaId,
       productoId,
+      comentarioId,
     });
     setSubmitting(false);
     if (res.success) {

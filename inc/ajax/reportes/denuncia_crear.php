@@ -17,6 +17,7 @@ $transitoId = isset($_POST['transitoId']) && $_POST['transitoId'] !== '' ? (int)
 $donacionId = isset($_POST['donacionId']) && $_POST['donacionId'] !== '' ? (int) $_POST['donacionId'] : null;
 $veterinariaId = isset($_POST['veterinariaId']) && $_POST['veterinariaId'] !== '' ? (int) $_POST['veterinariaId'] : null;
 $productoId = isset($_POST['productoId']) && $_POST['productoId'] !== '' ? (int) $_POST['productoId'] : null;
+$comentarioId = isset($_POST['comentarioId']) && $_POST['comentarioId'] !== '' ? (int) $_POST['comentarioId'] : null;
 
 if ($userIdDenunciado <= 0) {
     json_error('Falta userIdDenunciado');
@@ -136,12 +137,23 @@ if ($productoId !== null) {
     $stmt->close();
 }
 
+if ($comentarioId !== null) {
+    $stmt = $conn->prepare("SELECT ComentarioId FROM Comentario WHERE ComentarioId = ? AND Estado = 'A'");
+    $stmt->bind_param('i', $comentarioId);
+    $stmt->execute();
+    if (!$stmt->get_result()->fetch_assoc()) {
+        $stmt->close();
+        json_error('El comentario denunciado no existe', 404);
+    }
+    $stmt->close();
+}
+
 $stmt = $conn->prepare(
-    'INSERT INTO Denuncia (UserIdDenunciante, UserIdDenunciado, PostId, HistoriaId, AdopcionId, CampaniaId, PerdidoId, TransitoId, DonacionId, VeterinariaId, ProductoId, Motivo, Detalle)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO Denuncia (UserIdDenunciante, UserIdDenunciado, PostId, HistoriaId, AdopcionId, CampaniaId, PerdidoId, TransitoId, DonacionId, VeterinariaId, ProductoId, ComentarioId, Motivo, Detalle)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 $stmt->bind_param(
-    'iiiiiiiiiiiss',
+    'iiiiiiiiiiiiss',
     $userId,
     $userIdDenunciado,
     $postId,
@@ -153,6 +165,7 @@ $stmt->bind_param(
     $donacionId,
     $veterinariaId,
     $productoId,
+    $comentarioId,
     $motivo,
     $detalle
 );

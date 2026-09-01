@@ -275,7 +275,13 @@
     "verificationRequiredTitle": "Necesitás verificar tu cuenta",
     "verificationRequiredBody": "Para publicar primero tenés que completar la verificación de identidad (DNI + selfie).",
     "goToVerification": "Ir a verificación",
-    "origenRecomendado": "Recomendado para vos"
+    "origenRecomendado": "Recomendado para vos",
+    "comentariosTitulo": "Comentarios",
+    "comentarPlaceholder": "Escribí un comentario...",
+    "comentarioVacio": "Todavía no hay comentarios. ¡Sé el primero!",
+    "comentarioEliminado": "Comentario eliminado",
+    "comentarioEliminarConfirmTitle": "¿Eliminar comentario?",
+    "comentarioEliminarConfirmBody": "Esta acción no se puede deshacer."
   },
   "tipoUsuario": {
     "selectorLabel": "¿Qué tipo de cuenta sos?",
@@ -530,7 +536,17 @@
     "publicarButton": "Publicar tránsito",
     "eliminarButton": "Eliminar publicación",
     "deleteConfirmTitle": "¿Eliminar publicación?",
-    "deleteConfirmBody": "Esta acción no se puede deshacer desde la app."
+    "deleteConfirmBody": "Esta acción no se puede deshacer desde la app.",
+    "meInteresa": "Me interesa",
+    "meInteresaMensajePlaceholder": "Mensaje opcional (ej: puedo tenerlo 2 semanas)",
+    "meInteresaEnviar": "Enviar interés",
+    "interesRegistrado": "¡Listo! Le avisamos al dueño.",
+    "verInteresados": "Ver interesados",
+    "emptyInteresados": "Todavía no recibiste interesados",
+    "chatearInteresado": "Chatear",
+    "verificationRequiredTitle": "Necesitás verificar tu cuenta",
+    "verificationRequiredBody": "Para marcar tu interés primero tenés que completar la verificación de identidad (DNI + selfie).",
+    "yaTeInteresaste": "Ya marcaste tu interés en esta publicación"
   },
   "donaciones": {
     "tituloLista": "Donaciones",
@@ -561,7 +577,17 @@
     "publicarButton": "Publicar donación",
     "eliminarButton": "Eliminar publicación",
     "deleteConfirmTitle": "¿Eliminar publicación?",
-    "deleteConfirmBody": "Esta acción no se puede deshacer desde la app."
+    "deleteConfirmBody": "Esta acción no se puede deshacer desde la app.",
+    "meInteresa": "Me interesa",
+    "meInteresaMensajePlaceholder": "Mensaje opcional (ej: necesito 2kg)",
+    "meInteresaEnviar": "Enviar interés",
+    "interesRegistrado": "¡Listo! Le avisamos al dueño.",
+    "verInteresados": "Ver interesados",
+    "emptyInteresados": "Todavía no recibiste interesados",
+    "chatearInteresado": "Chatear",
+    "verificationRequiredTitle": "Necesitás verificar tu cuenta",
+    "verificationRequiredBody": "Para marcar tu interés primero tenés que completar la verificación de identidad (DNI + selfie).",
+    "yaTeInteresaste": "Ya marcaste tu interés en esta publicación"
   },
   "veterinarias": {
     "tituloLista": "Veterinarias cercanas",

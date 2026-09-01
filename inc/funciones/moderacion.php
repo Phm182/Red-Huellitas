@@ -34,6 +34,7 @@ const RH_DENUNCIA_CONTENIDOS = [
     'DonacionId' => 'donacion',
     'VeterinariaId' => 'veterinaria',
     'ProductoId' => 'producto',
+    'ComentarioId' => 'comentario',
 ];
 
 /**
@@ -52,6 +53,7 @@ function rh_moderacion_bajar_contenido(mysqli $conn, array $denuncia): bool
         'DonacionId' => ['Donacion', 'DonacionId'],
         'VeterinariaId' => ['Veterinaria', 'VeterinariaId'],
         'ProductoId' => ['Producto', 'ProductoId'],
+        'ComentarioId' => ['Comentario', 'ComentarioId'],
     ];
 
     foreach ($map as $col => [$tabla, $pk]) {

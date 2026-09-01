@@ -1,6 +1,6 @@
 import { apiGet, apiPost } from './client';
 import { appendImageFile, appendOrdenFotos } from '../utils/upload';
-import { CategoriaDonacion, Donacion, Especie, EstadoDonacion, TipoDonacion } from '../types';
+import { CategoriaDonacion, Donacion, DonacionInteresado, Especie, EstadoDonacion, TipoDonacion } from '../types';
 
 interface DonacionListaResultado {
   listados: Donacion[];
@@ -96,6 +96,21 @@ export const donacionesApi = {
     apiPost<{ estadoDonacion: EstadoDonacion }>(
       'ajax/donaciones/estado_actualizar.php',
       { donacionId, estadoDonacion },
+      true
+    ),
+
+  /** "Levantar la mano" -- mensaje opcional de una línea, sin cuestionario. */
+  interesar: (donacionId: number, mensaje?: string) =>
+    apiPost<{ donacionInteresId: number }>(
+      'ajax/donaciones/interesar.php',
+      { donacionId, ...(mensaje ? { mensaje } : {}) },
+      true
+    ),
+
+  interesadosListar: (donacionId: number) =>
+    apiGet<{ interesados: DonacionInteresado[] }>(
+      'ajax/donaciones/interesados_listar.php',
+      { donacionId },
       true
     ),
 };

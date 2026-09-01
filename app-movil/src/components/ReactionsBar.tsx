@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { REACCIONES, reaccionConteoKey } from '../constants/reacciones';
 import { PostConteos, ReaccionTipo } from '../types';
 import { elevation, radii } from '../theme/elevation';
@@ -18,6 +18,8 @@ type Props = {
   oscuro?: boolean;
   /** Columna vertical (Huetube). */
   vertical?: boolean;
+  /** Para achicar la barra cuando comparte fila con otros botones (ej. PostCard). */
+  style?: StyleProp<ViewStyle>;
 };
 
 const VISIBLES = 4;
@@ -32,6 +34,7 @@ export function ReactionsBar({
   onReaccionar,
   oscuro,
   vertical,
+  style,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -107,13 +110,13 @@ export function ReactionsBar({
   return (
     <>
       {vertical ? (
-        <View style={styles.columna}>{botones}</View>
+        <View style={[styles.columna, style]}>{botones}</View>
       ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.fila}
-          style={styles.scroll}
+          style={[styles.scroll, style]}
         >
           {botones}
         </ScrollView>

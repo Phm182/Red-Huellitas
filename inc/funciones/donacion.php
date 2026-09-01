@@ -29,6 +29,18 @@ function rh_donacion_fotos(mysqli $conn, int $donacionId): array
     return $fotos;
 }
 
+/** Cantidad de "me interesa" recibidos, sólo se muestra al dueño. */
+function rh_donacion_total_interesados(mysqli $conn, int $donacionId): int
+{
+    $stmt = $conn->prepare('SELECT COUNT(*) AS total FROM DonacionInteres WHERE DonacionId = ?');
+    $stmt->bind_param('i', $donacionId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return (int) $row['total'];
+}
+
 /**
  * Serializa un row de Donacion (array asociativo de la DB, con columnas de
  * Usuario ya incluidas vía JOIN) al shape público. $distanciaKm viene del
@@ -71,6 +83,7 @@ function rh_donacion_publico(mysqli $conn, array $d, int $viewerUserId, ?float $
         $bloqueo = rh_donacion_motivo_bloqueo_edicion($d);
         $data['editable'] = $bloqueo === null;
         $data['motivoNoEditable'] = $bloqueo;
+        $data['totalInteresados'] = rh_donacion_total_interesados($conn, $donacionId);
     }
 
     return $data;

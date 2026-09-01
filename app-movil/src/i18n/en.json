@@ -266,7 +266,13 @@
     "verificationRequiredTitle": "You need to verify your account",
     "verificationRequiredBody": "To post you first need to complete identity verification (ID + selfie).",
     "goToVerification": "Go to verification",
-    "origenRecomendado": "Recommended for you"
+    "origenRecomendado": "Recommended for you",
+    "comentariosTitulo": "Comments",
+    "comentarPlaceholder": "Write a comment...",
+    "comentarioVacio": "No comments yet. Be the first!",
+    "comentarioEliminado": "Comment deleted",
+    "comentarioEliminarConfirmTitle": "Delete comment?",
+    "comentarioEliminarConfirmBody": "This action can't be undone."
   },
   "tipoUsuario": {
     "selectorLabel": "What type of account are you?",
@@ -516,7 +522,17 @@
     "publicarButton": "Publish transit post",
     "eliminarButton": "Delete post",
     "deleteConfirmTitle": "Delete post?",
-    "deleteConfirmBody": "This can't be undone from the app."
+    "deleteConfirmBody": "This can't be undone from the app.",
+    "meInteresa": "I'm interested",
+    "meInteresaMensajePlaceholder": "Optional message (e.g. I can foster for 2 weeks)",
+    "meInteresaEnviar": "Send interest",
+    "interesRegistrado": "Done! We let the owner know.",
+    "verInteresados": "See interested users",
+    "emptyInteresados": "No one has shown interest yet",
+    "chatearInteresado": "Chat",
+    "verificationRequiredTitle": "You need to verify your account",
+    "verificationRequiredBody": "To mark your interest you first need to complete identity verification (ID + selfie).",
+    "yaTeInteresaste": "You already marked your interest in this post"
   },
   "donaciones": {
     "tituloLista": "Donations",
@@ -547,7 +563,17 @@
     "publicarButton": "Publish donation",
     "eliminarButton": "Delete post",
     "deleteConfirmTitle": "Delete post?",
-    "deleteConfirmBody": "This can't be undone from the app."
+    "deleteConfirmBody": "This can't be undone from the app.",
+    "meInteresa": "I'm interested",
+    "meInteresaMensajePlaceholder": "Optional message (e.g. I need 2kg)",
+    "meInteresaEnviar": "Send interest",
+    "interesRegistrado": "Done! We let the owner know.",
+    "verInteresados": "See interested users",
+    "emptyInteresados": "No one has shown interest yet",
+    "chatearInteresado": "Chat",
+    "verificationRequiredTitle": "You need to verify your account",
+    "verificationRequiredBody": "To mark your interest you first need to complete identity verification (ID + selfie).",
+    "yaTeInteresaste": "You already marked your interest in this post"
   },
   "veterinarias": {
     "tituloLista": "Nearby vet clinics",

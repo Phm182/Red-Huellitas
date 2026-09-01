@@ -14,6 +14,7 @@ export type CrearDenunciaParams = {
   donacionId?: number;
   veterinariaId?: number;
   productoId?: number;
+  comentarioId?: number;
 };
 
 export const reportesApi = {
@@ -40,6 +41,7 @@ export const reportesApi = {
         ...(params.donacionId ? { donacionId: params.donacionId } : {}),
         ...(params.veterinariaId ? { veterinariaId: params.veterinariaId } : {}),
         ...(params.productoId ? { productoId: params.productoId } : {}),
+        ...(params.comentarioId ? { comentarioId: params.comentarioId } : {}),
       },
       true
     ),

@@ -87,9 +87,11 @@ export default function AppLayout() {
         <Stack.Screen name="transito/index" />
         <Stack.Screen name="transito/nueva" />
         <Stack.Screen name="transito/[id]" />
+        <Stack.Screen name="transito/[id]/interesados" />
         <Stack.Screen name="donaciones/index" />
         <Stack.Screen name="donaciones/nueva" />
         <Stack.Screen name="donaciones/[id]" />
+        <Stack.Screen name="donaciones/[id]/interesados" />
         <Stack.Screen name="veterinarias/index" />
         <Stack.Screen name="veterinarias/nueva" />
         <Stack.Screen name="veterinarias/[id]" />
