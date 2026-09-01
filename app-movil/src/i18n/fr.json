@@ -1204,7 +1204,25 @@
         "arcoiris": "Arc-en-ciel",
         "lunar": "Lunaire"
       },
-      "metaGoles": "Objectif de buts"
+      "metaGoles": "Objectif de buts",
+      "colorFichaTitulo": "Couleur du pion",
+      "colores": {
+        "rojo": "Rouge",
+        "rosa": "Rose",
+        "naranja": "Orange",
+        "amarillo": "Jaune",
+        "verde": "Vert",
+        "esmeralda": "Émeraude",
+        "celeste": "Bleu ciel",
+        "azul": "Bleu",
+        "indigo": "Indigo",
+        "violeta": "Violet",
+        "magenta": "Magenta",
+        "marron": "Marron",
+        "gris": "Gris",
+        "negro": "Noir",
+        "blanco": "Blanc"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} questions sur les soins aux animaux, {{s}} secondes chacune. À la fin tu vois tes réponses et pourquoi.",

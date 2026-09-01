@@ -7,7 +7,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { FichaSkinSvg } from './FichaSkinSvg';
 import { Cancha, FichaSoccer, TableroSoccer, Vector } from './motor';
 import { PelotaSkinSvg } from './PelotaSkinSvg';
-import { SkinFichaId, SkinPelotaId, VarianteSkin } from './skins';
+import { SkinFichaId, SkinPelotaId } from './skins';
 
 export type Posiciones = Record<string, Vector>;
 
@@ -81,7 +81,9 @@ export function reproducir(
   };
 }
 
-export type SkinDeJugador = { skin: SkinFichaId; variante: VarianteSkin };
+/** `color` ya viene resuelto (hex final, con la colisión con el rival ya
+ *  decidida — ver `resolverColorFicha` en `skins.ts`), no un id de paleta. */
+export type SkinDeJugador = { skin: SkinFichaId; color: string };
 
 type Props = {
   cancha: Cancha;
@@ -99,8 +101,6 @@ type Props = {
 /** Cuánto se estira el arrastre antes de tirar: más lejos, más potencia. */
 const FACTOR_POTENCIA = 0.18;
 const POTENCIA_MAXIMA = 22;
-const COLOR_J1 = '#E8577E';
-const COLOR_J2 = '#5B9AD6';
 
 /** Patrón de red: unas líneas cruzadas dentro del rectángulo del arco. */
 function Red({ x, y, ancho, alto }: { x: number; y: number; ancho: number; alto: number }) {
@@ -208,8 +208,15 @@ export function CanchaSoccer({
         {/* Paneles de fondo de cada arco, con el color de quien lo defiende —
             mismo lenguaje que la referencia (paneles de colores detrás de la
             red), y ayuda a leer de un vistazo cuál arco es el propio. */}
-        <Rect x={arcoX} y={0} width={arcoAncho} height={offsetY} fill={COLOR_J1} opacity={0.22} />
-        <Rect x={arcoX} y={offsetY + altoJuego} width={arcoAncho} height={offsetY} fill={COLOR_J2} opacity={0.22} />
+        <Rect x={arcoX} y={0} width={arcoAncho} height={offsetY} fill={skinsPorJugador[1].color} opacity={0.22} />
+        <Rect
+          x={arcoX}
+          y={offsetY + altoJuego}
+          width={arcoAncho}
+          height={offsetY}
+          fill={skinsPorJugador[2].color}
+          opacity={0.22}
+        />
 
         {/* Redes, detrás de cada línea de arco. */}
         <Red x={arcoX} y={0} ancho={arcoAncho} alto={offsetY} />
@@ -238,20 +245,25 @@ export function CanchaSoccer({
         const id = idFicha(f);
         const pos = posiciones[id] ?? { x: f.x, y: f.y };
         const esMia = f.j === miFicha;
-        const off = arrastre?.fichaId === id ? { x: arrastre.dx, y: arrastre.dy } : { x: 0, y: 0 };
+        // La ficha NO sigue al dedo — se apunta con la flecha (ver
+        // `FlechaTiro`), la ficha se queda quieta hasta soltar, igual que en
+        // la referencia de Soccer Star. Sólo un agrandado sutil mientras se
+        // sostiene, como señal de "esta es la que estás por tirar".
+        const sostenida = arrastre?.fichaId === id;
         const diametro = px(cancha.radioFicha) * 2;
-        const left = px(pos.x) - diametro / 2 + off.x;
-        const top = py(pos.y) - diametro / 2 + off.y;
+        const escalaSostenida = sostenida ? 1.12 : 1;
+        const left = px(pos.x) - (diametro * escalaSostenida) / 2;
+        const top = py(pos.y) - (diametro * escalaSostenida) / 2;
         const skinInfo = skinsPorJugador[f.j];
 
         const ficha = (
-          <View style={[styles.ficha, { width: diametro, height: diametro, left, top }]}>
-            <FichaSkinSvg
-              skin={skinInfo.skin}
-              variante={skinInfo.variante}
-              colorEquipo={f.j === 1 ? COLOR_J1 : COLOR_J2}
-              size={diametro}
-            />
+          <View
+            style={[
+              styles.ficha,
+              { width: diametro * escalaSostenida, height: diametro * escalaSostenida, left, top },
+            ]}
+          >
+            <FichaSkinSvg skin={skinInfo.skin} colorEquipo={skinInfo.color} size={diametro * escalaSostenida} />
           </View>
         );
 
@@ -321,10 +333,10 @@ function FlechaTiro({
   // mas tires hacia atras, mas fuerte debe salir y la flecha mas larga").
   const largo = 24 + (potencia / POTENCIA_MAXIMA) * 100;
 
-  // La ficha ya está dibujada en su posición "tirada hacia atrás" (offset =
-  // arrastre.dx/dy) — la flecha arranca ahí, no en la posición de reposo.
-  const cx = px(base.x) + arrastre.dx;
-  const cy = py(base.y) + arrastre.dy;
+  // La ficha ya NO se mueve con el dedo (se queda quieta, como en la
+  // referencia) — la flecha arranca en su posición de reposo de siempre.
+  const cx = px(base.x);
+  const cy = py(base.y);
   const puntaX = cx + dirX * largo;
   const puntaY = cy + dirY * largo;
 

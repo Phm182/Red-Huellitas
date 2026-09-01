@@ -189,6 +189,7 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'avatarBust' => rh_avatar_bust($u['AvatarPath'] ?? null),
         'huesoccerSkinFicha' => $u['HueSoccerSkinFicha'] ?? 'clasica',
         'huesoccerSkinPelota' => $u['HueSoccerSkinPelota'] ?? 'clasica',
+        'huesoccerColorFicha' => $u['HueSoccerColorFicha'] ?? 'rojo',
         'onboardingCompleto' => $u['OnboardingCompleto'] === 'Y',
         'fechaNacimiento' => $u['FechaNacimiento'] ?? null,
         // La app usa esto para mostrar la pantalla bloqueante del backfill.

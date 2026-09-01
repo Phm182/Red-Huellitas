@@ -1,11 +1,11 @@
 -- =============================================================================
--- Red Huellitas — schema completo (001 … 056)
+-- Red Huellitas — schema completo (001 … 057)
 --
 -- ARCHIVO GENERADO — no editar a mano.
 -- Se regenera con:  php inc/cli/build_schema.php
 -- Si agregás una migración a sql/, volvé a correr eso y commiteá el resultado.
 --
--- Última generación: 2026-08-31  ·  Migraciones incluidas: 56
+-- Última generación: 2026-09-01  ·  Migraciones incluidas: 57
 --
 -- Sirve para crear la base desde cero con la versión final del esquema:
 --   mysql --default-character-set=utf8mb4 -u root < sql/000_todo_schema.sql
@@ -4324,6 +4324,28 @@ SET @sql = (SELECT IF(
     (SELECT COUNT(*) FROM information_schema.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'HueSoccerSkinPelota') = 0,
     "ALTER TABLE Usuario ADD COLUMN HueSoccerSkinPelota VARCHAR(30) NOT NULL DEFAULT 'clasica'",
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- -----------------------------------------------------------------------------
+-- 057_hueplay_soccer_color_ficha.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- HueSoccer: color de ficha elegible (antes era fijo por jugador, rosa el
+-- retador y azul el retado, sin poder elegirlo). Mismo criterio que
+-- 056_hueplay_soccer_skins.sql: preferencia de cuenta fija en Usuario, no
+-- por partida.
+-- mysql -u root --default-character-set=utf8mb4 huellitas < sql/057_hueplay_soccer_color_ficha.sql
+-- ============================================================
+
+SET NAMES utf8mb4;
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'HueSoccerColorFicha') = 0,
+    "ALTER TABLE Usuario ADD COLUMN HueSoccerColorFicha VARCHAR(20) NOT NULL DEFAULT 'rojo'",
     'SELECT 1'));
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 

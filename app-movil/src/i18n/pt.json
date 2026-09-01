@@ -1204,7 +1204,25 @@
         "arcoiris": "Arco-íris",
         "lunar": "Lunar"
       },
-      "metaGoles": "Meta de gols"
+      "metaGoles": "Meta de gols",
+      "colorFichaTitulo": "Cor da peça",
+      "colores": {
+        "rojo": "Vermelho",
+        "rosa": "Rosa",
+        "naranja": "Laranja",
+        "amarillo": "Amarelo",
+        "verde": "Verde",
+        "esmeralda": "Esmeralda",
+        "celeste": "Azul-celeste",
+        "azul": "Azul",
+        "indigo": "Índigo",
+        "violeta": "Roxo",
+        "magenta": "Magenta",
+        "marron": "Marrom",
+        "gris": "Cinza",
+        "negro": "Preto",
+        "blanco": "Branco"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} perguntas sobre cuidado animal, {{s}} segundos cada. No final você vê o que acertou e por quê.",

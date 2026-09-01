@@ -9,13 +9,15 @@ import { useAuth } from '../../../src/auth/AuthProvider';
 import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
 import { GOLES_PARA_GANAR_DEFAULT, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
 import {
+  COLOR_FICHA_DEFAULT,
   SKIN_FICHA_DEFAULT,
   SKIN_PELOTA_DEFAULT,
   SkinFichaId,
   SkinPelotaId,
+  esColorFichaValido,
   esSkinFichaValida,
   esSkinPelotaValida,
-  resolverSkinsPartido,
+  resolverColorFicha,
   skinPelotaDelPartido,
 } from '../../../src/juego/huesoccer/skins';
 import { HuePlayDesafio } from '../../../src/types/hueplay';
@@ -37,6 +39,9 @@ function skinFichaValida(v: string | undefined): SkinFichaId {
 }
 function skinPelotaValida(v: string | undefined): SkinPelotaId {
   return v && esSkinPelotaValida(v) ? v : SKIN_PELOTA_DEFAULT;
+}
+function colorFichaValido(v: string | undefined): string {
+  return v && esColorFichaValido(v) ? v : COLOR_FICHA_DEFAULT;
 }
 
 /**
@@ -271,17 +276,23 @@ export default function HueSoccerScreen() {
   const ladoPorAlto = altoDisponible / relacionAltoAncho;
   const lado = Math.max(200, Math.min(width - 32, 340, ladoPorAlto));
 
-  // Skins: siempre determinístico por soyRetador — los dos clientes
-  // calculan lo mismo sin negociar nada por red (ver skins.ts).
+  // Skins: cada cliente calcula lo mismo sin negociar nada por red (ver
+  // skins.ts). El color de ficha ya no es fijo por jugador (antes rosa el
+  // retador, azul el retado) — es una preferencia elegible, y si los dos
+  // eligieron el mismo color, `resolverColorFicha` decide (siempre desde MI
+  // perspectiva: yo veo mi color real, el rival se ve complementario si
+  // coincidía).
   const miSkinFicha = skinFichaValida(user?.huesoccerSkinFicha);
   const susSkinFicha = skinFichaValida(desafio.otro.skinFicha);
-  const skinRetador = desafio.soyRetador ? miSkinFicha : susSkinFicha;
-  const skinRetado = desafio.soyRetador ? susSkinFicha : miSkinFicha;
-  const variantes = resolverSkinsPartido(skinRetador, skinRetado);
+  const miColorFicha = colorFichaValido(user?.huesoccerColorFicha);
+  const susColorFicha = colorFichaValido(desafio.otro.colorFicha);
+  const { mio: miColorResuelto, suyo: susColorResuelto } = resolverColorFicha(miColorFicha, susColorFicha);
+  const miNumero = desafio.miFicha === '1' ? 1 : 2;
+  const susNumero: 1 | 2 = miNumero === 1 ? 2 : 1;
   const skinsPorJugador: Record<1 | 2, SkinDeJugador> = {
-    1: { skin: skinRetador, variante: variantes.retador },
-    2: { skin: skinRetado, variante: variantes.retado },
-  };
+    [miNumero]: { skin: miSkinFicha, color: miColorResuelto },
+    [susNumero]: { skin: susSkinFicha, color: susColorResuelto },
+  } as Record<1 | 2, SkinDeJugador>;
   const miSkinPelota = skinPelotaValida(user?.huesoccerSkinPelota);
   const susSkinPelota = skinPelotaValida(desafio.otro.skinPelota);
   const skinPelotaRetador = desafio.soyRetador ? miSkinPelota : susSkinPelota;
@@ -343,6 +354,9 @@ export default function HueSoccerScreen() {
       <View style={[styles.marcador, centeredContent]}>
         <View style={styles.marcadorLado}>
           <View style={styles.marcadorLabelFila}>
+            {/* Qué color de ficha soy yo, al lado de mi marcador — antes no
+                se veía en ningún lado más que mirando la cancha. */}
+            <View style={[styles.puntoColor, { backgroundColor: miColorResuelto }]} />
             <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ1')}</Text>
             {desafio.esMiTurno ? <PuntoTurno /> : null}
           </View>
@@ -351,6 +365,7 @@ export default function HueSoccerScreen() {
         <Text style={[styles.marcadorGuion, { color: colors.textMuted }]}>-</Text>
         <View style={styles.marcadorLado}>
           <View style={styles.marcadorLabelFila}>
+            <View style={[styles.puntoColor, { backgroundColor: susColorResuelto }]} />
             <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>{t('hueplay.soccer.golesJ2')}</Text>
             {!desafio.esMiTurno ? <PuntoTurno /> : null}
           </View>
@@ -421,6 +436,7 @@ const styles = StyleSheet.create({
   marcadorLado: { alignItems: 'center' },
   marcadorLabelFila: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   puntoTurno: { width: 8, height: 8, borderRadius: 4 },
+  puntoColor: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
   marcadorLabel: { fontSize: 11, textTransform: 'uppercase' },
   marcadorValor: { fontSize: 30, fontFamily: fonts.displaySemi },
   marcadorGuion: { fontSize: 22, fontFamily: fonts.displaySemi, marginTop: 14 },

@@ -694,7 +694,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
     // una sola consulta ya existente, el costo de 2 columnas más es
     // despreciable — más simple que ramificar por JuegoCodigo.
     $stmt = $conn->prepare(
-        'SELECT UserId, NombreCompleto, Username, AvatarPath, HueSoccerSkinFicha, HueSoccerSkinPelota
+        'SELECT UserId, NombreCompleto, Username, AvatarPath, HueSoccerSkinFicha, HueSoccerSkinPelota, HueSoccerColorFicha
            FROM Usuario WHERE UserId = ?'
     );
     $stmt->bind_param('i', $otroId);
@@ -739,6 +739,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
             'avatarPath' => $otro['AvatarPath'] ?? null,
             'skinFicha' => $otro['HueSoccerSkinFicha'] ?? 'clasica',
             'skinPelota' => $otro['HueSoccerSkinPelota'] ?? 'clasica',
+            'colorFicha' => $otro['HueSoccerColorFicha'] ?? 'rojo',
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],

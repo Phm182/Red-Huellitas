@@ -1204,7 +1204,25 @@
         "arcoiris": "Regenbogen",
         "lunar": "Mond"
       },
-      "metaGoles": "Torziel"
+      "metaGoles": "Torziel",
+      "colorFichaTitulo": "Farbe der Figur",
+      "colores": {
+        "rojo": "Rot",
+        "rosa": "Rosa",
+        "naranja": "Orange",
+        "amarillo": "Gelb",
+        "verde": "Grün",
+        "esmeralda": "Smaragd",
+        "celeste": "Himmelblau",
+        "azul": "Blau",
+        "indigo": "Indigo",
+        "violeta": "Violett",
+        "magenta": "Magenta",
+        "marron": "Braun",
+        "gris": "Grau",
+        "negro": "Schwarz",
+        "blanco": "Weiß"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} Fragen zur Tierpflege, je {{s}} Sekunden. Am Ende siehst du, was richtig war und warum.",

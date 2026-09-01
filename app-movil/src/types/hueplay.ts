@@ -169,6 +169,7 @@ export interface HuePlayDesafio {
     /** Skin fijo de HueSoccer del rival (aunque el duelo no sea de HueSoccer, siempre viaja). */
     skinFicha: string;
     skinPelota: string;
+    colorFicha: string;
   };
   creadoEn: string;
   expiraEn: string;

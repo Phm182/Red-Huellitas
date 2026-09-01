@@ -1,11 +1,15 @@
 import React from 'react';
 import Svg, { Circle, Defs, Line, Path, RadialGradient, Stop } from 'react-native-svg';
-import { SkinFichaId, VarianteSkin } from './skins';
+import { colorContrastante, SkinFichaId } from './skins';
 
 type Props = {
   skin: SkinFichaId;
-  variante: VarianteSkin;
-  /** Color de equipo (siempre presente, distingue j:1 de j:2 aunque el skin coincida). */
+  /**
+   * Color elegido para la ficha — ya resuelto (si coincidía con el rival, ya
+   * viene con la colisión decidida, ver `resolverColorFicha` en
+   * `skins.ts`). Es lo que distingue a los dos jugadores ahora; antes era
+   * fijo por jugador (rosa/azul) y no se podía elegir.
+   */
   colorEquipo: string;
   size: number;
 };
@@ -19,15 +23,15 @@ const MUESCAS = 12;
  * vez del círculo plano de un solo color de antes ("Soccer Star" de
  * referencia usa fichas con volumen, no manchas planas).
  *
- * El relleno de base es SIEMPRE el color de equipo (así las fichas de los
- * dos jugadores nunca se confunden, coincida o no el skin) — el "skin" es el
- * patrón/acento que va en el disco interno, en un color que sí cambia entre
- * `primaria`/`secundaria` para poder distinguir dos fichas del MISMO skin si
- * los dos rivales lo eligieron igual (ver `resolverSkinsPartido` en
- * `skins.ts`).
+ * El patrón del disco interno usa el color que más contraste tenga contra
+ * `colorEquipo` (blanco o casi negro) — antes era un color fijo
+ * (`primaria`/`secundaria`) para poder distinguir dos fichas con el MISMO
+ * patrón; ahora esa distinción la hace directamente el color elegido (ver
+ * `resolverColorFicha`), así que el patrón sólo necesita leerse bien contra
+ * SU PROPIO color, sin pensar en el rival.
  */
-export function FichaSkinSvg({ skin, variante, colorEquipo, size }: Props) {
-  const acento = variante === 'primaria' ? '#FFFFFF' : '#FFD34D';
+export function FichaSkinSvg({ skin, colorEquipo, size }: Props) {
+  const acento = colorContrastante(colorEquipo);
   const idGrad = `fichaBulto`;
   const idBorde = `fichaBorde`;
 

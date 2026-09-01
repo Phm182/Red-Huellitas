@@ -1198,7 +1198,25 @@
         "arcoiris": "레인보우",
         "lunar": "루나"
       },
-      "metaGoles": "목표 골 수"
+      "metaGoles": "목표 골 수",
+      "colorFichaTitulo": "말 색상",
+      "colores": {
+        "rojo": "빨강",
+        "rosa": "분홍",
+        "naranja": "주황",
+        "amarillo": "노랑",
+        "verde": "초록",
+        "esmeralda": "에메랄드",
+        "celeste": "하늘색",
+        "azul": "파랑",
+        "indigo": "인디고",
+        "violeta": "보라",
+        "magenta": "마젠타",
+        "marron": "갈색",
+        "gris": "회색",
+        "negro": "검정",
+        "blanco": "흰색"
+      }
     },
     "trivia": {
       "comoSeJuega": "동물 돌봄 문제 {{n}}개, 각 {{s}}초입니다. 끝나면 맞힌 문제와 이유를 볼 수 있습니다.",

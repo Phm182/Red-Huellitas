@@ -1198,7 +1198,25 @@
         "arcoiris": "レインボー",
         "lunar": "ルナー"
       },
-      "metaGoles": "目標ゴール数"
+      "metaGoles": "目標ゴール数",
+      "colorFichaTitulo": "駒の色",
+      "colores": {
+        "rojo": "赤",
+        "rosa": "ピンク",
+        "naranja": "オレンジ",
+        "amarillo": "黄色",
+        "verde": "緑",
+        "esmeralda": "エメラルド",
+        "celeste": "空色",
+        "azul": "青",
+        "indigo": "インディゴ",
+        "violeta": "紫",
+        "magenta": "マゼンタ",
+        "marron": "茶色",
+        "gris": "グレー",
+        "negro": "黒",
+        "blanco": "白"
+      }
     },
     "trivia": {
       "comoSeJuega": "動物のケアに関する {{n}} 問、1問 {{s}} 秒です。最後に正解と理由を確認できます。",

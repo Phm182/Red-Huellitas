@@ -1198,7 +1198,25 @@
         "arcoiris": "彩虹",
         "lunar": "月球"
       },
-      "metaGoles": "进球目标"
+      "metaGoles": "进球目标",
+      "colorFichaTitulo": "棋子颜色",
+      "colores": {
+        "rojo": "红色",
+        "rosa": "粉色",
+        "naranja": "橙色",
+        "amarillo": "黄色",
+        "verde": "绿色",
+        "esmeralda": "祖母绿",
+        "celeste": "天蓝色",
+        "azul": "蓝色",
+        "indigo": "靛蓝",
+        "violeta": "紫色",
+        "magenta": "品红",
+        "marron": "棕色",
+        "gris": "灰色",
+        "negro": "黑色",
+        "blanco": "白色"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} 道动物照护题，每题 {{s}} 秒。结束后可以看到答对了哪些以及原因。",

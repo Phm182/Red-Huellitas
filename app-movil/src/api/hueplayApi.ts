@@ -152,10 +152,14 @@ export const hueplayApi = {
     apiPost<HuePlaySoccerTurno>('ajax/hueplay/soccer_turno_vencido.php', { desafioId }, true),
 
   /** Preferencia fija de skin de HueSoccer (fichas/pelota), se usa en todos los partidos. */
-  guardarHueSoccerSkin: (skinFicha?: string, skinPelota?: string) =>
-    apiPost<{ skinFicha: string; skinPelota: string }>(
+  guardarHueSoccerSkin: (skinFicha?: string, skinPelota?: string, colorFicha?: string) =>
+    apiPost<{ skinFicha: string; skinPelota: string; colorFicha: string }>(
       'ajax/perfil/huesoccer_skin_guardar.php',
-      { ...(skinFicha ? { skinFicha } : {}), ...(skinPelota ? { skinPelota } : {}) },
+      {
+        ...(skinFicha ? { skinFicha } : {}),
+        ...(skinPelota ? { skinPelota } : {}),
+        ...(colorFicha ? { colorFicha } : {}),
+      },
       true
     ),
 

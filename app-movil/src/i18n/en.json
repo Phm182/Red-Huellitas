@@ -1335,7 +1335,25 @@
         "arcoiris": "Rainbow",
         "lunar": "Lunar"
       },
-      "metaGoles": "Goal target"
+      "metaGoles": "Goal target",
+      "colorFichaTitulo": "Piece color",
+      "colores": {
+        "rojo": "Red",
+        "rosa": "Pink",
+        "naranja": "Orange",
+        "amarillo": "Yellow",
+        "verde": "Green",
+        "esmeralda": "Emerald",
+        "celeste": "Sky Blue",
+        "azul": "Blue",
+        "indigo": "Indigo",
+        "violeta": "Purple",
+        "magenta": "Magenta",
+        "marron": "Brown",
+        "gris": "Gray",
+        "negro": "Black",
+        "blanco": "White"
+      }
     },
     "trivia": {
       "comoSeJuega": "{{n}} animal-care questions, {{s}} seconds each. At the end you see what you got right and why.",
