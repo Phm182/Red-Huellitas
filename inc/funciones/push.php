@@ -51,7 +51,19 @@ function rh_enviar_push(array $tokens, string $titulo, string $body, ?array $dat
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, RH_EXPO_PUSH_TIMEOUT_SEGUNDOS);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_exec($ch);
+        $respuesta = curl_exec($ch);
+        $errorCurl = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        // Antes esto se descartaba entero: si un push no llegaba (token
+        // vencido, credencial de FCM mal puesta, lo que sea), no había forma
+        // de saber por qué sin agregar logging a mano cada vez. Expo
+        // devuelve el detalle por mensaje en `data[].status`/`.message`, así
+        // que alcanza con loguear la respuesta cruda cuando algo no salió
+        // bien — no hace falta parsearla acá.
+        if ($errorCurl !== '' || $httpCode >= 400 || (is_string($respuesta) && str_contains($respuesta, '"status":"error"'))) {
+            error_log('rh_enviar_push falló: httpCode=' . $httpCode . ' curlError=' . $errorCurl . ' respuesta=' . substr((string) $respuesta, 0, 2000));
+        }
     }
 }

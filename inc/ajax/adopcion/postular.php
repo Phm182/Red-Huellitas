@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/notificaciones.php';
 
 $userId = rh_require_auth($conn);
 
@@ -19,7 +20,7 @@ if (!is_array($respuestasInput)) {
     json_error('Formato de respuestas inválido');
 }
 
-$stmt = $conn->prepare("SELECT UserId FROM Adopcion WHERE AdopcionId = ? AND Estado = 'A'");
+$stmt = $conn->prepare("SELECT UserId, Nombre FROM Adopcion WHERE AdopcionId = ? AND Estado = 'A'");
 $stmt->bind_param('i', $adopcionId);
 $stmt->execute();
 $adopcion = $stmt->get_result()->fetch_assoc();
@@ -111,5 +112,22 @@ foreach ($respuestasValidadas as $r) {
     $stmt->execute();
     $stmt->close();
 }
+
+$stmt = $conn->prepare('SELECT NombreCompleto, Username FROM Usuario WHERE UserId = ?');
+$stmt->bind_param('i', $userId);
+$stmt->execute();
+$yo = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$nombreYo = !empty($yo['Username']) ? '@' . $yo['Username'] : ($yo['NombreCompleto'] ?? 'Alguien');
+
+rh_notificar(
+    $conn,
+    [(int) $adopcion['UserId']],
+    'adopcion_postulacion',
+    'Nueva postulación',
+    "$nombreYo se postuló para adoptar a {$adopcion['Nombre']}",
+    '/(app)/adopcion/' . $adopcionId . '/postulaciones',
+    ['actorUserId' => $userId]
+);
 
 json_success(['adopcionPostulacionId' => $postulacionId], 'Postulación enviada', 201);
