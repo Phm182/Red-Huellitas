@@ -924,6 +924,49 @@ para cuando el usuario esté para destrabarlo.
 - Subir `upload_max_filesize`/`post_max_size` en `php.ini` (actual 40M, necesario 80M para videos de Shorts de hasta 60MB).
 - `npx eas init` para que el push funcione (sin `extra.eas.projectId` ningún dispositivo registra token y **todo el push del proyecto está inactivo**).
 - Revisar límites de `php.ini` reales del hosting antes de producción.
-- **Deploy a producción**: el panel de moderación existe sólo en local. Verificado el 2026-07-25 que `https://redhuellitas.bitflow.com.ar/inc/ajax/admin/*.php` da 404 y que la migración `019` tampoco corrió allá. Hay que subir archivos + correr `019`/`020`/`021` en la base del hosting + poner el usuario como admin ahí.
+- ~~**Deploy a producción**~~ — **HECHO (2026-09-01)**, ver `[[proyecto_deploy_produccion]]` en la memoria persistente o el resumen abajo.
 
 Ninguna de estas bloquea seguir con Fase 6 en desarrollo local.
+
+---
+
+## 8. Deploy a producción — hecho (2026-09-01)
+
+`inc/ajax`, `inc/funciones`, `inc/cli`, `inc/templates` y `sql/` sincronizados
+a `redhuellitas.bitflow.com.ar` y la migración completa (`000_todo_schema.sql`,
+453 sentencias) corrida contra la base real, sin SSH ni Git en el hosting —
+mecanismo: un script PHP de un solo uso subido por la API de archivos de
+Hostinger (TUS), que baja el zip público de GitHub, copia esas carpetas
+(nunca `inc/config/`, `uploads/`, ni `app-movil/`) y corre la migración. Se
+neutralizó (pisado con un stub 410) apenas terminó — no queda un endpoint de
+deploy vivo.
+
+**Dos bugs reales de producción, preexistentes, encontrados y arreglados en
+el camino** (no los causó este deploy):
+1. `bd.php` de producción tenía el `$dbname` correcto en el archivo pero
+   `require` seguía viendo un valor viejo (`opcache.file_cache` sirviendo
+   bytecode cacheado; `opcache_reset()` no alcanza porque esa caché vive en
+   disco, no en memoria) — la API real probablemente no conectaba a la base
+   en ningún request desde que se creó el archivo. Se arregló borrando y
+   reescribiendo `bd.php` (mismo contenido, inode nuevo).
+2. `sql/000_todo_schema.sql` no es portable tal cual a este hosting: arranca
+   con `CREATE DATABASE IF NOT EXISTS huellitas` + `USE huellitas;`
+   (convención de nombre local), pero en Hostinger la base real es
+   `u289831705_huellitas` (prefijo con el username de la cuenta) y el
+   usuario de MySQL no tiene permiso para crear/usar una base llamada
+   "huellitas" a secas. Hay que sacar esas 2 sentencias antes de correr el
+   archivo en cualquier hosting con ese mismo prefijo de nombre.
+
+**Verificado con curl contra producción real**: `login.php` devuelve JSON
+limpio (no un error crudo de MySQL), `admin/resumen.php` (antes 404, ni
+existía) ahora responde "No autenticado" correctamente, igual
+`veterinarias/listar.php`.
+
+**Gaps que quedan, preexistentes, degradan con gracia (no rotos por este
+deploy)**:
+- Sin `vendor/` (composer) → comprobantes PDF y emails de Fase 6d en 503.
+  No se pudo correr `composer install` ahí (no hay SSH/exec disponible en
+  las herramientas de hosting usadas).
+- Sin `inc/config/mapa.local.php` → mapa cae directo a MapLibre.
+- Sin `inc/config/mercadopago.local.php` → suscripción/comisión de pedidos
+  en modo "coordinar manualmente".
