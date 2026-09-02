@@ -51,7 +51,9 @@
     "logoutConfirmMessage": "Are you sure you want to sign out?",
     "googleMissingClientId": "Google is not configured (missing client_id).",
     "googleMissingClientIdHint": "Ask the admin to set EXPO_PUBLIC_GOOGLE_CLIENT_ID_* and google.local.php.",
-    "googleError": "Could not sign in with Google"
+    "googleError": "Could not sign in with Google",
+    "googleFinishing": "Finishing Google sign-in…",
+    "googleFinishError": "Could not complete Google sign-in"
   },
   "setup": {
     "title": "Welcome to Red Huellitas",

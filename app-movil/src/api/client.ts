@@ -74,7 +74,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
       Platform.OS === 'web'
         ? `No se pudo conectar con ${API_URL}. Si estás en la PC abrí http://localhost:8081 (Expo), no el sitio de bitflow. ¿XAMPP/Apache encendido?`
         : `No se pudo conectar con ${API_URL}.`;
-    return { success: false, message: hint, data: null };
+    // status: 0 = nunca hubo respuesta del servidor (sin red, timeout, DNS).
+    // Importante distinguirlo de un 401 real: quien llama (ej. AuthProvider al
+    // reabrir la app) no debe borrar una sesión válida sólo porque no hubo wifi.
+    return { success: false, message: hint, data: null, status: 0 };
   }
 
   let json: ApiResponse<T>;
@@ -87,6 +90,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
         success: false,
         message: `Servidor sin respuesta (HTTP ${response.status}). Revisá límites de subida o el endpoint.`,
         data: null,
+        status: response.status,
       };
     }
     json = JSON.parse(cleaned) as ApiResponse<T>;
@@ -97,7 +101,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
         : response.status >= 500
           ? 'Error interno del servidor al subir.'
           : 'Respuesta inválida del servidor (¿SQL 022 OverlayJson o PHP desactualizado?).';
-    return { success: false, message: hint, data: null };
+    // Igual que arriba: acá sí hubo respuesta del servidor (tenemos response.status
+    // real), sólo que el body no se pudo parsear. Tampoco es un 401 de verdad.
+    return { success: false, message: hint, data: null, status: response.status };
   }
 
   return { ...json, status: response.status };

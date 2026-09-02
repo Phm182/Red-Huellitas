@@ -51,7 +51,9 @@
     "logoutConfirmMessage": "¿Seguro que querés salir de tu cuenta?",
     "googleMissingClientId": "Falta configurar Google (client_id).",
     "googleMissingClientIdHint": "Pedile al admin que complete EXPO_PUBLIC_GOOGLE_CLIENT_ID_* y google.local.php.",
-    "googleError": "No se pudo iniciar sesión con Google"
+    "googleError": "No se pudo iniciar sesión con Google",
+    "googleFinishing": "Terminando de iniciar sesión con Google…",
+    "googleFinishError": "No se pudo completar el login con Google"
   },
   "setup": {
     "title": "Bienvenido a Red Huellitas",

@@ -87,6 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (savedToken) {
         setApiToken(savedToken);
         setToken(savedToken);
+        // Mostrar de entrada el perfil cacheado (offline-first): si /me tarda o
+        // falla por red, el usuario no debe ver una pantalla de login de la nada.
+        const cachedAccount = savedAccounts.find((a) => a.token === savedToken);
+        if (cachedAccount) {
+          setUser(cachedAccount.user);
+          if (cachedAccount.user.avatarBust) {
+            setAvatarBust(cachedAccount.user.avatarBust);
+          }
+          await hydrateAvatarPreview(cachedAccount.user);
+        }
+
         const res = await authApi.me();
         if (res.success && res.data) {
           setUser(res.data.user);
@@ -96,8 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await hydrateAvatarPreview(res.data.user);
           const list = await upsertStoredAccount({ token: savedToken, user: res.data.user });
           setAccounts(list);
-        } else {
-          // Token activo inválido: sacar esa cuenta y probar otra guardada.
+        } else if (res.status === 401) {
+          // Acá sí es un rechazo real del servidor (token revocado/expirado en
+          // UsuarioSesion): recién ahí tiene sentido sacar la cuenta y pedir login.
           const fromList = savedAccounts.find((a) => a.token === savedToken);
           let restantes = savedAccounts;
           if (fromList) {
@@ -108,29 +120,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setApiToken(cuenta.token);
             const me = await authApi.me();
             if (me.success && me.data) {
-              await secureStorage.setItem(TOKEN_KEY, cuenta.token);
-              setToken(cuenta.token);
-              setUser(me.data.user);
-              if (me.data.user.avatarBust) {
-                setAvatarBust(me.data.user.avatarBust);
-              }
-              await hydrateAvatarPreview(me.data.user);
-              const list = await upsertStoredAccount({ token: cuenta.token, user: me.data.user });
-              setAccounts(list);
+              await activateSession(cuenta.token, me.data.user);
               recuperado = true;
               break;
             }
-            restantes = await removeStoredAccount(cuenta.user.userId);
+            if (me.status === 401) {
+              restantes = await removeStoredAccount(cuenta.user.userId);
+              setAccounts(restantes);
+            }
+            // Si fue error de red (status 0 o 5xx) dejamos esa cuenta guardada
+            // tal cual y probamos con la próxima, sin descartarla.
           }
           if (!recuperado) {
-            await secureStorage.deleteItem(TOKEN_KEY);
-            await clearStoredAccounts();
             setApiToken(null);
             setToken(null);
             setUser(null);
-            setAccounts([]);
+            if (restantes.length === 0) {
+              await secureStorage.deleteItem(TOKEN_KEY);
+              await clearStoredAccounts();
+            }
+            setAccounts(restantes);
           }
         }
+        // else: fallo de red/servidor (status 0, 5xx, JSON roto). No se toca la
+        // sesión guardada — ya quedó mostrado el perfil cacheado de arriba, y el
+        // token sigue activo para que la próxima request lo reintente solo.
       } else if (savedAccounts.length > 0) {
         // Había cuentas pero no token activo: activar la primera válida.
         let recuperado = false;
@@ -139,20 +153,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setApiToken(cuenta.token);
           const me = await authApi.me();
           if (me.success && me.data) {
-            await secureStorage.setItem(TOKEN_KEY, cuenta.token);
-            setToken(cuenta.token);
-            setUser(me.data.user);
-            if (me.data.user.avatarBust) {
-              setAvatarBust(me.data.user.avatarBust);
-            }
-            await hydrateAvatarPreview(me.data.user);
-            const list = await upsertStoredAccount({ token: cuenta.token, user: me.data.user });
-            setAccounts(list);
+            await activateSession(cuenta.token, me.data.user);
             recuperado = true;
             break;
           }
-          restantes = await removeStoredAccount(cuenta.user.userId);
-          setAccounts(restantes);
+          if (me.status === 401) {
+            restantes = await removeStoredAccount(cuenta.user.userId);
+            setAccounts(restantes);
+            continue;
+          }
+          // Sin red/servidor caído: no tiene sentido seguir probando cuenta por
+          // cuenta ni borrar nada — sólo no queda ninguna activa por ahora.
+          setApiToken(null);
+          break;
         }
         if (!recuperado) {
           setApiToken(null);
@@ -223,9 +236,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await activateSession(siguiente.token, me.data.user);
         return;
       }
-      // Token de la siguiente también falló: limpiar todo.
-      await clearStoredAccounts();
-      restantes = [];
+      if (me.status === 401) {
+        // Esa cuenta también está vencida/revocada de verdad: sacarla.
+        restantes = await removeStoredAccount(siguiente.user.userId);
+        if (restantes.length === 0) {
+          await clearStoredAccounts();
+        }
+      }
+      // Si fue error de red, dejamos esa cuenta guardada para reintentar más
+      // tarde — no hay forma de confirmarla sin conexión, pero tampoco hay
+      // que borrarla. De cualquier forma no queda ninguna cuenta activa ahora.
     }
 
     await secureStorage.deleteItem(TOKEN_KEY);
@@ -275,12 +295,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true, message: '' };
     }
 
-    // Token vencido: sacar de la lista.
-    const restantes = await removeStoredAccount(userId);
-    setAccounts(restantes);
-    // Restaurar token de la sesión actual.
+    // Restaurar el token de la sesión que sí estaba activa antes de intentar el cambio.
     if (token) setApiToken(token);
-    return { success: false, message: me.message || 'No se pudo cambiar de cuenta' };
+
+    if (me.status === 401) {
+      // Rechazo real del servidor: esa cuenta ya no sirve, sacarla de la lista.
+      const restantes = await removeStoredAccount(userId);
+      setAccounts(restantes);
+      return { success: false, message: me.message || 'No se pudo cambiar de cuenta' };
+    }
+
+    // Error de red/servidor: no borrar la cuenta, sólo avisar que no se pudo confirmar ahora.
+    return { success: false, message: 'Sin conexión, no se pudo cambiar de cuenta. Probá de nuevo.' };
   };
 
   const actualizarUsuario = (updated: Usuario) => {

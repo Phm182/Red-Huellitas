@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "com.redhuellitas.app",
-      "versionCode": 5,
+      "versionCode": 7,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0F766E",
@@ -45,6 +45,18 @@
           "data": [
             {
               "scheme": "redhuellitas"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "com.redhuellitas.app"
             }
           ],
           "category": [

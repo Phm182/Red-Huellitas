@@ -1,8 +1,69 @@
 import * as Google from 'expo-auth-session/providers/google';
+import { exchangeCodeAsync } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
+
+/**
+ * En Android, `WebBrowser.openAuthSessionAsync` corre una carrera interna entre
+ * "volvió el AppState a active" y "llegó la URL de redirect" (WebBrowser.js,
+ * `_openAuthSessionPolyfillAsync`). Se comprobó en dispositivo que el AppState
+ * gana casi siempre, así que `promptAsync()` resuelve como 'dismiss' aunque
+ * Google sí haya redirigido con éxito — y esa URL la termina navegando Expo
+ * Router como ruta normal (por eso existe app/oauthredirect.tsx).
+ * Para que esa pantalla pueda terminar el login necesita el `code_verifier`
+ * (PKCE) de la request que la generó; como esa request vive sólo en el estado
+ * del hook del componente de login, se guarda acá en memoria del módulo justo
+ * antes de abrir el browser.
+ */
+let pendingGoogleAuth: { codeVerifier: string; redirectUri: string; clientId: string; state: string } | null =
+  null;
+
+export function stashPendingGoogleAuth(request: {
+  codeVerifier?: string | null;
+  redirectUri: string;
+  clientId: string;
+  state: string;
+}) {
+  if (!request.codeVerifier) return;
+  pendingGoogleAuth = {
+    codeVerifier: request.codeVerifier,
+    redirectUri: request.redirectUri,
+    clientId: request.clientId,
+    state: request.state,
+  };
+}
+
+/** Intercambia el `code` recibido en app/oauthredirect.tsx por un id_token de Google. */
+export async function exchangeGooglePendingAuthCode(
+  code: string,
+  state: string | undefined
+): Promise<string> {
+  const pending = pendingGoogleAuth;
+  pendingGoogleAuth = null;
+  if (!pending) {
+    throw new Error(
+      'No se encontró el intento de login con Google en curso (¿se reinició la app durante el proceso?)'
+    );
+  }
+  if (state && state !== pending.state) {
+    throw new Error('El login con Google no coincide con el que se inició (state distinto).');
+  }
+  const tokenResponse = await exchangeCodeAsync(
+    {
+      clientId: pending.clientId,
+      code,
+      redirectUri: pending.redirectUri,
+      extraParams: { code_verifier: pending.codeVerifier },
+    },
+    Google.discovery
+  );
+  if (!tokenResponse.idToken) {
+    throw new Error('Google no devolvió un id_token para esta cuenta.');
+  }
+  return tokenResponse.idToken;
+}
 
 /**
  * Client ID de la plataforma actual (para mostrar “falta config” en la UI).

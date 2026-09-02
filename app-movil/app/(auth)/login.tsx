@@ -19,7 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { getGoogleClientId, useGoogleAuthRequest } from '../../src/auth/googleAuth';
+import { getGoogleClientId, stashPendingGoogleAuth, useGoogleAuthRequest } from '../../src/auth/googleAuth';
 import { AppButton } from '../../src/components/AppButton';
 import { AppInput } from '../../src/components/AppInput';
 import { Atmosphere } from '../../src/components/Atmosphere';
@@ -112,6 +112,17 @@ export default function LoginScreen() {
     }
     setError(null);
     try {
+      // En Android el redirect puede terminar resolviéndose en app/oauthredirect.tsx
+      // en vez de acá (ver comentario en googleAuth.ts) — dejamos el code_verifier
+      // guardado para que esa pantalla pueda completar el intercambio igual.
+      if (!isWeb && request) {
+        stashPendingGoogleAuth({
+          codeVerifier: request.codeVerifier,
+          redirectUri: request.redirectUri,
+          clientId: request.clientId,
+          state: request.state,
+        });
+      }
       const result = await promptAsync();
       if (result.type === 'error') {
         setError(result.error?.message || t('auth.googleError'));

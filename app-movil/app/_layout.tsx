@@ -28,6 +28,7 @@ function StackWithTheme() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
       <Stack.Screen name="(app)" options={{ headerShown: false }} />
+      <Stack.Screen name="oauthredirect" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal-reporte"
         options={{ presentation: 'modal', title: t('report.title') }}
