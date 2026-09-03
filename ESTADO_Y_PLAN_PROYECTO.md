@@ -970,3 +970,39 @@ deploy)**:
 - Sin `inc/config/mapa.local.php` → mapa cae directo a MapLibre.
 - Sin `inc/config/mercadopago.local.php` → suscripción/comisión de pedidos
   en modo "coordinar manualmente".
+
+---
+
+## 9. Primeros builds de producción iOS/Android — hecho (2026-09-03), falta subirlos a las tiendas
+
+Cuentas activadas: Apple Developer Program (Individual, Pablo Hernan
+Morales) y Google Play Console. Con las dos activas se generaron los
+primeros builds de producción vía EAS Build, ambos `FINISHED`:
+
+- **Android AAB** (versionCode 7): https://expo.dev/artifacts/eas/_w4hFe3euKu_xeQql1XK9YPbXnqznUCG736cbnNMk0I.aab
+- **iOS IPA** (build 2): https://expo.dev/artifacts/eas/P8u-qoWOBxjL0fpyuW79Hy17SYMduwDyJGJUGwF_zeU.ipa
+
+(Los links de descarga de EAS expiran ~30 días después de generados — no
+importa una vez subidos a la tienda correspondiente.)
+
+`eas submit` a ambas tiendas se probó y quedó bloqueado, en los dos casos
+por pasos que sólo puede hacer el dueño de las cuentas (necesitan su login
+interactivo, no se pueden automatizar sin credenciales que Claude no debe
+manejar):
+
+- **Android**: falta una *Service Account Key* de Google Cloud con permiso
+  en Play Console (Setup → API access) — sin eso `eas submit --platform
+  android` no puede autenticar la subida. Alternativa más simple para la
+  primera vez: subir el `.aab` a mano desde Play Console → Testing →
+  Closed testing (ahí arranca el track y el conteo de los 12 testers/14
+  días que exige Google a cuentas nuevas — ver `[[gotcha_...]]` si existe,
+  si no, ver el hilo de esta sesión).
+- **iOS**: falta crear la ficha de la app en App Store Connect (Mis Apps →
+  "+" → Nueva app, bundle id `com.redhuellitas.app`) para obtener el
+  `ascAppId` que `eas submit --platform ios` pide. Una vez creada, correr
+  `eas submit --platform ios --profile production` de nuevo (interactivo,
+  vuelve a pedir el login de Apple).
+
+`eas.json` ya quedó preparado: `submit.production.android` apunta al track
+`internal` con `releaseStatus: draft`, listo para cuando se cargue la
+service account key.
