@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.redhuellitas.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.redhuellitas.app",
