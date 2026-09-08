@@ -106,13 +106,13 @@ if ($desafioId !== null) {
 
         if ($ganador === null) {
             rh_notificar($conn, [$retador, $retado], 'juego_desafio_fin', 'Empate en ' . $titulo,
-                'El duelo terminó empatado', '/(app)/hueplay/desafios');
+                'El duelo terminó empatado', '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
         } else {
             $perdedor = $ganador === $retador ? $retado : $retador;
             rh_notificar($conn, [$ganador], 'juego_desafio_fin', '¡Ganaste el duelo!',
-                'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . $titulo, '/(app)/hueplay/desafios');
+                'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . $titulo, '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
             rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo',
-                rh_juego_nombre($conn, $ganador) . ' te ganó en ' . $titulo, '/(app)/hueplay/desafios');
+                rh_juego_nombre($conn, $ganador) . ' te ganó en ' . $titulo, '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
         }
 
         $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');
@@ -124,7 +124,7 @@ if ($desafioId !== null) {
         rh_notificar($conn, [$soyRetador ? (int) $d['UserIdRetado'] : (int) $d['UserIdRetador']],
             'juego_desafio', 'Te toca jugar',
             rh_juego_nombre($conn, $userId) . ' ya jugó su partida en ' . rh_juego_titulo('huetrivia'),
-            '/(app)/hueplay/desafios', ['actorUserId' => $userId]);
+            '/(app)/hueplay/desafios', ['actorUserId' => $userId, 'juegoCodigo' => 'huetrivia']);
     }
 
     json_success([

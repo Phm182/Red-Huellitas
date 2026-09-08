@@ -6,6 +6,7 @@ import { historiasApi } from '../../../src/api/historiasApi';
 import { CapturedStoryMedia, StoryCameraCapture } from '../../../src/stories/StoryCameraCapture';
 import { StoryEditor, StoryPublicacion } from '../../../src/stories/StoryEditor';
 import { overlayHasContent } from '../../../src/stories/storyEditorTypes';
+import { aplicarZoomFoto } from '../../../src/utils/fotoCrop';
 
 function safeGoBack() {
   if (router.canGoBack()) {
@@ -59,10 +60,23 @@ export default function NuevaHistoriaScreen() {
         cadenaId: cadenaIdNum,
       };
 
+      // Si el usuario pellizcó/arrastró la foto, se recorta de verdad ANTES
+      // de subir — lo que ve en el editor es lo que se publica, no una
+      // aproximación visual que después se sube entera igual.
+      let uriFoto = media.uri;
+      if (media.tipo === 'foto' && publicacion.fotoTransform) {
+        try {
+          uriFoto = await aplicarZoomFoto(media.uri, publicacion.fotoTransform, publicacion.canvasSize);
+        } catch {
+          // Si el recorte falla por lo que sea, mejor publicar la foto
+          // entera (como si no hubiera zoomeado) que no publicar nada.
+        }
+      }
+
       const res =
         media.tipo === 'video'
           ? await historiasApi.crear('video', media.uri, media.duracionSegundos, media.mimeType, extras)
-          : await historiasApi.crear('foto', media.uri, undefined, undefined, extras);
+          : await historiasApi.crear('foto', uriFoto, undefined, undefined, extras);
 
       if (res.success) {
         // Al publicar en una cadena se vuelve a la cadena, que es el contexto

@@ -481,6 +481,21 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
             loading={siguiendoBusy}
             style={{ flex: 1 }}
           />
+          <Pressable
+            onPress={() => {
+              hapticLeve();
+              // Mismo patrón que usa el tab de Equipos: `abrir.php` busca o
+              // crea la conversación, así que alcanza con mandar el userId —
+              // no hace falta saber acá si ya existe una charla.
+              router.push({
+                pathname: '/(app)/chat/[conversacionId]',
+                params: { conversacionId: 'nuevo', userId: perfil.userId },
+              });
+            }}
+            style={[styles.iconButton, elevation.sm, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+          </Pressable>
           {perfil.whatsappNumero ? (
             <Pressable
               onPress={() =>

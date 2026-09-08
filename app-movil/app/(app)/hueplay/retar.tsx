@@ -5,13 +5,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { rutaDelDesafio } from '../../../src/juego/hueplay/rutas';
 import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { GOLES_MAX, GOLES_MIN, GOLES_PARA_GANAR_DEFAULT } from '../../../src/juego/huesoccer/motor';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { FilterChip } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
-import { HuePlayDesafio, HuePlayRival } from '../../../src/types/hueplay';
+import { HuePlayRival } from '../../../src/types/hueplay';
 import { elevation, radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts, type } from '../../../src/theme/typography';
@@ -22,40 +23,11 @@ import { rhAvatarUrl } from '../../../src/utils/media';
 /** Presets de "a cuántos goles" — el rango real (1-10) lo valida el backend. */
 const PRESETS_GOLES = [1, 3, 5, 7, 10];
 
-/** A qué pantalla se navega apenas se crea el desafío, por juego. */
-function rutaDelDesafio(d: HuePlayDesafio): { pathname: string; params: Record<string, string | number> } {
-  if (d.juegoCodigo === 'hueconecta') {
-    return { pathname: '/(app)/hueplay/hueconecta', params: { desafioId: d.desafioId } };
-  }
-  if (d.juegoCodigo === 'huedamas') {
-    return { pathname: '/(app)/hueplay/damas', params: { desafioId: d.desafioId } };
-  }
-  if (d.juegoCodigo === 'hueajedrez') {
-    return { pathname: '/(app)/hueplay/ajedrez', params: { desafioId: d.desafioId } };
-  }
-  if (d.juegoCodigo === 'huesoccer') {
-    return { pathname: '/(app)/hueplay/huesoccer', params: { desafioId: d.desafioId } };
-  }
-  const varianteDoku = variantePorJuegoCodigo(d.juegoCodigo);
-  if (varianteDoku) {
-    return { pathname: '/(app)/hueplay/huedoku', params: { desafioId: d.desafioId, semilla: d.semilla, variante: varianteDoku } };
-  }
-  const rutas: Record<string, string> = {
-    huememo: '/(app)/hueplay/huememo',
-    huetrivia: '/(app)/hueplay/huetrivia',
-    huezip: '/(app)/hueplay/huezip',
-  };
-  return {
-    pathname: rutas[d.juegoCodigo] ?? '/(app)/hueplay/huematch',
-    params: { desafioId: d.desafioId, semilla: d.semilla },
-  };
-}
-
 /** Juegos de tablero por turnos: son los únicos donde el plazo de respuesta tiene sentido. */
-const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
+const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool'];
 
 /** Juegos con modo solitario contra la IA de la app. */
-const JUEGOS_IA = ['huedamas', 'hueajedrez'];
+const JUEGOS_IA = ['huedamas', 'hueajedrez', 'huereversi', 'huetateti'];
 
 
 /**
@@ -81,7 +53,10 @@ export default function RetarScreen() {
     'hueconecta',
     'huedamas',
     'hueajedrez',
+    'huereversi',
+    'huetateti',
     'huesoccer',
+    'huepool',
     'huedoku6',
     'huedoku9facil',
     'huedoku9dificil',

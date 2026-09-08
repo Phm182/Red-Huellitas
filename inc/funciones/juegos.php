@@ -38,13 +38,18 @@ const RH_JUEGOS = [
     'hueconecta' => ['modo' => 'turnos'],
     'huedamas' => ['modo' => 'turnos'],
     'hueajedrez' => ['modo' => 'turnos'],
+    'huereversi' => ['modo' => 'turnos'],
+    'huetateti' => ['modo' => 'turnos'],
+    'huepool' => ['modo' => 'turnos'],
     // HueSoccer también es 'turnos': el tablero (posiciones de fichas/pelota)
     // lo va escribiendo el que tira, un tiro por turno — ver inc/funciones/soccer.php.
     'huesoccer' => ['modo' => 'turnos'],
     // 'sala': hasta 4 jugadores sobre `JuegoSala`/`JuegoSalaJugador`, no
     // `JuegoDesafio` — el puntaje también lo pone el servidor.
     'hueludo' => ['modo' => 'sala'],
+    'hueludoroyal' => ['modo' => 'sala'],
     'huerummy' => ['modo' => 'sala'],
+    'huescrabble' => ['modo' => 'sala'],
     // HueTrivia tampoco necesita techo: el puntaje lo calcula el servidor a
     // partir de las respuestas, el cliente no informa ningún número.
     'huetrivia' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 0],
@@ -134,8 +139,13 @@ function rh_juego_titulo(string $codigo): string
         'huetrivia' => 'HueTrivia',
         'huedamas' => 'HueDamas',
         'hueajedrez' => 'HueAjedrez',
+        'huereversi' => 'HueReversi',
+        'huetateti' => 'HueTaTeTi',
+        'huepool' => 'HuePool',
         'hueludo' => 'HueLudo',
+        'hueludoroyal' => 'HueLudo Real',
         'huerummy' => 'HueRummy',
+        'huescrabble' => 'HueScrabble',
         'huezip' => 'HueZip',
         'huesoccer' => 'HueSoccer',
         'huedoku6' => 'HueDoku 6x6',
@@ -162,7 +172,47 @@ function rh_juego_existe(string $codigo): bool
  */
 function rh_juego_ia_disponible(string $codigo): bool
 {
-    return in_array($codigo, ['huedamas', 'hueajedrez'], true);
+    return in_array($codigo, ['huedamas', 'hueajedrez', 'huereversi', 'huetateti'], true);
+}
+
+/**
+ * Modo en el que un JUGADOR puede jugar este juego: `'solo'` (nunca se
+ * enfrenta a otra persona), `'multiplayer'` (nunca se juega solo) o
+ * `'ambos'`. Es distinto de `rh_juego_modo()` (que es la forma de GUARDAR
+ * la partida — 'turnos'/'sala'/'puntaje'/'cuidado' — un detalle interno,
+ * no algo que el usuario elija). Se deriva acá, no se guarda en ningún
+ * lado, para no desincronizarse de `RH_JUEGOS`/`rh_juego_ia_disponible()`.
+ */
+function rh_juego_modo_cliente(string $codigo): string
+{
+    $modo = rh_juego_modo($codigo);
+    if ($modo === 'sala') {
+        return 'multiplayer'; // hasta 4, arranca con mínimo 2 aceptados: nunca solo.
+    }
+    if ($modo === 'cuidado') {
+        return 'solo'; // HueGotchi: no se reta a nadie.
+    }
+    if ($modo === 'turnos') {
+        return rh_juego_ia_disponible($codigo) ? 'ambos' : 'multiplayer';
+    }
+    // 'puntaje': cada uno juega su partida suelta (solo) y también se puede
+    // desafiar a un rival humano para comparar puntajes — nunca contra IA.
+    return 'ambos';
+}
+
+/** Códigos de juego que este usuario marcó como favorito, más recientes primero da igual: el orden lo decide quien lo consume. */
+function rh_juego_favoritos(mysqli $conn, int $userId): array
+{
+    $stmt = $conn->prepare('SELECT JuegoCodigo FROM HuePlayFavorito WHERE UserId = ?');
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $codigos = [];
+    $res = $stmt->get_result();
+    while ($f = $res->fetch_assoc()) {
+        $codigos[] = $f['JuegoCodigo'];
+    }
+    $stmt->close();
+    return $codigos;
 }
 
 /**
@@ -429,12 +479,14 @@ function rh_juego_avanzar_turno(
     int $desafioId,
     int $siguienteUserId,
     int $movidaDeUserId,
-    int $plazoTurnoMinutos
+    int $plazoTurnoMinutos,
+    ?string $juegoCodigo = null
 ): void {
     $stmt = $conn->prepare(
         "UPDATE JuegoDesafio
             SET TurnoDeUserId = ?, Estado = 'aceptado',
-                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? MINUTE)
+                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? MINUTE),
+                RecordatorioTurnoEnviado = 0
           WHERE DesafioId = ? AND TurnoDeUserId = ?"
     );
     $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoMinutos, $desafioId, $movidaDeUserId);
@@ -448,7 +500,8 @@ function rh_juego_avanzar_turno(
         'juego_tu_turno',
         '¡Te toca jugar!',
         'Tenés un movimiento esperando.',
-        '/(app)/hueplay/desafios'
+        '/(app)/hueplay/desafios',
+        $juegoCodigo !== null ? ['juegoCodigo' => $juegoCodigo] : []
     );
 }
 
@@ -515,7 +568,8 @@ function rh_juego_cerrar_desafio_turnos(
             $stmt->close();
 
             rh_notificar($conn, [$ganadorUserId], 'juego_desafio_fin', '¡Ganaste el duelo!',
-                'Ganaste tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios');
+                'Ganaste tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios',
+                ['juegoCodigo' => $codigo]);
         }
 
         if (!rh_juego_es_bot($conn, $perdedor)) {
@@ -527,13 +581,15 @@ function rh_juego_cerrar_desafio_turnos(
             $cuerpo = $porVencimiento
                 ? 'No respondiste a tiempo y perdiste tu partida de ' . $nombreJuego
                 : 'Perdiste tu partida de ' . $nombreJuego;
-            rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', $cuerpo, '/(app)/hueplay/desafios');
+            rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', $cuerpo, '/(app)/hueplay/desafios',
+                ['juegoCodigo' => $codigo]);
         }
     } else {
         $humanos = array_values(array_filter([$retador, $retado], fn (int $u) => !rh_juego_es_bot($conn, $u)));
         if ($humanos) {
             rh_notificar($conn, $humanos, 'juego_desafio_fin', 'Empate',
-                'Tu partida de ' . $nombreJuego . ' terminó empatada', '/(app)/hueplay/desafios');
+                'Tu partida de ' . $nombreJuego . ' terminó empatada', '/(app)/hueplay/desafios',
+                ['juegoCodigo' => $codigo]);
         }
     }
 

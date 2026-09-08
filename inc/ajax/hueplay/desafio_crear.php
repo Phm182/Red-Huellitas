@@ -19,6 +19,9 @@ require_once __DIR__ . '/../../funciones/hueconecta.php';
 require_once __DIR__ . '/../../funciones/damas.php';
 require_once __DIR__ . '/../../funciones/ajedrez.php';
 require_once __DIR__ . '/../../funciones/soccer.php';
+require_once __DIR__ . '/../../funciones/reversi.php';
+require_once __DIR__ . '/../../funciones/tateti.php';
+require_once __DIR__ . '/../../funciones/pool.php';
 
 $userId = rh_require_auth($conn);
 
@@ -103,6 +106,12 @@ if ($modo === 'turnos') {
         $tablero = rh_damas_inicial();
     } elseif ($codigo === 'hueajedrez') {
         $tablero = rh_ajedrez_inicial();
+    } elseif ($codigo === 'huereversi') {
+        $tablero = rh_reversi_inicial();
+    } elseif ($codigo === 'huetateti') {
+        $tablero = rh_tateti_inicial();
+    } elseif ($codigo === 'huepool') {
+        $tablero = rh_pool_inicial();
     } elseif ($codigo === 'huesoccer') {
         // Meta de goles configurable (además del plazo, ya genérico arriba):
         // sólo aplica a HueSoccer, así que se lee acá y no como un campo más
@@ -138,13 +147,34 @@ $stmt->close();
 
 // Si le toca arrancar al bot, se resuelve acá mismo: el humano nunca ve un
 // duelo "esperando" a un rival que en realidad responde al instante.
-if ($contraIA && $turnoDe === $rivalId && in_array($codigo, ['huedamas', 'hueajedrez'], true)) {
+if ($contraIA && $turnoDe === $rivalId && in_array($codigo, ['huedamas', 'hueajedrez', 'huereversi', 'huetateti'], true)) {
     $tablas = false;
     if ($codigo === 'huedamas') {
         $resultado = rh_damas_turno_ia($tablero, 2); // el bot siempre es el retado
-    } else {
+    } elseif ($codigo === 'hueajedrez') {
         $resultado = rh_ajedrez_turno_ia($tablero, 2);
         $tablas = $resultado['tablas'];
+    } elseif ($codigo === 'huetateti') {
+        // El tablero vacío nunca termina en la primera jugada (hacen falta
+        // mínimo 5 fichas para ganar), así que $terminoLado queda null a
+        // propósito acá — no puede pasar nada más en la apertura.
+        $resultadoTateti = rh_tateti_turno_ia($tablero, 2);
+        $resultado = [
+            'tablero' => $resultadoTateti['tablero'],
+            'jugada' => $resultadoTateti['jugada'],
+            'terminoLado' => null,
+        ];
+    } else {
+        // HueReversi: la posición inicial siempre tiene movimiento legal para
+        // quien arranca, así que a diferencia de reversi_mover.php no hace
+        // falta resolver una cadena de turnos salteados acá — es la apertura,
+        // no puede haber nadie trabado todavía.
+        $resultadoReversi = rh_reversi_turno_ia($tablero, 2);
+        $resultado = [
+            'tablero' => $resultadoReversi['tablero'],
+            'jugada' => $resultadoReversi['jugada'],
+            'terminoLado' => null,
+        ];
     }
     $tablero = $resultado['tablero'];
     $movimientos = $resultado['jugada'] !== null ? 1 : 0;
@@ -187,7 +217,7 @@ if (!$contraIA) {
         'Te retaron a jugar',
         rh_juego_nombre($conn, $userId) . ' te retó en ' . $nombreJuego,
         '/(app)/hueplay/desafios',
-        ['actorUserId' => $userId]
+        ['actorUserId' => $userId, 'juegoCodigo' => $codigo]
     );
 }
 

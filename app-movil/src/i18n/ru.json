@@ -809,6 +809,7 @@
     "tienda": "Магазин",
     "salud": "Здоровье",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Мультиплеер",
     "configuracion": "Настройки",
     "atajosHint": "Удерживайте, чтобы увидеть ярлыки",
     "ocultarBotones": "Скрыть кнопки",
@@ -991,9 +992,24 @@
     "desafios": "Мультиплеер / Испытания",
     "desafiosBajada": "Поединки с другими пользователями",
     "juegos": "Игры",
+    "buscarJuego": "Поиск игры",
+    "vistaDinamica": "Динамический",
+    "vistaDesplegada": "Развёрнутый",
+    "modoSolo": "Одиночная",
+    "modoMultiplayer": "Мультиплеер",
+    "modoAmbos": "Одиночная и мультиплеер",
     "ranking": "Рейтинг",
     "proximamente": "Скоро",
     "pronto": "Скоро",
+    "multiplayer": {
+      "titulo": "Мультиплеер",
+      "tuTurno": "Ваш ход",
+      "enEspera": "В ожидании",
+      "historial": "История",
+      "sinNada": "Здесь пока ничего нет",
+      "invitacion": "Вас пригласили",
+      "armando": "Комната собирается"
+    },
     "tuRecord": "Твой рекорд: {{n}}",
     "retarA": "Бросить вызов",
     "retar": "Вызвать",
@@ -1075,6 +1091,40 @@
       "elegiUnaFicha": "Выбери фигуру для хода",
       "seguirDespues": "Продолжить позже"
     },
+    "reversi": {
+      "vos": "Ты",
+      "jugadas": "Ходов: {{n}}",
+      "turnoDe": "Ход {{rival}}",
+      "elegiCasilla": "Выбери клетку, чтобы поставить фишку",
+      "sinMovimiento": "Нет доступного хода: ход переходит дальше",
+      "empateFin": "Ничья",
+      "ganasteFin": "Ты выиграл эту партию!",
+      "ganasteFinPuntos": "Победа! +{{puntos}} очков",
+      "perdisteFin": "Ты проиграл эту партию",
+      "fichas": "Фишек: {{n}}",
+      "seguirDespues": "Продолжить позже"
+    },
+    "tateti": {
+      "vos": "Ты",
+      "jugadas": "Ходов: {{n}}",
+      "turnoDe": "Ход игрока {{rival}}",
+      "elegiCasilla": "Выбери клетку",
+      "empateFin": "Ничья",
+      "ganasteFin": "Ты выиграл эту партию!",
+      "ganasteFinPuntos": "Победа! +{{puntos}} очков",
+      "perdisteFin": "Ты проиграл эту партию",
+      "seguirDespues": "Продолжить позже"
+    },
+    "pool": {
+      "vos": "Ты",
+      "lisas": "Половинки",
+      "rayadas": "Полоски",
+      "sinGrupo": "Группа ещё не определена",
+      "tuTurno": "Твой ход",
+      "bolaEnMano": "Шар в руке: коснись стола, чтобы поставить его",
+      "turnoRival": "Ход игрока {{rival}}",
+      "tiempoNeto": "Использовано чистого времени: {{usados}}/{{tope}}с"
+    },
     "sala": {
       "cuantosJugadores": "Сколько игроков?",
       "completarConIA": "Дополнить ИИ",
@@ -1131,6 +1181,16 @@
       "ganasteFin": "Ты выиграл партию!",
       "perdisteFin": "В этот раз не вышло"
     },
+    "ludoroyal": {
+      "titulo": "Королевское лудо",
+      "tirarDados": "Бросить кости",
+      "elegiFicha": "Выберите, какую фишку передвинуть",
+      "tocaTirar": "Ваш ход: бросьте кости",
+      "turnoDe": "Ход {{rival}}",
+      "sinJugada": "С этим броском нет доступных ходов",
+      "ganasteFin": "Вы выиграли партию!",
+      "perdisteFin": "На этот раз не получилось"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Больше нечего брать: раунд завершён",
@@ -1146,6 +1206,27 @@
       "tuMano": "Твоя рука",
       "bajar": "Выложить",
       "descartar": "Сбросить"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Ты",
+      "turnoDe": "Ход игрока {{rival}}",
+      "ganasteFin": "Ты выиграл партию!",
+      "perdisteFin": "В этот раз не вышло",
+      "empateFin": "Ничья",
+      "tuAtril": "Твоя подставка",
+      "fichasEnBolsa": "Фишек в мешке: {{n}}",
+      "elegiFichas": "Выбери фишки со своей подставки и коснись поля, чтобы их поставить",
+      "jugar": "Сыграть",
+      "pasar": "Пропустить",
+      "cambiarFichas": "Поменять фишки",
+      "confirmarCambio": "Поменять",
+      "cancelarCambio": "Отмена",
+      "elegiComodin": "Какую букву представляет пустая фишка?",
+      "sinFichasParaCambio": "Выбери хотя бы одну фишку для обмена",
+      "puntosGanados": "+{{puntos}} очков",
+      "deshacer": "Отменить",
+      "seguirDespues": "Продолжить позже"
     },
     "memo": {
       "comoSeJuega": "Переворачивай карты по две и найди все 8 пар, пока не вышло время. Чем меньше ошибок и быстрее финиш, тем больше очков.",

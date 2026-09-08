@@ -4,7 +4,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
 import { GOLES_PARA_GANAR_DEFAULT, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
@@ -107,6 +109,7 @@ export default function HueSoccerScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ desafioId?: string }>();
   const desafioId = params.desafioId ? Number(params.desafioId) : 0;
 
@@ -294,10 +297,16 @@ export default function HueSoccerScreen() {
   // dos.
   const { ancho: canchaAncho, alto: canchaAlto, profundidadArco } = tablero.cancha;
   const relacionAltoAncho = (canchaAlto + profundidadArco * 2) / canchaAncho;
-  // ~230px para header + marcador + turno + las 2 líneas de meta/tiempo +
-  // la barra de navegación de abajo — aproximado a propósito (no vale la
-  // pena medir cada pieza del HUD en píxeles exactos para esto).
-  const altoDisponible = height - 230;
+  // ~150px para header + marcador + turno + las 2 líneas de meta/tiempo —
+  // aproximado a propósito (no vale la pena medir cada pieza del HUD en
+  // píxeles exactos para esto) — MÁS la altura real de la barra de
+  // navegación de abajo (antes era otro número aproximado metido en el mismo
+  // 230, y en pantallas con más inset inferior —el gesto de iOS, algunos
+  // Android— se quedaba corto: el arco de abajo terminaba tapado por la
+  // barra igual).
+  const alturaHudFijo = 150;
+  const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
+  const altoDisponible = height - alturaHudFijo - alturaBarraInferior;
   const ladoPorAlto = altoDisponible / relacionAltoAncho;
   const lado = Math.max(200, Math.min(width - 32, 340, ladoPorAlto));
 

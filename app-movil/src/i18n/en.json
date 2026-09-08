@@ -961,6 +961,7 @@
     "tienda": "Shop",
     "salud": "Health",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multiplayer",
     "configuracion": "Settings",
     "atajosHint": "Press and hold to see the shortcuts",
     "ocultarBotones": "Hide buttons",
@@ -1154,9 +1155,24 @@
     "desafios": "Multiplayer / Challenges",
     "desafiosBajada": "Duels against other users",
     "juegos": "Games",
+    "buscarJuego": "Search game",
+    "vistaDinamica": "Dynamic",
+    "vistaDesplegada": "Expanded",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multiplayer",
+    "modoAmbos": "Solo and Multiplayer",
     "ranking": "Leaderboard",
     "proximamente": "Coming soon",
     "pronto": "Soon",
+    "multiplayer": {
+      "titulo": "Multiplayer",
+      "tuTurno": "Your turn",
+      "enEspera": "Waiting",
+      "historial": "History",
+      "sinNada": "Nothing here yet",
+      "invitacion": "You were invited",
+      "armando": "Setting up the room"
+    },
     "tuRecord": "Your best: {{n}}",
     "retarA": "Challenge someone",
     "retar": "Challenge",
@@ -1238,6 +1254,40 @@
       "elegiUnaFicha": "Pick a piece to move",
       "seguirDespues": "Continue later"
     },
+    "reversi": {
+      "vos": "You",
+      "jugadas": "Moves: {{n}}",
+      "turnoDe": "{{rival}}'s turn",
+      "elegiCasilla": "Pick a square to place your piece",
+      "sinMovimiento": "No move available: turn passes",
+      "empateFin": "Draw",
+      "ganasteFin": "You won this game!",
+      "ganasteFinPuntos": "You won! +{{puntos}} points",
+      "perdisteFin": "You lost this game",
+      "fichas": "Pieces: {{n}}",
+      "seguirDespues": "Continue later"
+    },
+    "tateti": {
+      "vos": "You",
+      "jugadas": "Moves: {{n}}",
+      "turnoDe": "{{rival}}'s turn",
+      "elegiCasilla": "Pick a square",
+      "empateFin": "Draw",
+      "ganasteFin": "You won this game!",
+      "ganasteFinPuntos": "You won! +{{puntos}} points",
+      "perdisteFin": "You lost this game",
+      "seguirDespues": "Continue later"
+    },
+    "pool": {
+      "vos": "You",
+      "lisas": "Solids",
+      "rayadas": "Stripes",
+      "sinGrupo": "No group yet",
+      "tuTurno": "Your turn",
+      "bolaEnMano": "Ball in hand: tap the table to place it",
+      "turnoRival": "{{rival}}'s turn",
+      "tiempoNeto": "Net time used: {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "How many players?",
       "completarConIA": "Fill with the AI",
@@ -1294,6 +1344,16 @@
       "ganasteFin": "You won the match!",
       "perdisteFin": "Not this time"
     },
+    "ludoroyal": {
+      "titulo": "Royal Ludo",
+      "tirarDados": "Roll the dice",
+      "elegiFicha": "Choose which piece to move",
+      "tocaTirar": "Your turn: roll the dice",
+      "turnoDe": "{{rival}}'s turn",
+      "sinJugada": "No move possible with that roll",
+      "ganasteFin": "You won the game!",
+      "perdisteFin": "Not this time"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Nothing left to draw: the round ended",
@@ -1309,6 +1369,27 @@
       "tuMano": "Your hand",
       "bajar": "Lay down",
       "descartar": "Discard"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "You",
+      "turnoDe": "{{rival}}'s turn",
+      "ganasteFin": "You won the game!",
+      "perdisteFin": "Not this time",
+      "empateFin": "Draw",
+      "tuAtril": "Your rack",
+      "fichasEnBolsa": "Tiles left in the bag: {{n}}",
+      "elegiFichas": "Pick tiles from your rack and tap the board to place them",
+      "jugar": "Play",
+      "pasar": "Pass",
+      "cambiarFichas": "Exchange tiles",
+      "confirmarCambio": "Exchange",
+      "cancelarCambio": "Cancel",
+      "elegiComodin": "Which letter does the blank stand for?",
+      "sinFichasParaCambio": "Pick at least one tile to exchange",
+      "puntosGanados": "+{{puntos}} points",
+      "deshacer": "Undo",
+      "seguirDespues": "Continue later"
     },
     "memo": {
       "comoSeJuega": "Flip the cards two at a time and find all 8 pairs before time runs out. Fewer mistakes and a faster finish mean more points.",

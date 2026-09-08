@@ -94,21 +94,35 @@ try {
         $duracionSegundos = null;
     }
 
+    // Guardar (y moderar con Gemini) el archivo ANTES de tocar la base.
+    // rh_guardar_media_historia() puede tardar bastante -- el filtro NSFW
+    // hace una llamada de red a Gemini, y en un intento con varios modelos de
+    // respaldo esto puede llevar 30-40s reales -- y antes esa espera pasaba
+    // en el medio de un INSERT y un UPDATE con la MISMA conexión a MySQL. En
+    // hosting compartido el servidor cierra solo una conexión inactiva pasado
+    // su wait_timeout (suele ser bastante más corto que eso), así que el
+    // UPDATE de después se encontraba con la conexión ya muerta y tiraba
+    // "MySQL server has gone away" -- exactamente el 500 genérico que se
+    // reportó. No pasaba antes porque el filtro de Gemini es una función
+    // nueva: sin él no había ningún hueco de espera entre las dos consultas.
+    // Guardando el archivo primero, la base no se toca hasta que ya no hace
+    // falta esperar nada más.
+    $mediaPath = rh_guardar_media_historia($_FILES['media'], $userId, $tipoMedia);
+    rh_conn_asegurar_viva();
+
     // PHP 8.1+ no acepta null en bind_param tipado 'i' → usamos SQL con NULL explícito.
     if ($duracionSegundos === null) {
         $stmt = $conn->prepare(
             'INSERT INTO Historia (UserId, TipoMedia, MediaPath, DuracionSegundos, ExpiraEn)
              VALUES (?, ?, ?, NULL, NOW() + INTERVAL 24 HOUR)'
         );
-        $vacio = '';
-        $stmt->bind_param('iss', $userId, $tipoMedia, $vacio);
+        $stmt->bind_param('iss', $userId, $tipoMedia, $mediaPath);
     } else {
         $stmt = $conn->prepare(
             'INSERT INTO Historia (UserId, TipoMedia, MediaPath, DuracionSegundos, ExpiraEn)
              VALUES (?, ?, ?, ?, NOW() + INTERVAL 24 HOUR)'
         );
-        $vacio = '';
-        $stmt->bind_param('issi', $userId, $tipoMedia, $vacio, $duracionSegundos);
+        $stmt->bind_param('issi', $userId, $tipoMedia, $mediaPath, $duracionSegundos);
     }
     if (!$stmt->execute()) {
         json_error('No se pudo crear la historia');
@@ -116,14 +130,12 @@ try {
     $historiaId = (int) $stmt->insert_id;
     $stmt->close();
 
-    $mediaPath = rh_guardar_media_historia($_FILES['media'], $userId, $tipoMedia);
-
-    // El path se sabe recién después de guardar el archivo (necesita el
-    // HistoriaId), así que el resto de los campos se completa en el mismo
-    // UPDATE en vez de hacer dos.
-    $sets = ['MediaPath = ?'];
-    $tipos = 's';
-    $params = [$mediaPath];
+    // El resto de los campos son opcionales y se completan en un UPDATE
+    // aparte para no tener 6 variantes de INSERT según qué combinación de
+    // extras vino en el POST.
+    $sets = [];
+    $tipos = '';
+    $params = [];
 
     if ($overlayJson !== null) {
         $sets[] = 'OverlayJson = ?';
@@ -154,13 +166,16 @@ try {
         $params[] = $cadenaId;
     }
 
-    $tipos .= 'i';
-    $params[] = $historiaId;
+    // Sin extras (la mayoría de las fotos): nada que actualizar.
+    if ($sets) {
+        $tipos .= 'i';
+        $params[] = $historiaId;
 
-    $stmt = $conn->prepare('UPDATE Historia SET ' . implode(', ', $sets) . ' WHERE HistoriaId = ?');
-    $stmt->bind_param($tipos, ...$params);
-    $stmt->execute();
-    $stmt->close();
+        $stmt = $conn->prepare('UPDATE Historia SET ' . implode(', ', $sets) . ' WHERE HistoriaId = ?');
+        $stmt->bind_param($tipos, ...$params);
+        $stmt->execute();
+        $stmt->close();
+    }
 
     // Stickers interactivos. La posición ya viajó dentro del overlay; acá van
     // los datos, que necesitan tabla propia para poder recibir votos.

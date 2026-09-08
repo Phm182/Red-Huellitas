@@ -15,6 +15,22 @@ const VACIO: Contadores = {
 const INTERVALO_MS = 30000;
 
 /**
+ * `useContadores()` sólo se usa una vez (en `FloatingDock`, el dock persiste
+ * en toda la app), así que su estado vive ahí — pero cualquier OTRA pantalla
+ * que cambie el estado de notificaciones (marcar leídas, entrar con "limpiar
+ * al entrar" activado) necesita poder avisarle "actualizate ya" sin esperar
+ * el intervalo de 30s. Sin esto la campanita seguía mostrando el número
+ * viejo hasta 30 segundos después de salir de la pantalla de notificaciones.
+ * Un pub-sub mínimo a nivel de módulo alcanza — no hace falta un Context para
+ * un solo evento tan simple.
+ */
+const listeners = new Set<() => void>();
+
+export function refrescarContadoresGlobal(): void {
+  listeners.forEach((fn) => fn());
+}
+
+/**
  * Los números de las burbujas del riel de flotantes.
  *
  * Un solo endpoint y un solo intervalo para los tres badges: son burbujas que
@@ -38,11 +54,13 @@ export function useContadores(): { contadores: Contadores; refrescar: () => void
 
   useEffect(() => {
     refrescar();
+    listeners.add(refrescar);
     const id = setInterval(refrescar, INTERVALO_MS);
     const sub = AppState.addEventListener('change', (estado) => {
       if (estado === 'active') refrescar();
     });
     return () => {
+      listeners.delete(refrescar);
       clearInterval(id);
       sub.remove();
     };

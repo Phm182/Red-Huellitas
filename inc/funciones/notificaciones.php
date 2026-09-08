@@ -17,7 +17,7 @@ require_once __DIR__ . '/push.php';
  * @param int[]      $userIds  destinatarios (se ignoran repetidos y vacíos)
  * @param string     $tipo     clave corta para agrupar/filtrar (ej. 'match_nuevo')
  * @param string     $ruta     a dónde lleva el toque, ej. '/(app)/match/12'
- * @param array      $extra    ['actorUserId' => int, 'mascotaId' => int]
+ * @param array      $extra    ['actorUserId' => int, 'mascotaId' => int, 'juegoCodigo' => string]
  */
 function rh_notificar(
     mysqli $conn,
@@ -35,6 +35,10 @@ function rh_notificar(
 
     $actorUserId = isset($extra['actorUserId']) ? (int) $extra['actorUserId'] : null;
     $mascotaId = isset($extra['mascotaId']) ? (int) $extra['mascotaId'] : null;
+    // Con qué juego mostrar el ícono correcto en la campanita — sin esto
+    // todas las notificaciones de juego (te retaron, te toca, ganaste...)
+    // se veían con el mismo control remoto genérico, sin decir cuál era.
+    $juegoCodigo = isset($extra['juegoCodigo']) ? (string) $extra['juegoCodigo'] : null;
 
     // El titulo/cuerpo vienen de datos de usuario (nombres, temas de cadena),
     // así que se recortan a lo que entra en la columna: si no, un nombre largo
@@ -44,11 +48,11 @@ function rh_notificar(
     $ruta = $ruta !== null ? mb_substr($ruta, 0, 160) : null;
 
     $stmt = $conn->prepare(
-        'INSERT INTO Notificacion (UserId, Tipo, Titulo, Cuerpo, Ruta, ActorUserId, MascotaId)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO Notificacion (UserId, Tipo, Titulo, Cuerpo, Ruta, ActorUserId, MascotaId, JuegoCodigo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
     foreach ($userIds as $uid) {
-        $stmt->bind_param('issssii', $uid, $tipo, $titulo, $cuerpo, $ruta, $actorUserId, $mascotaId);
+        $stmt->bind_param('issssiis', $uid, $tipo, $titulo, $cuerpo, $ruta, $actorUserId, $mascotaId, $juegoCodigo);
         $stmt->execute();
     }
     $stmt->close();
@@ -110,6 +114,7 @@ function rh_notificacion_serializar(array $n): array
         'ruta' => $n['Ruta'],
         'actorUserId' => $n['ActorUserId'] !== null ? (int) $n['ActorUserId'] : null,
         'mascotaId' => $n['MascotaId'] !== null ? (int) $n['MascotaId'] : null,
+        'juegoCodigo' => $n['JuegoCodigo'] ?? null,
         'leida' => (bool) $n['Leida'],
         'createdAt' => $n['CreatedAt'],
     ];

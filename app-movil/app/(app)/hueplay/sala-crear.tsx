@@ -8,6 +8,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
+import { juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
 import { HuePlayRival, PoliticaAbandonoSala } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -27,8 +28,10 @@ export default function SalaCrearScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ juego?: string }>();
-  const juegoCodigo = params.juego === 'huerummy' ? 'huerummy' : 'hueludo';
-  const tituloJuego = juegoCodigo === 'huerummy' ? 'HueRummy' : 'HueLudo';
+  const juegoCodigo = ['huerummy', 'huescrabble', 'hueludoroyal'].includes(params.juego ?? '')
+    ? (params.juego as string)
+    : 'hueludo';
+  const tituloJuego = juegoDelCatalogo(juegoCodigo)?.titulo ?? 'HueLudo';
 
   const [maxJugadores, setMaxJugadores] = useState(4);
   const [completarConIA, setCompletarConIA] = useState(true);

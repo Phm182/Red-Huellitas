@@ -809,6 +809,7 @@
     "tienda": "Loja",
     "salud": "Saúde",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multiplayer",
     "configuracion": "Configurações",
     "atajosHint": "Mantenha pressionado para ver os atalhos",
     "ocultarBotones": "Ocultar botões",
@@ -995,9 +996,24 @@
     "desafios": "Multiplayer / Desafios",
     "desafiosBajada": "Duelos contra outros usuários",
     "juegos": "Jogos",
+    "buscarJuego": "Buscar jogo",
+    "vistaDinamica": "Dinâmica",
+    "vistaDesplegada": "Expandida",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multiplayer",
+    "modoAmbos": "Solo e Multiplayer",
     "ranking": "Ranking",
     "proximamente": "Em breve",
     "pronto": "Em breve",
+    "multiplayer": {
+      "titulo": "Multiplayer",
+      "tuTurno": "Sua vez",
+      "enEspera": "Esperando",
+      "historial": "Histórico",
+      "sinNada": "Ainda não tem nada aqui",
+      "invitacion": "Você foi convidado",
+      "armando": "Montando a sala"
+    },
     "tuRecord": "Seu recorde: {{n}}",
     "retarA": "Desafiar alguém",
     "retar": "Desafiar",
@@ -1079,6 +1095,40 @@
       "elegiUnaFicha": "Escolha uma peça para mover",
       "seguirDespues": "Continuar depois"
     },
+    "reversi": {
+      "vos": "Você",
+      "jugadas": "Jogadas: {{n}}",
+      "turnoDe": "Vez de {{rival}}",
+      "elegiCasilla": "Escolha uma casa para colocar sua peça",
+      "sinMovimiento": "Nenhuma jogada disponível: a vez passa",
+      "empateFin": "Empate",
+      "ganasteFin": "Você venceu esta partida!",
+      "ganasteFinPuntos": "Você venceu! +{{puntos}} pontos",
+      "perdisteFin": "Você perdeu esta partida",
+      "fichas": "Peças: {{n}}",
+      "seguirDespues": "Continuar depois"
+    },
+    "tateti": {
+      "vos": "Você",
+      "jugadas": "Jogadas: {{n}}",
+      "turnoDe": "Vez de {{rival}}",
+      "elegiCasilla": "Escolha uma casa",
+      "empateFin": "Empate",
+      "ganasteFin": "Você venceu esta partida!",
+      "ganasteFinPuntos": "Você venceu! +{{puntos}} pontos",
+      "perdisteFin": "Você perdeu esta partida",
+      "seguirDespues": "Continuar depois"
+    },
+    "pool": {
+      "vos": "Você",
+      "lisas": "Lisas",
+      "rayadas": "Listradas",
+      "sinGrupo": "Ainda sem grupo",
+      "tuTurno": "Sua vez",
+      "bolaEnMano": "Bola na mão: toque na mesa para posicioná-la",
+      "turnoRival": "Vez de {{rival}}",
+      "tiempoNeto": "Tempo líquido usado: {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "Quantos jogadores?",
       "completarConIA": "Completar com a IA",
@@ -1135,6 +1185,16 @@
       "ganasteFin": "Você venceu a partida!",
       "perdisteFin": "Dessa vez não"
     },
+    "ludoroyal": {
+      "titulo": "Ludo Real",
+      "tirarDados": "Jogar os dados",
+      "elegiFicha": "Escolha qual peça mover",
+      "tocaTirar": "Sua vez: jogue os dados",
+      "turnoDe": "Vez de {{rival}}",
+      "sinJugada": "Nenhum movimento possível com essa jogada",
+      "ganasteFin": "Você venceu a partida!",
+      "perdisteFin": "Dessa vez não foi"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Não sobrou nada para comprar: a rodada terminou",
@@ -1150,6 +1210,27 @@
       "tuMano": "Sua mão",
       "bajar": "Baixar",
       "descartar": "Descartar"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Você",
+      "turnoDe": "Vez de {{rival}}",
+      "ganasteFin": "Você venceu a partida!",
+      "perdisteFin": "Dessa vez não",
+      "empateFin": "Empate",
+      "tuAtril": "Seu suporte",
+      "fichasEnBolsa": "Peças restantes no saco: {{n}}",
+      "elegiFichas": "Escolha peças do seu suporte e toque no tabuleiro para colocá-las",
+      "jugar": "Jogar",
+      "pasar": "Passar",
+      "cambiarFichas": "Trocar peças",
+      "confirmarCambio": "Trocar",
+      "cancelarCambio": "Cancelar",
+      "elegiComodin": "Qual letra o coringa representa?",
+      "sinFichasParaCambio": "Escolha pelo menos uma peça para trocar",
+      "puntosGanados": "+{{puntos}} pontos",
+      "deshacer": "Desfazer",
+      "seguirDespues": "Continuar depois"
     },
     "memo": {
       "comoSeJuega": "Vire as cartas de duas em duas e encontre os 8 pares antes do tempo acabar. Menos erros e mais rapidez valem mais pontos.",

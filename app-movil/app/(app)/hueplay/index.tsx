@@ -1,11 +1,16 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { BarraNivel } from '../../../src/components/ui/BarraNivel';
+import { ChipRow } from '../../../src/components/ui/ChipRow';
+import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
+import { BotonFavorito } from '../../../src/components/hueplay/BotonFavorito';
+import { CarruselJuegos } from '../../../src/components/hueplay/CarruselJuegos';
+import { ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
 import { HuePlayPerfil } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -14,6 +19,8 @@ import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticLeve } from '../../../src/utils/haptics';
 import { rhAvatarUrl } from '../../../src/utils/media';
+
+type VistaJuegos = 'dinamica' | 'desplegada';
 
 type JuegoDef = {
   id: string;
@@ -109,6 +116,42 @@ const JUEGOS: JuegoDef[] = [
     duelo: true,
   },
   {
+    id: 'huetateti',
+    titulo: 'HueTaTeTi',
+    bajada: 'El clásico de 3 en línea, por turnos contra otra persona o contra la app.',
+    icono: 'close',
+    color: '#E8577E',
+    ruta: '/(app)/hueplay/desafios?juego=huetateti',
+    duelo: true,
+  },
+  {
+    id: 'huepool',
+    titulo: 'HuePool',
+    bajada: 'Bola 8 de billar, con física real, contra otra persona por turnos.',
+    icono: 'billiards-rack',
+    color: '#2C5F3E',
+    ruta: '/(app)/hueplay/desafios?juego=huepool',
+    duelo: true,
+  },
+  {
+    id: 'huescrabble',
+    titulo: 'HueScrabble',
+    bajada: 'Armá palabras cruzadas sobre el tablero, de a 2 a 4 jugadores.',
+    icono: 'alphabetical-variant',
+    color: '#B08D57',
+    ruta: '/(app)/hueplay/salas?juego=huescrabble',
+    duelo: true,
+  },
+  {
+    id: 'huereversi',
+    titulo: 'HueReversi',
+    bajada: 'Flanqueá y volteá las fichas del rival hasta dominar el tablero, por turnos.',
+    icono: 'circle-half-full',
+    color: '#2C2C2C',
+    ruta: '/(app)/hueplay/desafios?juego=huereversi',
+    duelo: true,
+  },
+  {
     id: 'huesoccer',
     titulo: 'HueSoccer',
     bajada: 'Meté la pelota en el arco del rival a lo Soccer Star, por turnos.',
@@ -127,6 +170,15 @@ const JUEGOS: JuegoDef[] = [
     // de ir directo a crear: con hasta 4 jugadores hay más que gestionar que
     // en un duelo 1 contra 1.
     ruta: '/(app)/hueplay/salas?juego=hueludo',
+    duelo: true,
+  },
+  {
+    id: 'hueludoroyal',
+    titulo: 'HueLudo Real',
+    bajada: 'La versión con dos dados: Corona para salir, Pluma de comodín y barreras.',
+    icono: 'crown',
+    color: '#D4A017',
+    ruta: '/(app)/hueplay/salas?juego=hueludoroyal',
     duelo: true,
   },
   {
@@ -159,25 +211,46 @@ const JUEGOS: JuegoDef[] = [
   },
 ];
 
-/**
- * Ya no queda ninguno "proximamente": los cuatro juegos estan jugables. La
- * lista se deja para que sumar el siguiente sea agregar una entrada.
- */
-const PROXIMAMENTE: JuegoDef[] = [];
-
 export default function HuePlayScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const [perfil, setPerfil] = useState<HuePlayPerfil | null>(null);
   const [loading, setLoading] = useState(true);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [busqueda, setBusqueda] = useState('');
+  // Arranca siempre en "dinámica" (pedido explícito) — no se persiste entre
+  // aperturas de la app, no hay mecanismo de preferencias por-pantalla acá.
+  const [vista, setVista] = useState<VistaJuegos>('dinamica');
 
   useFocusEffect(
     useCallback(() => {
       hueplayApi.perfil().then((res) => {
-        if (res.success && res.data) setPerfil(res.data);
+        if (res.success && res.data) {
+          setPerfil(res.data);
+          setFavoritos(res.data.favoritos ?? []);
+        }
         setLoading(false);
       });
     }, [])
+  );
+
+  const onFavoritoCambiar = useCallback((codigo: string, favorito: boolean) => {
+    setFavoritos((prev) => {
+      if (favorito) return prev.includes(codigo) ? prev : [...prev, codigo];
+      return prev.filter((c) => c !== codigo);
+    });
+  }, []);
+
+  const juegosOrdenados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const base = q ? JUEGOS.filter((j) => j.titulo.toLowerCase().includes(q)) : JUEGOS;
+    return ordenarJuegos(base, favoritos, (j) => j.id, (j) => j.titulo);
+  }, [busqueda, favoritos]);
+
+  const labelModo = useCallback(
+    (modo: 'solo' | 'multiplayer' | 'ambos') =>
+      modo === 'solo' ? t('hueplay.modoSolo') : modo === 'multiplayer' ? t('hueplay.modoMultiplayer') : t('hueplay.modoAmbos'),
+    [t]
   );
 
   const p = perfil?.progreso;
@@ -185,14 +258,8 @@ export default function HuePlayScreen() {
     ? Math.min(100, ((p.puntos - p.nivelDesde) / Math.max(1, p.nivelHasta - p.nivelDesde)) * 100)
     : 0;
 
-  return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.contenido, centeredContent]}
-    >
-      <Text style={[styles.titulo, { color: colors.text }]}>HuePlay</Text>
-      <Text style={[styles.bajada, { color: colors.textMuted }]}>{t('hueplay.bajada')}</Text>
-
+  const nivelYAcciones = (
+    <>
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
       ) : p ? (
@@ -226,56 +293,68 @@ export default function HuePlayScreen() {
         </View>
       ) : null}
 
-      {/* El diario va primero y con el color de acento: es el modo que
-          queremos que se abra todos los días, y enterrarlo debajo de la lista
-          de juegos lo dejaría como una opción más. */}
-      <Pressable
-        onPress={() => {
-          hapticLeve();
-          router.push('/(app)/hueplay/diario' as never);
-        }}
-        style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.primary }]}
-      >
-        <View style={[styles.icono, { backgroundColor: '#FFB70022' }]}>
-          <Ionicons name="today" size={24} color="#FFB700" />
-        </View>
-        <View style={styles.texto}>
-          <Text style={[styles.tarjetaTitulo, { color: colors.text }]}>
+      {/* Reto del día y Multiplayer, uno al lado del otro: son las dos
+          puertas de entrada grandes de HuePlay — el diario (mismo tablero
+          para todo el mundo ese día) y todo lo que se juega con otra
+          persona (duelos 1v1 + salas de hasta 4, unificados en una sola
+          bandeja). */}
+      <View style={styles.filaMitades}>
+        <Pressable
+          onPress={() => {
+            hapticLeve();
+            router.push('/(app)/hueplay/diario' as never);
+          }}
+          style={[styles.tarjetaMitad, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+        >
+          <View style={[styles.icono, { backgroundColor: '#FFB70022' }]}>
+            <Ionicons name="today" size={22} color="#FFB700" />
+          </View>
+          <Text style={[styles.tarjetaTitulo, { color: colors.text, fontSize: 14 }]} numberOfLines={1}>
             {t('hueplay.diario.titulo')}
           </Text>
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-            {t('hueplay.diario.bajadaHub')}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-      </Pressable>
+        </Pressable>
 
-      <Pressable
-        onPress={() => {
-          hapticLeve();
-          router.push('/(app)/hueplay/desafios');
-        }}
-        style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      >
-        <View style={[styles.icono, { backgroundColor: '#E8577E22' }]}>
-          <Ionicons name="flash" size={24} color="#E8577E" />
-        </View>
-        <View style={styles.texto}>
-          <Text style={[styles.tarjetaTitulo, { color: colors.text }]}>{t('hueplay.desafios')}</Text>
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.desafiosBajada')}</Text>
-        </View>
-        {perfil && perfil.desafiosPendientes > 0 ? (
-          <View style={[styles.pill, { backgroundColor: colors.danger }]}>
-            <Text style={styles.pillTexto}>{perfil.desafiosPendientes}</Text>
+        <Pressable
+          onPress={() => {
+            hapticLeve();
+            router.push('/(app)/hueplay/multiplayer' as never);
+          }}
+          style={[styles.tarjetaMitad, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          {perfil && perfil.desafiosPendientes > 0 ? (
+            <View style={[styles.pill, styles.pillEsquina, { backgroundColor: colors.danger }]}>
+              <Text style={styles.pillTexto}>{perfil.desafiosPendientes}</Text>
+            </View>
+          ) : null}
+          <View style={[styles.icono, { backgroundColor: '#5B9AD622' }]}>
+            <Ionicons name="people" size={22} color="#5B9AD6" />
           </View>
-        ) : (
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        )}
-      </Pressable>
+          <Text style={[styles.tarjetaTitulo, { color: colors.text, fontSize: 14 }]} numberOfLines={1}>
+            {t('hueplay.multiplayer.titulo')}
+          </Text>
+        </Pressable>
+      </View>
 
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.juegos')}</Text>
+      <View style={styles.seccionFila}>
+        <Text style={[styles.seccion, styles.seccionSinMargen, { color: colors.textMuted }]}>{t('hueplay.juegos')}</Text>
+        <ListSearchBar embedded value={busqueda} onChangeText={setBusqueda} placeholder={t('hueplay.buscarJuego')} />
+      </View>
 
-      {JUEGOS.map((j) => (
+      <ChipRow
+        opciones={[
+          { valor: 'dinamica' as VistaJuegos, label: t('hueplay.vistaDinamica') },
+          { valor: 'desplegada' as VistaJuegos, label: t('hueplay.vistaDesplegada') },
+        ]}
+        seleccionado={vista}
+        onSelect={setVista}
+        scrollable={false}
+      />
+    </>
+  );
+
+  const listaDesplegada = (
+    <>
+      {juegosOrdenados.map((j) => (
         <Pressable
           key={j.id}
           onPress={() => {
@@ -324,71 +403,97 @@ export default function HuePlayScreen() {
               <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
             </Pressable>
           ) : null}
+          <BotonFavorito juegoCodigo={j.id} esFavorito={favoritos.includes(j.id)} onCambiar={onFavoritoCambiar} />
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
       ))}
+    </>
+  );
 
-      {perfil && perfil.ranking.length > 0 ? (
-        <>
-          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
-          <View style={[styles.rankingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {perfil.ranking.map((r) => (
-              <View
-                key={r.userId}
-                style={[
-                  styles.rankFila,
-                  r.soyYo && { backgroundColor: colors.primarySoft, borderRadius: radii.md },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rankPos,
-                    { color: r.posicion <= 3 ? colors.primary : colors.textMuted },
-                  ]}
-                >
-                  {r.posicion}
-                </Text>
-                {r.avatarPath ? (
-                  <Image source={{ uri: rhAvatarUrl(r.avatarPath) }} style={styles.rankAvatar} contentFit="cover" />
-                ) : (
-                  <View style={[styles.rankAvatar, styles.rankAvatarVacio, { backgroundColor: colors.primarySoft }]}>
-                    <Ionicons name="person" size={14} color={colors.primary} />
-                  </View>
-                )}
-                <Text style={{ color: colors.text, flex: 1, fontSize: 13 }} numberOfLines={1}>
-                  {r.username ? `@${r.username}` : r.nombreCompleto}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {t('hueplay.nivelCorto', { n: r.nivel })}
-                </Text>
-                <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13, minWidth: 54, textAlign: 'right' }}>
-                  {r.puntos}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </>
+  const rankingLista = perfil?.ranking.map((r) => (
+    <View
+      key={r.userId}
+      style={[styles.rankFila, r.soyYo && { backgroundColor: colors.primarySoft, borderRadius: radii.md }]}
+    >
+      <Text style={[styles.rankPos, { color: r.posicion <= 3 ? colors.primary : colors.textMuted }]}>{r.posicion}</Text>
+      {r.avatarPath ? (
+        <Image source={{ uri: rhAvatarUrl(r.avatarPath) }} style={styles.rankAvatar} contentFit="cover" />
+      ) : (
+        <View style={[styles.rankAvatar, styles.rankAvatarVacio, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name="person" size={14} color={colors.primary} />
+        </View>
+      )}
+      <Text style={{ color: colors.text, flex: 1, fontSize: 13 }} numberOfLines={1}>
+        {r.username ? `@${r.username}` : r.nombreCompleto}
+      </Text>
+      <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.nivelCorto', { n: r.nivel })}</Text>
+      <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13, minWidth: 54, textAlign: 'right' }}>
+        {r.puntos}
+      </Text>
+    </View>
+  ));
+
+  // Modo "desplegada": todo apilado en un único ScrollView, tal cual se
+  // veía antes de este rediseño — el ranking no tiene límite de alto.
+  if (vista === 'desplegada') {
+    return (
+      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.contenido, centeredContent]}>
+        {nivelYAcciones}
+        {listaDesplegada}
+        {perfil && perfil.ranking.length > 0 ? (
+          <>
+            <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
+            <View style={[styles.rankingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {rankingLista}
+            </View>
+          </>
+        ) : null}
+      </ScrollView>
+    );
+  }
+
+  // Modo "dinámica": nada de esto scrollea salvo el propio ranking — todo
+  // el resto (nivel, fila de accesos, buscador+selector, carrusel) tiene
+  // que entrar en una pantalla, así que el contenedor raíz es un `View`
+  // fijo en vez de un `ScrollView`, y el ranking se lleva el alto que
+  // sobra con un scroll interno propio.
+  return (
+    <View style={[styles.contenidoFijo, { backgroundColor: colors.background }, centeredContent]}>
+      {nivelYAcciones}
+
+      {/* Recién se monta con `loading` en false: si arrancara antes,
+          `favoritos` llega vacío en el primer render y el carrusel abre
+          mostrando el primero alfabético — cuando el favorito llega un
+          instante después, el carrusel "sigue" al juego que ya estaba
+          mostrando en vez de saltar al favorito, que es justo lo que se
+          quiere evitar (por eso "sigue al mismo juego" al reordenar por
+          favorito DESPUÉS, no al cargar la primera vez). */}
+      {!loading ? (
+        <View style={styles.carruselWrap}>
+          <CarruselJuegos
+            juegos={juegosOrdenados}
+            favoritos={favoritos}
+            modosPorJuego={perfil?.modosPorJuego ?? {}}
+            onFavoritoCambiar={onFavoritoCambiar}
+            onAbrir={(j) => {
+              hapticLeve();
+              const original = JUEGOS.find((x) => x.id === j.id);
+              original?.ruta && router.push(original.ruta as never);
+            }}
+            labelModo={labelModo}
+          />
+        </View>
       ) : null}
 
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.proximamente')}</Text>
-      {PROXIMAMENTE.map((j) => (
-        <View
-          key={j.id}
-          style={[styles.tarjeta, styles.tarjetaOff, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          <View style={[styles.icono, { backgroundColor: `${j.color}18` }]}>
-            <MaterialCommunityIcons name={j.icono} size={24} color={j.color} />
-          </View>
-          <View style={styles.texto}>
-            <Text style={[styles.tarjetaTitulo, { color: colors.textMuted }]}>{j.titulo}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{j.bajada}</Text>
-          </View>
-          <View style={[styles.badge, { borderColor: colors.border }]}>
-            <Text style={{ color: colors.textMuted, fontSize: 10 }}>{t('hueplay.pronto')}</Text>
-          </View>
+      {perfil && perfil.ranking.length > 0 ? (
+        <View style={styles.rankingFlex}>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
+          <ScrollView style={[styles.rankingCard, styles.rankingCardMinAlto, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {rankingLista}
+          </ScrollView>
         </View>
-      ))}
-    </ScrollView>
+      ) : null}
+    </View>
   );
 }
 
@@ -403,9 +508,30 @@ function Stat({ label, valor, colors }: { label: string; valor: number; colors: 
 
 const styles = StyleSheet.create({
   contenido: { padding: 16, paddingBottom: 32 },
-  titulo: { fontSize: 26, fontFamily: fonts.displaySemi },
-  bajada: { fontSize: 13, marginTop: 4, marginBottom: 16 },
+  // Modo "dinámica": ocupa toda la pantalla disponible (la da AppChrome) sin
+  // scrollear — sólo el ranking, más abajo, tiene su propio scroll interno.
+  contenidoFijo: { flex: 1, padding: 16 },
   seccion: { fontSize: 12, fontFamily: fonts.bodySemi, marginTop: 22, marginBottom: 10, textTransform: 'uppercase' },
+  seccionSinMargen: { marginTop: 0, marginBottom: 0 },
+  seccionFila: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 22, marginBottom: 10 },
+  filaMitades: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  tarjetaMitad: {
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  pillEsquina: { position: 'absolute', top: 8, right: 8 },
+  // Separado del selector Dinámica/Desplegada, que quedaba pegado al
+  // carrusel sin aire.
+  carruselWrap: { marginTop: 18, marginBottom: 6 },
+  // `minHeight` además de `flex: 1`: en pantallas bajas el ranking se podía
+  // achicar hasta mostrar 1 o 2 filas nomás — con esto entran mínimo 4-5
+  // (el propio `ScrollView` de adentro se encarga de scrollear el resto).
+  rankingFlex: { flex: 1, marginTop: 4, minHeight: 230 },
   nivelCard: { borderWidth: 1, borderRadius: radii.lg, padding: 16, marginBottom: 14, gap: 8 },
   nivelFila: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nivelBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -422,15 +548,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 12,
   },
-  tarjetaOff: { opacity: 0.6 },
   icono: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   skinBoton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   texto: { flex: 1 },
   tarjetaTitulo: { fontSize: 16, fontFamily: fonts.bodySemi, marginBottom: 2 },
-  badge: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   pill: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
   pillTexto: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 11 },
   rankingCard: { borderWidth: 1, borderRadius: radii.lg, padding: 8 },
+  rankingCardMinAlto: { minHeight: 190 },
   rankFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, paddingHorizontal: 8 },
   rankPos: { width: 20, fontFamily: fonts.bodyBold, fontSize: 13 },
   rankAvatar: { width: 26, height: 26, borderRadius: 13 },

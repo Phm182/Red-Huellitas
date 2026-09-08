@@ -975,6 +975,7 @@
     "tienda": "Tienda",
     "salud": "Salud",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multiplayer",
     "configuracion": "Configuración",
     "atajosHint": "Mantené apretado para ver los atajos",
     "ocultarBotones": "Ocultar botones",
@@ -1169,9 +1170,24 @@
     "desafiosBajada": "Duelos contra otros usuarios",
     "seleccionarJuego": "Seleccioná un juego",
     "juegos": "Juegos",
+    "buscarJuego": "Buscar juego",
+    "vistaDinamica": "Dinámica",
+    "vistaDesplegada": "Desplegada",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multiplayer",
+    "modoAmbos": "Solo y Multiplayer",
     "ranking": "Ranking",
     "proximamente": "Próximamente",
     "pronto": "Pronto",
+    "multiplayer": {
+      "titulo": "Multiplayer",
+      "tuTurno": "Tu turno",
+      "enEspera": "En espera",
+      "historial": "Historial",
+      "sinNada": "No tenés nada acá todavía",
+      "invitacion": "Te invitaron",
+      "armando": "Armando la sala"
+    },
     "tuRecord": "Tu récord: {{n}}",
     "retarA": "Retar a alguien",
     "retar": "Retar",
@@ -1255,6 +1271,40 @@
       "elegiUnaFicha": "Elegí una pieza para mover",
       "seguirDespues": "Seguir después"
     },
+    "reversi": {
+      "vos": "Vos",
+      "jugadas": "Jugadas: {{n}}",
+      "turnoDe": "Le toca a {{rival}}",
+      "elegiCasilla": "Elegí dónde colocar tu ficha",
+      "sinMovimiento": "No tenés movimiento posible: pasa el turno",
+      "empateFin": "Empate",
+      "ganasteFin": "¡Ganaste este duelo!",
+      "ganasteFinPuntos": "¡Ganaste! +{{puntos}} puntos",
+      "perdisteFin": "Perdiste este duelo",
+      "fichas": "Fichas: {{n}}",
+      "seguirDespues": "Seguir después"
+    },
+    "tateti": {
+      "vos": "Vos",
+      "jugadas": "Jugadas: {{n}}",
+      "turnoDe": "Le toca a {{rival}}",
+      "elegiCasilla": "Elegí una casilla",
+      "empateFin": "Empate",
+      "ganasteFin": "¡Ganaste este duelo!",
+      "ganasteFinPuntos": "¡Ganaste! +{{puntos}} puntos",
+      "perdisteFin": "Perdiste este duelo",
+      "seguirDespues": "Seguir después"
+    },
+    "pool": {
+      "vos": "Vos",
+      "lisas": "Lisas",
+      "rayadas": "Rayadas",
+      "sinGrupo": "Sin grupo",
+      "tuTurno": "Tu turno",
+      "bolaEnMano": "Bola en mano: tocá la mesa para ubicarla",
+      "turnoRival": "Turno de {{rival}}",
+      "tiempoNeto": "Tiempo neto usado: {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "¿Cuántos jugadores?",
       "completarConIA": "Completar con la IA",
@@ -1311,6 +1361,16 @@
       "ganasteFin": "¡Ganaste la partida!",
       "perdisteFin": "Esta vez no ganaste"
     },
+    "ludoroyal": {
+      "titulo": "HueLudo Real",
+      "tirarDados": "Tirar los dados",
+      "elegiFicha": "Elegí qué ficha mover",
+      "tocaTirar": "Te toca: tirá los dados",
+      "turnoDe": "Le toca a {{rival}}",
+      "sinJugada": "No hay movimiento posible con esa tirada",
+      "ganasteFin": "¡Ganaste la partida!",
+      "perdisteFin": "Esta vez no ganaste"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "No quedaba nada de dónde robar: la ronda se cortó",
@@ -1326,6 +1386,27 @@
       "tuMano": "Tu mano",
       "bajar": "Bajar",
       "descartar": "Descartar"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Vos",
+      "turnoDe": "Le toca a {{rival}}",
+      "ganasteFin": "¡Ganaste la partida!",
+      "perdisteFin": "Esta vez no ganaste",
+      "empateFin": "Empate",
+      "tuAtril": "Tu atril",
+      "fichasEnBolsa": "Fichas en la bolsa: {{n}}",
+      "elegiFichas": "Elegí fichas de tu atril y tocá el tablero para colocarlas",
+      "jugar": "Jugar",
+      "pasar": "Pasar",
+      "cambiarFichas": "Cambiar fichas",
+      "confirmarCambio": "Cambiar",
+      "cancelarCambio": "Cancelar",
+      "elegiComodin": "¿Qué letra representa el comodín?",
+      "sinFichasParaCambio": "Elegí al menos una ficha para cambiar",
+      "puntosGanados": "+{{puntos}} puntos",
+      "deshacer": "Deshacer",
+      "seguirDespues": "Seguir después"
     },
     "memo": {
       "comoSeJuega": "Dá vuelta las cartas de a dos y encontrá los 8 pares antes de que se acabe el tiempo. Cuantos menos errores hagas y más rápido termines, más puntos sumás.",

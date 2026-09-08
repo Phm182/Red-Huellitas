@@ -50,6 +50,8 @@ export interface Notificacion {
   actorUserId: number | null;
   /** Si nació de una mascota, se cuenta y se muestra dentro de ella. */
   mascotaId: number | null;
+  /** Si nació de HuePlay, qué juego — para mostrar su ícono en vez de uno genérico. */
+  juegoCodigo: string | null;
   leida: boolean;
   createdAt: string;
 }

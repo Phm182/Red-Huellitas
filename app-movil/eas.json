@@ -12,7 +12,8 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     },
     "preview": {
@@ -21,7 +22,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     },
     "apk": {
@@ -30,7 +32,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     },
     "production": {
@@ -41,7 +44,8 @@
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     },
     "ios-simulator": {
@@ -50,7 +54,8 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     },
     "ios-preview": {
@@ -59,7 +64,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar"
+        "EXPO_PUBLIC_API_URL": "https://redhuellitas.bitflow.com.ar",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       }
     }
   },

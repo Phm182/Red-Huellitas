@@ -120,7 +120,7 @@ function rh_sala_crear(
             'Te invitaron a jugar',
             rh_juego_nombre($conn, $userId) . ' te invitó a una sala de ' . rh_juego_titulo($juegoCodigo),
             '/(app)/hueplay/sala-lobby/' . $salaId,
-            ['actorUserId' => $userId]
+            ['actorUserId' => $userId, 'juegoCodigo' => $juegoCodigo]
         );
     }
 
@@ -176,7 +176,8 @@ function rh_sala_unirse_codigo(mysqli $conn, int $userId, string $codigoInvitaci
         'juego_desafio',
         'Se sumó alguien a tu sala',
         rh_juego_nombre($conn, $userId) . ' se unió con el código a tu sala de ' . rh_juego_titulo($sala['JuegoCodigo']),
-        '/(app)/hueplay/desafios'
+        '/(app)/hueplay/desafios',
+        ['juegoCodigo' => $sala['JuegoCodigo']]
     );
 
     return ['sala' => rh_sala_obtener($conn, $salaId)];
@@ -315,7 +316,8 @@ function rh_sala_cerrar(mysqli $conn, array $sala, array $jugadores, ?int $ganad
     $userIds = array_column($humanos, 'userId');
     if ($userIds) {
         rh_notificar($conn, $userIds, 'juego_desafio_fin', 'Partida terminada',
-            'Terminó tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios');
+            'Terminó tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios',
+            ['juegoCodigo' => $juegoCodigo]);
     }
 }
 
@@ -403,7 +405,8 @@ function rh_sala_resolver_turno_vencido(mysqli $conn, array $sala): array
         'juego_tu_turno',
         '¡Te toca jugar!',
         'Tenés un turno esperando en ' . rh_juego_titulo($sala['JuegoCodigo']) . '.',
-        '/(app)/hueplay/sala-lobby/' . $salaId
+        '/(app)/hueplay/sala-lobby/' . $salaId,
+        ['juegoCodigo' => $sala['JuegoCodigo']]
     );
 
     return ['politica' => $politica, 'salaJugadorAfectado' => $afectado, 'cerrada' => false, 'siguienteSalaJugadorId' => $siguienteId];
@@ -456,7 +459,8 @@ function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJuga
             'juego_tu_turno',
             '¡Te toca jugar!',
             'Tenés un turno esperando en ' . rh_juego_titulo($fila['JuegoCodigo']) . '.',
-            '/(app)/hueplay/sala-lobby/' . $salaId
+            '/(app)/hueplay/sala-lobby/' . $salaId,
+            ['juegoCodigo' => $fila['JuegoCodigo']]
         );
     }
 }

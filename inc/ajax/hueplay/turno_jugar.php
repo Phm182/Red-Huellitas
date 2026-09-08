@@ -92,12 +92,12 @@ if ($gano || $empate) {
     $resultado = rh_juego_cerrar_desafio_turnos($conn, $d, $ganador, $puntosRetador, $puntosRetado);
     $progreso = $userId === $retador ? $resultado['progresoRetador'] : $resultado['progresoRetado'];
 } else {
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
 
     if (!rh_juego_es_bot($conn, $rival)) {
         rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
             rh_juego_nombre($conn, $userId) . ' ya movió en HueConecta', '/(app)/hueplay/desafios',
-            ['actorUserId' => $userId]);
+            ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
     }
 }
 

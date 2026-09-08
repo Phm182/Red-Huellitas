@@ -6,8 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
+import { BotonFavorito } from '../../../src/components/hueplay/BotonFavorito';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { JUEGOS_CATALOGO } from '../../../src/juego/hueplay/catalogo';
+import { JUEGOS_CATALOGO, ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
+import { rutaDelDesafio } from '../../../src/juego/hueplay/rutas';
 import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { HuePlayDesafio, HuePlayDesafiosBandeja } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -25,7 +27,7 @@ import { rhAvatarUrl } from '../../../src/utils/media';
  * cronológica dejaría lo accionable mezclado con lo terminado.
  */
 /** Juegos de tablero por turnos: no tienen modo solo, sólo duelo. */
-const JUEGOS_SIN_SOLO = ['hueconecta', 'huedamas', 'hueajedrez', 'huesoccer'];
+const JUEGOS_SIN_SOLO = ['hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool'];
 
 export default function DesafiosScreen() {
   const { t } = useTranslation();
@@ -47,15 +49,28 @@ export default function DesafiosScreen() {
   // directo a HueSoccer. La grilla queda un toque atrás, por si de verdad
   // quiere cambiar de juego desde acá.
   const [mostrarPicker, setMostrarPicker] = useState(!juegoFijoInicial);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
 
   const cargar = useCallback(() => {
     hueplayApi.desafios().then((res) => {
       if (res.success && res.data) setBandeja(res.data);
       setLoading(false);
     });
+    hueplayApi.perfil().then((res) => {
+      if (res.success && res.data) setFavoritos(res.data.favoritos ?? []);
+    });
   }, []);
 
   useFocusEffect(useCallback(() => cargar(), [cargar]));
+
+  const onFavoritoCambiar = useCallback((codigo: string, favorito: boolean) => {
+    setFavoritos((prev) => {
+      if (favorito) return prev.includes(codigo) ? prev : [...prev, codigo];
+      return prev.filter((c) => c !== codigo);
+    });
+  }, []);
+
+  const juegosCatalogoOrdenados = ordenarJuegos(JUEGOS_CATALOGO, favoritos, (j) => j.codigo, (j) => j.titulo);
 
   const rechazar = async (d: HuePlayDesafio) => {
     hapticMedio();
@@ -65,53 +80,7 @@ export default function DesafiosScreen() {
 
   const jugar = (d: HuePlayDesafio) => {
     hapticLeve();
-    // Cada duelo sabe de qué juego es: la bandeja es una sola para todos.
-    if (d.juegoCodigo === 'hueconecta') {
-      router.push({
-        pathname: '/(app)/hueplay/hueconecta',
-        params: { desafioId: d.desafioId },
-      });
-      return;
-    }
-    if (d.juegoCodigo === 'huedamas') {
-      router.push({
-        pathname: '/(app)/hueplay/damas',
-        params: { desafioId: d.desafioId },
-      });
-      return;
-    }
-    if (d.juegoCodigo === 'hueajedrez') {
-      router.push({
-        pathname: '/(app)/hueplay/ajedrez',
-        params: { desafioId: d.desafioId },
-      });
-      return;
-    }
-    if (d.juegoCodigo === 'huesoccer') {
-      router.push({
-        pathname: '/(app)/hueplay/huesoccer',
-        params: { desafioId: d.desafioId },
-      });
-      return;
-    }
-    const varianteDoku = variantePorJuegoCodigo(d.juegoCodigo);
-    if (varianteDoku) {
-      router.push({
-        pathname: '/(app)/hueplay/huedoku',
-        params: { desafioId: d.desafioId, semilla: d.semilla, variante: varianteDoku },
-      });
-      return;
-    }
-    // Los de modo puntaje comparten la forma de entrar: id del duelo + semilla.
-    const rutas: Record<string, string> = {
-      huememo: '/(app)/hueplay/huememo',
-      huetrivia: '/(app)/hueplay/huetrivia',
-      huezip: '/(app)/hueplay/huezip',
-    };
-    router.push({
-      pathname: (rutas[d.juegoCodigo] ?? '/(app)/hueplay/huematch') as never,
-      params: { desafioId: d.desafioId, semilla: d.semilla },
-    });
+    router.push(rutaDelDesafio(d) as never);
   };
 
   /** Practicar solo, sin desafío — sólo los juegos que no están en `JUEGOS_SIN_SOLO`. */
@@ -145,6 +114,9 @@ export default function DesafiosScreen() {
       huezip: 'HueZip',
       huedamas: 'HueDamas',
       hueajedrez: 'HueAjedrez',
+      huereversi: 'HueReversi',
+      huetateti: 'HueTaTeTi',
+      huepool: 'HuePool',
       huesoccer: 'HueSoccer',
       huedoku6: 'HueDoku 6x6',
       huedoku9facil: 'HueDoku 9x9 Fácil',
@@ -215,7 +187,7 @@ export default function DesafiosScreen() {
             {t('hueplay.seleccionarJuego')}
           </Text>
           <View style={styles.juegosGrilla}>
-            {JUEGOS_CATALOGO.map((j) => {
+            {juegosCatalogoOrdenados.map((j) => {
               const activo = juegoElegido === j.codigo;
               return (
                 <Pressable
@@ -245,6 +217,12 @@ export default function DesafiosScreen() {
                   >
                     {j.titulo}
                   </Text>
+                  <BotonFavorito
+                    juegoCodigo={j.codigo}
+                    esFavorito={favoritos.includes(j.codigo)}
+                    onCambiar={onFavoritoCambiar}
+                    size={14}
+                  />
                 </Pressable>
               );
             })}

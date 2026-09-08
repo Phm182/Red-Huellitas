@@ -30,12 +30,15 @@ import { StoryTrimBar } from './StoryTrimBar';
 import { StoryVolumeSlider } from './StoryVolumeSlider';
 import {
   emptyOverlay,
+  fotoTransformDefault,
+  fotoTransformEsDefault,
   STORY_DRAW_COLORS,
   STORY_FILTERS,
   STORY_FONTS,
   STORY_TEXT_COLORS,
   StoryFilterId,
   StoryFontId,
+  StoryFotoTransform,
   StoryInteractivo,
   StoryOverlay,
   StoryPathItem,
@@ -53,6 +56,12 @@ export type StoryPublicacion = {
   sinAudio: boolean;
   /** 0.5 / 1 / 2 — no destructiva, la aplica el reproductor (ver sql/024). */
   velocidad: number;
+  /** Zoom/paneo manual de la foto (null si quedó tal cual, sin tocar). */
+  fotoTransform: StoryFotoTransform | null;
+  /** Tamaño del canvas de edición en el momento de publicar — hace falta
+   * para convertir `fotoTransform` (píxeles de pantalla) al recorte real de
+   * la imagen fuente. */
+  canvasSize: { w: number; h: number };
 };
 
 /** Las mismas que ofrece la cámara; el backend rechaza cualquier otra. */
@@ -104,6 +113,29 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   const [cambiandoMedia, setCambiandoMedia] = useState(false);
   const currentPath = useRef<StoryPathItem | null>(null);
 
+  // Zoom/paneo manual de la foto (pellizcar con dos dedos, arrastrar con uno
+  // ya zoomeado). Sólo aplica a foto — el video ya tiene su propio cover/
+  // contain y recortar de verdad exige re-encodear, que acá no se hace.
+  const [fotoTransform, setFotoTransform] = useState<StoryFotoTransform>(fotoTransformDefault());
+  // Valores "congelados" al arrancar el gesto actual: todo se calcula como
+  // delta contra esto, no acumulando de a un evento (los eventos de touch a
+  // veces se saltean, y acumular de a poco desalinea escala y arrastre).
+  const fotoGestoBase = useRef({
+    scale: 1,
+    x: 0,
+    y: 0,
+    distancia: 0,
+    focoX: 0,
+    focoY: 0,
+    dedos: 1,
+    movioSuficiente: false,
+  });
+
+  const distanciaEntreDedos = (touches: { pageX: number; pageY: number }[]) => {
+    const [a, b] = touches;
+    return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
+  };
+
   const pan = useMemo(
     () =>
       PanResponder.create({
@@ -138,6 +170,86 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
         },
       }),
     [tool, drawColor, layout.w, layout.h]
+  );
+
+  // Cuánto se puede alejar la imagen del centro sin dejar bordes vacíos a la
+  // vista. Aproximado (no conocemos acá el tamaño real de la foto fuente,
+  // sólo el canvas): con "cover" la imagen siempre cubre el frame entero, así
+  // que zoomear `scale` de más deja `(scale-1) * frame/2` de margen real para
+  // arrastrar en cada eje antes de que se vea el borde.
+  const clampFotoPan = (x: number, y: number, scale: number) => {
+    const margenX = ((scale - 1) * layout.w) / 2;
+    const margenY = ((scale - 1) * layout.h) / 2;
+    return {
+      x: Math.max(-margenX, Math.min(margenX, x)),
+      y: Math.max(-margenY, Math.min(margenY, y)),
+    };
+  };
+
+  const panFoto = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => media.tipo === 'foto' && tool === 'none',
+        onMoveShouldSetPanResponder: (_evt, gesture) =>
+          media.tipo === 'foto' &&
+          tool === 'none' &&
+          (Math.abs(gesture.dx) > 3 || Math.abs(gesture.dy) > 3 || _evt.nativeEvent.touches.length === 2),
+        onPanResponderGrant: (evt) => {
+          const touches = evt.nativeEvent.touches;
+          fotoGestoBase.current = {
+            scale: fotoTransform.scale,
+            x: fotoTransform.x,
+            y: fotoTransform.y,
+            distancia: touches.length === 2 ? distanciaEntreDedos(touches) : 0,
+            focoX: touches.length === 2 ? (touches[0].pageX + touches[1].pageX) / 2 : (touches[0]?.pageX ?? 0),
+            focoY: touches.length === 2 ? (touches[0].pageY + touches[1].pageY) / 2 : (touches[0]?.pageY ?? 0),
+            dedos: touches.length,
+            movioSuficiente: false,
+          };
+        },
+        onPanResponderMove: (evt) => {
+          const base = fotoGestoBase.current;
+          const touches = evt.nativeEvent.touches;
+
+          if (touches.length === 2 && base.distancia > 0) {
+            // Pellizco: la escala sigue la razón de distancias, con tope
+            // 1x-4x (más de 4x deja la foto pixelada en pantallas chicas).
+            const distanciaActual = distanciaEntreDedos(touches);
+            const nuevaEscala = Math.max(1, Math.min(4, base.scale * (distanciaActual / base.distancia)));
+            const focoActualX = (touches[0].pageX + touches[1].pageX) / 2;
+            const focoActualY = (touches[0].pageY + touches[1].pageY) / 2;
+            const { x, y } = clampFotoPan(
+              base.x + (focoActualX - base.focoX),
+              base.y + (focoActualY - base.focoY),
+              nuevaEscala
+            );
+            fotoGestoBase.current.movioSuficiente = true;
+            setFotoTransform({ scale: nuevaEscala, x, y });
+            return;
+          }
+
+          if (touches.length === 1) {
+            const dx = touches[0].pageX - base.focoX;
+            const dy = touches[0].pageY - base.focoY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) fotoGestoBase.current.movioSuficiente = true;
+            // Arrastrar con un solo dedo sólo tiene sentido si ya hay zoom
+            // aplicado; si no, el toque es para tocar-para-cambiar-ajuste.
+            if (base.scale > 1.01) {
+              const { x, y } = clampFotoPan(base.x + dx, base.y + dy, base.scale);
+              setFotoTransform((prev) => ({ ...prev, x, y }));
+            }
+          }
+        },
+        onPanResponderRelease: () => {
+          const base = fotoGestoBase.current;
+          // Toque simple (un dedo, casi sin moverse, sin zoom activo): es el
+          // gesto de "tocá de nuevo para llenar" de siempre, no un arrastre.
+          if (base.dedos === 1 && !base.movioSuficiente && base.scale <= 1.01) {
+            setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'));
+          }
+        },
+      }),
+    [media.tipo, tool, fotoTransform, layout.w, layout.h]
   );
 
   const setFilter = (id: StoryFilterId) => setOverlay((o) => ({ ...o, filter: id }));
@@ -201,6 +313,9 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
       recorte: recorteTocado ? { inicioSeg: recorteInicio, finSeg: recorteFin } : null,
       sinAudio,
       velocidad: media.tipo === 'video' ? velocidad : 1,
+      fotoTransform:
+        media.tipo === 'foto' && !fotoTransformEsDefault(fotoTransform) ? fotoTransform : null,
+      canvasSize: layout,
     });
   };
 
@@ -250,6 +365,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
       setPosicionBuscada(null);
       setPosicionSeg(0);
       setVelocidad(1);
+      setFotoTransform(fotoTransformDefault());
     } finally {
       setCambiandoMedia(false);
     }
@@ -271,7 +387,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
           const { width, height } = e.nativeEvent.layout;
           setLayout({ w: width, h: height });
         }}
-        {...(tool === 'draw' ? pan.panHandlers : {})}
+        {...(tool === 'draw' ? pan.panHandlers : media.tipo === 'foto' ? panFoto.panHandlers : {})}
       >
         <StoryMediaFill
           uri={media.uri}
@@ -287,9 +403,13 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
           onPosicion={setPosicionSeg}
           pausado={scrubSeg !== null}
           velocidad={velocidad}
+          fotoTransform={media.tipo === 'foto' ? fotoTransform : undefined}
         />
 
-        {tool === 'none' ? (
+        {/* El video no tiene pellizco (sólo cover/contain de toda la vida):
+            un solo toque alcanza. La foto ya resuelve el toque simple adentro
+            de panFoto de arriba, junto con pellizco y arrastre. */}
+        {tool === 'none' && media.tipo === 'video' ? (
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={() => setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'))}

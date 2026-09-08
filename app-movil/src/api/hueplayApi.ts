@@ -10,6 +10,8 @@ import {
   HuePlayAjedrezVista,
   HuePlayDamasTurno,
   HuePlayDamasVista,
+  HuePlayReversiTurno,
+  HuePlayReversiVista,
   HuePlayDesafio,
   HuePlayDesafiosBandeja,
   HuePlayPerfil,
@@ -18,15 +20,25 @@ import {
   HuePlayRummyBajar,
   HuePlayRummyDescartar,
   HuePlayRummyRobar,
+  HuePlayScrabbleIntercambiar,
+  HuePlayScrabbleJugar,
+  HuePlayScrabblePasar,
+  HuePlayTaTeTiTurno,
+  HuePlayTaTeTiVista,
+  HuePlayPoolVista,
+  HuePlayPoolTiro,
   HuePlaySala,
   HuePlaySalaGenerica,
   HuePlaySalaMover,
+  HuePlaySalaMoverRoyal,
   HuePlaySalasBandeja,
   HuePlaySalaTirar,
+  HuePlaySalaTirarRoyal,
   HuePlaySoccerTurno,
   HuePlaySoccerVista,
   HuePlayTurno,
   HuePlayVista,
+  FichaScrabblePropuesta,
   PoliticaAbandonoSala,
   TriviaResultado,
   TriviaTanda,
@@ -44,6 +56,12 @@ import {
  */
 export const hueplayApi = {
   perfil: () => apiGet<HuePlayPerfil>('ajax/hueplay/perfil.php', undefined, true),
+
+  /** Favoritos: no tienen listado propio, sólo sirven para ordenar "mis juegos" — el estado actualizado viaja en `perfil()`. */
+  favoritoAgregar: (juegoCodigo: string) =>
+    apiPost<null>('ajax/hueplay/favorito_agregar.php', { juegoCodigo }, true),
+  favoritoQuitar: (juegoCodigo: string) =>
+    apiPost<null>('ajax/hueplay/favorito_quitar.php', { juegoCodigo }, true),
 
   guardarPartida: (juegoCodigo: string, puntos: number, duracionSegundos: number) =>
     apiPost<HuePlayProgreso & { record: number; esRecord: boolean }>(
@@ -132,6 +150,17 @@ export const hueplayApi = {
     apiPost<HuePlayDamasTurno>(
       'ajax/hueplay/damas_mover.php',
       { desafioId, dFila: desde.fila, dCol: desde.col, hFila: hasta.fila, hCol: hasta.col },
+      true
+    ),
+
+  verDesafioReversi: (desafioId: number) =>
+    apiGet<HuePlayReversiVista>('ajax/hueplay/reversi_ver.php', { desafioId }, true),
+
+  /** Una jugada de HueReversi: sólo el destino, no hay "desde". */
+  jugarReversi: (desafioId: number, hasta: { fila: number; col: number }) =>
+    apiPost<HuePlayReversiTurno>(
+      'ajax/hueplay/reversi_mover.php',
+      { desafioId, hFila: hasta.fila, hCol: hasta.col },
       true
     ),
 
@@ -271,6 +300,14 @@ export const hueplayApi = {
   ludoMover: (salaId: number, fichaNum: number) =>
     apiPost<HuePlaySalaMover>('ajax/hueplay/ludo_mover.php', { salaId, fichaNum }, true),
 
+  /** Tira los dos dados (numérico + símbolos) en HueLudo Real. */
+  ludoRoyalTirar: (salaId: number) =>
+    apiPost<HuePlaySalaTirarRoyal>('ajax/hueplay/ludoroyal_tirar.php', { salaId }, true),
+
+  /** Mueve la ficha `fichaNum` con los dados que ya se tiraron. */
+  ludoRoyalMover: (salaId: number, fichaNum: number) =>
+    apiPost<HuePlaySalaMoverRoyal>('ajax/hueplay/ludoroyal_mover.php', { salaId, fichaNum }, true),
+
   /** Roba una carta en HueRummy: del mazo, o del tope del descarte. */
   rummyRobar: (salaId: number, origen: 'mazo' | 'descarte') =>
     apiPost<HuePlayRummyRobar>('ajax/hueplay/rummy_robar.php', { salaId, origen }, true),
@@ -282,4 +319,52 @@ export const hueplayApi = {
   /** Descarta una carta de tu mano (por índice) y cierra tu turno. */
   rummyDescartar: (salaId: number, indice: number) =>
     apiPost<HuePlayRummyDescartar>('ajax/hueplay/rummy_descartar.php', { salaId, indice }, true),
+
+  /** Coloca fichas nuevas en el tablero de HueScrabble y cierra el turno. */
+  scrabbleJugar: (salaId: number, fichas: FichaScrabblePropuesta[]) =>
+    apiPost<HuePlayScrabbleJugar>(
+      'ajax/hueplay/scrabble_jugar.php',
+      { salaId, fichas: JSON.stringify(fichas) },
+      true
+    ),
+
+  /** Pasa el turno sin jugar ni cambiar fichas. */
+  scrabblePasar: (salaId: number) =>
+    apiPost<HuePlayScrabblePasar>('ajax/hueplay/scrabble_pasar.php', { salaId }, true),
+
+  /** Cambia fichas del atril (por índice) por otras de la bolsa. Cuenta como el turno completo. */
+  scrabbleIntercambiar: (salaId: number, indices: number[]) =>
+    apiPost<HuePlayScrabbleIntercambiar>(
+      'ajax/hueplay/scrabble_intercambiar.php',
+      { salaId, indices: indices.join(',') },
+      true
+    ),
+
+  verDesafioTaTeTi: (desafioId: number) =>
+    apiGet<HuePlayTaTeTiVista>('ajax/hueplay/tateti_ver.php', { desafioId }, true),
+
+  /** Una jugada de HueTaTeTi: sólo el destino, no hay "desde". */
+  jugarTaTeTi: (desafioId: number, hasta: { fila: number; col: number }) =>
+    apiPost<HuePlayTaTeTiTurno>(
+      'ajax/hueplay/tateti_mover.php',
+      { desafioId, hFila: hasta.fila, hCol: hasta.col },
+      true
+    ),
+
+  /** Estado de un duelo de HuePool. `desafio.tablero` es el JSON del `TableroPool`. */
+  verDesafioPool: (desafioId: number) =>
+    apiGet<HuePlayPoolVista>('ajax/hueplay/pool_ver.php', { desafioId }, true),
+
+  /**
+   * Un tiro de HuePool: `bolas` son las que seguían en mesa antes de este
+   * tiro, con su posición final ya simulada en el cliente (ver
+   * `src/juego/huepool/motor.ts`), serializado a JSON. El servidor decide
+   * qué se embocó por su cuenta, no confía en un flag acá.
+   */
+  poolMover: (desafioId: number, bolas: string) =>
+    apiPost<HuePlayPoolTiro>('ajax/hueplay/pool_mover.php', { desafioId, bolas }, true),
+
+  /** Se agotó el tiempo del turno: el servidor valida de verdad que pasó. */
+  poolTurnoVencido: (desafioId: number) =>
+    apiPost<HuePlayPoolTiro>('ajax/hueplay/pool_turno_vencido.php', { desafioId }, true),
 };

@@ -41,6 +41,9 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
   // Última celda reportada durante el arrastre en curso, para no llamar a
   // onCelda de nuevo mientras el dedo sigue sobre la misma celda.
   const ultimaReportada = useRef<Celda | null>(null);
+  // Última posición CRUDA (píxeles) del dedo — hace falta para interpolar
+  // el trazo entre un evento de movimiento y el siguiente (ver más abajo).
+  const ultimaPosicion = useRef<{ x: number; y: number } | null>(null);
 
   const celdaDesdeToque = (locationX: number, locationY: number, c: number, n2: number): Celda => ({
     fila: Math.min(n2 - 1, Math.max(0, Math.floor(locationY / c))),
@@ -56,6 +59,7 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
         onPanResponderGrant: (e) => {
           if (vivo.current.bloqueado) return;
           const { locationX, locationY } = e.nativeEvent;
+          ultimaPosicion.current = { x: locationX, y: locationY };
           const c = celdaDesdeToque(locationX, locationY, vivo.current.celda, vivo.current.n);
           ultimaReportada.current = c;
           vivo.current.onInicioToque(c);
@@ -63,17 +67,46 @@ export function TableroZip({ puzzle, visitadas, rechazada, lado, onInicioToque, 
         onPanResponderMove: (e) => {
           if (vivo.current.bloqueado) return;
           const { locationX, locationY } = e.nativeEvent;
-          const c = celdaDesdeToque(locationX, locationY, vivo.current.celda, vivo.current.n);
-          const ult = ultimaReportada.current;
-          if (ult && ult.fila === c.fila && ult.col === c.col) return;
-          ultimaReportada.current = c;
-          vivo.current.onCelda(c);
+          const anterior = ultimaPosicion.current ?? { x: locationX, y: locationY };
+          ultimaPosicion.current = { x: locationX, y: locationY };
+
+          // Un arrastre rápido puede recorrer más de una celda entre dos
+          // eventos de "move" consecutivos (React Native no dispara uno por
+          // cada píxel). Antes, saltar directo a la celda actual hacía que
+          // `tocarCelda` viera esa celda como "no adyacente" a la última
+          // validada y la descartara EN SILENCIO (`evento: 'sinCambio'`, sin
+          // ningún aviso) — quien dibujaba rápido perdía celdas del medio
+          // sin darse cuenta, terminaba con el camino "cortado" y el juego
+          // decía que faltaban celdas o que estaba incompleto sin que se
+          // entendiera por qué. Acá se interpola en pasos chicos (una
+          // fracción del lado de una celda) entre la posición anterior y la
+          // nueva, reportando cada celda intermedia en orden — así ninguna
+          // se pierde por la velocidad del gesto, y las reglas de
+          // adyacencia/orden las sigue validando `tocarCelda` igual que
+          // siempre.
+          const dx = locationX - anterior.x;
+          const dy = locationY - anterior.y;
+          const distancia = Math.hypot(dx, dy);
+          const paso = Math.max(4, vivo.current.celda * 0.3);
+          const pasos = Math.max(1, Math.ceil(distancia / paso));
+
+          for (let i = 1; i <= pasos; i++) {
+            const x = anterior.x + (dx * i) / pasos;
+            const y = anterior.y + (dy * i) / pasos;
+            const c = celdaDesdeToque(x, y, vivo.current.celda, vivo.current.n);
+            const ult = ultimaReportada.current;
+            if (ult && ult.fila === c.fila && ult.col === c.col) continue;
+            ultimaReportada.current = c;
+            vivo.current.onCelda(c);
+          }
         },
         onPanResponderRelease: () => {
           ultimaReportada.current = null;
+          ultimaPosicion.current = null;
         },
         onPanResponderTerminate: () => {
           ultimaReportada.current = null;
+          ultimaPosicion.current = null;
         },
       }),
     []

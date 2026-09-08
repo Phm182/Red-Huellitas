@@ -104,11 +104,11 @@ if ($cierre['cerrado']) {
     $ganador = $cierre['ganadorUserId'];
 
     if ($ganador === null) {
-        rh_notificar($conn, [$retador, $retado], 'juego_desafio_fin', 'Empate en ' . rh_juego_titulo($d['JuegoCodigo']), 'El duelo terminó empatado', '/(app)/hueplay/desafios');
+        rh_notificar($conn, [$retador, $retado], 'juego_desafio_fin', 'Empate en ' . rh_juego_titulo($d['JuegoCodigo']), 'El duelo terminó empatado', '/(app)/hueplay/desafios', ['juegoCodigo' => $d['JuegoCodigo']]);
     } else {
         $perdedor = $ganador === $retador ? $retado : $retador;
-        rh_notificar($conn, [$ganador], 'juego_desafio_fin', '¡Ganaste el duelo!', 'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . rh_juego_titulo($d['JuegoCodigo']), '/(app)/hueplay/desafios');
-        rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', rh_juego_nombre($conn, $ganador) . ' te ganó en ' . rh_juego_titulo($d['JuegoCodigo']), '/(app)/hueplay/desafios');
+        rh_notificar($conn, [$ganador], 'juego_desafio_fin', '¡Ganaste el duelo!', 'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . rh_juego_titulo($d['JuegoCodigo']), '/(app)/hueplay/desafios', ['juegoCodigo' => $d['JuegoCodigo']]);
+        rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', rh_juego_nombre($conn, $ganador) . ' te ganó en ' . rh_juego_titulo($d['JuegoCodigo']), '/(app)/hueplay/desafios', ['juegoCodigo' => $d['JuegoCodigo']]);
     }
 
     // Se relee una vez más para que el estado y el ganador que vuelven sean los
@@ -126,7 +126,7 @@ if ($cierre['cerrado']) {
         'Te toca jugar',
         rh_juego_nombre($conn, $userId) . ' ya jugó su partida en ' . rh_juego_titulo($d['JuegoCodigo']),
         '/(app)/hueplay/desafios',
-        ['actorUserId' => $userId]
+        ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]
     );
 }
 

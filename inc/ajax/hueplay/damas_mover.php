@@ -142,10 +142,10 @@ if ($gane) {
         $stmt->close();
     }
 } else {
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
     rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
         rh_juego_nombre($conn, $userId) . ' ya movió en Damas', '/(app)/hueplay/desafios',
-        ['actorUserId' => $userId]);
+        ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');

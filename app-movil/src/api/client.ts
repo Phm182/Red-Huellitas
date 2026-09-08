@@ -27,6 +27,28 @@ function getApiUrl(): string {
   return 'http://localhost/Red%20Huellitas/inc';
 }
 
+/**
+ * Reintenta una sola vez si `fetch` nunca recibió respuesta (status 0: sin
+ * red, DNS, o el socket se cortó a mitad de camino).
+ *
+ * Pensado sobre todo para subidas de foto/video de historias/HueTube/
+ * publicaciones: son las más largas y las más expuestas a un corte
+ * momentáneo de wifi/datos a mitad de la transferencia. En nativo, RN arma
+ * el archivo como `{uri, name, type}` — el bridge lo relee del disco por su
+ * URI en cada `fetch()`, no lo consume una sola vez, así que reintentar con
+ * el mismo FormData es seguro. Si el segundo intento también falla, ahí sí
+ * es un problema real (sin conexión de verdad, o el servidor caído) y se
+ * deja subir el error.
+ */
+async function fetchConReintento(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    return await fetch(url, init);
+  }
+}
+
 let currentToken: string | null = null;
 
 export function setApiToken(token: string | null) {
@@ -64,11 +86,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      method,
-      headers,
-      body: requestBody,
-    });
+    response = await fetchConReintento(url, { method, headers, body: requestBody });
   } catch (e) {
     const hint =
       Platform.OS === 'web'

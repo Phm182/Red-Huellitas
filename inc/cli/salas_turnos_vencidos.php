@@ -31,7 +31,9 @@ require_once __DIR__ . '/../funciones/notificaciones.php';
 require_once __DIR__ . '/../funciones/juegos.php';
 require_once __DIR__ . '/../funciones/salas.php';
 require_once __DIR__ . '/../funciones/ludo.php';
+require_once __DIR__ . '/../funciones/ludoroyal.php';
 require_once __DIR__ . '/../funciones/rummy.php';
+require_once __DIR__ . '/../funciones/scrabble.php';
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
 
@@ -60,8 +62,12 @@ foreach ($vencidas as $sala) {
 
         if ($sala['JuegoCodigo'] === 'hueludo') {
             rh_ludo_sala_actualizar($conn, $sala);
+        } elseif ($sala['JuegoCodigo'] === 'hueludoroyal') {
+            rh_ludoroyal_sala_actualizar($conn, $sala);
         } elseif ($sala['JuegoCodigo'] === 'huerummy') {
             rh_rummy_sala_actualizar($conn, $sala);
+        } elseif ($sala['JuegoCodigo'] === 'huescrabble') {
+            rh_scrabble_sala_actualizar($conn, $sala);
         } else {
             // Genérico: sin motor específico no se puede resolver la
             // consecuencia en el tablero (sacar fichas, jugar la IA), pero al

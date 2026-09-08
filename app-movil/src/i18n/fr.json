@@ -809,6 +809,7 @@
     "tienda": "Boutique",
     "salud": "Santé",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multijoueur",
     "configuracion": "Réglages",
     "atajosHint": "Appui long pour voir les raccourcis",
     "ocultarBotones": "Masquer les boutons",
@@ -995,9 +996,24 @@
     "desafios": "Multijoueur / Défis",
     "desafiosBajada": "Duels contre d'autres utilisateurs",
     "juegos": "Jeux",
+    "buscarJuego": "Rechercher un jeu",
+    "vistaDinamica": "Dynamique",
+    "vistaDesplegada": "Déroulée",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multijoueur",
+    "modoAmbos": "Solo et Multijoueur",
     "ranking": "Classement",
     "proximamente": "Bientôt",
     "pronto": "Bientôt",
+    "multiplayer": {
+      "titulo": "Multijoueur",
+      "tuTurno": "À toi de jouer",
+      "enEspera": "En attente",
+      "historial": "Historique",
+      "sinNada": "Rien ici pour l'instant",
+      "invitacion": "Tu as été invité",
+      "armando": "Préparation de la salle"
+    },
     "tuRecord": "Ton record : {{n}}",
     "retarA": "Défier quelqu'un",
     "retar": "Défier",
@@ -1079,6 +1095,40 @@
       "elegiUnaFicha": "Choisis une pièce à déplacer",
       "seguirDespues": "Continuer plus tard"
     },
+    "reversi": {
+      "vos": "Toi",
+      "jugadas": "Coups : {{n}}",
+      "turnoDe": "Au tour de {{rival}}",
+      "elegiCasilla": "Choisis une case pour poser ton pion",
+      "sinMovimiento": "Aucun coup possible : le tour passe",
+      "empateFin": "Match nul",
+      "ganasteFin": "Tu as gagné cette partie !",
+      "ganasteFinPuntos": "Tu as gagné ! +{{puntos}} points",
+      "perdisteFin": "Tu as perdu cette partie",
+      "fichas": "Pions : {{n}}",
+      "seguirDespues": "Continuer plus tard"
+    },
+    "tateti": {
+      "vos": "Toi",
+      "jugadas": "Coups : {{n}}",
+      "turnoDe": "Au tour de {{rival}}",
+      "elegiCasilla": "Choisis une case",
+      "empateFin": "Match nul",
+      "ganasteFin": "Tu as gagné cette partie !",
+      "ganasteFinPuntos": "Tu as gagné ! +{{puntos}} points",
+      "perdisteFin": "Tu as perdu cette partie",
+      "seguirDespues": "Continuer plus tard"
+    },
+    "pool": {
+      "vos": "Toi",
+      "lisas": "Pleines",
+      "rayadas": "Rayées",
+      "sinGrupo": "Pas encore de groupe",
+      "tuTurno": "À toi de jouer",
+      "bolaEnMano": "Bille en main : touche la table pour la placer",
+      "turnoRival": "Au tour de {{rival}}",
+      "tiempoNeto": "Temps net utilisé : {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "Combien de joueurs ?",
       "completarConIA": "Compléter avec l'IA",
@@ -1135,6 +1185,16 @@
       "ganasteFin": "Tu as gagné la partie !",
       "perdisteFin": "Pas cette fois"
     },
+    "ludoroyal": {
+      "titulo": "Ludo Royal",
+      "tirarDados": "Lancer les dés",
+      "elegiFicha": "Choisis quel pion déplacer",
+      "tocaTirar": "À toi : lance les dés",
+      "turnoDe": "Au tour de {{rival}}",
+      "sinJugada": "Aucun coup possible avec ce lancer",
+      "ganasteFin": "Tu as gagné la partie !",
+      "perdisteFin": "Pas cette fois"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Plus rien à piocher : la manche s'est arrêtée",
@@ -1150,6 +1210,27 @@
       "tuMano": "Ta main",
       "bajar": "Poser",
       "descartar": "Défausser"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Toi",
+      "turnoDe": "Au tour de {{rival}}",
+      "ganasteFin": "Tu as gagné la partie !",
+      "perdisteFin": "Pas cette fois",
+      "empateFin": "Match nul",
+      "tuAtril": "Ton chevalet",
+      "fichasEnBolsa": "Lettres restantes dans le sac : {{n}}",
+      "elegiFichas": "Choisis des lettres sur ton chevalet et touche le plateau pour les poser",
+      "jugar": "Jouer",
+      "pasar": "Passer",
+      "cambiarFichas": "Échanger des lettres",
+      "confirmarCambio": "Échanger",
+      "cancelarCambio": "Annuler",
+      "elegiComodin": "Quelle lettre représente le joker ?",
+      "sinFichasParaCambio": "Choisis au moins une lettre à échanger",
+      "puntosGanados": "+{{puntos}} points",
+      "deshacer": "Annuler",
+      "seguirDespues": "Continuer plus tard"
     },
     "memo": {
       "comoSeJuega": "Retourne les cartes deux par deux et trouve les 8 paires avant la fin du temps. Moins d'erreurs et plus de vitesse rapportent plus de points.",

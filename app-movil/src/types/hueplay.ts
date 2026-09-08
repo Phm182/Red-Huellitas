@@ -36,6 +36,10 @@ export interface HuePlayPerfil {
    * juegos y por eso siempre va por delante de cualquiera de estos.
    */
   porJuego: Record<string, HuePlayProgreso>;
+  /** 'solo' (nunca contra otra persona), 'multiplayer' (nunca solo) o 'ambos', por código de juego. */
+  modosPorJuego: Record<string, 'solo' | 'multiplayer' | 'ambos'>;
+  /** Códigos de juego que este usuario marcó como favorito — para ordenar listas, no se navega aparte. */
+  favoritos: string[];
   ranking: HuePlayRankingItem[];
   miPuesto: number;
   desafiosPendientes: number;
@@ -259,6 +263,39 @@ export interface HuePlayDamasTurno {
 }
 
 /**
+ * HueReversi: no hay "desde" — se coloca una ficha nueva, nunca se mueve
+ * una existente. `volteadas` son las casillas rivales que esa jugada da
+ * vuelta, para animar el volteo.
+ */
+export interface CasillaReversi {
+  fila: number;
+  col: number;
+}
+
+export interface MovimientoLegalReversi extends CasillaReversi {
+  volteadas: [number, number][];
+}
+
+export interface JugadaReversi extends CasillaReversi {
+  volteadas: [number, number][];
+}
+
+export interface HuePlayReversiVista {
+  desafio: HuePlayDesafio;
+  movimientosLegales: MovimientoLegalReversi[];
+}
+
+export interface HuePlayReversiTurno {
+  desafio: HuePlayDesafio;
+  jugada: JugadaReversi;
+  /** Cadena de jugadas de la IA — puede ser más de una si a mí me tocaba pasar. */
+  jugadasIA: JugadaReversi[];
+  gane: boolean;
+  perdiste: boolean;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
  * HueSoccer: `desafio.tablero` es un JSON (no un string fijo como
  * Damas/Ajedrez) con las posiciones de las 10 fichas, la pelota, los goles
  * y el reloj de turno/tope de partido — ver `app-movil/src/juego/
@@ -430,6 +467,51 @@ export interface HuePlaySalaMover {
   jugadasIA: JugadasIASalaJugador[];
 }
 
+/**
+ * HueLudo Real: la variante de 2 dados (numérico + símbolos, ver
+ * `inc/funciones/ludoroyal.php`). Mismo esquema de fichas que el Ludo
+ * clásico (`FichaLudo`/`TableroLudo` de arriba), sólo cambia qué informa
+ * cada tirada.
+ */
+export type SimboloLudoRoyal = 'corona' | 'pluma' | 'vacio';
+
+export interface TableroLudoRoyal {
+  fichas: FichaLudo[];
+  jugadores: number;
+  dadoPendiente: number | null;
+  simboloPendiente: SimboloLudoRoyal | null;
+}
+
+export interface JugadaLudoRoyal {
+  dadoNumerico: number;
+  simbolo: SimboloLudoRoyal;
+  ficha: { jugador: number; num: number } | null;
+  desde: number | null;
+  hasta: number | null;
+  capturadas: { jugador: number; num: number }[];
+}
+
+export interface JugadasIASalaJugadorRoyal {
+  salaJugadorId: number;
+  jugadas: JugadaLudoRoyal[];
+}
+
+export interface HuePlaySalaTirarRoyal {
+  sala: HuePlaySala;
+  dadoNumerico: number;
+  simbolo: SimboloLudoRoyal;
+  movimientosLegales: MovimientoLegalLudo[];
+  pasoElTurno: boolean;
+  jugadasIA: JugadasIASalaJugadorRoyal[];
+}
+
+export interface HuePlaySalaMoverRoyal {
+  sala: HuePlaySala;
+  jugada: JugadasIASalaJugadorRoyal;
+  gane: boolean;
+  jugadasIA: JugadasIASalaJugadorRoyal[];
+}
+
 export interface HistorialPar {
   misVictorias: number;
   susVictorias: number;
@@ -465,8 +547,9 @@ export interface EstadoRummyVisible {
 /** Respuesta de los endpoints genéricos de sala (`sala_ver.php`, `sala_iniciar.php`): sirven para cualquier juego de sala. */
 export interface HuePlaySalaGenerica {
   sala: HuePlaySala;
-  jugadasIA: (JugadasIASalaJugador | JugadaIARummy)[];
+  jugadasIA: (JugadasIASalaJugador | JugadaIARummy | JugadaIAScrabble)[];
   estadoRummy: EstadoRummyVisible | null;
+  estadoScrabble: EstadoScrabbleVisible | null;
 }
 
 export interface JugadaIARummy {
@@ -496,6 +579,118 @@ export interface HuePlayRummyDescartar {
   gane: boolean;
   jugadasIA: JugadaIARummy[];
   estadoRummy: EstadoRummyVisible | null;
+}
+
+/**
+ * HueTaTeTi: no hay "desde" — se coloca una ficha nueva, igual que en
+ * HueReversi. Sin `volteadas`: acá una jugada nunca voltea nada.
+ */
+export interface CasillaTaTeTi {
+  fila: number;
+  col: number;
+}
+
+export interface HuePlayTaTeTiVista {
+  desafio: HuePlayDesafio;
+  movimientosLegales: CasillaTaTeTi[];
+}
+
+export interface HuePlayTaTeTiTurno {
+  desafio: HuePlayDesafio;
+  jugada: CasillaTaTeTi;
+  jugadaIA: CasillaTaTeTi | null;
+  gane: boolean;
+  empate: boolean;
+  perdiste: boolean;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
+ * HuePool: el `Tablero` de un desafío es el JSON del `TableroPool` completo
+ * (ver `app-movil/src/juego/huepool/motor.ts`) — igual criterio que
+ * HueSoccer, así que acá no hace falta un tipo de "vista" aparte, sólo la
+ * respuesta de tirar.
+ */
+export interface HuePlayPoolVista {
+  desafio: HuePlayDesafio;
+}
+
+export interface HuePlayPoolTiro {
+  desafio: HuePlayDesafio;
+  embocadas: number[];
+  falta: boolean;
+  resultado: 'gane' | 'perdiste' | 'empate' | null;
+  progreso: HuePlayProgreso | null;
+}
+
+/**
+ * HueScrabble: tablero 15x15, cada celda `null` (vacía) o `{letra, valor,
+ * comodin}` — `valor` ya es el valor final de la letra (0 si es comodín,
+ * incluso si la letra que representa vale más en el resto de la partida).
+ */
+export interface CeldaScrabble {
+  letra: string;
+  valor: number;
+  comodin: boolean;
+}
+
+export type TableroScrabbleGrid = (CeldaScrabble | null)[][];
+
+/** Una ficha nueva propuesta en una jugada (nunca las que ya estaban puestas). */
+export interface FichaScrabblePropuesta {
+  fila: number;
+  col: number;
+  letra: string;
+  esComodin: boolean;
+}
+
+export interface PalabraScrabble {
+  palabra: string;
+  puntos: number;
+}
+
+/** Vista redactada del estado de una sala de HueScrabble, propia de quien la pide — nunca el atril ajeno ni la bolsa. */
+export interface EstadoScrabbleVisible {
+  tablero: TableroScrabbleGrid;
+  miAtril: string[];
+  cantidadFichasPorJugador: number[];
+  fichasEnBolsa: number;
+  puntajes: number[];
+  primeraJugada: boolean;
+  pasesConsecutivos: number;
+  jugadores: number;
+}
+
+/** Turno de un asiento IA dentro de la cadena de bots de HueScrabble. */
+export interface JugadaIAScrabble {
+  salaJugadorId: number;
+  tipo: 'jugada' | 'intercambio' | 'paso';
+  fichasColocadas?: FichaScrabblePropuesta[];
+  palabras?: PalabraScrabble[];
+  puntos?: number;
+}
+
+export interface HuePlayScrabbleJugar {
+  sala: HuePlaySala;
+  fichasColocadas: FichaScrabblePropuesta[];
+  palabras: PalabraScrabble[];
+  puntos: number;
+  terminada: boolean;
+  jugadasIA: JugadaIAScrabble[];
+  estadoScrabble: EstadoScrabbleVisible | null;
+}
+
+export interface HuePlayScrabblePasar {
+  sala: HuePlaySala;
+  terminada: boolean;
+  jugadasIA: JugadaIAScrabble[];
+  estadoScrabble: EstadoScrabbleVisible | null;
+}
+
+export interface HuePlayScrabbleIntercambiar {
+  sala: HuePlaySala;
+  jugadasIA: JugadaIAScrabble[];
+  estadoScrabble: EstadoScrabbleVisible | null;
 }
 
 /** Una pregunta tal como la sirve el backend: sin la respuesta correcta. */

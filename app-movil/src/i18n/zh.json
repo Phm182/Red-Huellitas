@@ -807,6 +807,7 @@
     "tienda": "商店",
     "salud": "健康",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "多人游戏",
     "configuracion": "设置",
     "atajosHint": "长按查看快捷方式",
     "ocultarBotones": "隐藏按钮",
@@ -989,9 +990,24 @@
     "desafios": "多人游戏 / 挑战",
     "desafiosBajada": "与其他用户对决",
     "juegos": "游戏",
+    "buscarJuego": "搜索游戏",
+    "vistaDinamica": "动态",
+    "vistaDesplegada": "展开",
+    "modoSolo": "单人",
+    "modoMultiplayer": "多人",
+    "modoAmbos": "单人和多人",
     "ranking": "排行榜",
     "proximamente": "即将推出",
     "pronto": "敬请期待",
+    "multiplayer": {
+      "titulo": "多人游戏",
+      "tuTurno": "轮到你了",
+      "enEspera": "等待中",
+      "historial": "历史记录",
+      "sinNada": "这里还没有内容",
+      "invitacion": "你被邀请了",
+      "armando": "正在组建房间"
+    },
     "tuRecord": "你的纪录：{{n}}",
     "retarA": "挑战某人",
     "retar": "挑战",
@@ -1073,6 +1089,40 @@
       "elegiUnaFicha": "选一个棋子来移动",
       "seguirDespues": "稍后继续"
     },
+    "reversi": {
+      "vos": "你",
+      "jugadas": "已走:{{n}} 步",
+      "turnoDe": "轮到 {{rival}}",
+      "elegiCasilla": "选一个格子放置棋子",
+      "sinMovimiento": "没有可下的位置:回合将跳过",
+      "empateFin": "平局",
+      "ganasteFin": "你赢了这局!",
+      "ganasteFinPuntos": "你赢了!+{{puntos}} 分",
+      "perdisteFin": "你输了这局",
+      "fichas": "棋子数:{{n}}",
+      "seguirDespues": "稍后继续"
+    },
+    "tateti": {
+      "vos": "你",
+      "jugadas": "已走:{{n}} 步",
+      "turnoDe": "轮到 {{rival}}",
+      "elegiCasilla": "选一个格子",
+      "empateFin": "平局",
+      "ganasteFin": "你赢了这局!",
+      "ganasteFinPuntos": "你赢了!+{{puntos}} 分",
+      "perdisteFin": "你输了这局",
+      "seguirDespues": "稍后继续"
+    },
+    "pool": {
+      "vos": "你",
+      "lisas": "全色球",
+      "rayadas": "花色球",
+      "sinGrupo": "还没分组",
+      "tuTurno": "轮到你了",
+      "bolaEnMano": "手中球:点一下球桌来放置",
+      "turnoRival": "轮到 {{rival}}",
+      "tiempoNeto": "已用净时间:{{usados}}/{{tope}}秒"
+    },
     "sala": {
       "cuantosJugadores": "几位玩家？",
       "completarConIA": "用AI补齐",
@@ -1129,6 +1179,16 @@
       "ganasteFin": "你赢得了比赛！",
       "perdisteFin": "这次没赢"
     },
+    "ludoroyal": {
+      "titulo": "皇家飞行棋",
+      "tirarDados": "掷骰子",
+      "elegiFicha": "选择要移动的棋子",
+      "tocaTirar": "轮到你了：掷骰子",
+      "turnoDe": "轮到{{rival}}了",
+      "sinJugada": "这次投掷没有可行的走法",
+      "ganasteFin": "你赢得了这局游戏！",
+      "perdisteFin": "这次没有获胜"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "没有牌可以摸了：本局结束",
@@ -1144,6 +1204,27 @@
       "tuMano": "你的手牌",
       "bajar": "打出",
       "descartar": "弃牌"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "你",
+      "turnoDe": "轮到 {{rival}}",
+      "ganasteFin": "你赢得了比赛!",
+      "perdisteFin": "这次没赢",
+      "empateFin": "平局",
+      "tuAtril": "你的字架",
+      "fichasEnBolsa": "袋中剩余字母块:{{n}}",
+      "elegiFichas": "从你的字架上选字母块,点击棋盘放置",
+      "jugar": "出牌",
+      "pasar": "跳过",
+      "cambiarFichas": "更换字母块",
+      "confirmarCambio": "更换",
+      "cancelarCambio": "取消",
+      "elegiComodin": "空白块代表哪个字母?",
+      "sinFichasParaCambio": "至少选一个要更换的字母块",
+      "puntosGanados": "+{{puntos}} 分",
+      "deshacer": "撤销",
+      "seguirDespues": "稍后继续"
     },
     "memo": {
       "comoSeJuega": "每次翻开两张牌，在时间结束前找出全部 8 对。错得越少、完成越快，分数越高。",

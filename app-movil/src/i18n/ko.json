@@ -807,6 +807,7 @@
     "tienda": "상점",
     "salud": "건강",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "멀티플레이어",
     "configuracion": "설정",
     "atajosHint": "길게 눌러 바로가기 보기",
     "ocultarBotones": "버튼 숨기기",
@@ -989,9 +990,24 @@
     "desafios": "멀티플레이어 / 도전",
     "desafiosBajada": "다른 사용자와의 대결",
     "juegos": "게임",
+    "buscarJuego": "게임 검색",
+    "vistaDinamica": "다이나믹",
+    "vistaDesplegada": "펼치기",
+    "modoSolo": "솔로",
+    "modoMultiplayer": "멀티플레이어",
+    "modoAmbos": "솔로 및 멀티플레이어",
     "ranking": "랭킹",
     "proximamente": "출시 예정",
     "pronto": "곧",
+    "multiplayer": {
+      "titulo": "멀티플레이어",
+      "tuTurno": "당신 차례",
+      "enEspera": "대기 중",
+      "historial": "기록",
+      "sinNada": "아직 아무것도 없어요",
+      "invitacion": "초대받았습니다",
+      "armando": "방 준비 중"
+    },
     "tuRecord": "최고 기록: {{n}}",
     "retarA": "도전하기",
     "retar": "도전",
@@ -1073,6 +1089,40 @@
       "elegiUnaFicha": "옮길 말을 선택하세요",
       "seguirDespues": "나중에 계속"
     },
+    "reversi": {
+      "vos": "나",
+      "jugadas": "수: {{n}}",
+      "turnoDe": "{{rival}}님 차례",
+      "elegiCasilla": "돌을 놓을 칸을 선택하세요",
+      "sinMovimiento": "둘 수 있는 곳이 없어요: 차례가 넘어갑니다",
+      "empateFin": "무승부",
+      "ganasteFin": "이 게임에서 이겼어요!",
+      "ganasteFinPuntos": "이겼어요! +{{puntos}}점",
+      "perdisteFin": "이 게임에서 졌어요",
+      "fichas": "돌 개수: {{n}}",
+      "seguirDespues": "나중에 계속"
+    },
+    "tateti": {
+      "vos": "나",
+      "jugadas": "수: {{n}}",
+      "turnoDe": "{{rival}}의 차례",
+      "elegiCasilla": "칸을 선택하세요",
+      "empateFin": "무승부",
+      "ganasteFin": "이 게임에서 이겼어요!",
+      "ganasteFinPuntos": "이겼어요! +{{puntos}}점",
+      "perdisteFin": "이 게임에서 졌어요",
+      "seguirDespues": "나중에 계속"
+    },
+    "pool": {
+      "vos": "나",
+      "lisas": "솔리드",
+      "rayadas": "스트라이프",
+      "sinGrupo": "아직 그룹 없음",
+      "tuTurno": "당신 차례예요",
+      "bolaEnMano": "핸드볼: 테이블을 터치해서 놓으세요",
+      "turnoRival": "{{rival}}님 차례",
+      "tiempoNeto": "사용한 순 시간: {{usados}}/{{tope}}초"
+    },
     "sala": {
       "cuantosJugadores": "인원은 몇 명인가요?",
       "completarConIA": "AI로 채우기",
@@ -1129,6 +1179,16 @@
       "ganasteFin": "경기에서 이겼어요!",
       "perdisteFin": "이번엔 아쉽네요"
     },
+    "ludoroyal": {
+      "titulo": "로열 루도",
+      "tirarDados": "주사위 굴리기",
+      "elegiFicha": "이동할 말을 선택하세요",
+      "tocaTirar": "당신 차례입니다: 주사위를 굴리세요",
+      "turnoDe": "{{rival}}의 차례",
+      "sinJugada": "이 굴림으로는 이동할 수 없습니다",
+      "ganasteFin": "게임에서 승리했습니다!",
+      "perdisteFin": "이번엔 아쉽네요"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "더 이상 뽑을 카드가 없어요: 이번 라운드가 종료됐어요",
@@ -1144,6 +1204,27 @@
       "tuMano": "내 패",
       "bajar": "내려놓기",
       "descartar": "버리기"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "나",
+      "turnoDe": "{{rival}}의 차례",
+      "ganasteFin": "경기에서 이겼어요!",
+      "perdisteFin": "이번엔 아쉽네요",
+      "empateFin": "무승부",
+      "tuAtril": "내 받침대",
+      "fichasEnBolsa": "주머니에 남은 타일: {{n}}개",
+      "elegiFichas": "받침대에서 타일을 고르고 보드를 터치해서 놓으세요",
+      "jugar": "놓기",
+      "pasar": "패스",
+      "cambiarFichas": "타일 교환",
+      "confirmarCambio": "교환하기",
+      "cancelarCambio": "취소",
+      "elegiComodin": "빈 타일은 어떤 글자로 쓸까요?",
+      "sinFichasParaCambio": "교환할 타일을 하나 이상 고르세요",
+      "puntosGanados": "+{{puntos}}점",
+      "deshacer": "실행 취소",
+      "seguirDespues": "나중에 계속"
     },
     "memo": {
       "comoSeJuega": "카드를 두 장씩 뒤집어 시간 안에 8쌍을 모두 찾으세요. 실수가 적고 빨리 끝낼수록 점수가 높아집니다.",

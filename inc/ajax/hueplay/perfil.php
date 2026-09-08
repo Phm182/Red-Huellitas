@@ -21,9 +21,11 @@ $total = (int) $perfil['PuntosTotales'];
 // primera partida, en vez de quedar clavado en el nivel de cuenta.
 $records = [];
 $porJuego = [];
+$modosPorJuego = [];
 foreach (array_keys(RH_JUEGOS) as $codigo) {
     $records[$codigo] = rh_juego_record($conn, $userId, $codigo);
     $porJuego[$codigo] = rh_juego_progreso_juego(rh_juego_puntos_de($conn, $userId, $codigo));
+    $modosPorJuego[$codigo] = rh_juego_modo_cliente($codigo);
 }
 
 // Top 10 global. Se lee de `UsuarioJuegoPerfil` y no de un GROUP BY sobre
@@ -81,6 +83,8 @@ json_success([
     'desafiosPerdidos' => (int) $perfil['DesafiosPerdidos'],
     'records' => $records,
     'porJuego' => $porJuego,
+    'modosPorJuego' => $modosPorJuego,
+    'favoritos' => rh_juego_favoritos($conn, $userId),
     'ranking' => $ranking,
     'miPuesto' => $miPuesto,
     'desafiosPendientes' => $pendientes,

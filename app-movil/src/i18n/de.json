@@ -809,6 +809,7 @@
     "tienda": "Shop",
     "salud": "Gesundheit",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multiplayer",
     "configuracion": "Einstellungen",
     "atajosHint": "Gedrückt halten für die Kürzel",
     "ocultarBotones": "Buttons ausblenden",
@@ -995,9 +996,24 @@
     "desafios": "Multiplayer / Herausforderungen",
     "desafiosBajada": "Duelle gegen andere Nutzer",
     "juegos": "Spiele",
+    "buscarJuego": "Spiel suchen",
+    "vistaDinamica": "Dynamisch",
+    "vistaDesplegada": "Ausgeklappt",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multiplayer",
+    "modoAmbos": "Solo und Multiplayer",
     "ranking": "Rangliste",
     "proximamente": "Demnächst",
     "pronto": "Bald",
+    "multiplayer": {
+      "titulo": "Multiplayer",
+      "tuTurno": "Du bist dran",
+      "enEspera": "Wartend",
+      "historial": "Verlauf",
+      "sinNada": "Hier ist noch nichts",
+      "invitacion": "Du wurdest eingeladen",
+      "armando": "Raum wird eingerichtet"
+    },
     "tuRecord": "Dein Rekord: {{n}}",
     "retarA": "Jemanden herausfordern",
     "retar": "Fordern",
@@ -1079,6 +1095,40 @@
       "elegiUnaFicha": "Wähle eine Figur zum Ziehen",
       "seguirDespues": "Später weiterspielen"
     },
+    "reversi": {
+      "vos": "Du",
+      "jugadas": "Züge: {{n}}",
+      "turnoDe": "{{rival}} ist dran",
+      "elegiCasilla": "Wähle ein Feld für deinen Stein",
+      "sinMovimiento": "Kein Zug möglich: Zug wird übersprungen",
+      "empateFin": "Unentschieden",
+      "ganasteFin": "Du hast diese Partie gewonnen!",
+      "ganasteFinPuntos": "Gewonnen! +{{puntos}} Punkte",
+      "perdisteFin": "Du hast diese Partie verloren",
+      "fichas": "Steine: {{n}}",
+      "seguirDespues": "Später weiterspielen"
+    },
+    "tateti": {
+      "vos": "Du",
+      "jugadas": "Züge: {{n}}",
+      "turnoDe": "{{rival}} ist dran",
+      "elegiCasilla": "Wähle ein Feld",
+      "empateFin": "Unentschieden",
+      "ganasteFin": "Du hast diese Partie gewonnen!",
+      "ganasteFinPuntos": "Gewonnen! +{{puntos}} Punkte",
+      "perdisteFin": "Du hast diese Partie verloren",
+      "seguirDespues": "Später weiterspielen"
+    },
+    "pool": {
+      "vos": "Du",
+      "lisas": "Volle",
+      "rayadas": "Halbe",
+      "sinGrupo": "Noch keine Gruppe",
+      "tuTurno": "Du bist dran",
+      "bolaEnMano": "Ball in der Hand: tippe auf den Tisch, um ihn zu platzieren",
+      "turnoRival": "{{rival}} ist dran",
+      "tiempoNeto": "Nettozeit verbraucht: {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "Wie viele Spieler?",
       "completarConIA": "Mit der KI auffüllen",
@@ -1135,6 +1185,16 @@
       "ganasteFin": "Du hast die Partie gewonnen!",
       "perdisteFin": "Diesmal nicht"
     },
+    "ludoroyal": {
+      "titulo": "Royal Ludo",
+      "tirarDados": "Würfel werfen",
+      "elegiFicha": "Wähle, welche Figur du ziehst",
+      "tocaTirar": "Du bist dran: würfle",
+      "turnoDe": "{{rival}} ist dran",
+      "sinJugada": "Mit diesem Wurf ist kein Zug möglich",
+      "ganasteFin": "Du hast das Spiel gewonnen!",
+      "perdisteFin": "Diesmal nicht gewonnen"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Nichts mehr zum Ziehen übrig: die Runde wurde beendet",
@@ -1150,6 +1210,27 @@
       "tuMano": "Deine Hand",
       "bajar": "Ablegen",
       "descartar": "Abwerfen"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Du",
+      "turnoDe": "{{rival}} ist dran",
+      "ganasteFin": "Du hast die Partie gewonnen!",
+      "perdisteFin": "Diesmal nicht",
+      "empateFin": "Unentschieden",
+      "tuAtril": "Dein Buchstabenständer",
+      "fichasEnBolsa": "Steine im Beutel: {{n}}",
+      "elegiFichas": "Wähle Steine von deinem Ständer und tippe aufs Feld, um sie zu platzieren",
+      "jugar": "Spielen",
+      "pasar": "Passen",
+      "cambiarFichas": "Steine tauschen",
+      "confirmarCambio": "Tauschen",
+      "cancelarCambio": "Abbrechen",
+      "elegiComodin": "Welchen Buchstaben soll der Joker darstellen?",
+      "sinFichasParaCambio": "Wähle mindestens einen Stein zum Tauschen",
+      "puntosGanados": "+{{puntos}} Punkte",
+      "deshacer": "Rückgängig",
+      "seguirDespues": "Später weiterspielen"
     },
     "memo": {
       "comoSeJuega": "Decke immer zwei Karten auf und finde alle 8 Paare, bevor die Zeit abläuft. Weniger Fehler und ein schnelleres Ende bringen mehr Punkte.",

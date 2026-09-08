@@ -809,6 +809,7 @@
     "tienda": "Negozio",
     "salud": "Salute",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "Multiplayer",
     "configuracion": "Impostazioni",
     "atajosHint": "Tieni premuto per le scorciatoie",
     "ocultarBotones": "Nascondi i pulsanti",
@@ -995,9 +996,24 @@
     "desafios": "Multiplayer / Sfide",
     "desafiosBajada": "Duelli contro altri utenti",
     "juegos": "Giochi",
+    "buscarJuego": "Cerca gioco",
+    "vistaDinamica": "Dinamica",
+    "vistaDesplegada": "Espansa",
+    "modoSolo": "Solo",
+    "modoMultiplayer": "Multiplayer",
+    "modoAmbos": "Solo e Multiplayer",
     "ranking": "Classifica",
     "proximamente": "Prossimamente",
     "pronto": "Presto",
+    "multiplayer": {
+      "titulo": "Multiplayer",
+      "tuTurno": "Tocca a te",
+      "enEspera": "In attesa",
+      "historial": "Cronologia",
+      "sinNada": "Ancora niente qui",
+      "invitacion": "Sei stato invitato",
+      "armando": "Sto preparando la stanza"
+    },
     "tuRecord": "Il tuo record: {{n}}",
     "retarA": "Sfida qualcuno",
     "retar": "Sfida",
@@ -1079,6 +1095,40 @@
       "elegiUnaFicha": "Scegli un pezzo da muovere",
       "seguirDespues": "Continua dopo"
     },
+    "reversi": {
+      "vos": "Tu",
+      "jugadas": "Mosse: {{n}}",
+      "turnoDe": "Tocca a {{rival}}",
+      "elegiCasilla": "Scegli una casella per la tua pedina",
+      "sinMovimiento": "Nessuna mossa disponibile: il turno passa",
+      "empateFin": "Pareggio",
+      "ganasteFin": "Hai vinto questa partita!",
+      "ganasteFinPuntos": "Hai vinto! +{{puntos}} punti",
+      "perdisteFin": "Hai perso questa partita",
+      "fichas": "Pedine: {{n}}",
+      "seguirDespues": "Continua dopo"
+    },
+    "tateti": {
+      "vos": "Tu",
+      "jugadas": "Mosse: {{n}}",
+      "turnoDe": "Tocca a {{rival}}",
+      "elegiCasilla": "Scegli una casella",
+      "empateFin": "Pareggio",
+      "ganasteFin": "Hai vinto questa partita!",
+      "ganasteFinPuntos": "Hai vinto! +{{puntos}} punti",
+      "perdisteFin": "Hai perso questa partita",
+      "seguirDespues": "Continua dopo"
+    },
+    "pool": {
+      "vos": "Tu",
+      "lisas": "Piene",
+      "rayadas": "Rigate",
+      "sinGrupo": "Ancora nessun gruppo",
+      "tuTurno": "Tocca a te",
+      "bolaEnMano": "Pallino in mano: tocca il tavolo per posizionarlo",
+      "turnoRival": "Tocca a {{rival}}",
+      "tiempoNeto": "Tempo netto usato: {{usados}}/{{tope}}s"
+    },
     "sala": {
       "cuantosJugadores": "Quanti giocatori?",
       "completarConIA": "Completa con l'IA",
@@ -1135,6 +1185,16 @@
       "ganasteFin": "Hai vinto la partita!",
       "perdisteFin": "Questa volta no"
     },
+    "ludoroyal": {
+      "titulo": "Ludo Royal",
+      "tirarDados": "Lancia i dadi",
+      "elegiFicha": "Scegli quale pedina muovere",
+      "tocaTirar": "Tocca a te: lancia i dadi",
+      "turnoDe": "Tocca a {{rival}}",
+      "sinJugada": "Nessuna mossa possibile con questo tiro",
+      "ganasteFin": "Hai vinto la partita!",
+      "perdisteFin": "Questa volta non hai vinto"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "Non c'era più nulla da pescare: il round è finito",
@@ -1150,6 +1210,27 @@
       "tuMano": "La tua mano",
       "bajar": "Cala",
       "descartar": "Scarta"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "Tu",
+      "turnoDe": "Tocca a {{rival}}",
+      "ganasteFin": "Hai vinto la partita!",
+      "perdisteFin": "Questa volta no",
+      "empateFin": "Pareggio",
+      "tuAtril": "Il tuo leggio",
+      "fichasEnBolsa": "Tessere rimaste nel sacchetto: {{n}}",
+      "elegiFichas": "Scegli le tessere dal tuo leggio e tocca il tabellone per posizionarle",
+      "jugar": "Gioca",
+      "pasar": "Passa",
+      "cambiarFichas": "Cambia tessere",
+      "confirmarCambio": "Cambia",
+      "cancelarCambio": "Annulla",
+      "elegiComodin": "Che lettera rappresenta la tessera jolly?",
+      "sinFichasParaCambio": "Scegli almeno una tessera da cambiare",
+      "puntosGanados": "+{{puntos}} punti",
+      "deshacer": "Annulla",
+      "seguirDespues": "Continua dopo"
     },
     "memo": {
       "comoSeJuega": "Gira le carte a due a due e trova tutte le 8 coppie prima che scada il tempo. Meno errori e più velocità valgono più punti.",

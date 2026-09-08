@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../../src/api/hueplayApi';
+import { rutaDeSala } from '../../../../src/juego/hueplay/rutas';
 import { COLOR_JUGADOR } from '../../../../src/juego/hueludo/TableroLudo';
 import { HuePlaySala } from '../../../../src/types/hueplay';
 import { radii } from '../../../../src/theme/elevation';
@@ -63,8 +64,7 @@ export default function SalaLobbyScreen() {
 
   useEffect(() => {
     if (sala?.estado === 'jugando' || sala?.estado === 'terminada') {
-      const pantalla = sala.juegoCodigo === 'huerummy' ? '/(app)/hueplay/rummy' : '/(app)/hueplay/ludo';
-      router.replace({ pathname: pantalla, params: { salaId: sala.salaId } });
+      router.replace({ pathname: rutaDeSala(sala.juegoCodigo) as never, params: { salaId: sala.salaId } });
     }
   }, [sala]);
 

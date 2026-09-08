@@ -342,53 +342,67 @@ export function MapaLienzo({
           registrando el propio componente gracias a `heading`.
         */}
         <UserLocation animated heading minDisplacement={3}>
-          {/* Halo de incerteza: se dibuja con la precisión real que informa el
-              GPS, más honesto que un punto nítido. Crece con el zoom porque son
-              metros sobre el terreno, no píxeles de pantalla. */}
-          {typeof precisionM === 'number' && precisionM > 0 ? (
-            <Layer
-              id="rh-yo-precision"
-              type="circle"
-              paint={{
-                'circle-color': '#4CC9F0',
-                'circle-opacity': 0.18,
-                'circle-pitch-alignment': 'map',
-                'circle-radius': [
-                  'interpolate',
-                  ['exponential', 2],
-                  ['zoom'],
-                  0,
-                  9,
-                  22,
-                  9 + precisionM * 100,
-                ],
-              }}
-            />
-          ) : null}
-
-          {brujula !== null ? (
-            <Layer
-              id="rh-yo-rumbo"
-              type="symbol"
-              layout={{
-                'icon-image': 'mlrn-user-location-puck-heading',
-                'icon-allow-overlap': true,
-                // Los dos en 'map' para que la flecha quede pegada al terreno:
-                // si giro el mapa, la flecha sigue apuntando al mismo lugar del
-                // mundo, que es lo que uno espera de una brújula.
-                'icon-rotation-alignment': 'map',
-                'icon-pitch-alignment': 'map',
-                'icon-rotate': brujula,
-              }}
-            />
-          ) : null}
+          {/*
+            Las dos capas de abajo se montan SIEMPRE, nunca condicionalmente:
+            `UserLocation` le pasa estos hijos a un `GeoJSONSource` de la
+            librería que los reordena con `Children.map` cada vez que alguno
+            entra o sale del array (`cloneReactChildrenWithProps` en
+            @maplibre/maplibre-react-native filtra los `null` antes de
+            mapear) — eso corría el índice de las capas que quedaban, y
+            `useFrozenId` (que congela el `id` en el primer render de esa
+            instancia) terminaba viendo la MISMA instancia reconciliada con
+            un `id` distinto → `Error: \`id\` cannot be changed`, tirando
+            abajo la app entera (crash real, confirmado con `dumpsys
+            dropbox` en el celular). La solución no es un mejor `key` — ya
+            lo tenían — es no sacarlas nunca del árbol: se ocultan con
+            `layout.visibility` en vez de desmontarse.
+          */}
+          <Layer
+            key="rh-yo-precision"
+            id="rh-yo-precision"
+            type="circle"
+            layout={{ visibility: typeof precisionM === 'number' && precisionM > 0 ? 'visible' : 'none' }}
+            paint={{
+              'circle-color': '#4CC9F0',
+              'circle-opacity': 0.18,
+              'circle-pitch-alignment': 'map',
+              'circle-radius': [
+                'interpolate',
+                ['exponential', 2],
+                ['zoom'],
+                0,
+                9,
+                22,
+                9 + (precisionM ?? 0) * 100,
+              ],
+            }}
+          />
 
           <Layer
+            key="rh-yo-rumbo"
+            id="rh-yo-rumbo"
+            type="symbol"
+            layout={{
+              'icon-image': 'mlrn-user-location-puck-heading',
+              'icon-allow-overlap': true,
+              visibility: brujula !== null ? 'visible' : 'none',
+              // Los dos en 'map' para que la flecha quede pegada al terreno:
+              // si giro el mapa, la flecha sigue apuntando al mismo lugar del
+              // mundo, que es lo que uno espera de una brújula.
+              'icon-rotation-alignment': 'map',
+              'icon-pitch-alignment': 'map',
+              'icon-rotate': brujula ?? 0,
+            }}
+          />
+
+          <Layer
+            key="rh-yo-borde"
             id="rh-yo-borde"
             type="circle"
             paint={{ 'circle-radius': 9, 'circle-color': '#fff', 'circle-pitch-alignment': 'map' }}
           />
           <Layer
+            key="rh-yo-centro"
             id="rh-yo-centro"
             type="circle"
             paint={{ 'circle-radius': 6, 'circle-color': '#4CC9F0', 'circle-pitch-alignment': 'map' }}
@@ -410,6 +424,7 @@ export function MapaLienzo({
           los marcadores y no los tapen.
         */}
         <Layer
+          key="rh-edificios"
           id="rh-edificios"
           source="carto"
           source-layer="building"
@@ -437,6 +452,7 @@ export function MapaLienzo({
 
         <GeoJSONSource
           ref={fuente}
+          key="rh-puntos"
           id="rh-puntos"
           data={coleccion}
           cluster
@@ -526,6 +542,7 @@ export function MapaLienzo({
             lo que convierte el círculo en pelota.
           */}
           <Layer
+            key="rh-grupos-sombra"
             id="rh-grupos-sombra"
             type="circle"
             filter={['has', 'point_count']}
@@ -539,6 +556,7 @@ export function MapaLienzo({
             }}
           />
           <Layer
+            key="rh-grupos"
             id="rh-grupos"
             type="circle"
             filter={['has', 'point_count']}
@@ -557,6 +575,7 @@ export function MapaLienzo({
           {/* El lado en sombra: un disco negro difuminado, corrido hacia abajo
               y más chico, que oscurece la parte inferior de la pelota. */}
           <Layer
+            key="rh-grupos-sombreado"
             id="rh-grupos-sombreado"
             type="circle"
             filter={['has', 'point_count']}
@@ -573,6 +592,7 @@ export function MapaLienzo({
               termina de vender la esfera. Es el mismo lugar del que sale el
               `radial-gradient` de la web. */}
           <Layer
+            key="rh-grupos-luz"
             id="rh-grupos-luz"
             type="circle"
             filter={['has', 'point_count']}
@@ -589,6 +609,7 @@ export function MapaLienzo({
               resto del tiempo está en opacidad cero: por eso se lee como un
               reflejo momentáneo y no como una luz siempre prendida. */}
           <Layer
+            key="rh-grupos-brillo"
             id="rh-grupos-brillo"
             type="circle"
             filter={['has', 'point_count']}
@@ -602,6 +623,7 @@ export function MapaLienzo({
             }}
           />
           <Layer
+            key="rh-grupos-texto"
             id="rh-grupos-texto"
             type="symbol"
             filter={['has', 'point_count']}
@@ -634,6 +656,7 @@ export function MapaLienzo({
             />
           ))}
           <Layer
+            key="rh-grupos-halo"
             id="rh-grupos-halo"
             type="circle"
             filter={['has', 'point_count']}
@@ -649,6 +672,7 @@ export function MapaLienzo({
               disco, y encima la foto. Separadas porque el halo tiene que
               quedar debajo de la foto de los vecinos, no sólo de la propia. */}
           <Layer
+            key="rh-sueltos-halo"
             id="rh-sueltos-halo"
             type="circle"
             filter={['!', ['has', 'point_count']]}
@@ -660,6 +684,7 @@ export function MapaLienzo({
             }}
           />
           <Layer
+            key="rh-sueltos"
             id="rh-sueltos"
             type="circle"
             filter={['!', ['has', 'point_count']]}
@@ -672,6 +697,7 @@ export function MapaLienzo({
             }}
           />
           <Layer
+            key="rh-sueltos-foto"
             id="rh-sueltos-foto"
             type="symbol"
             filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'foto'], '']]}

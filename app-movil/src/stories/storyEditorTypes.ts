@@ -98,6 +98,27 @@ export type StoryRecorte = {
   finSeg: number;
 };
 
+/**
+ * Zoom/paneo no destructivo de la FOTO (el video no lo usa: para eso ya
+ * existe el ajuste cover/contain). `scale` es el zoom manual encima del
+ * "cover" de base (1 = tal cual entra la foto); `x`/`y` son el arrastre en
+ * píxeles del canvas de edición, con el mismo signo con el que se mueve la
+ * imagen en pantalla (no el de la ventana visible).
+ */
+export type StoryFotoTransform = {
+  scale: number;
+  x: number;
+  y: number;
+};
+
+export function fotoTransformDefault(): StoryFotoTransform {
+  return { scale: 1, x: 0, y: 0 };
+}
+
+export function fotoTransformEsDefault(t: StoryFotoTransform): boolean {
+  return Math.abs(t.scale - 1) < 0.01 && Math.abs(t.x) < 1 && Math.abs(t.y) < 1;
+}
+
 export type StoryFilterDef = {
   id: StoryFilterId;
   label: string;

@@ -35,6 +35,8 @@ type Props = {
   /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. */
   velocidad?: number;
   onEnded?: () => void;
+  /** Zoom/paneo manual de la FOTO (pellizcar con dos dedos). Foto solamente. */
+  fotoTransform?: { scale: number; x: number; y: number };
 };
 
 /**
@@ -57,6 +59,7 @@ export function StoryMediaFill({
   onPosicion,
   velocidad = 1,
   onEnded,
+  fotoTransform,
 }: Props) {
   const webVideoRef = useRef<HTMLVideoElement | null>(null);
   const vol = Math.min(1, Math.max(0, volume));
@@ -257,7 +260,23 @@ export function StoryMediaFill({
   return (
     <View style={[styles.frame, style]} pointerEvents="none">
       {tipo === 'foto' ? (
-        <Image source={{ uri }} style={[styles.media, filterStyle]} resizeMode={fit} />
+        <Image
+          source={{ uri }}
+          style={[
+            styles.media,
+            filterStyle,
+            fotoTransform
+              ? {
+                  transform: [
+                    { translateX: fotoTransform.x },
+                    { translateY: fotoTransform.y },
+                    { scale: fotoTransform.scale },
+                  ],
+                }
+              : null,
+          ]}
+          resizeMode={fit}
+        />
       ) : Platform.OS === 'web' ? (
         <video
           key={uri}

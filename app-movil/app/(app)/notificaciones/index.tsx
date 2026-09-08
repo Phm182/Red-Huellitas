@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { notificacionesApi } from '../../../src/api/notificacionesApi';
 import { Atmosphere } from '../../../src/components/Atmosphere';
+import { refrescarContadoresGlobal } from '../../../src/hooks/useContadores';
+import { juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { Notificacion } from '../../../src/types';
@@ -66,7 +68,7 @@ export default function NotificacionesScreen() {
           setNextCursor(res.data.nextCursor);
           // Con el check activo, entrar ya cuenta como haberlas visto.
           if (autoLimpiar && res.data.notificaciones.some((n) => !n.leida)) {
-            void notificacionesApi.marcarLeidas();
+            void notificacionesApi.marcarLeidas().then(() => refrescarContadoresGlobal());
             setItems(res.data.notificaciones.map((n) => ({ ...n, leida: true })));
           }
         }
@@ -74,6 +76,10 @@ export default function NotificacionesScreen() {
       });
       return () => {
         activo = false;
+        // Al salir, que la campanita del dock refleje ya lo que se marcó
+        // como leído acá adentro — si no, se queda con el número viejo hasta
+        // el próximo refresco automático (cada 30s).
+        refrescarContadoresGlobal();
       };
     }, [autoLimpiar])
   );
@@ -112,12 +118,15 @@ export default function NotificacionesScreen() {
     hapticLeve();
     await notificacionesApi.marcarLeidas();
     setItems((prev) => prev.map((n) => ({ ...n, leida: true })));
+    refrescarContadoresGlobal();
   };
 
   const abrir = async (n: Notificacion) => {
     hapticLeve();
     if (!n.leida) {
-      void notificacionesApi.marcarLeidas({ notificacionId: n.notificacionId });
+      void notificacionesApi.marcarLeidas({ notificacionId: n.notificacionId }).then(() =>
+        refrescarContadoresGlobal()
+      );
       setItems((prev) =>
         prev.map((x) => (x.notificacionId === n.notificacionId ? { ...x, leida: true } : x))
       );
@@ -182,7 +191,9 @@ export default function NotificacionesScreen() {
             descripcion={buscando ? undefined : t('notificaciones.vacioDesc')}
           />
         }
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const juego = item.juegoCodigo ? juegoDelCatalogo(item.juegoCodigo) : undefined;
+          return (
           <Pressable
             onPress={() => abrir(item)}
             style={[
@@ -194,11 +205,19 @@ export default function NotificacionesScreen() {
             ]}
           >
             <View style={[styles.icono, { backgroundColor: colors.background }]}>
-              <Ionicons
-                name={ICONOS[item.tipo] ?? 'notifications-outline'}
-                size={18}
-                color={item.leida ? colors.textMuted : colors.primary}
-              />
+              {juego ? (
+                <MaterialCommunityIcons
+                  name={juego.icono}
+                  size={18}
+                  color={item.leida ? colors.textMuted : juego.color}
+                />
+              ) : (
+                <Ionicons
+                  name={ICONOS[item.tipo] ?? 'notifications-outline'}
+                  size={18}
+                  color={item.leida ? colors.textMuted : colors.primary}
+                />
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.titulo, { color: colors.text }]} numberOfLines={1}>
@@ -213,7 +232,8 @@ export default function NotificacionesScreen() {
             </View>
             {item.ruta ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
           </Pressable>
-        )}
+          );
+        }}
         onEndReached={cargarMas}
         onEndReachedThreshold={0.4}
         ListFooterComponent={

@@ -807,6 +807,7 @@
     "tienda": "ショップ",
     "salud": "健康",
     "hueplay": "HuePlay",
+    "hueplayMultiplayer": "マルチプレイヤー",
     "configuracion": "設定",
     "atajosHint": "長押しでショートカットを表示",
     "ocultarBotones": "ボタンを隠す",
@@ -989,9 +990,24 @@
     "desafios": "マルチプレイヤー / チャレンジ",
     "desafiosBajada": "他のユーザーとの対決",
     "juegos": "ゲーム",
+    "buscarJuego": "ゲームを検索",
+    "vistaDinamica": "ダイナミック",
+    "vistaDesplegada": "展開表示",
+    "modoSolo": "ソロ",
+    "modoMultiplayer": "マルチプレイヤー",
+    "modoAmbos": "ソロ・マルチ両方",
     "ranking": "ランキング",
     "proximamente": "近日公開",
     "pronto": "近日",
+    "multiplayer": {
+      "titulo": "マルチプレイヤー",
+      "tuTurno": "あなたの番",
+      "enEspera": "待機中",
+      "historial": "履歴",
+      "sinNada": "まだ何もありません",
+      "invitacion": "招待されました",
+      "armando": "ルームを準備中"
+    },
     "tuRecord": "自己ベスト: {{n}}",
     "retarA": "誰かに挑戦",
     "retar": "挑戦",
@@ -1073,6 +1089,40 @@
       "elegiUnaFicha": "動かす駒を選んでください",
       "seguirDespues": "あとで続ける"
     },
+    "reversi": {
+      "vos": "あなた",
+      "jugadas": "手数:{{n}}",
+      "turnoDe": "{{rival}}の番",
+      "elegiCasilla": "石を置くマスを選んでください",
+      "sinMovimiento": "置ける場所がありません:パスします",
+      "empateFin": "引き分け",
+      "ganasteFin": "この対局に勝ちました!",
+      "ganasteFinPuntos": "勝ちました!+{{puntos}}ポイント",
+      "perdisteFin": "この対局に負けました",
+      "fichas": "石の数:{{n}}",
+      "seguirDespues": "あとで続ける"
+    },
+    "tateti": {
+      "vos": "あなた",
+      "jugadas": "手数:{{n}}",
+      "turnoDe": "{{rival}}の番",
+      "elegiCasilla": "マスを選んでください",
+      "empateFin": "引き分け",
+      "ganasteFin": "この対局に勝ちました!",
+      "ganasteFinPuntos": "勝ちました!+{{puntos}}ポイント",
+      "perdisteFin": "この対局に負けました",
+      "seguirDespues": "あとで続ける"
+    },
+    "pool": {
+      "vos": "あなた",
+      "lisas": "ソリッド",
+      "rayadas": "ストライプ",
+      "sinGrupo": "グループ未定",
+      "tuTurno": "あなたの番です",
+      "bolaEnMano": "フリーボール:テーブルをタップして配置してください",
+      "turnoRival": "{{rival}}の番です",
+      "tiempoNeto": "使用ネット時間:{{usados}}/{{tope}}秒"
+    },
     "sala": {
       "cuantosJugadores": "プレイヤーは何人？",
       "completarConIA": "AIで埋める",
@@ -1129,6 +1179,16 @@
       "ganasteFin": "試合に勝ちました！",
       "perdisteFin": "今回は負けました"
     },
+    "ludoroyal": {
+      "titulo": "ロイヤルルド",
+      "tirarDados": "サイコロを振る",
+      "elegiFicha": "動かす駒を選んでください",
+      "tocaTirar": "あなたの番です：サイコロを振ってください",
+      "turnoDe": "{{rival}}の番です",
+      "sinJugada": "その出目では動かせる駒がありません",
+      "ganasteFin": "ゲームに勝ちました!",
+      "perdisteFin": "今回は勝てませんでした"
+    },
     "rummy": {
       "titulo": "HueRummy",
       "rondaCortada": "もう引けるカードがありません：このラウンドは終了しました",
@@ -1144,6 +1204,27 @@
       "tuMano": "あなたの手札",
       "bajar": "場に出す",
       "descartar": "捨てる"
+    },
+    "scrabble": {
+      "titulo": "HueScrabble",
+      "vos": "あなた",
+      "turnoDe": "{{rival}}の番です",
+      "ganasteFin": "試合に勝ちました!",
+      "perdisteFin": "今回は負けました",
+      "empateFin": "引き分け",
+      "tuAtril": "あなたのラック",
+      "fichasEnBolsa": "袋に残ったタイル:{{n}}枚",
+      "elegiFichas": "ラックからタイルを選んでボードをタップして置いてください",
+      "jugar": "プレイ",
+      "pasar": "パス",
+      "cambiarFichas": "タイルを交換",
+      "confirmarCambio": "交換する",
+      "cancelarCambio": "キャンセル",
+      "elegiComodin": "ブランクタイルはどの文字にしますか?",
+      "sinFichasParaCambio": "交換するタイルを1枚以上選んでください",
+      "puntosGanados": "+{{puntos}}ポイント",
+      "deshacer": "元に戻す",
+      "seguirDespues": "あとで続ける"
     },
     "memo": {
       "comoSeJuega": "カードを2枚ずつめくって、時間内に8組すべてを見つけましょう。ミスが少なく早く終わるほど高得点です。",

@@ -10,7 +10,9 @@ require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/juegos.php';
 require_once __DIR__ . '/../../funciones/salas.php';
 require_once __DIR__ . '/../../funciones/ludo.php';
+require_once __DIR__ . '/../../funciones/ludoroyal.php';
 require_once __DIR__ . '/../../funciones/rummy.php';
+require_once __DIR__ . '/../../funciones/scrabble.php';
 
 $userId = rh_require_auth($conn);
 
@@ -38,9 +40,15 @@ if (!$esParticipante) {
 
 $jugadasIA = [];
 $estadoRummy = null;
+$estadoScrabble = null;
 
 if ($sala['JuegoCodigo'] === 'hueludo') {
     $resultado = rh_ludo_sala_actualizar($conn, $sala);
+    $sala = $resultado['sala'];
+    $jugadores = $resultado['jugadores'];
+    $jugadasIA = $resultado['jugadasIA'];
+} elseif ($sala['JuegoCodigo'] === 'hueludoroyal') {
+    $resultado = rh_ludoroyal_sala_actualizar($conn, $sala);
     $sala = $resultado['sala'];
     $jugadores = $resultado['jugadores'];
     $jugadasIA = $resultado['jugadasIA'];
@@ -49,13 +57,18 @@ if ($sala['JuegoCodigo'] === 'hueludo') {
     $sala = $resultado['sala'];
     $jugadores = $resultado['jugadores'];
     $jugadasIA = $resultado['jugadasIA'];
+} elseif ($sala['JuegoCodigo'] === 'huescrabble') {
+    $resultado = rh_scrabble_sala_actualizar($conn, $sala);
+    $sala = $resultado['sala'];
+    $jugadores = $resultado['jugadores'];
+    $jugadasIA = $resultado['jugadasIA'];
 }
 
 $salaSerializada = rh_sala_serializar($conn, $sala, $jugadores, $userId);
 
-if ($sala['JuegoCodigo'] === 'hueludo' && $sala['Tablero'] !== null) {
-    // Ludo no tiene información oculta: el tablero completo es seguro para
-    // cualquiera de los jugadores.
+if (($sala['JuegoCodigo'] === 'hueludo' || $sala['JuegoCodigo'] === 'hueludoroyal') && $sala['Tablero'] !== null) {
+    // Ludo (clásico o Real) no tiene información oculta: el tablero
+    // completo es seguro para cualquiera de los jugadores.
     $salaSerializada['tablero'] = $sala['Tablero'];
 } elseif ($sala['JuegoCodigo'] === 'huerummy' && $sala['Tablero'] !== null && $salaSerializada['miAsientoId'] !== null) {
     $miPosicion = null;
@@ -68,6 +81,17 @@ if ($sala['JuegoCodigo'] === 'hueludo' && $sala['Tablero'] !== null) {
     if ($miPosicion !== null) {
         $estadoRummy = rh_rummy_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
     }
+} elseif ($sala['JuegoCodigo'] === 'huescrabble' && $sala['Tablero'] !== null && $salaSerializada['miAsientoId'] !== null) {
+    $miPosicion = null;
+    foreach ($jugadores as $j) {
+        if ((int) $j['SalaJugadorId'] === $salaSerializada['miAsientoId']) {
+            $miPosicion = (int) $j['Posicion'];
+            break;
+        }
+    }
+    if ($miPosicion !== null) {
+        $estadoScrabble = rh_scrabble_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
+    }
 }
 
-json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy]);
+json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoScrabble' => $estadoScrabble]);
