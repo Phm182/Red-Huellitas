@@ -355,18 +355,13 @@ export default function HuePlayScreen() {
         <ListSearchBar
           embedded
           value={busqueda}
-          onChangeText={(v) => {
-            setBusqueda(v);
-            if (v.trim()) setBuscando(true);
-          }}
+          onChangeText={setBusqueda}
           placeholder={t('hueplay.buscarJuego')}
           onFocus={() => setBuscando(true)}
-          // Al perder foco se colapsa sólo si no quedó texto: así podés
-          // tipear, tocar un resultado (el teclado se cierra) y la grilla
-          // sigue expandida para entrar.
-          onBlur={() => {
-            if (!busqueda.trim()) setBuscando(false);
-          }}
+          // Al cerrar el teclado el layout vuelve a como estaba (nivel,
+          // accesos, ranking); el texto del filtro se mantiene, así la
+          // lista sigue acotada y se puede tocar un resultado.
+          onBlur={() => setBuscando(false)}
         />
       </View>
 

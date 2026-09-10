@@ -640,6 +640,10 @@ function rh_juego_cerrar_desafio_turnos(
         }
     }
 
+    // Si este duelo era una partida de torneo, avanzar la llave/tabla.
+    require_once __DIR__ . '/torneo.php';
+    rh_torneo_al_cerrar_desafio($conn, $desafioId, $ganadorUserId);
+
     return [
         'cerrado' => true,
         'ganadorUserId' => $ganadorUserId,
@@ -800,6 +804,10 @@ function rh_juego_resolver_desafio(mysqli $conn, array $desafio): array
         $stmt->execute();
         $stmt->close();
     }
+
+    // Si este duelo era una partida de torneo, avanzar la llave/tabla.
+    require_once __DIR__ . '/torneo.php';
+    rh_torneo_al_cerrar_desafio($conn, (int) $desafio['DesafioId'], $ganador);
 
     return ['cerrado' => true, 'ganadorUserId' => $ganador];
 }
