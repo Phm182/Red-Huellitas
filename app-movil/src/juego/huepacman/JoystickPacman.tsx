@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -20,6 +20,15 @@ const POMO = 52;
 const ZONA_MUERTA = 16;
 const RECORRIDO_MAX = RADIO - POMO / 2;
 
+/** Acota el pomo al disco. Pura, a nivel módulo, para no recrearla por
+ * render ni tener que workletizarla. */
+function acotarPomo(dx: number, dy: number) {
+  const dist = Math.hypot(dx, dy);
+  if (dist <= RECORRIDO_MAX || dist === 0) return { x: dx, y: dy };
+  const k = RECORRIDO_MAX / dist;
+  return { x: dx * k, y: dy * k };
+}
+
 /**
  * Joystick analógico para HuePacMan: se apoya el dedo en cualquier parte del
  * disco y se arrastra hacia dónde ir — el eje dominante gana. A diferencia
@@ -38,37 +47,49 @@ export function JoystickPacman({ onDireccion, color, colorFondo, colorPomo }: Pr
   // así evitamos trabajo al pedo).
   const ultimaRef = useRef<Direccion | null>(null);
 
-  const emitir = (dx: number, dy: number) => {
-    const dist = Math.hypot(dx, dy);
-    if (dist < ZONA_MUERTA) {
-      ultimaRef.current = null;
-      return;
-    }
-    const dir: Direccion = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'derecha' : 'izquierda') : dy > 0 ? 'abajo' : 'arriba';
-    if (dir !== ultimaRef.current) {
-      ultimaRef.current = dir;
-      onDireccion(dir);
-    }
-  };
+  // Todo el trabajo corre en el hilo de JS: el worklet del gesto sólo hace
+  // `runOnJS` a estas funciones. Antes llamaba a `clampPomo` DENTRO del
+  // worklet de `onUpdate` — como es una función normal (no worklet), tiraba
+  // "Tried to synchronously call a Remote Function" en cada frame y el
+  // joystick quedaba mudo (no movía a Pac-Man).
+  const alMover = useCallback(
+    (dx: number, dy: number) => {
+      setPomo(acotarPomo(dx, dy));
+      const dist = Math.hypot(dx, dy);
+      if (dist < ZONA_MUERTA) {
+        ultimaRef.current = null;
+        return;
+      }
+      const dir: Direccion =
+        Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'derecha' : 'izquierda') : dy > 0 ? 'abajo' : 'arriba';
+      if (dir !== ultimaRef.current) {
+        ultimaRef.current = dir;
+        onDireccion(dir);
+      }
+    },
+    [onDireccion],
+  );
 
-  const clampPomo = (dx: number, dy: number) => {
-    const dist = Math.hypot(dx, dy);
-    if (dist <= RECORRIDO_MAX || dist === 0) return { x: dx, y: dy };
-    const k = RECORRIDO_MAX / dist;
-    return { x: dx * k, y: dy * k };
-  };
+  const alSoltar = useCallback(() => {
+    setPomo({ x: 0, y: 0 });
+    ultimaRef.current = null;
+  }, []);
 
   const gesto = Gesture.Pan()
     .minDistance(0)
+    .onBegin((e) => {
+      'worklet';
+      runOnJS(alMover)(e.translationX, e.translationY);
+    })
     .onUpdate((e) => {
+      'worklet';
       // `translation` es desde donde tocó, no desde el centro — como el dedo
       // se apoya en cualquier lado, alcanza para dar dirección relativa.
-      runOnJS(setPomo)(clampPomo(e.translationX, e.translationY));
-      runOnJS(emitir)(e.translationX, e.translationY);
+      runOnJS(alMover)(e.translationX, e.translationY);
     })
-    .onEnd(() => {
-      runOnJS(setPomo)({ x: 0, y: 0 });
-      ultimaRef.current = null;
+    .onFinalize(() => {
+      'worklet';
+      runOnJS(alSoltar)();
     });
 
   return (

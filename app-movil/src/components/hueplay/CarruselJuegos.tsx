@@ -2,7 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDecay, withSpring } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -30,16 +30,21 @@ type Props = {
  * Carrusel centrado de a un juego por vez, para el modo "Lista dinámica" de
  * la home de HuePlay.
  *
- * Gira como una RULETA: el dedo lo mueve libre, y al soltar sigue de largo
- * con la velocidad del envión (`withDecay`), frenando solo — un empujón
- * flojo pasa uno o dos juegos, uno fuerte se lleva muchos hasta detenerse.
- * Cuando la inercia para, encaja en el juego más cercano (`withSpring`
- * corto). Antes computaba un índice destino fijo y saltaba ahí de una, y
- * como el umbral era alto casi siempre caía en el mismo (queja: "hace como
- * que se mueve, siempre es 1 y repite la misma opción").
+ * Gira como una RULETA: el dedo lo mueve libre, y al soltar proyecta hasta
+ * dónde llegaría con ese envión y va ahí con un `withSpring` al que se le
+ * pasa la velocidad del gesto — un empujón flojo pasa un juego, uno fuerte
+ * se lleva varios y frena solo. La velocidad se mide a mano en `onUpdate`
+ * (RNGH la deja en 0 seguido en Android) para que la proyección sea real.
+ *
+ * Antes usaba `withDecay` con un callback que arrancaba otro `withSpring`
+ * sobre el mismo shared value: eso entraba en recursión infinita
+ * ("Maximum call stack size exceeded" en el propio callback) y el carrusel
+ * quedaba clavado en el mismo juego (queja: "hace como que se mueve,
+ * siempre es 1 y repite la misma opción").
  */
-/** Cuánto frena la inercia por frame — más cerca de 1, más "patina". */
-const DECELERACION = 0.9955;
+/** Cuánto pesa la velocidad del envión al proyectar el destino (seg). Más
+ * alto = un flick fuerte se lleva más juegos. */
+const FACTOR_PROYECCION = 0.14;
 /** La tarjeta ocupa esta fracción del ancho disponible — de punta a punta
  * quedaba desproporcionada (un panel enorme para un ícono y dos líneas de
  * texto); así queda un tamaño de tarjeta prolijo, con margen de sobra para
@@ -54,6 +59,11 @@ export function CarruselJuegos({ juegos, favoritos, modosPorJuego, onFavoritoCam
   const anchoSV = useSharedValue(320 * FRACCION_TARJETA);
   const offset = useSharedValue(0);
   const arrastre = useSharedValue(0);
+  // Medición de velocidad a mano durante el arrastre (px/seg), con suavizado
+  // — `e.velocityX` de RNGH viene 0 casi siempre en este Android.
+  const velSV = useSharedValue(0);
+  const tPrevSV = useSharedValue(0);
+  const xPrevSV = useSharedValue(0);
 
   const cardAncho = Math.round(ancho * FRACCION_TARJETA);
   const margen = (ancho - cardAncho) / 2;
@@ -108,7 +118,23 @@ export function CarruselJuegos({ juegos, favoritos, modosPorJuego, onFavoritoCam
   const gesto = Gesture.Pan()
     .activeOffsetX([-14, 14])
     .failOffsetY([-26, 26])
+    .onBegin(() => {
+      'worklet';
+      tPrevSV.value = Date.now();
+      xPrevSV.value = 0;
+      velSV.value = 0;
+    })
     .onUpdate((e) => {
+      'worklet';
+      // Velocidad instantánea suavizada (px/seg) a partir de los samples.
+      const ahora = Date.now();
+      const dt = ahora - tPrevSV.value;
+      if (dt > 8) {
+        const inst = ((e.translationX - xPrevSV.value) / dt) * 1000;
+        velSV.value = velSV.value * 0.7 + inst * 0.3;
+        tPrevSV.value = ahora;
+        xPrevSV.value = e.translationX;
+      }
       const w = anchoSV.value;
       const min = -(juegos.length - 1) * w;
       const bruto = offset.value + e.translationX;
@@ -119,21 +145,22 @@ export function CarruselJuegos({ juegos, favoritos, modosPorJuego, onFavoritoCam
       else arrastre.value = e.translationX;
     })
     .onEnd((e) => {
+      'worklet';
       const w = anchoSV.value;
-      const min = -(juegos.length - 1) * w;
-      // Plegar el arrastre en el offset y soltar la inercia desde ahí.
+      const maxIdx = juegos.length - 1;
+      // Plegar el arrastre en el offset y proyectar el destino desde ahí:
+      // dónde caería la "rueda" con este envión. Un solo `withSpring` (con
+      // la velocidad del gesto) la lleva ahí y la frena — sin callbacks
+      // anidados que recursen.
       offset.value = offset.value + arrastre.value;
       arrastre.value = 0;
-      offset.value = withDecay(
-        { velocity: e.velocityX, deceleration: DECELERACION, clamp: [min, 0], rubberBandEffect: true, rubberBandFactor: 0.6 },
-        () => {
-          // La rueda frenó: encajar en el juego más cercano.
-          'worklet';
-          const cercano = Math.round(offset.value / w) * w;
-          offset.value = withSpring(cercano, { damping: 20, stiffness: 200, mass: 0.7 });
-          runOnJS(fijarIndice)(Math.round(-cercano / w));
-        }
-      );
+      const vx = Math.abs(e.velocityX) > Math.abs(velSV.value) ? e.velocityX : velSV.value;
+      const proyectado = offset.value + vx * FACTOR_PROYECCION;
+      let destino = Math.round(-proyectado / w);
+      if (destino < 0) destino = 0;
+      if (destino > maxIdx) destino = maxIdx;
+      offset.value = withSpring(-destino * w, { velocity: vx, damping: 18, stiffness: 90, mass: 1 });
+      runOnJS(fijarIndice)(destino);
     });
 
   const estiloTrack = useAnimatedStyle(() => ({
