@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Svg, { Circle, Line } from 'react-native-svg';
 import { BolaSkinSvg } from './BolaSkinSvg';
 import { Bola, Mesa, PuntoTrayectoria, Vector } from './motor';
 import { TacoBillar } from './TacoBillar';
 
-export type PosicionBola = Vector & { angulo: number };
+/** Posición interpolada de una bola en un instante: centro (x,y), rodadura
+ * acumulada `rod` y la dirección de avance `dir` en ese tramo — con esos
+ * tres `BolaSkinSvg` "hace rodar" el número/franja sobre la cara. */
+export type PosicionBola = Vector & { rod: number; dirX: number; dirY: number };
 export type Posiciones = Record<number, PosicionBola>;
 
 function lerp(a: number, b: number, t: number): number {
@@ -23,6 +26,7 @@ export function reproducir(
 ): () => void {
   const inicio = Date.now();
   const ns = Object.keys(trayectorias).map(Number);
+  const ultimaDir: Record<number, { x: number; y: number }> = {};
   let cancelado = false;
 
   function paso() {
@@ -37,10 +41,19 @@ export function reproducir(
       const frac = posIdx - i0;
       const a = arr[i0]!;
       const b = arr[i1]!;
+      // Dirección de rodadura = hacia dónde se mueve la bola en este tramo.
+      // Si el tramo es casi nulo (bola quieta) se mantiene la última.
+      const ddx = b.pos.x - a.pos.x;
+      const ddy = b.pos.y - a.pos.y;
+      const dm = Math.hypot(ddx, ddy);
+      if (dm > 0.01) ultimaDir[n] = { x: ddx / dm, y: ddy / dm };
+      const dir = ultimaDir[n] ?? { x: 1, y: 0 };
       pos[n] = {
         x: lerp(a.pos.x, b.pos.x, frac),
         y: lerp(a.pos.y, b.pos.y, frac),
-        angulo: lerp(a.angulo, b.angulo, frac),
+        rod: lerp(a.rod, b.rod, frac),
+        dirX: dir.x,
+        dirY: dir.y,
       };
     }
     onFrame(pos);
@@ -97,6 +110,19 @@ const DURACION_GOLPE_MS = 110;
 const SEPARACION_BASE = 10;
 const SEPARACION_MAXIMA = 100;
 
+/** Grosor del marco de madera (px de pantalla). */
+const MARCO = 16;
+/** Las 6 troneras en coordenadas RELATIVAS (0..1) de la mesa — 4 esquinas +
+ * 2 medios de banda larga. Debe coincidir con `motor.ts::troneras()`. */
+const TRONERAS_REL = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 0.5 },
+  { x: 1, y: 0.5 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+];
+
 type Props = {
   mesa: Mesa;
   bolas: Bola[];
@@ -134,7 +160,42 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
   const [separacionOverride, setSeparacionOverride] = useState<number | null>(null);
 
   const blanca = bolas.find((b) => b.n === 0);
-  const posBlanca = blanca ? (posiciones[0] ?? { x: blanca.x, y: blanca.y, angulo: 0 }) : null;
+  const posBlanca = blanca
+    ? (posiciones[0] ?? { x: blanca.x, y: blanca.y, rod: 0, dirX: 0, dirY: 0 })
+    : null;
+
+  // Última posición conocida de cada bola en mesa — para animar el "hundido"
+  // en la tronera cuando desaparece de `bolas` (ver `hundiendo`).
+  const ultimaPosRef = useRef<Record<number, Vector>>({});
+  const bolasPrevRef = useRef<number[]>([]);
+  const [hundiendo, setHundiendo] = useState<{ n: number; x: number; y: number; id: number }[]>([]);
+
+  useEffect(() => {
+    for (const b of bolas) {
+      const p = posiciones[b.n];
+      if (p) ultimaPosRef.current[b.n] = { x: p.x, y: p.y };
+    }
+    const ahora = bolas.map((b) => b.n);
+    const idxTron = (v: Vector) => {
+      for (const t of TRONERAS_REL) {
+        const tx = t.x * mesa.ancho;
+        const ty = t.y * mesa.alto;
+        if (Math.hypot(v.x - tx, v.y - ty) <= mesa.radioTronera * 2.4) return { x: tx, y: ty };
+      }
+      return null;
+    };
+    for (const n of bolasPrevRef.current) {
+      if (ahora.includes(n)) continue;
+      const last = ultimaPosRef.current[n];
+      const cerca = last ? idxTron(last) : null;
+      if (cerca) {
+        const id = Date.now() + n;
+        setHundiendo((h) => [...h, { n, x: cerca.x, y: cerca.y, id }]);
+        setTimeout(() => setHundiendo((h) => h.filter((x) => x.id !== id)), 260);
+      }
+    }
+    bolasPrevRef.current = ahora;
+  }, [bolas, posiciones, mesa.ancho, mesa.alto, mesa.radioTronera]);
 
   const iniciarGolpe = (separacionInicial: number, impulso: Vector) => {
     setSeparacionOverride(separacionInicial);
@@ -175,107 +236,213 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
       runOnJS(onColocarBlanca)(x, y);
     });
 
-  // 4 esquinas + los 2 medios de banda LARGA (izquierda/derecha — la mesa es
-  // más alta que ancha) — mismo layout que `motor.ts::troneras()`, tienen
-  // que coincidir sí o sí (acá es sólo dibujo, la física vive en el motor).
-  const troneras = [
-    { x: 0, y: 0 }, { x: mesa.ancho, y: 0 },
-    { x: 0, y: mesa.alto / 2 }, { x: mesa.ancho, y: mesa.alto / 2 },
-    { x: 0, y: mesa.alto }, { x: mesa.ancho, y: mesa.alto },
-  ];
+  const troneras = TRONERAS_REL.map((t) => ({ x: t.x * mesa.ancho, y: t.y * mesa.alto }));
 
-  // Dirección de tiro + separación del taco, derivadas del arrastre en
-  // curso — mismo cálculo que ya hacía `FlechaTiro`, ahora alimenta al
-  // taco. Durante el golpe (`separacionOverride` no nulo) `arrastre` sigue
-  // con su último valor (recién se limpia al terminar la animación), así
-  // que la dirección no salta — sólo la separación, que la pisa el tween.
+  // Dirección de tiro + separación del taco + potencia (0..1), derivadas del
+  // arrastre en curso — mismo cálculo que ya hacía `FlechaTiro`, ahora
+  // alimenta al taco Y a la línea de apuntado. Durante el golpe
+  // (`separacionOverride` no nulo) `arrastre` sigue con su último valor
+  // (recién se limpia al terminar la animación), así que la dirección no
+  // salta — sólo la separación, que la pisa el tween.
   let direccionTiro: Vector | null = null;
   let separacionTiro = 0;
+  let potenciaFrac = 0;
   if (arrastre) {
     const dist = Math.sqrt(arrastre.dx ** 2 + arrastre.dy ** 2);
     if (dist >= 4) {
       direccionTiro = { x: -arrastre.dx / dist, y: -arrastre.dy / dist };
-      if (separacionOverride !== null) {
-        separacionTiro = separacionOverride;
-      } else {
-        const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
-        separacionTiro = SEPARACION_BASE + (potencia / POTENCIA_MAXIMA) * SEPARACION_MAXIMA;
-      }
+      const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
+      potenciaFrac = potencia / POTENCIA_MAXIMA;
+      separacionTiro =
+        separacionOverride !== null
+          ? separacionOverride
+          : SEPARACION_BASE + potenciaFrac * SEPARACION_MAXIMA;
     }
   }
+  // La línea sólo mientras se carga el tiro, no durante el golpe animado.
+  const mostrarLinea = direccionTiro !== null && separacionOverride === null && !bolaEnMano;
+
+  const diametro = px(mesa.radioBola) * 2;
 
   return (
-    <GestureDetector gesture={gestoColocar}>
-      <View style={[styles.mesa, { width: lado, height: alto, backgroundColor: '#1F6B3A' }]}>
-        <Svg width={lado} height={alto} style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Rect x={0} y={0} width={lado} height={alto} fill="none" stroke="#6B4226" strokeWidth={px(mesa.radioBola)} />
-          {troneras.map((t, i) => (
-            <Circle key={i} cx={px(t.x)} cy={py(t.y)} r={px(mesa.radioTronera)} fill="#0A0A0A" />
-          ))}
-        </Svg>
+    <View style={[styles.marco, { width: lado + MARCO * 2, height: alto + MARCO * 2 }]}>
+      {/* Bisel interior del marco (madera un poco más clara mordida por la
+          "banda"), decorativo. */}
+      <View style={[styles.bisel, { width: lado + 8, height: alto + 8, top: MARCO - 4, left: MARCO - 4 }]} />
 
-        {bolas
-          .filter((b) => b.n !== 0)
-          .map((b) => {
-            const pos = posiciones[b.n] ?? { x: b.x, y: b.y, angulo: 0 };
-            const diametro = px(mesa.radioBola) * 2;
-            const color = b.n === 8 ? '#141414' : COLOR_BOLA[b.n] ?? '#999999';
-            return (
+      <GestureDetector gesture={gestoColocar}>
+        <View style={[styles.felt, { width: lado, height: alto, top: MARCO, left: MARCO }]}>
+          <Svg width={lado} height={alto} style={StyleSheet.absoluteFill} pointerEvents="none">
+            {/* Troneras: boca oscura en cada esquina y en los medios de banda
+                larga. Se dibujan bajo las bolas para que una bola que pasa
+                cerca se siga viendo; al embocar, `BolaHundiendo` la hunde. */}
+            {troneras.map((tr, i) => (
+              <Circle key={i} cx={px(tr.x)} cy={py(tr.y)} r={px(mesa.radioTronera)} fill="#0A0A0A" />
+            ))}
+            {/* Línea de apuntado: desde la blanca hacia donde sale, más larga
+                cuanto más fuerte el tiro. Igual que la flecha de HueSoccer. */}
+            {mostrarLinea && direccionTiro && posBlanca
+              ? (() => {
+                  const largo = 26 + potenciaFrac * 150;
+                  const x1 = px(posBlanca.x);
+                  const y1 = py(posBlanca.y);
+                  return (
+                    <Line
+                      x1={x1}
+                      y1={y1}
+                      x2={x1 + direccionTiro.x * largo}
+                      y2={y1 + direccionTiro.y * largo}
+                      stroke={potenciaFrac >= 0.85 ? '#FF4136' : '#FFFFFF'}
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      strokeLinecap="round"
+                      opacity={0.9}
+                    />
+                  );
+                })()
+              : null}
+          </Svg>
+
+          {bolas
+            .filter((b) => b.n !== 0)
+            .map((b) => {
+              const pos = posiciones[b.n] ?? { x: b.x, y: b.y, rod: 0, dirX: 0, dirY: 0 };
+              const color = b.n === 8 ? '#141414' : COLOR_BOLA[b.n] ?? '#999999';
+              return (
+                <View
+                  key={b.n}
+                  pointerEvents="none"
+                  style={[
+                    styles.bola,
+                    { width: diametro, height: diametro, left: px(pos.x) - diametro / 2, top: py(pos.y) - diametro / 2 },
+                  ]}
+                >
+                  <BolaSkinSvg
+                    numero={b.n}
+                    esRayada={esRayada(b.n)}
+                    color={color}
+                    size={diametro}
+                    idInstancia={b.n}
+                    rod={pos.rod}
+                    dirX={pos.dirX}
+                    dirY={pos.dirY}
+                  />
+                </View>
+              );
+            })}
+
+          {posBlanca ? (
+            <GestureDetector gesture={gestoTiro}>
               <View
-                key={b.n}
-                pointerEvents="none"
                 style={[
                   styles.bola,
                   {
                     width: diametro,
                     height: diametro,
-                    left: px(pos.x) - diametro / 2,
-                    top: py(pos.y) - diametro / 2,
-                    transform: [{ rotate: `${((pos.angulo * 180) / Math.PI) % 360}deg` }],
+                    left: px(posBlanca.x) - diametro / 2,
+                    top: py(posBlanca.y) - diametro / 2,
                   },
                 ]}
               >
-                <BolaSkinSvg numero={b.n} esRayada={esRayada(b.n)} color={color} size={diametro} idInstancia={b.n} />
+                <BolaSkinSvg
+                  numero={0}
+                  esRayada={false}
+                  color="#F8F8F2"
+                  esBlanca
+                  size={diametro}
+                  idInstancia={0}
+                  rod={posBlanca.rod}
+                  dirX={posBlanca.dirX}
+                  dirY={posBlanca.dirY}
+                />
               </View>
-            );
-          })}
+            </GestureDetector>
+          ) : null}
 
-        {posBlanca ? (
-          <GestureDetector gesture={gestoTiro}>
-            <View
-              style={[
-                styles.bola,
-                {
-                  width: px(mesa.radioBola) * 2,
-                  height: px(mesa.radioBola) * 2,
-                  left: px(posBlanca.x) - px(mesa.radioBola),
-                  top: py(posBlanca.y) - px(mesa.radioBola),
-                  transform: [{ rotate: `${((posBlanca.angulo * 180) / Math.PI) % 360}deg` }],
-                },
-              ]}
-            >
-              <BolaSkinSvg numero={0} esRayada={false} color="#F8F8F2" esBlanca size={px(mesa.radioBola) * 2} idInstancia={0} />
-            </View>
-          </GestureDetector>
-        ) : null}
+          {hundiendo.map((h) => (
+            <BolaHundiendo
+              key={h.id}
+              cx={px(h.x)}
+              cy={py(h.y)}
+              diametro={diametro}
+              numero={h.n}
+              esRayada={esRayada(h.n)}
+              color={h.n === 8 ? '#141414' : COLOR_BOLA[h.n] ?? '#999999'}
+              esBlanca={h.n === 0}
+            />
+          ))}
 
-        {direccionTiro && posBlanca ? (
-          <TacoBillar
-            direccion={direccionTiro}
-            separacion={separacionTiro}
-            base={posBlanca}
-            px={px}
-            py={py}
-            lado={lado}
-            alto={alto}
-          />
-        ) : null}
-      </View>
-    </GestureDetector>
+          {direccionTiro && posBlanca ? (
+            <TacoBillar
+              direccion={direccionTiro}
+              separacion={separacionTiro}
+              base={posBlanca}
+              px={px}
+              py={py}
+              lado={lado}
+              alto={alto}
+            />
+          ) : null}
+        </View>
+      </GestureDetector>
+    </View>
+  );
+}
+
+/** La bola que acaba de embocar: se achica y se apaga hundiéndose en la
+ * tronera (~230ms) antes de desaparecer del render. Micro-animación
+ * puntual disparada a mano — no rompe la regla de nada de `entering`/
+ * `exiting` declarativos de Reanimated. */
+function BolaHundiendo({
+  cx,
+  cy,
+  diametro,
+  numero,
+  esRayada,
+  color,
+  esBlanca,
+}: {
+  cx: number;
+  cy: number;
+  diametro: number;
+  numero: number;
+  esRayada: boolean;
+  color: string;
+  esBlanca: boolean;
+}) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withTiming(1, { duration: 230 });
+  }, [t]);
+  const estilo = useAnimatedStyle(() => ({
+    opacity: 1 - t.value,
+    transform: [{ scale: 1 - 0.85 * t.value }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.bola,
+        { width: diametro, height: diametro, left: cx - diametro / 2, top: cy - diametro / 2 },
+        estilo,
+      ]}
+    >
+      <BolaSkinSvg numero={numero} esRayada={esRayada} color={color} esBlanca={esBlanca} size={diametro} idInstancia={numero} />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  mesa: { position: 'relative', alignSelf: 'center', borderRadius: 6, overflow: 'hidden' },
+  // Marco de madera: contenedor exterior. El paño va absoluto adentro.
+  marco: {
+    position: 'relative',
+    alignSelf: 'center',
+    borderRadius: 12,
+    backgroundColor: '#5A3620',
+    borderWidth: 2,
+    borderColor: '#3E2415',
+  },
+  bisel: { position: 'absolute', borderRadius: 8, backgroundColor: '#7A4A2C' },
+  felt: { position: 'absolute', borderRadius: 6, backgroundColor: '#1F6B3A', overflow: 'hidden' },
   bola: { position: 'absolute', borderRadius: 999 },
 });

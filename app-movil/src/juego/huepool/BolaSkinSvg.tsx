@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Defs, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 type Props = {
   /** Número de la bola (0 = blanca). */
@@ -18,22 +18,58 @@ type Props = {
    * gana en Android real (el bug ya se vio y se resolvió ahí primero).
    */
   idInstancia: number;
+  /** Rodadura acumulada (rad) — ver `motor.ts::Cuerpo.rod`. */
+  rod?: number;
+  /** Dirección de avance (unit) en el instante — para rodar el número/franja
+   * en la dirección correcta. */
+  dirX?: number;
+  dirY?: number;
 };
 
+/** Cuánto se desplaza la marca (número/franja) sobre la cara de la bola al
+ * rodar: dentro del radio dibujable (46 en el viewBox de 100). */
+const RECORRIDO = 30;
+
 /**
- * Bola de pool con volumen/3D — mismo patrón de gradiente ya resuelto en
- * `huesoccer/PelotaSkinSvg.tsx`/`FichaSkinSvg.tsx` (blanco brillante
- * arriba-izquierda → sombra oscura abajo-derecha, pintado como última
- * capa), antes ausente acá: las bolas eran `<Circle>` de color plano (y la
- * blanca ni siquiera SVG, un `View` liso).
+ * Bola de pool con volumen/3D + rodadura real.
  *
- * La blanca lleva además un anillo tenue fuera de centro — sin ninguna
- * marca, una esfera lisa de un solo color no deja ver el giro que le
- * agrega el motor de física (ver `motor.ts`: `angulo`/`velAngular`), y es
- * justo la bola que más se juega.
+ * El gradiente (blanco arriba-izq → sombra abajo-der, pintado como última
+ * capa) da el bulto de esfera — mismo patrón ya resuelto en
+ * `huesoccer/PelotaSkinSvg.tsx`. La luz NO rota con la bola: viene siempre
+ * del mismo lado.
+ *
+ * La RODADURA: en vez de girar la bola entera en el plano (que se veía como
+ * "gira sobre su eje" y no como una esfera que avanza), el número y la
+ * franja se proyectan sobre una esfera que rueda alrededor del eje
+ * perpendicular a `dir`. Un punto de la superficie que mira al espectador se
+ * desplaza `RECORRIDO * sin(rod)` en sentido CONTRARIO al avance (queda
+ * atrás mientras la bola rueda hacia adelante), se ve sólo si `cos(rod) > 0`
+ * (si no, está en la cara de atrás) y se achica cerca del borde
+ * (`sqrt(cos)`), de modo que "sube por el frente y se va por arriba".
  */
-export function BolaSkinSvg({ numero, esRayada, color, esBlanca, size, idInstancia }: Props) {
+export function BolaSkinSvg({
+  numero,
+  esRayada,
+  color,
+  esBlanca,
+  size,
+  idInstancia,
+  rod = 0,
+  dirX = 0,
+  dirY = 0,
+}: Props) {
   const idGrad = `bolaEsfera_${idInstancia}`;
+  const idClip = `bolaClip_${idInstancia}`;
+
+  // Proyección del punto "cara al espectador" tras rodar `rod`.
+  const c = Math.cos(rod);
+  const s = Math.sin(rod);
+  const visible = c > -0.15;
+  const esc = Math.sqrt(Math.max(0.001, Math.min(1, c)));
+  // La marca queda ATRÁS respecto del avance: -dir.
+  const mx = 50 - RECORRIDO * s * dirX;
+  const my = 50 - RECORRIDO * s * dirY;
+  const opacidadMarca = visible ? Math.max(0, Math.min(1, c * 1.2 + 0.15)) : 0;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
@@ -44,33 +80,59 @@ export function BolaSkinSvg({ numero, esRayada, color, esBlanca, size, idInstanc
           <Stop offset="78%" stopColor="#000000" stopOpacity={0.08} />
           <Stop offset="100%" stopColor="#000000" stopOpacity={0.5} />
         </RadialGradient>
+        <ClipPath id={idClip}>
+          <Circle cx={50} cy={50} r={46} />
+        </ClipPath>
       </Defs>
 
-      {esBlanca ? (
-        <>
-          <Circle cx={50} cy={50} r={46} fill="#F8F8F2" stroke="#00000030" strokeWidth={1} />
-          {/* Marca sutil, fuera de centro: sin esto el giro de la blanca no se nota. */}
-          <Circle cx={68} cy={35} r={5} fill="#00000014" />
-        </>
-      ) : (
-        <>
-          <Circle
-            cx={50}
-            cy={50}
-            r={46}
-            fill={esRayada ? '#F4F1E6' : color}
-            stroke="#00000040"
-            strokeWidth={1}
-          />
-          {esRayada ? <Rect x={4} y={32} width={92} height={36} fill={color} /> : null}
-          <Circle cx={50} cy={50} r={28} fill="#F4F1E6" />
-          <SvgText x={50} y={61} fontSize={32} fill="#1A1A1A" textAnchor="middle" fontWeight="bold">
-            {numero}
-          </SvgText>
-        </>
-      )}
+      {/* Base de la bola: color liso (o crema si es rayada, con la franja
+          aparte rodando). */}
+      <Circle
+        cx={50}
+        cy={50}
+        r={46}
+        fill={esBlanca ? '#F8F8F2' : esRayada ? '#F4F1E6' : color}
+        stroke="#00000033"
+        strokeWidth={1}
+      />
 
-      {/* Brillo/bulto encima de todo: es lo que da la sensación de esfera. */}
+      <G clipPath={`url(#${idClip})`}>
+        {esRayada ? (
+          // Franja: banda que rueda con la bola (centro desplazado por la
+          // rodadura, perpendicular al avance da lo mismo: se ve girar).
+          <Rect
+            x={-10}
+            y={my - 18}
+            width={120}
+            height={36}
+            fill={color}
+            opacity={visible ? 0.95 : 0}
+          />
+        ) : null}
+
+        {esBlanca ? (
+          // Punto tenue fuera de centro: sin una marca, una esfera lisa no
+          // deja ver que rueda.
+          <Circle cx={mx + 14} cy={my - 12} r={5 * esc} fill="#00000018" opacity={opacidadMarca} />
+        ) : (
+          <>
+            <Circle cx={mx} cy={my} r={26 * esc} fill="#F4F1E6" opacity={opacidadMarca} />
+            <SvgText
+              x={mx}
+              y={my + 11 * esc}
+              fontSize={30 * esc}
+              fill="#1A1A1A"
+              textAnchor="middle"
+              fontWeight="bold"
+              opacity={opacidadMarca}
+            >
+              {numero}
+            </SvgText>
+          </>
+        )}
+      </G>
+
+      {/* Brillo/bulto encima de todo: da la sensación de esfera y NO rota. */}
       <Circle cx={50} cy={50} r={46} fill={`url(#${idGrad})`} />
     </Svg>
   );

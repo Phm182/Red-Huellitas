@@ -37,7 +37,7 @@ function duracionDeMiTiro(trayectorias: Record<number, PuntoTrayectoria[]>): num
 
 function posicionesDeTablero(t: TableroPool): Posiciones {
   const p: Posiciones = {};
-  for (const b of t.bolas) if (b.enMesa) p[b.n] = { x: b.x, y: b.y, angulo: 0 };
+  for (const b of t.bolas) if (b.enMesa) p[b.n] = { x: b.x, y: b.y, rod: 0, dirX: 0, dirY: 0 };
   return p;
 }
 
@@ -103,9 +103,12 @@ export default function HuePoolScreen() {
           for (const nStr of Object.keys(nuevaPos)) {
             const n = Number(nStr);
             const desde = posiciones[n] ?? nuevaPos[n]!;
+            // Rodadura acumulada proporcional a la distancia recorrida, así
+            // la bola "rueda" hacia su lugar nuevo en vez de deslizar.
+            const rodLlegada = Math.hypot(nuevaPos[n]!.x - desde.x, nuevaPos[n]!.y - desde.y) / 9;
             trayectorias[n] = [
-              { pos: desde, angulo: 0 },
-              { pos: nuevaPos[n]!, angulo: 0 },
+              { pos: desde, rod: 0 },
+              { pos: nuevaPos[n]!, rod: rodLlegada },
             ];
           }
           setAnimando(true);
@@ -230,7 +233,7 @@ export default function HuePoolScreen() {
         const bolas = prev.bolas.map((b) => (b.n === 0 ? { ...b, x, y } : b));
         return { ...prev, bolas };
       });
-      setPosiciones((prev) => ({ ...prev, 0: { x, y, angulo: 0 } }));
+      setPosiciones((prev) => ({ ...prev, 0: { x, y, rod: 0, dirX: 0, dirY: 0 } }));
       hapticLeve();
     },
     [tablero]
