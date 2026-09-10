@@ -144,19 +144,26 @@ export default function TorneoLobbyScreen() {
       {error ? <Text style={{ color: colors.danger, marginTop: 10, textAlign: 'center' }}>{error}</Text> : null}
 
       {torneo.soyCreador ? (
-        <Pressable
-          disabled={accionando || inscriptos < 2}
-          onPress={iniciar}
-          style={[styles.boton, { backgroundColor: colors.primary, opacity: accionando || inscriptos < 2 ? 0.5 : 1 }]}
-        >
-          {accionando ? (
-            <ActivityIndicator size="small" color={colors.primaryText} />
-          ) : (
-            <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 15 }}>
-              {inscriptos < 2 ? t('hueplay.torneo.faltanJugadores') : t('hueplay.torneo.iniciar')}
+        <>
+          <Pressable
+            disabled={accionando || inscriptos < 2}
+            onPress={iniciar}
+            style={[styles.boton, { backgroundColor: colors.primary, opacity: accionando || inscriptos < 2 ? 0.5 : 1 }]}
+          >
+            {accionando ? (
+              <ActivityIndicator size="small" color={colors.primaryText} />
+            ) : (
+              <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 15 }}>
+                {inscriptos < 2 ? t('hueplay.torneo.faltanJugadores') : t('hueplay.torneo.iniciar')}
+              </Text>
+            )}
+          </Pressable>
+          {inscriptos < torneo.tamano ? (
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              {t('hueplay.torneo.arrancaSolo')}
             </Text>
-          )}
-        </Pressable>
+          ) : null}
+        </>
       ) : (
         <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 20, textAlign: 'center' }}>
           {t('hueplay.torneo.esperandoCreador')}

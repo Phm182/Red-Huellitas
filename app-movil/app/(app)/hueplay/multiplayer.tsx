@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
+import { CrearMultiplayerModal } from '../../../src/components/hueplay/CrearMultiplayerModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SwipeableSolapas } from '../../../src/components/ui/SwipeableSolapas';
 import { juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
@@ -168,6 +169,7 @@ export default function MultiplayerScreen() {
   const [torneos, setTorneos] = useState<HuePlayTorneosBandeja | null>(null);
   const [loading, setLoading] = useState(true);
   const [uniendose, setUniendose] = useState<number | null>(null);
+  const [crearVisible, setCrearVisible] = useState(false);
   const SOLAPAS_VALIDAS: SolapaMP[] = ['tuTurno', 'enEspera', 'abiertas', 'torneos', 'historial'];
   const [solapa, setSolapa] = useState<SolapaMP>(
     SOLAPAS_VALIDAS.includes(params.solapa as SolapaMP) ? (params.solapa as SolapaMP) : 'tuTurno'
@@ -248,7 +250,7 @@ export default function MultiplayerScreen() {
         <Pressable
           onPress={() => {
             hapticLeve();
-            router.push('/(app)/hueplay/desafios' as never);
+            setCrearVisible(true);
           }}
           style={[styles.crearBtn, { backgroundColor: colors.primary }]}
         >
@@ -343,6 +345,8 @@ export default function MultiplayerScreen() {
           />
         )}
       </SwipeableSolapas>
+
+      <CrearMultiplayerModal visible={crearVisible} onClose={() => setCrearVisible(false)} />
     </View>
   );
 }

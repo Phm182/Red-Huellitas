@@ -1195,7 +1195,15 @@
       "duelo1v1": "Duelo 1 contra 1",
       "torneos": "Torneos",
       "sinTorneos": "No estás en ningún torneo",
-      "crear": "Crear"
+      "crear": "Crear",
+      "crearTitulo": "¿Qué querés crear?",
+      "crearPartida": "Partida",
+      "crearPartidaDesc": "Retás a alguien puntual a un duelo 1 contra 1.",
+      "crearSala": "Sala",
+      "crearSalaDesc": "Un lobby con código; entra gente y arranca al llenarse.",
+      "crearTorneo": "Torneo",
+      "crearTorneoDesc": "Llave o liga con todos los que se sumen por código.",
+      "elegiJuego": "Elegí el juego"
     },
     "torneo": {
       "nuevo": "Nuevo torneo de {{juego}}",
@@ -1236,7 +1244,8 @@
       "vs": "vs",
       "jugador": "Jugador",
       "pj": "PJ",
-      "pts": "Pts"
+      "pts": "Pts",
+      "arrancaSolo": "Arranca solo al completarse el cupo."
     },
     "tuRecord": "Tu récord: {{n}}",
     "retarA": "Retar a alguien",

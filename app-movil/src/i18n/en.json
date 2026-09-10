@@ -1180,7 +1180,15 @@
       "duelo1v1": "1-on-1 duel",
       "torneos": "Tournaments",
       "sinTorneos": "You're not in any tournament",
-      "crear": "Create"
+      "crear": "Create",
+      "crearTitulo": "What do you want to create?",
+      "crearPartida": "Match",
+      "crearPartidaDesc": "Challenge one person to a 1-on-1 duel.",
+      "crearSala": "Room",
+      "crearSalaDesc": "A lobby with a code; people join and it starts when full.",
+      "crearTorneo": "Tournament",
+      "crearTorneoDesc": "Bracket or league with everyone who joins by code.",
+      "elegiJuego": "Pick the game"
     },
     "torneo": {
       "nuevo": "New {{juego}} tournament",
@@ -1221,7 +1229,8 @@
       "vs": "vs",
       "jugador": "Player",
       "pj": "P",
-      "pts": "Pts"
+      "pts": "Pts",
+      "arrancaSolo": "Starts on its own once it fills up."
     },
     "tuRecord": "Your best: {{n}}",
     "retarA": "Challenge someone",

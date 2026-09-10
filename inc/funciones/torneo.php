@@ -133,6 +133,10 @@ function rh_torneo_crear(
         );
     }
 
+    // Si el creador invitó de una a todo el cupo (ej. torneo de 4 con 3
+    // invitados), arranca sin pasar por el lobby.
+    rh_torneo_arrancar_si_lleno($conn, $torneoId);
+
     return rh_torneo_obtener($conn, $torneoId);
 }
 
@@ -174,6 +178,10 @@ function rh_torneo_unirse(mysqli $conn, int $userId, int $torneoId): array
         rh_juego_nombre($conn, $userId) . ' se sumó a tu torneo de ' . rh_juego_titulo($t['JuegoCodigo']),
         '/(app)/hueplay/torneo/' . $torneoId
     );
+
+    // Al completarse el cupo, el torneo arranca solo — no hace falta que el
+    // creador toque "Iniciar".
+    rh_torneo_arrancar_si_lleno($conn, $torneoId);
 
     return ['torneo' => rh_torneo_obtener($conn, $torneoId)];
 }
@@ -237,9 +245,8 @@ function rh_torneo_generar_duelo(mysqli $conn, array $torneo, array $partida): v
 }
 
 /**
- * Arranca el torneo: sólo el creador, con al menos 2 inscriptos. Baraja y
- * asigna seeds; según el formato arma la ronda 1 (eliminación) o todo el
- * fixture (liga) y dispara los duelos de la primera ronda.
+ * Arranca el torneo desde el botón del creador: sólo el creador, con al menos
+ * 2 inscriptos. El armado real lo hace `rh_torneo_iniciar_efectivo()`.
  * @return array{error?:string, torneo?:array}
  */
 function rh_torneo_iniciar(mysqli $conn, int $torneoId, int $userId): array
@@ -254,12 +261,26 @@ function rh_torneo_iniciar(mysqli $conn, int $torneoId, int $userId): array
     if ($t['Estado'] !== 'inscripcion') {
         return ['error' => 'El torneo ya arrancó o se cerró'];
     }
-
-    $participantes = rh_torneo_participantes($conn, $torneoId);
-    $n = count($participantes);
-    if ($n < 2) {
+    if (count(rh_torneo_participantes($conn, $torneoId)) < 2) {
         return ['error' => 'Hacen falta al menos 2 jugadores'];
     }
+
+    rh_torneo_iniciar_efectivo($conn, $t);
+
+    return ['torneo' => rh_torneo_obtener($conn, $torneoId)];
+}
+
+/**
+ * El armado real: baraja los inscriptos, asigna seeds y arma la ronda 1
+ * (eliminación) o el fixture entero (liga), disparando los duelos de la
+ * primera ronda. Sin chequeos de permiso ni de cupo — los ponen los
+ * llamadores (`rh_torneo_iniciar` para el botón del creador,
+ * `rh_torneo_arrancar_si_lleno` para el arranque automático).
+ */
+function rh_torneo_iniciar_efectivo(mysqli $conn, array $t): void
+{
+    $torneoId = (int) $t['TorneoId'];
+    $participantes = rh_torneo_participantes($conn, $torneoId);
 
     shuffle($participantes);
     $ids = [];
@@ -285,8 +306,25 @@ function rh_torneo_iniciar(mysqli $conn, int $torneoId, int $userId): array
     } else {
         rh_torneo_armar_eliminacion($conn, $t, $ids);
     }
+}
 
-    return ['torneo' => rh_torneo_obtener($conn, $torneoId)];
+/**
+ * Si el torneo está en inscripción y se completó el cupo (`Tamano`), lo
+ * arranca solo. Se llama después de sumar cada participante — al crear con
+ * invitados, al unirse por código o desde el visualizador de torneos
+ * abiertos. @return bool true si lo arrancó.
+ */
+function rh_torneo_arrancar_si_lleno(mysqli $conn, int $torneoId): bool
+{
+    $t = rh_torneo_obtener($conn, $torneoId);
+    if (!$t || $t['Estado'] !== 'inscripcion') {
+        return false;
+    }
+    if (count(rh_torneo_participantes($conn, $torneoId)) < (int) $t['Tamano']) {
+        return false;
+    }
+    rh_torneo_iniciar_efectivo($conn, $t);
+    return true;
 }
 
 /** Eliminación: la llave tiene `bracket` = menor potencia de 2 que aloja a
