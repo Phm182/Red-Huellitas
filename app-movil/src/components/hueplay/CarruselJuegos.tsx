@@ -2,7 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDecay, withSpring } from 'react-native-reanimated';
 import { radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -26,17 +26,20 @@ type Props = {
   alto?: number;
 };
 
-const UMBRAL = 0.28;
-/** A partir de qué velocidad (px/s) un flick empieza a saltar más de un juego de una. */
-const VELOCIDAD_POR_SALTO = 900;
-
 /**
  * Carrusel centrado de a un juego por vez, para el modo "Lista dinámica" de
- * la home de HuePlay. Mismo mecanismo de gesto que el de las solapas de
- * Huelligram (`app/(app)/(tabs)/index.tsx`: `Gesture.Pan` + `withSpring`,
- * con "goma" en las puntas) — extendido para saltar VARIOS juegos de una
- * con un flick fuerte, algo que ese carrusel no necesitaba.
+ * la home de HuePlay.
+ *
+ * Gira como una RULETA: el dedo lo mueve libre, y al soltar sigue de largo
+ * con la velocidad del envión (`withDecay`), frenando solo — un empujón
+ * flojo pasa uno o dos juegos, uno fuerte se lleva muchos hasta detenerse.
+ * Cuando la inercia para, encaja en el juego más cercano (`withSpring`
+ * corto). Antes computaba un índice destino fijo y saltaba ahí de una, y
+ * como el umbral era alto casi siempre caía en el mismo (queja: "hace como
+ * que se mueve, siempre es 1 y repite la misma opción").
  */
+/** Cuánto frena la inercia por frame — más cerca de 1, más "patina". */
+const DECELERACION = 0.9955;
 /** La tarjeta ocupa esta fracción del ancho disponible — de punta a punta
  * quedaba desproporcionada (un panel enorme para un ícono y dos líneas de
  * texto); así queda un tamaño de tarjeta prolijo, con margen de sobra para
@@ -95,52 +98,42 @@ export function CarruselJuegos({ juegos, favoritos, modosPorJuego, onFavoritoCam
     }
   }, [juegos.length, anchoSV, offset]);
 
-  const alCambiarPorGesto = useCallback((destino: number) => {
-    hapticLeve();
-    irA(destino, false);
-  }, [irA]);
+  const fijarIndice = useCallback((destino: number) => {
+    const clamped = Math.max(0, Math.min(juegos.length - 1, destino));
+    if (clamped !== indiceRef.current) hapticLeve();
+    indiceRef.current = clamped;
+    setIndice(clamped);
+  }, [juegos.length]);
 
   const gesto = Gesture.Pan()
-    .activeOffsetX([-24, 24])
-    .failOffsetY([-10, 10])
+    .activeOffsetX([-14, 14])
+    .failOffsetY([-26, 26])
     .onUpdate((e) => {
-      const i = indiceRef.current;
       const w = anchoSV.value;
-      const base = -i * w;
-      const next = base + e.translationX;
       const min = -(juegos.length - 1) * w;
-      if (next > 0) {
-        arrastre.value = next * 0.35 - base;
-      } else if (next < min) {
-        arrastre.value = min + (next - min) * 0.35 - base;
-      } else {
-        arrastre.value = e.translationX;
-      }
+      const bruto = offset.value + e.translationX;
+      // Goma en las puntas: si el dedo se pasa del primer/último, el track
+      // sólo lo sigue un tercio.
+      if (bruto > 0) arrastre.value = e.translationX - bruto * 0.66;
+      else if (bruto < min) arrastre.value = e.translationX - (bruto - min) * 0.66;
+      else arrastre.value = e.translationX;
     })
     .onEnd((e) => {
-      const i = indiceRef.current;
       const w = anchoSV.value;
-      const recorrido = e.translationX / w;
-      // Un flick fuerte salta varios juegos de una — "como una rueda". Un
-      // swipe normal (sin mucha velocidad) sigue moviendo de a uno, igual
-      // que el carrusel de Huelligram del que sale este patrón.
-      const saltos = Math.max(1, Math.round(Math.abs(e.velocityX) / VELOCIDAD_POR_SALTO));
-      let destino = i;
-      if (saltos > 1) {
-        destino = e.velocityX < 0 ? i + saltos : i - saltos;
-      } else if (recorrido < -UMBRAL || e.velocityX < -700) {
-        destino = i + 1;
-      } else if (recorrido > UMBRAL || e.velocityX > 700) {
-        destino = i - 1;
-      }
-      destino = Math.max(0, Math.min(juegos.length - 1, destino));
-      const visual = -i * w + arrastre.value;
+      const min = -(juegos.length - 1) * w;
+      // Plegar el arrastre en el offset y soltar la inercia desde ahí.
+      offset.value = offset.value + arrastre.value;
       arrastre.value = 0;
-      offset.value = visual;
-      offset.value = withSpring(-destino * w, { damping: 22, stiffness: 220, mass: 0.9 });
-      if (destino !== i) {
-        runOnJS(alCambiarPorGesto)(destino);
-      }
+      offset.value = withDecay(
+        { velocity: e.velocityX, deceleration: DECELERACION, clamp: [min, 0], rubberBandEffect: true, rubberBandFactor: 0.6 },
+        () => {
+          // La rueda frenó: encajar en el juego más cercano.
+          'worklet';
+          const cercano = Math.round(offset.value / w) * w;
+          offset.value = withSpring(cercano, { damping: 20, stiffness: 200, mass: 0.7 });
+          runOnJS(fijarIndice)(Math.round(-cercano / w));
+        }
+      );
     });
 
   const estiloTrack = useAnimatedStyle(() => ({

@@ -1293,7 +1293,10 @@
       "comoSeJuega": "Eat every dot in the maze without a ghost catching you. The 4 big dots in the corners turn them blue for a few seconds: while that lasts, you can eat them instead.",
       "modoAsustado": "Eat them!",
       "laberintoLimpio": "Maze cleared!",
-      "seAcabaron": "Out of lives"
+      "seAcabaron": "Out of lives",
+      "mapa": "Map",
+      "mapaClasico": "Classic",
+      "mapaAleatorio": "Random"
     },
     "sala": {
       "cuantosJugadores": "How many players?",

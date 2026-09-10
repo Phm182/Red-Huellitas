@@ -3,13 +3,10 @@
  * HuePlay en tiempo real (todos los demás son por turnos o cliente con
  * semilla pero sin loop en vivo, ver `src/juego/huematch/motor.ts` etc).
  *
- * Laberinto FIJO (no procedural, por pedido del plan) — se generó una única
- * vez con un script aparte (laberinto perfecto + unos loops extra + espejado
- * izquierda/derecha + verificación de que todo tile transitable se alcanza
- * desde el spawn) y quedó pegado acá como texto: es más chico que el
- * 28x31 clásico de arcade (17x21) para poder garantizar que no tiene
- * callejones rotos ni typos de tipeo a mano, pero mismo lenguaje (túnel
- * lateral, casa de fantasmas al centro, power-pellets en las 4 esquinas).
+ * El laberinto se pasa como parámetro (`string[]`, ver `laberintos.ts` para
+ * el formato y las opciones — clásico de arcade 28x31, o uno ALEATORIO que
+ * se genera solo). El motor no sabe cuál es: sólo lo parsea y corre la
+ * física encima.
  *
  * Movimiento tipo arcade clásico: cada entidad (Pac-Man o fantasma) vive en
  * un tile con una dirección y un "progreso" (0..1) hacia el próximo tile en
@@ -19,6 +16,8 @@
  * actual) es SIEMPRE instantánea, sin esperar al centro del tile — es lo que
  * hace sentir "arcade" en vez de "en rieles".
  */
+
+import { LABERINTO_CLASICO } from './laberintos';
 
 export type Direccion = 'arriba' | 'abajo' | 'izquierda' | 'derecha';
 export type PerfilFantasma = 'perseguidor' | 'emboscador' | 'patrulla';
@@ -37,38 +36,12 @@ export const OPUESTA: Record<Direccion, Direccion> = {
   derecha: 'izquierda',
 };
 
-/**
- * Laberinto fijo — ver comentario de cabecera. `#`=pared, `.`=punto,
- * `o`=power-pellet, ` `=camino sin punto (casa de fantasmas y su puerta),
- * `P`=spawn de Pac-Man. Fila del medio (índice 10) abierta en ambos bordes:
- * es el túnel lateral.
- */
-const MAZE: string[] = [
-  '#################',
-  '#.#.....#.....#.#',
-  '#o###.#.#.#.###o#',
-  '#...#.#.#.#.#...#',
-  '###.#.#.#.#.#.###',
-  '#.#.....#.....#.#',
-  '#.#.###.#.###.#.#',
-  '#....##  ###....#',
-  '#.####     ####.#',
-  '#...##     ##...#',
-  '..#.##     ##.#..',
-  '#.#..#     #..#.#',
-  '#.#.#########.#.#',
-  '#...#...#...#...#',
-  '#.#.###P#.###.#.#',
-  '#.....#.#.#.....#',
-  '#.###.#.#.#.###.#',
-  '#.o.....#.....o.#',
-  '###.#########.###',
-  '#.......#.......#',
-  '#################',
-];
-
-export const ANCHO = MAZE[0]!.length;
-export const ALTO = MAZE.length;
+/** Dimensiones del laberinto clásico — sólo se usan como default para el
+ * cálculo de tamaño de tile antes de que exista una partida. Las dimensiones
+ * REALES de la partida en curso viven en `estado.ancho`/`estado.alto`
+ * (pueden ser otras si se eligió el laberinto aleatorio). */
+export const ANCHO = LABERINTO_CLASICO[0]!.length;
+export const ALTO = LABERINTO_CLASICO.length;
 
 export const VEL_PACMAN = 6.2;
 export const VEL_FANTASMA_NORMAL = 5.2;
@@ -161,42 +134,49 @@ function tileInteriorMasCercano(interior: { x: number; y: number }[], x: number,
   return mejor;
 }
 
-function parsearLaberinto() {
+function parsearLaberinto(maze: string[]) {
+  const alto = maze.length;
+  const ancho = maze[0]!.length;
   const paredes: boolean[][] = [];
   const puntos = new Set<string>();
   const pellets = new Set<string>();
-  const interior: { x: number; y: number }[] = [];
-  let spawnPacman = { x: 0, y: 0 };
+  /** Tiles marcados `G`: interior de la casa de fantasmas (de dónde salen y
+   * a dónde vuelven al ser comidos). Si el laberinto no marca ninguno se cae
+   * a los ` ` (túnel/foso incluidos, menos preciso pero funciona). */
+  const casaTiles: { x: number; y: number }[] = [];
+  const espacios: { x: number; y: number }[] = [];
+  let spawnPacman = { x: 1, y: 1 };
 
-  for (let y = 0; y < ALTO; y++) {
+  for (let y = 0; y < alto; y++) {
     const fila: boolean[] = [];
-    for (let x = 0; x < ANCHO; x++) {
-      const c = MAZE[y]![x]!;
+    for (let x = 0; x < ancho; x++) {
+      const c = maze[y]![x] ?? '#';
       fila.push(c === '#');
       if (c === '.') puntos.add(clave(x, y));
       else if (c === 'o') pellets.add(clave(x, y));
       else if (c === 'P') spawnPacman = { x, y };
-      else if (c === ' ') interior.push({ x, y });
+      else if (c === 'G') casaTiles.push({ x, y });
+      else if (c === ' ') espacios.push({ x, y });
     }
     paredes.push(fila);
   }
 
-  const cxProm = interior.reduce((s, p) => s + p.x, 0) / interior.length;
-  const cyProm = interior.reduce((s, p) => s + p.y, 0) / interior.length;
-  const casaFantasmas = tileInteriorMasCercano(interior, cxProm, cyProm);
+  const casa = casaTiles.length > 0 ? casaTiles : espacios;
+  const cxProm = casa.reduce((s, p) => s + p.x, 0) / casa.length;
+  const cyProm = casa.reduce((s, p) => s + p.y, 0) / casa.length;
+  const casaFantasmas = tileInteriorMasCercano(casa, cxProm, cyProm);
 
-  // 3 lugares de arranque, uno al lado del otro dentro de la casa — si por
-  // algún cambio futuro del laberinto el vecino exacto no fuera parte del
-  // interior, cae de vuelta al centro (nunca explota).
-  const vecino = (dx: number) => interior.find((p) => p.x === casaFantasmas.x + dx && p.y === casaFantasmas.y) ?? casaFantasmas;
+  // 3 lugares de arranque, uno al lado del otro dentro de la casa — si el
+  // vecino exacto no fuera parte de la casa, cae de vuelta al centro.
+  const vecino = (dx: number) => casa.find((p) => p.x === casaFantasmas.x + dx && p.y === casaFantasmas.y) ?? casaFantasmas;
   const spawnsFantasmas = [vecino(-1), casaFantasmas, vecino(1)];
 
   // Esquina fija del perfil 'patrulla': el punto transitable más cercano a
   // la esquina superior-izquierda real del laberinto.
   let esquinaPatrulla = { x: 1, y: 1 };
   let mejorD = Infinity;
-  for (let y = 0; y < ALTO; y++) {
-    for (let x = 0; x < ANCHO; x++) {
+  for (let y = 0; y < alto; y++) {
+    for (let x = 0; x < ancho; x++) {
       if (paredes[y]![x]) continue;
       const d = x * x + y * y;
       if (d < mejorD) {
@@ -206,15 +186,16 @@ function parsearLaberinto() {
     }
   }
 
-  return { paredes, puntos: puntos, pellets, spawnPacman, casaFantasmas, spawnsFantasmas, esquinaPatrulla };
+  return { ancho, alto, paredes, puntos, pellets, spawnPacman, casaFantasmas, spawnsFantasmas, esquinaPatrulla };
 }
 
 /** Los puntos/pellets restantes son ESTADO de la partida (se comen), así que
- * cada `crearEstadoInicial()` parte de una copia fresca del layout fijo —
- * `parsearLaberinto()` es barato (357 tiles) y se puede llamar en cada
- * partida nueva sin problema. */
-export function crearEstadoInicial(): EstadoJuego {
-  const l = parsearLaberinto();
+ * cada `crearEstadoInicial()` parte de una copia fresca del layout —
+ * `parsearLaberinto()` es barato y se puede llamar en cada partida nueva. El
+ * `maze` viene de `laberintos.ts` (clásico, o uno aleatorio distinto cada
+ * vez). */
+export function crearEstadoInicial(maze: string[] = LABERINTO_CLASICO): EstadoJuego {
+  const l = parsearLaberinto(maze);
   const colores: Record<PerfilFantasma, string> = {
     perseguidor: '#E8362C',
     emboscador: '#F2A0D0',
@@ -224,8 +205,8 @@ export function crearEstadoInicial(): EstadoJuego {
 
   return {
     paredes: l.paredes,
-    ancho: ANCHO,
-    alto: ALTO,
+    ancho: l.ancho,
+    alto: l.alto,
     puntos: l.puntos,
     pellets: l.pellets,
     casaFantasmas: l.casaFantasmas,

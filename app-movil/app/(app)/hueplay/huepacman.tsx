@@ -9,7 +9,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { DPad } from '../../../src/juego/huepacman/DPad';
+import { JoystickPacman } from '../../../src/juego/huepacman/JoystickPacman';
 import { calcularDireccionFantasma } from '../../../src/juego/huepacman/fantasmas';
+import { LABERINTOS, LaberintoId, obtenerLaberinto } from '../../../src/juego/huepacman/laberintos';
 import { ANCHO, ALTO, Direccion, EstadoFantasma, EstadoJuego, PerfilFantasma, crearEstadoInicial, actualizar } from '../../../src/juego/huepacman/motor';
 import { TableroPacman } from '../../../src/juego/huepacman/TableroPacman';
 import { HuePlayProgreso } from '../../../src/types/hueplay';
@@ -83,6 +85,11 @@ export default function HuePacManScreen() {
   const insets = useSafeAreaInsets();
 
   const [fase, setFase] = useState<Fase>('listo');
+  const [laberintoId, setLaberintoId] = useState<LaberintoId>('clasico');
+  // Dimensiones del laberinto de la partida en curso — el clásico y el
+  // aleatorio no miden lo mismo, y el tamaño de tile / del tablero se calcula
+  // con esto. Arranca en las del clásico y se actualiza en `arrancar()`.
+  const [mazeDims, setMazeDims] = useState({ ancho: ANCHO, alto: ALTO });
   const [posiciones, setPosiciones] = useState<PosicionesRender | null>(null);
   const [puntosVisibles, setPuntosVisibles] = useState<Set<string>>(new Set());
   const [pelletsVisibles, setPelletsVisibles] = useState<Set<string>>(new Set());
@@ -112,10 +119,14 @@ export default function HuePacManScreen() {
   // de tocar). Mismo criterio que ya usa `huepool.tsx` (`alturaBarraInferior`).
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const ALTURA_HUD = 64;
-  const ALTURA_DPAD = 136;
-  const altoParaMaze = height - alturaBarraInferior - ALTURA_HUD - ALTURA_DPAD - 16;
-  const tileSize = Math.floor(Math.min(width - 16, altoParaMaze) / ANCHO);
-  const lado = tileSize * ANCHO;
+  const ALTURA_CONTROLES = 150;
+  const altoParaMaze = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 16;
+  // El tile lo limita el ancho O el alto disponible, el que apriete más —
+  // los laberintos no son todos del mismo tamaño (clásico 28x31, aleatorio
+  // 21x27), así que no alcanza con dividir por el ancho.
+  const tilePorAncho = Math.floor((width - 16) / mazeDims.ancho);
+  const tilePorAlto = Math.floor(altoParaMaze / mazeDims.alto);
+  const tileSize = Math.max(4, Math.min(tilePorAncho, tilePorAlto));
 
   const terminar = useCallback(async () => {
     if (terminadoLlamadoRef.current) return;
@@ -183,8 +194,10 @@ export default function HuePacManScreen() {
 
   const arrancar = useCallback(() => {
     hapticLeve();
-    const estado = crearEstadoInicial();
+    // 'aleatorio' arma un laberinto nuevo cada vez que se llama.
+    const estado = crearEstadoInicial(obtenerLaberinto(laberintoId));
     estadoRef.current = estado;
+    setMazeDims({ ancho: estado.ancho, alto: estado.alto });
     terminadoLlamadoRef.current = false;
     ganoRef.current = false;
     ultimoTsRef.current = 0;
@@ -196,7 +209,7 @@ export default function HuePacManScreen() {
     setError(null);
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
-  }, [loop]);
+  }, [loop, laberintoId]);
 
   const pedirDireccion = useCallback((dir: Direccion) => {
     if (estadoRef.current) estadoRef.current.pacman.dirDeseada = dir;
@@ -224,6 +237,30 @@ export default function HuePacManScreen() {
         </View>
         <Text style={[styles.titulo, { color: colors.text }]}>{t('hueplay.pacman.titulo')}</Text>
         <Text style={[styles.bajada, { color: colors.textMuted }]}>{t('hueplay.pacman.comoSeJuega')}</Text>
+
+        <Text style={[styles.pickerLabel, { color: colors.textMuted }]}>{t('hueplay.pacman.mapa')}</Text>
+        <View style={styles.pickerFila}>
+          {LABERINTOS.map((l) => {
+            const activo = l.id === laberintoId;
+            return (
+              <Pressable
+                key={l.id}
+                onPress={() => {
+                  hapticLeve();
+                  setLaberintoId(l.id);
+                }}
+                style={[
+                  styles.chip,
+                  { borderColor: activo ? colors.primary : colors.border, backgroundColor: activo ? colors.primarySoft : 'transparent' },
+                ]}
+              >
+                <Text style={{ color: activo ? colors.primary : colors.textMuted, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                  {l.id === 'clasico' ? t('hueplay.pacman.mapaClasico') : t('hueplay.pacman.mapaAleatorio')}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <Pressable onPress={arrancar} style={[styles.boton, { backgroundColor: colors.primary }]}>
           <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.empezar')}</Text>
@@ -309,8 +346,8 @@ export default function HuePacManScreen() {
           {estado && posiciones ? (
             <TableroPacman
               paredes={estado.paredes}
-              ancho={ANCHO}
-              alto={ALTO}
+              ancho={estado.ancho}
+              alto={estado.alto}
               puntos={puntosVisibles}
               pellets={pelletsVisibles}
               pacman={posiciones.pacman}
@@ -321,15 +358,18 @@ export default function HuePacManScreen() {
         </View>
       </GestureDetector>
 
-      {/* Corrido a la izquierda a propósito (no centrado): el "dock" flotante
-          de la app (chat/mascotas/+ y el botón circular de Map) vive pegado
-          al centro-derecha de esta misma franja inferior — con el D-pad
-          centrado, su botón "abajo" quedaba tapado detrás del botón de Map
-          (bug real, reportado en el celular: "el de para ir hacia abajo se
-          mete detras del boton del planeta inferior"). Corriendo TODO el
-          control al costado izquierdo se saca del paso sin depender de
-          calcular cuánto ocupa ese dock. */}
-      <View style={styles.dpadWrap}>
+      {/* Joystick a la izquierda (arrastre continuo, sin levantar el dedo) +
+          D-pad chico a la derecha (fallback accesible / toques puntuales).
+          Los dos alimentan el mismo `pedirDireccion`. Corrido del centro
+          para no quedar debajo del "dock" flotante de la app (botón de Map
+          etc.), bug ya visto en el celular. */}
+      <View style={styles.controles}>
+        <JoystickPacman
+          onDireccion={pedirDireccion}
+          color={colors.primary}
+          colorFondo={colors.primarySoft}
+          colorPomo={colors.primary}
+        />
         <DPad onDireccion={pedirDireccion} color={colors.primary} colorFondo={colors.primarySoft} />
       </View>
     </View>
@@ -356,5 +396,15 @@ const styles = StyleSheet.create({
   vidas: { flexDirection: 'row', gap: 4, alignItems: 'center', paddingTop: 6 },
   pillAsustado: { borderRadius: radii.pill, paddingVertical: 4, paddingHorizontal: 12, marginBottom: 4 },
   tableroWrap: { alignItems: 'center', justifyContent: 'center' },
-  dpadWrap: { marginTop: 4, alignSelf: 'flex-start', marginLeft: 20 },
+  controles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    paddingLeft: 12,
+  },
+  pickerLabel: { fontSize: 11, textTransform: 'uppercase', marginTop: 22, marginBottom: 8, fontFamily: fonts.bodySemi },
+  pickerFila: { flexDirection: 'row', gap: 10 },
+  chip: { borderWidth: 1.5, borderRadius: radii.pill, paddingVertical: 9, paddingHorizontal: 18 },
 });

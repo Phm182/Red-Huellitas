@@ -1310,7 +1310,10 @@
       "comoSeJuega": "Comé todos los puntos del laberinto sin que te agarre ningún fantasma. Las 4 bolitas grandes de las esquinas los ponen azules por unos segundos: mientras dure, podés comerlos vos a ellos.",
       "modoAsustado": "¡Comételos!",
       "laberintoLimpio": "¡Laberinto limpio!",
-      "seAcabaron": "Se acabaron las vidas"
+      "seAcabaron": "Se acabaron las vidas",
+      "mapa": "Mapa",
+      "mapaClasico": "Clásico",
+      "mapaAleatorio": "Aleatorio"
     },
     "sala": {
       "cuantosJugadores": "¿Cuántos jugadores?",
