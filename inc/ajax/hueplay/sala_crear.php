@@ -3,6 +3,10 @@
  * Arma una sala de hasta 4 jugadores (por ahora sólo HueLudo). Quien crea
  * queda adentro ya aceptado; a cada invitado puntual se le crea un asiento
  * 'invitado' y se le avisa — el resto se puede sumar después con el código.
+ *
+ * Por default la sala es PÚBLICA: aparece en el visualizador de salas
+ * abiertas y cualquiera con cupo libre se suma sin código. Se manda
+ * `esPublica` = '0' para armarla privada.
  */
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
@@ -24,9 +28,6 @@ if ($maxJugadores < 2 || $maxJugadores > 4) {
 
 $completarConIA = !empty($_POST['completarConIA']);
 
-// Pública por default: aparece en el visualizador de salas abiertas y
-// cualquiera con cupo libre se suma sin código. Se manda 'esPublica' = '0'
-// para armarla privada (sólo por invitación / código).
 $esPublica = !isset($_POST['esPublica']) || $_POST['esPublica'] === '1' || $_POST['esPublica'] === 1 || $_POST['esPublica'] === true;
 
 $politicaAbandono = trim($_POST['politicaAbandono'] ?? 'espera');
@@ -61,9 +62,22 @@ $sala = rh_sala_crear(
     $completarConIA,
     $politicaAbandono,
     $plazoTurnoMinutos,
-    $invitadosUserIds,
-    $esPublica
+    $invitadosUserIds
 );
 
+// `EsPublica` (columna nueva, ver sql/067) tiene default 1 — sólo se toca si
+// quien arma la marcó privada. Va como UPDATE aparte para no cambiar la
+// firma de `rh_sala_crear()`.
+if (!$esPublica) {
+    $salaId = (int) $sala['SalaId'];
+    $stmt = $conn->prepare('UPDATE JuegoSala SET EsPublica = 0 WHERE SalaId = ?');
+    $stmt->bind_param('i', $salaId);
+    $stmt->execute();
+    $stmt->close();
+    $sala['EsPublica'] = 0;
+}
+
 $jugadores = rh_sala_jugadores($conn, (int) $sala['SalaId']);
-json_success(['sala' => rh_sala_serializar($conn, $sala, $jugadores, $userId)]);
+$item = rh_sala_serializar($conn, $sala, $jugadores, $userId);
+$item['esPublica'] = (bool) ($sala['EsPublica'] ?? 1);
+json_success(['sala' => $item]);

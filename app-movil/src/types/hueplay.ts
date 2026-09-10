@@ -394,10 +394,11 @@ export interface HuePlaySala {
   politicaAbandono: PoliticaAbandonoSala;
   plazoTurnoMinutos: number;
   codigoInvitacion: string;
-  /** Aparece en el visualizador de salas abiertas y cualquiera con cupo se suma sin código. */
-  esPublica: boolean;
-  /** Asientos que todavía se pueden ocupar (para el visualizador de salas abiertas). */
-  cuposLibres: number;
+  /** Sólo lo mandan los endpoints de salas abiertas (`sala_publicas.php`,
+   * `sala_unirse_publica.php`, `sala_crear.php`); en la bandeja normal viene undefined. */
+  esPublica?: boolean;
+  /** Asientos libres — sólo lo manda `sala_publicas.php`. */
+  cuposLibres?: number;
   estado: EstadoSala;
   /** JSON crudo (Ludo) o null antes de arrancar. */
   tablero: string | null;

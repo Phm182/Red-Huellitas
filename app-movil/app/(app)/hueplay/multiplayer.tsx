@@ -129,7 +129,11 @@ function salaPublicaAFila(s: HuePlaySala, t: TFunction, unirse: (salaId: number)
     key: `sp-${s.salaId}`,
     juegoCodigo: s.juegoCodigo,
     texto: juego?.titulo ?? s.juegoCodigo,
-    subtexto: t('hueplay.multiplayer.salaAbiertaInfo', { dentro, max: s.maxJugadores, cupos: s.cuposLibres }),
+    subtexto: t('hueplay.multiplayer.salaAbiertaInfo', {
+      dentro,
+      max: s.maxJugadores,
+      cupos: s.cuposLibres ?? Math.max(0, s.maxJugadores - dentro),
+    }),
     avatarPath: s.jugadores.find((j) => j.userId === s.creadorUserId)?.avatarPath ?? null,
     badge: null,
     onPress: () => unirse(s.salaId),

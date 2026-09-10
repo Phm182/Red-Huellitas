@@ -4,6 +4,9 @@
  * armándose y tienen al menos un asiento libre, para sumarse sin código.
  *
  * Filtra las propias (ya estás adentro) y, opcional, por `juegoCodigo`.
+ *
+ * `esPublica` y `cuposLibres` se agregan acá (no en `rh_sala_serializar()`)
+ * para no tocar `salas.php`.
  */
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
@@ -42,7 +45,14 @@ $stmt->close();
 $items = [];
 foreach ($salas as $sala) {
     $jugadores = rh_sala_jugadores($conn, (int) $sala['SalaId']);
-    $items[] = rh_sala_serializar($conn, $sala, $jugadores, $userId);
+    $item = rh_sala_serializar($conn, $sala, $jugadores, $userId);
+    $ocupados = count(array_filter(
+        $jugadores,
+        fn ($j) => in_array($j['Estado'], ['invitado', 'aceptado'], true)
+    ));
+    $item['esPublica'] = true;
+    $item['cuposLibres'] = max(0, (int) $sala['MaxJugadores'] - $ocupados);
+    $items[] = $item;
 }
 
 json_success(['salas' => $items]);
