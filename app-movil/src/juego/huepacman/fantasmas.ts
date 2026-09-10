@@ -100,6 +100,22 @@ function direccionAlAzar(paredes: boolean[][], ancho: number, alto: number, x: n
   return candidatos[Math.floor(Math.random() * candidatos.length)]!.dir;
 }
 
+/**
+ * ¿El tile al que apunta `dir` desde `(x,y)` está ocupado por OTRO fantasma
+ * en modo normal? Con el wrap horizontal del túnel. Barato: sólo se llama
+ * al llegar a un tile.
+ */
+function tileConOtroFantasma(estado: EstadoJuego, self: FantasmaEstado, x: number, y: number, dir: Direccion): boolean {
+  const d = DIRS[dir];
+  let nx = x + d.dx;
+  const ny = y + d.dy;
+  if (nx < 0) nx = estado.ancho - 1;
+  else if (nx >= estado.ancho) nx = 0;
+  return estado.fantasmas.some(
+    (g) => g !== self && g.estado === 'normal' && g.encerradoRestante <= 0 && g.tileX === nx && g.tileY === ny
+  );
+}
+
 /** La `CalculadoraDireccion` que `motor.ts::actualizar` recibe como
  * parámetro — decide la próxima dirección de UN fantasma, según su perfil y
  * estado actual (normal = persigue/patrulla según su perfil, asustado =
@@ -113,5 +129,18 @@ export function calcularDireccionFantasma(f: FantasmaEstado, estado: EstadoJuego
     return direccionAlAzar(estado.paredes, estado.ancho, estado.alto, f.tileX, f.tileY, f.dir);
   }
   const objetivo = objetivoDe(f.id, { x: f.tileX, y: f.tileY }, estado);
-  return bfsPrimerPaso(estado.paredes, estado.ancho, estado.alto, { x: f.tileX, y: f.tileY }, objetivo, f.dir);
+  const dir = bfsPrimerPaso(estado.paredes, estado.ancho, estado.alto, { x: f.tileX, y: f.tileY }, objetivo, f.dir);
+
+  // Separación suave: los fantasmas de arcade se atraviesan, pero si 2-3
+  // quedan recorriendo el MISMO camino se ven como uno solo. Si el paso que
+  // eligió el BFS pisa a otro fantasma y hay una alternativa válida
+  // (sin dar media vuelta), tomar la que más acerca al objetivo.
+  if (dir && tileConOtroFantasma(estado, f, f.tileX, f.tileY, dir)) {
+    const prohibida = f.dir ? OPUESTA[f.dir] : null;
+    const alt = vecinosValidos(estado.paredes, estado.ancho, estado.alto, f.tileX, f.tileY)
+      .filter((v) => v.dir !== prohibida && v.dir !== dir && !tileConOtroFantasma(estado, f, f.tileX, f.tileY, v.dir))
+      .sort((a, b) => Math.hypot(a.x - objetivo.x, a.y - objetivo.y) - Math.hypot(b.x - objetivo.x, b.y - objetivo.y));
+    if (alt.length > 0) return alt[0]!.dir;
+  }
+  return dir;
 }

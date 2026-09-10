@@ -66,7 +66,7 @@ function dyDir(d: Direccion): number {
  * de `requestAnimationFrame`. Sólo se reflejan a `useState` (y por lo tanto
  * disparan un re-render) dos cosas separadas, a propósito:
  *
- * 1. `posiciones` — Pac-Man y los 3 fantasmas, cada cuadro (~60/seg): son
+ * 1. `posiciones` — Pac-Man y los 4 fantasmas, cada cuadro (~60/seg): son
  *    apenas 4 objetos chicos, y sólo mueven un puñado de `View`/`Svg`
  *    (`TableroPacman`), así que redibujarlos todo el tiempo es barato.
  * 2. `puntosVisibles`/`pelletsVisibles` — recién cuando de verdad se comió

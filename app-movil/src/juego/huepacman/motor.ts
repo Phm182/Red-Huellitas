@@ -20,7 +20,7 @@
 import { LABERINTO_CLASICO } from './laberintos';
 
 export type Direccion = 'arriba' | 'abajo' | 'izquierda' | 'derecha';
-export type PerfilFantasma = 'perseguidor' | 'emboscador' | 'patrulla';
+export type PerfilFantasma = 'perseguidor' | 'emboscador' | 'patrulla' | 'flanqueador';
 export type EstadoFantasma = 'normal' | 'asustado' | 'comido';
 
 export const DIRS: Record<Direccion, { dx: number; dy: number }> = {
@@ -73,6 +73,11 @@ export type FantasmaEstado = Entidad & {
   id: PerfilFantasma;
   color: string;
   estado: EstadoFantasma;
+  /** Segundos que le quedan "encerrado" en la casa antes de salir a
+   * perseguir. Escalonado por fantasma para que no salgan los 4 pegados y
+   * se vean como uno solo. Mientras > 0 no se mueve ni cuenta para
+   * colisión con Pac-Man. */
+  encerradoRestante: number;
 };
 
 export type EstadoJuego = {
@@ -169,7 +174,7 @@ function parsearLaberinto(maze: string[]) {
   // 3 lugares de arranque, uno al lado del otro dentro de la casa — si el
   // vecino exacto no fuera parte de la casa, cae de vuelta al centro.
   const vecino = (dx: number) => casa.find((p) => p.x === casaFantasmas.x + dx && p.y === casaFantasmas.y) ?? casaFantasmas;
-  const spawnsFantasmas = [vecino(-1), casaFantasmas, vecino(1)];
+  const spawnsFantasmas = [vecino(-1), casaFantasmas, vecino(1), vecino(2)];
 
   // Esquina fija del perfil 'patrulla': el punto transitable más cercano a
   // la esquina superior-izquierda real del laberinto.
@@ -200,8 +205,12 @@ export function crearEstadoInicial(maze: string[] = LABERINTO_CLASICO): EstadoJu
     perseguidor: '#E8362C',
     emboscador: '#F2A0D0',
     patrulla: '#F0A830',
+    flanqueador: '#31C7E8',
   };
-  const perfiles: PerfilFantasma[] = ['perseguidor', 'emboscador', 'patrulla'];
+  const perfiles: PerfilFantasma[] = ['perseguidor', 'emboscador', 'patrulla', 'flanqueador'];
+  /** Salida escalonada: el perseguidor arranca ya afuera, el resto va
+   * saliendo cada ~3 s. */
+  const encierro = [0, 3, 6, 9];
 
   return {
     paredes: l.paredes,
@@ -217,11 +226,12 @@ export function crearEstadoInicial(maze: string[] = LABERINTO_CLASICO): EstadoJu
     fantasmas: perfiles.map((id, i) => ({
       id,
       color: colores[id],
-      estado: 'normal',
+      estado: 'normal' as EstadoFantasma,
       tileX: l.spawnsFantasmas[i]!.x,
       tileY: l.spawnsFantasmas[i]!.y,
       dir: null,
       progreso: 0,
+      encerradoRestante: encierro[i] ?? 0,
     })),
     puntaje: 0,
     vidas: VIDAS_INICIALES,
@@ -324,6 +334,8 @@ function reposicionarTrasVida(estado: EstadoJuego): void {
     f.dir = null;
     f.progreso = 0;
     f.estado = 'normal';
+    // Re-escalonar la salida tras perder una vida (más corto que al inicio).
+    f.encerradoRestante = i * 1.5;
   });
 
   estado.asustadoRestante = 0;
@@ -345,6 +357,7 @@ function detectarColisiones(estado: EstadoJuego): void {
   const pPac = posicionVisual(estado.pacman);
   for (const f of estado.fantasmas) {
     if (f.estado === 'comido') continue;
+    if (f.encerradoRestante > 0 && f.estado === 'normal') continue; // encerrado: no toca a nadie
     const pF = posicionVisual(f);
     const dist = Math.hypot(pF.x - pPac.x, pF.y - pPac.y);
     if (dist >= RADIO_COLISION) continue;
@@ -366,6 +379,14 @@ function detectarColisiones(estado: EstadoJuego): void {
 export type CalculadoraDireccion = (f: FantasmaEstado, estado: EstadoJuego) => Direccion | null;
 
 function avanzarFantasma(f: FantasmaEstado, estado: EstadoJuego, dt: number, calcularDireccion: CalculadoraDireccion): void {
+  // Encerrado en la casa (salida escalonada): se queda quieto en su tile de
+  // arranque hasta que le toca salir. Un fantasma comido igual vuelve a
+  // casa y sale enseguida, así que el encierro sólo aplica en 'normal'.
+  if (f.encerradoRestante > 0 && f.estado === 'normal') {
+    f.encerradoRestante = Math.max(0, f.encerradoRestante - dt);
+    return;
+  }
+
   if (f.estado === 'comido') {
     // Chequeo por TILE, no por `progreso === 0`: después de cruzar un tile,
     // `progreso` casi nunca vuelve a quedar en exactamente 0 (le queda el
@@ -451,6 +472,22 @@ export function objetivoDe(perfil: PerfilFantasma, fantasma: { x: number; y: num
     return {
       x: Math.max(0, Math.min(estado.ancho - 1, pac.tileX + d.dx * TILES_EMBOSCADA)),
       y: Math.max(0, Math.min(estado.alto - 1, pac.tileY + d.dy * TILES_EMBOSCADA)),
+    };
+  }
+
+  if (perfil === 'flanqueador') {
+    // Estilo Inky: se toma el tile 2 adelante de Pac-Man y se lo refleja a
+    // través de la posición del perseguidor (el doble del vector). Tiende a
+    // cerrar la pinza junto al perseguidor.
+    const d = pac.dir ? DIRS[pac.dir] : { dx: 0, dy: 0 };
+    const ax = pac.tileX + d.dx * 2;
+    const ay = pac.tileY + d.dy * 2;
+    const blinky = estado.fantasmas.find((g) => g.id === 'perseguidor');
+    const bx = blinky ? blinky.tileX : pac.tileX;
+    const by = blinky ? blinky.tileY : pac.tileY;
+    return {
+      x: Math.max(0, Math.min(estado.ancho - 1, ax + (ax - bx))),
+      y: Math.max(0, Math.min(estado.alto - 1, ay + (ay - by))),
     };
   }
 
