@@ -76,11 +76,28 @@ $stmt->execute();
 $pendientes = (int) ($stmt->get_result()->fetch_assoc()['N'] ?? 0);
 $stmt->close();
 
+// Torneos ganados: total y desglose por juego (sólo los que tienen >= 1).
+$torneosGanados = 0;
+$torneosPorJuego = [];
+$res = $conn->query(
+    "SELECT JuegoCodigo, COUNT(*) AS N FROM Torneo
+      WHERE GanadorUserId = " . (int) $userId . " AND Estado = 'terminado'
+      GROUP BY JuegoCodigo"
+);
+if ($res) {
+    while ($f = $res->fetch_assoc()) {
+        $torneosPorJuego[$f['JuegoCodigo']] = (int) $f['N'];
+        $torneosGanados += (int) $f['N'];
+    }
+}
+
 json_success([
     'progreso' => rh_juego_progreso($total),
     'partidasJugadas' => (int) $perfil['PartidasJugadas'],
     'desafiosGanados' => (int) $perfil['DesafiosGanados'],
     'desafiosPerdidos' => (int) $perfil['DesafiosPerdidos'],
+    'torneosGanados' => $torneosGanados,
+    'torneosGanadosPorJuego' => (object) $torneosPorJuego,
     'records' => $records,
     'porJuego' => $porJuego,
     'modosPorJuego' => $modosPorJuego,

@@ -34,6 +34,8 @@ import {
   HuePlaySalasBandeja,
   HuePlaySalaTirar,
   HuePlaySalaTirarRoyal,
+  HuePlayTorneo,
+  HuePlayTorneosBandeja,
   HuePlaySoccerTurno,
   HuePlaySoccerVista,
   HuePlayTurno,
@@ -308,6 +310,55 @@ export const hueplayApi = {
     apiGet<HuePlaySalaGenerica>('ajax/hueplay/sala_ver.php', { salaId }, true),
 
   salas: () => apiGet<HuePlaySalasBandeja>('ajax/hueplay/sala_listar.php', undefined, true),
+
+  // --- Torneos ---
+  crearTorneo: (
+    juegoCodigo: string,
+    opciones: {
+      formato: 'eliminacion' | 'liga';
+      tamano: number;
+      esPublico?: boolean;
+      plazoTurnoMinutos?: number;
+      plazoRondaMinutos?: number;
+      invitadosUserIds?: number[];
+    }
+  ) =>
+    apiPost<{ torneo: HuePlayTorneo }>(
+      'ajax/hueplay/torneo_crear.php',
+      {
+        juegoCodigo,
+        formato: opciones.formato,
+        tamano: opciones.tamano,
+        esPublico: opciones.esPublico === false ? '0' : '1',
+        ...(opciones.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
+        ...(opciones.plazoRondaMinutos ? { plazoRondaMinutos: opciones.plazoRondaMinutos } : {}),
+        ...(opciones.invitadosUserIds?.length
+          ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }
+          : {}),
+      },
+      true
+    ),
+
+  unirseTorneo: (codigoInvitacion: string) =>
+    apiPost<{ torneo: HuePlayTorneo }>('ajax/hueplay/torneo_unirse.php', { codigoInvitacion }, true),
+
+  unirseTorneoPublico: (torneoId: number) =>
+    apiPost<{ torneo: HuePlayTorneo }>('ajax/hueplay/torneo_unirse_publico.php', { torneoId }, true),
+
+  torneosPublicos: (juegoCodigo?: string) =>
+    apiGet<{ torneos: HuePlayTorneo[] }>(
+      'ajax/hueplay/torneo_publicos.php',
+      juegoCodigo ? { juegoCodigo } : undefined,
+      true
+    ),
+
+  torneos: () => apiGet<HuePlayTorneosBandeja>('ajax/hueplay/torneo_listar.php', undefined, true),
+
+  verTorneo: (torneoId: number) =>
+    apiGet<{ torneo: HuePlayTorneo }>('ajax/hueplay/torneo_ver.php', { torneoId }, true),
+
+  iniciarTorneo: (torneoId: number) =>
+    apiPost<{ torneo: HuePlayTorneo }>('ajax/hueplay/torneo_iniciar.php', { torneoId }, true),
 
   historialCon: (rivalUserId: number, juegoCodigo: string) =>
     apiGet<{ historial: HistorialPar }>(

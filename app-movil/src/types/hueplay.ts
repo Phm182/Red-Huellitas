@@ -43,6 +43,70 @@ export interface HuePlayPerfil {
   ranking: HuePlayRankingItem[];
   miPuesto: number;
   desafiosPendientes: number;
+  /** Torneos ganados en total. */
+  torneosGanados: number;
+  /** Torneos ganados por código de juego (sólo los que tienen >= 1). */
+  torneosGanadosPorJuego: Record<string, number>;
+}
+
+export type TorneoFormato = 'eliminacion' | 'liga';
+export type TorneoEstado = 'inscripcion' | 'en_curso' | 'terminado' | 'cancelado';
+
+export interface HuePlayTorneoParticipante {
+  userId: number;
+  nombre: string | null;
+  avatarPath: string | null;
+  estado: 'inscripto' | 'jugando' | 'eliminado' | 'campeon';
+  seed: number | null;
+  puntosLiga: number;
+  ganadas: number;
+  perdidas: number;
+  esYo: boolean;
+}
+
+export interface HuePlayTorneoPartida {
+  partidaId: number;
+  ronda: number;
+  slot: number;
+  aUserId: number | null;
+  bUserId: number | null;
+  aNombre: string | null;
+  bNombre: string | null;
+  ganadorUserId: number | null;
+  estado: 'pendiente' | 'jugando' | 'terminada' | 'bye';
+  desafioId: number | null;
+}
+
+export interface HuePlayTorneo {
+  torneoId: number;
+  juegoCodigo: string;
+  nombre: string;
+  formato: TorneoFormato;
+  tamano: number;
+  estado: TorneoEstado;
+  codigoInvitacion: string;
+  esPublico: boolean;
+  rondaActual: number;
+  creadorUserId: number;
+  soyCreador: boolean;
+  ganadorUserId: number | null;
+  ganadorNombre: string | null;
+  plazoTurnoMinutos: number;
+  plazoRondaMinutos: number;
+  participantes: HuePlayTorneoParticipante[];
+  partidas: HuePlayTorneoPartida[];
+  /** Si al usuario le toca jugar una partida ahora. */
+  miPartidaActiva: { desafioId: number; ruta: string } | null;
+  creadoEn: string;
+  /** Sólo en `torneo_publicos.php`. */
+  inscriptos?: number;
+  cuposLibres?: number;
+}
+
+export interface HuePlayTorneosBandeja {
+  inscripcion: HuePlayTorneo[];
+  enCurso: HuePlayTorneo[];
+  terminados: HuePlayTorneo[];
 }
 
 /**

@@ -3,13 +3,13 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { BotonFavorito } from '../../../src/components/hueplay/BotonFavorito';
 import { CarruselJuegos } from '../../../src/components/hueplay/CarruselJuegos';
-import { ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
+import { juegoDelCatalogo, ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
 import { Ficha } from '../../../src/juego/huematch/Ficha';
 import { HuePlayPerfil } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -232,6 +232,7 @@ export default function HuePlayScreen() {
   // nivel, accesos, ranking) para que el carrusel / la grilla de resultados
   // quede arriba del teclado y se vea filtrar en vivo, sin cerrar el teclado.
   const [buscando, setBuscando] = useState(false);
+  const [modalTorneos, setModalTorneos] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -300,6 +301,18 @@ export default function HuePlayScreen() {
             <Stat label={t('hueplay.partidas')} valor={perfil.partidasJugadas} colors={colors} />
             <Stat label={t('hueplay.ganados')} valor={perfil.desafiosGanados} colors={colors} />
             <Stat label={t('hueplay.perdidos')} valor={perfil.desafiosPerdidos} colors={colors} />
+            <Pressable
+              onPress={() => {
+                hapticLeve();
+                setModalTorneos(true);
+              }}
+              style={{ alignItems: 'center', flex: 1 }}
+            >
+              <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 17 }}>
+                {perfil.torneosGanados ?? 0}
+              </Text>
+              <Text style={{ color: colors.primary, fontSize: 11 }}>{t('hueplay.torneosGanados')}</Text>
+            </Pressable>
           </View>
         </View>
       ) : null}
@@ -417,6 +430,37 @@ export default function HuePlayScreen() {
     </View>
   );
 
+  const torneosPorJuego = Object.entries(perfil?.torneosGanadosPorJuego ?? {}).sort((a, b) => b[1] - a[1]);
+  const modalTorneosNode = (
+    <Modal visible={modalTorneos} transparent animationType="fade" onRequestClose={() => setModalTorneos(false)}>
+      <Pressable style={styles.modalBackdrop} onPress={() => setModalTorneos(false)}>
+        <Pressable style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={{ color: colors.text, fontFamily: fonts.displaySemi, fontSize: 18, marginBottom: 4 }}>
+            {t('hueplay.torneosGanados')}
+          </Text>
+          {torneosPorJuego.length === 0 ? (
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 6 }}>{t('hueplay.torneosNinguno')}</Text>
+          ) : (
+            torneosPorJuego.map(([codigo, n]) => {
+              const j = juegoDelCatalogo(codigo);
+              return (
+                <View key={codigo} style={styles.modalFila}>
+                  {j ? (
+                    <View style={[styles.chipIcono, { backgroundColor: `${j.color}22` }]}>
+                      <MaterialCommunityIcons name={j.icono} size={18} color={j.color} />
+                    </View>
+                  ) : null}
+                  <Text style={{ color: colors.text, flex: 1, fontSize: 14 }}>{j?.titulo ?? codigo}</Text>
+                  <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 15 }}>{n}</Text>
+                </View>
+              );
+            })
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
   const rankingLista = perfil?.ranking.map((r) => (
     <View
       key={r.userId}
@@ -449,6 +493,7 @@ export default function HuePlayScreen() {
         contentContainerStyle={[styles.contenido, centeredContent]}
         keyboardShouldPersistTaps="handled"
       >
+        {modalTorneosNode}
         {nivelYAcciones}
         {listaDesplegada}
         {!buscando && perfil && perfil.ranking.length > 0 ? (
@@ -470,6 +515,7 @@ export default function HuePlayScreen() {
   // sobra con un scroll interno propio.
   return (
     <View style={[styles.contenidoFijo, { backgroundColor: colors.background }, centeredContent]}>
+      {modalTorneosNode}
       {nivelYAcciones}
 
       {/* Recién se monta con `loading` en false: si arrancara antes,
@@ -573,4 +619,7 @@ const styles = StyleSheet.create({
   rankPos: { width: 20, fontFamily: fonts.bodyBold, fontSize: 13 },
   rankAvatar: { width: 26, height: 26, borderRadius: 13 },
   rankAvatarVacio: { alignItems: 'center', justifyContent: 'center' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalCard: { width: '100%', maxWidth: 380, borderWidth: 1, borderRadius: radii.lg, padding: 18, gap: 6 },
+  modalFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
 });

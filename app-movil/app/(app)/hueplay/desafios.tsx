@@ -284,18 +284,32 @@ export default function DesafiosScreen() {
                 </Text>
               </Pressable>
               {esJuegoDuelo(j.codigo) ? (
-                <Pressable
-                  onPress={() => {
-                    hapticLeve();
-                    router.push(`/(app)/hueplay/sala-crear?juego=${j.codigo}` as never);
-                  }}
-                  style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
-                >
-                  <Ionicons name="people" size={16} color={colors.text} />
-                  <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                    {t('hueplay.sala.crearSala')}
-                  </Text>
-                </Pressable>
+                <>
+                  <Pressable
+                    onPress={() => {
+                      hapticLeve();
+                      router.push(`/(app)/hueplay/sala-crear?juego=${j.codigo}` as never);
+                    }}
+                    style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
+                  >
+                    <Ionicons name="people" size={16} color={colors.text} />
+                    <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                      {t('hueplay.sala.crearSala')}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      hapticLeve();
+                      router.push(`/(app)/hueplay/torneo-crear?juego=${j.codigo}` as never);
+                    }}
+                    style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
+                  >
+                    <Ionicons name="trophy-outline" size={16} color={colors.text} />
+                    <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                      {t('hueplay.torneo.crear')}
+                    </Text>
+                  </Pressable>
+                </>
               ) : null}
               {!JUEGOS_SIN_SOLO.includes(j.codigo) ? (
                 <Pressable

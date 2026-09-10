@@ -14,6 +14,8 @@ import {
   HuePlayDesafiosBandeja,
   HuePlaySala,
   HuePlaySalasBandeja,
+  HuePlayTorneo,
+  HuePlayTorneosBandeja,
 } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -22,7 +24,7 @@ import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticLeve } from '../../../src/utils/haptics';
 import type { TFunction } from 'i18next';
 
-type SolapaMP = 'tuTurno' | 'enEspera' | 'abiertas' | 'historial';
+type SolapaMP = 'tuTurno' | 'enEspera' | 'abiertas' | 'torneos' | 'historial';
 
 /** Fila ya normalizada — el mismo shape para un duelo 1v1 o una sala, para poder pintarlas juntas. */
 type FilaMP = {
@@ -163,18 +165,25 @@ export default function MultiplayerScreen() {
   const [desafios, setDesafios] = useState<HuePlayDesafiosBandeja | null>(null);
   const [salas, setSalas] = useState<HuePlaySalasBandeja | null>(null);
   const [salasAbiertas, setSalasAbiertas] = useState<HuePlaySala[]>([]);
+  const [torneos, setTorneos] = useState<HuePlayTorneosBandeja | null>(null);
   const [loading, setLoading] = useState(true);
   const [uniendose, setUniendose] = useState<number | null>(null);
-  const SOLAPAS_VALIDAS: SolapaMP[] = ['tuTurno', 'enEspera', 'abiertas', 'historial'];
+  const SOLAPAS_VALIDAS: SolapaMP[] = ['tuTurno', 'enEspera', 'abiertas', 'torneos', 'historial'];
   const [solapa, setSolapa] = useState<SolapaMP>(
     SOLAPAS_VALIDAS.includes(params.solapa as SolapaMP) ? (params.solapa as SolapaMP) : 'tuTurno'
   );
 
   const cargar = useCallback(() => {
-    Promise.all([hueplayApi.desafios(), hueplayApi.salas(), hueplayApi.salasPublicas()]).then(([rd, rs, rp]) => {
+    Promise.all([
+      hueplayApi.desafios(),
+      hueplayApi.salas(),
+      hueplayApi.salasPublicas(),
+      hueplayApi.torneos(),
+    ]).then(([rd, rs, rp, rt]) => {
       if (rd.success && rd.data) setDesafios(rd.data);
       if (rs.success && rs.data) setSalas(rs.data);
       if (rp.success && rp.data) setSalasAbiertas(rp.data.salas);
+      if (rt.success && rt.data) setTorneos(rt.data);
       setLoading(false);
     });
   }, []);
@@ -212,6 +221,7 @@ export default function MultiplayerScreen() {
         ...(salas?.armando ?? []).map((s) => salaAFila(s, 'armando', t)),
       ],
       abiertas: salasAbiertas.map((s) => salaPublicaAFila(s, t, unirseAbierta)),
+      torneos: [],
       historial: [
         ...(desafios?.terminados ?? []).map((d) => desafioAFila(d, 'historial', yoId, t)),
         ...(salas?.terminadas ?? []).map((s) => salaAFila(s, 'terminada', t)),
@@ -219,10 +229,13 @@ export default function MultiplayerScreen() {
     };
   }, [desafios, salas, salasAbiertas, yoId, t, unirseAbierta]);
 
+  const torneosLista = torneos ? [...torneos.enCurso, ...torneos.inscripcion, ...torneos.terminados] : [];
+
   const tabs: { key: SolapaMP; label: string }[] = [
     { key: 'tuTurno', label: t('hueplay.multiplayer.tuTurno') },
     { key: 'enEspera', label: t('hueplay.multiplayer.enEspera') },
     { key: 'abiertas', label: t('hueplay.multiplayer.abiertas') },
+    { key: 'torneos', label: t('hueplay.multiplayer.torneos') },
     { key: 'historial', label: t('hueplay.multiplayer.historial') },
   ];
 
@@ -230,11 +243,36 @@ export default function MultiplayerScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.multiplayer.titulo')}</Text>
+      <View style={styles.headerFila}>
+        <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.multiplayer.titulo')}</Text>
+        <Pressable
+          onPress={() => {
+            hapticLeve();
+            router.push('/(app)/hueplay/desafios' as never);
+          }}
+          style={[styles.crearBtn, { backgroundColor: colors.primary }]}
+        >
+          <Ionicons name="add" size={16} color={colors.primaryText} />
+          <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+            {t('hueplay.multiplayer.crear')}
+          </Text>
+        </Pressable>
+      </View>
 
       <SwipeableSolapas tabs={tabs} activa={solapa} onChange={setSolapa}>
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
+        ) : solapa === 'torneos' ? (
+          torneosLista.length === 0 ? (
+            <EmptyState icon="trophy-outline" titulo={t('hueplay.multiplayer.sinTorneos')} />
+          ) : (
+            <FlatList
+              contentContainerStyle={[styles.lista, centeredContent]}
+              data={torneosLista}
+              keyExtractor={(tr) => `t-${tr.torneoId}`}
+              renderItem={({ item: tr }) => <FilaTorneo torneo={tr} colors={colors} t={t} />}
+            />
+          )
         ) : lista.length === 0 ? (
           <EmptyState
             icon="people-outline"
@@ -309,6 +347,60 @@ export default function MultiplayerScreen() {
   );
 }
 
+/** Una fila de "Mis torneos": estado, formato y a dónde lleva el toque
+ * (lobby si está en inscripción, la llave/tabla si ya arrancó). */
+function FilaTorneo({
+  torneo,
+  colors,
+  t,
+}: {
+  torneo: HuePlayTorneo;
+  colors: ReturnType<typeof useTheme>['colors'];
+  t: TFunction;
+}) {
+  const juego = juegoDelCatalogo(torneo.juegoCodigo);
+  const destino = torneo.estado === 'inscripcion' ? '/(app)/hueplay/torneo-lobby/[torneoId]' : '/(app)/hueplay/torneo/[torneoId]';
+  const sub =
+    torneo.estado === 'inscripcion'
+      ? t('hueplay.torneo.inscriptosDe', { n: torneo.participantes.length, max: torneo.tamano })
+      : torneo.estado === 'terminado'
+        ? t('hueplay.torneo.campeonEs', { nombre: torneo.ganadorNombre ?? '' })
+        : t('hueplay.torneo.enCurso');
+  return (
+    <Pressable
+      onPress={() => {
+        hapticLeve();
+        router.push({ pathname: destino, params: { torneoId: torneo.torneoId } });
+      }}
+      style={[styles.fila, { backgroundColor: colors.surface, borderColor: torneo.miPartidaActiva ? colors.primary : colors.border }]}
+    >
+      {juego ? (
+        <View style={[styles.iconoJuego, { backgroundColor: `${juego.color}22` }]}>
+          <MaterialCommunityIcons name={juego.icono} size={16} color={juego.color} />
+        </View>
+      ) : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ color: colors.text, fontFamily: fonts.bodySemi }} numberOfLines={1}>
+          {torneo.formato === 'eliminacion' ? t('hueplay.torneo.eliminacion') : t('hueplay.torneo.liga')} ·{' '}
+          {juego?.titulo ?? torneo.juegoCodigo}
+        </Text>
+        <Text style={{ color: colors.textMuted, fontSize: 12 }} numberOfLines={1}>
+          {sub}
+        </Text>
+      </View>
+      {torneo.miPartidaActiva ? (
+        <View style={[styles.unirmePill, { backgroundColor: colors.primary }]}>
+          <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 12 }}>
+            {t('hueplay.torneo.jugar')}
+          </Text>
+        </View>
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   seccion: {
     fontSize: 12,
@@ -317,6 +409,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginHorizontal: 16,
     marginBottom: 10,
+  },
+  headerFila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 16 },
+  crearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   lista: { padding: 16, paddingTop: 0 },
   fila: {
