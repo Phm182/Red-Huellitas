@@ -35,8 +35,8 @@ type Props = {
   /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. */
   velocidad?: number;
   onEnded?: () => void;
-  /** Zoom/paneo manual de la FOTO (pellizcar con dos dedos). Foto solamente. */
-  fotoTransform?: { scale: number; x: number; y: number };
+  /** Zoom/paneo/rotación manual de la FOTO (gestos de dos dedos). Foto solamente. */
+  fotoTransform?: { scale: number; x: number; y: number; rotation: number };
 };
 
 /**
@@ -267,10 +267,20 @@ export function StoryMediaFill({
             filterStyle,
             fotoTransform
               ? {
+                  // El orden importa: RN aplica cada entrada del array en el
+                  // marco que dejaron las anteriores, de atrás para
+                  // adelante — `scale`/`rotate` (al final) giran y escalan
+                  // la imagen ALREDEDOR DE SU PROPIO CENTRO primero (los
+                  // dos conmutan entre sí, van centrados en el mismo
+                  // origen), y recién ENCIMA de eso el `translateX/Y` (al
+                  // principio) la corre en píxeles de pantalla — así el
+                  // arrastre siempre es en el mismo sentido sin importar
+                  // cuánto esté rotada la foto.
                   transform: [
                     { translateX: fotoTransform.x },
                     { translateY: fotoTransform.y },
                     { scale: fotoTransform.scale },
+                    { rotate: `${fotoTransform.rotation}deg` },
                   ],
                 }
               : null,

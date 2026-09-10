@@ -2,6 +2,27 @@
  * Tipos y helpers del editor de historias (estilo Instagram).
  */
 
+/**
+ * A qué le pega el pellizco/giro de DOS DEDOS en `StoryEditor` (un
+ * `GestureDetector` que cubre todo el canvas — ver el porqué en
+ * `gestoFoto`, `StoryEditor.tsx`): a la foto de fondo, o al texto/sticker
+ * seleccionado. Vive como `useSharedValue<PinchRotateTarget>` en
+ * `StoryEditor` y se PASA COMO PROP hasta `StoryTransformable`, que lo
+ * escribe directo (sin pasar por React state) apenas el usuario toca un
+ * ítem — así el segundo dedo de un pellizco que arranca casi a la vez que
+ * el primero encuentra el destino correcto YA actualizado, en vez de
+ * depender de que `selectedTextId`/`selectedStickerId` (estado de React,
+ * con el retraso de un render+efecto) se haya actualizado a tiempo.
+ */
+export type PinchRotateTarget = {
+  kind: 'foto' | 'text' | 'sticker' | 'none';
+  id: string | null;
+  scale: number;
+  rotation: number;
+  x: number;
+  y: number;
+};
+
 export type StoryFilterId =
   | 'none'
   | 'clarendon'
@@ -99,24 +120,28 @@ export type StoryRecorte = {
 };
 
 /**
- * Zoom/paneo no destructivo de la FOTO (el video no lo usa: para eso ya
- * existe el ajuste cover/contain). `scale` es el zoom manual encima del
- * "cover" de base (1 = tal cual entra la foto); `x`/`y` son el arrastre en
- * píxeles del canvas de edición, con el mismo signo con el que se mueve la
- * imagen en pantalla (no el de la ventana visible).
+ * Zoom/paneo/rotación no destructivos de la FOTO (el video no lo usa: para
+ * eso ya existe el ajuste cover/contain). `scale` es el zoom manual encima
+ * del "cover" de base (1 = tal cual entra la foto); `x`/`y` son el arrastre
+ * en píxeles del canvas de edición, con el mismo signo con el que se mueve
+ * la imagen en pantalla (no el de la ventana visible); `rotation` en
+ * grados, sentido horario positivo (mismo signo que ya usan texto/sticker).
  */
 export type StoryFotoTransform = {
   scale: number;
   x: number;
   y: number;
+  rotation: number;
 };
 
 export function fotoTransformDefault(): StoryFotoTransform {
-  return { scale: 1, x: 0, y: 0 };
+  return { scale: 1, x: 0, y: 0, rotation: 0 };
 }
 
 export function fotoTransformEsDefault(t: StoryFotoTransform): boolean {
-  return Math.abs(t.scale - 1) < 0.01 && Math.abs(t.x) < 1 && Math.abs(t.y) < 1;
+  return (
+    Math.abs(t.scale - 1) < 0.01 && Math.abs(t.x) < 1 && Math.abs(t.y) < 1 && Math.abs(t.rotation) < 0.5
+  );
 }
 
 export type StoryFilterDef = {

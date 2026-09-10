@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { SharedValue } from 'react-native-reanimated';
-import { PinchRotateTarget, StoryTextItem, storyFontFamily } from './storyEditorTypes';
+import { PinchRotateTarget, StoryStickerItem } from './storyEditorTypes';
 import { StoryTransformable } from './StoryTransformable';
 
 type Props = {
-  item: StoryTextItem;
+  item: StoryStickerItem;
   canvasW: number;
   canvasH: number;
   selected: boolean;
@@ -13,11 +13,19 @@ type Props = {
   targetInfo: SharedValue<PinchRotateTarget>;
   onSelect: (id: string) => void;
   onDeselect: () => void;
-  onChange: (id: string, patch: Partial<StoryTextItem>) => void;
+  onChange: (id: string, patch: Partial<StoryStickerItem>) => void;
 };
 
-/** Texto arrastrable/pellizcable/rotable — ver `StoryTransformable` para el gesto. */
-export function StoryDraggableText({
+/**
+ * Sticker/emoji arrastrable/pellizcable/rotable — mismo gesto que el texto
+ * (`StoryTransformable`). Antes de esto, un sticker agregado quedaba pegado
+ * al centro para siempre: `StoryOverlayLayer` (que lo pintaba) tiene
+ * `pointerEvents="none"` a propósito, porque ese componente es el que
+ * también dibuja el visor final (ahí no hace falta interactividad) — en el
+ * editor hace falta este wrapper aparte, mismo criterio que ya usa el
+ * texto (que tampoco se pinta con `StoryOverlayLayer` en el editor).
+ */
+export function StoryDraggableSticker({
   item,
   canvasW,
   canvasH,
@@ -38,35 +46,18 @@ export function StoryDraggableText({
       canvasH={canvasH}
       selected={selected}
       editable={editable}
-      kind="text"
+      kind="sticker"
       id={item.id}
       targetInfo={targetInfo}
       onSelect={() => onSelect(item.id)}
       onDeselect={onDeselect}
       onChange={(patch) => onChange(item.id, patch)}
     >
-      <Text
-        style={[
-          styles.text,
-          {
-            color: item.color,
-            fontFamily: storyFontFamily(item.fontId),
-          },
-        ]}
-      >
-        {item.text}
-      </Text>
+      <Text style={styles.sticker}>{item.emoji}</Text>
     </StoryTransformable>
   );
 }
 
 const styles = StyleSheet.create({
-  text: {
-    fontSize: 30,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-    maxWidth: 320,
-  },
+  sticker: { fontSize: 56 },
 });

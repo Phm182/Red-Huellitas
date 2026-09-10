@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Dimensions,
+  Keyboard,
   PanResponder,
   Platform,
   Pressable,
@@ -14,6 +15,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   esAssetVideo,
@@ -21,6 +24,7 @@ import {
   probeVideoDurationSeconds,
 } from '../utils/mediaDuration';
 import { CapturedStoryMedia } from './StoryCameraCapture';
+import { StoryDraggableSticker } from './StoryDraggableSticker';
 import { StoryDraggableText } from './StoryDraggableText';
 import { StoryInteractivoCard } from './StoryInteractivoCard';
 import { StoryContentFit, StoryMediaFill } from './StoryMediaFill';
@@ -32,6 +36,7 @@ import {
   emptyOverlay,
   fotoTransformDefault,
   fotoTransformEsDefault,
+  PinchRotateTarget,
   STORY_DRAW_COLORS,
   STORY_FILTERS,
   STORY_FONTS,
@@ -43,6 +48,7 @@ import {
   StoryOverlay,
   StoryPathItem,
   StoryRecorte,
+  StoryStickerItem,
   StoryTextItem,
   storyFontFamily,
 } from './storyEditorTypes';
@@ -78,6 +84,39 @@ type Props = {
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
+/** La foto puede achicarse hasta la mitad del tamaño original — mismo
+ * rango que ya usan los botones de escala de texto/sticker — no sólo
+ * agrandarse; por debajo de 1 el canvas se ve negro alrededor (mismo fondo
+ * que ya tiene `StoryMediaFill`), es un efecto válido, no un glitch. */
+const FOTO_ESCALA_MIN = 0.5;
+const FOTO_ESCALA_MAX = 4;
+/** Mismo rango que usa `StoryTransformable` para texto/sticker. */
+const ITEM_ESCALA_MIN = 0.5;
+const ITEM_ESCALA_MAX = 3;
+
+/**
+ * Cuánto se puede alejar la imagen del centro sin dejar bordes vacíos a la
+ * vista. Aproximado (no conocemos acá el tamaño real de la foto fuente,
+ * sólo el canvas): con "cover" la imagen siempre cubre el frame entero, así
+ * que zoomear `scale` de más deja `(scale-1) * frame/2` de margen real para
+ * arrastrar en cada eje antes de que se vea el borde. Con `Math.abs`: por
+ * debajo de 1 esa resta da negativo y sin él invertía el orden de
+ * min/max del clamp (el margen tiene que ser siempre >= 0, esté la foto
+ * agrandada o achicada). Al nivel de módulo (no del cuerpo del componente)
+ * y con `'worklet'` explícito porque se llama desde `.onUpdate` (hilo de
+ * UI); `layout` llega ya leído del shared value en vez de cerrar sobre
+ * `layout.w/h` del render.
+ */
+function clampFotoPan(x: number, y: number, scale: number, layout: { layoutW: number; layoutH: number }) {
+  'worklet';
+  const margenX = Math.abs((scale - 1) * layout.layoutW) / 2;
+  const margenY = Math.abs((scale - 1) * layout.layoutH) / 2;
+  return {
+    x: Math.max(-margenX, Math.min(margenX, x)),
+    y: Math.max(-margenY, Math.min(margenY, y)),
+  };
+}
+
 export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishing }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -109,7 +148,26 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   const [fontId, setFontId] = useState<StoryFontId>('classic');
   const [draftText, setDraftText] = useState('');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [layout, setLayout] = useState({ w: SCREEN_W, h: SCREEN_H });
+  // Alto del teclado en pantalla — el panel de "agregar texto" es
+  // `position: absolute` con `bottom` fijo, así que un `KeyboardAvoidingView`
+  // (que ajusta padding/alto del layout normal) no lo mueve: hace falta
+  // sumarle este valor a mano para que quede arriba del teclado en vez de
+  // tapado por él. `keyboardWillShow/Hide` en iOS (anima junto con el
+  // teclado); `keyboardDidShow/Hide` en Android (no existe la versión
+  // "will" ahí).
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const subShow = Keyboard.addListener(showEvt, (e) => setKeyboardHeight(e.endCoordinates?.height ?? 0));
+    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
   const [cambiandoMedia, setCambiandoMedia] = useState(false);
   const currentPath = useRef<StoryPathItem | null>(null);
 
@@ -117,24 +175,6 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   // ya zoomeado). Sólo aplica a foto — el video ya tiene su propio cover/
   // contain y recortar de verdad exige re-encodear, que acá no se hace.
   const [fotoTransform, setFotoTransform] = useState<StoryFotoTransform>(fotoTransformDefault());
-  // Valores "congelados" al arrancar el gesto actual: todo se calcula como
-  // delta contra esto, no acumulando de a un evento (los eventos de touch a
-  // veces se saltean, y acumular de a poco desalinea escala y arrastre).
-  const fotoGestoBase = useRef({
-    scale: 1,
-    x: 0,
-    y: 0,
-    distancia: 0,
-    focoX: 0,
-    focoY: 0,
-    dedos: 1,
-    movioSuficiente: false,
-  });
-
-  const distanciaEntreDedos = (touches: { pageX: number; pageY: number }[]) => {
-    const [a, b] = touches;
-    return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
-  };
 
   const pan = useMemo(
     () =>
@@ -172,85 +212,9 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
     [tool, drawColor, layout.w, layout.h]
   );
 
-  // Cuánto se puede alejar la imagen del centro sin dejar bordes vacíos a la
-  // vista. Aproximado (no conocemos acá el tamaño real de la foto fuente,
-  // sólo el canvas): con "cover" la imagen siempre cubre el frame entero, así
-  // que zoomear `scale` de más deja `(scale-1) * frame/2` de margen real para
-  // arrastrar en cada eje antes de que se vea el borde.
-  const clampFotoPan = (x: number, y: number, scale: number) => {
-    const margenX = ((scale - 1) * layout.w) / 2;
-    const margenY = ((scale - 1) * layout.h) / 2;
-    return {
-      x: Math.max(-margenX, Math.min(margenX, x)),
-      y: Math.max(-margenY, Math.min(margenY, y)),
-    };
-  };
-
-  const panFoto = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => media.tipo === 'foto' && tool === 'none',
-        onMoveShouldSetPanResponder: (_evt, gesture) =>
-          media.tipo === 'foto' &&
-          tool === 'none' &&
-          (Math.abs(gesture.dx) > 3 || Math.abs(gesture.dy) > 3 || _evt.nativeEvent.touches.length === 2),
-        onPanResponderGrant: (evt) => {
-          const touches = evt.nativeEvent.touches;
-          fotoGestoBase.current = {
-            scale: fotoTransform.scale,
-            x: fotoTransform.x,
-            y: fotoTransform.y,
-            distancia: touches.length === 2 ? distanciaEntreDedos(touches) : 0,
-            focoX: touches.length === 2 ? (touches[0].pageX + touches[1].pageX) / 2 : (touches[0]?.pageX ?? 0),
-            focoY: touches.length === 2 ? (touches[0].pageY + touches[1].pageY) / 2 : (touches[0]?.pageY ?? 0),
-            dedos: touches.length,
-            movioSuficiente: false,
-          };
-        },
-        onPanResponderMove: (evt) => {
-          const base = fotoGestoBase.current;
-          const touches = evt.nativeEvent.touches;
-
-          if (touches.length === 2 && base.distancia > 0) {
-            // Pellizco: la escala sigue la razón de distancias, con tope
-            // 1x-4x (más de 4x deja la foto pixelada en pantallas chicas).
-            const distanciaActual = distanciaEntreDedos(touches);
-            const nuevaEscala = Math.max(1, Math.min(4, base.scale * (distanciaActual / base.distancia)));
-            const focoActualX = (touches[0].pageX + touches[1].pageX) / 2;
-            const focoActualY = (touches[0].pageY + touches[1].pageY) / 2;
-            const { x, y } = clampFotoPan(
-              base.x + (focoActualX - base.focoX),
-              base.y + (focoActualY - base.focoY),
-              nuevaEscala
-            );
-            fotoGestoBase.current.movioSuficiente = true;
-            setFotoTransform({ scale: nuevaEscala, x, y });
-            return;
-          }
-
-          if (touches.length === 1) {
-            const dx = touches[0].pageX - base.focoX;
-            const dy = touches[0].pageY - base.focoY;
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) fotoGestoBase.current.movioSuficiente = true;
-            // Arrastrar con un solo dedo sólo tiene sentido si ya hay zoom
-            // aplicado; si no, el toque es para tocar-para-cambiar-ajuste.
-            if (base.scale > 1.01) {
-              const { x, y } = clampFotoPan(base.x + dx, base.y + dy, base.scale);
-              setFotoTransform((prev) => ({ ...prev, x, y }));
-            }
-          }
-        },
-        onPanResponderRelease: () => {
-          const base = fotoGestoBase.current;
-          // Toque simple (un dedo, casi sin moverse, sin zoom activo): es el
-          // gesto de "tocá de nuevo para llenar" de siempre, no un arrastre.
-          if (base.dedos === 1 && !base.movioSuficiente && base.scale <= 1.01) {
-            setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'));
-          }
-        },
-      }),
-    [media.tipo, tool, fotoTransform, layout.w, layout.h]
-  );
+  // El gesto de pellizco/rotación/arrastre de foto y texto/sticker está más
+  // abajo (después de `updateText`/`updateSticker`, que necesita) — buscar
+  // `gestoFoto`.
 
   const setFilter = (id: StoryFilterId) => setOverlay((o) => ({ ...o, filter: id }));
 
@@ -279,23 +243,295 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
     setTool('none');
   };
 
-  const updateText = (id: string, patch: Partial<StoryTextItem>) => {
+  // `useCallback` con deps vacías: referencia ESTABLE entre renders (sólo
+  // cierra sobre `setOverlay`, que React ya garantiza estable). Hace falta
+  // así de estable para poder pasarla directo a `runOnJS` desde un worklet
+  // del gesto de pellizco/rotación de más abajo sin el indirection de
+  // ref+trampolín que usa `StoryTransformable` (ahí `onChange` SÍ cambia
+  // cada render porque lo arma el padre con un arrow function nuevo).
+  const updateText = useCallback((id: string, patch: Partial<StoryTextItem>) => {
     setOverlay((o) => ({
       ...o,
       texts: o.texts.map((tx) => (tx.id === id ? { ...tx, ...patch } : tx)),
     }));
-  };
+  }, []);
 
   const agregarSticker = (emoji: string) => {
+    const id = `s_${Date.now()}`;
     setOverlay((o) => ({
       ...o,
-      stickers: [
-        ...(o.stickers ?? []),
-        { id: `s_${Date.now()}`, emoji, x: 0.5, y: 0.5, scale: 1, rotation: 0 },
-      ],
+      stickers: [...(o.stickers ?? []), { id, emoji, x: 0.5, y: 0.5, scale: 1, rotation: 0 }],
     }));
+    setSelectedStickerId(id);
+    setSelectedTextId(null);
     setTool('none');
   };
+
+  const updateSticker = useCallback((id: string, patch: Partial<StoryStickerItem>) => {
+    setOverlay((o) => ({
+      ...o,
+      stickers: (o.stickers ?? []).map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    }));
+  }, []);
+
+  // Zoom/paneo/rotación manual de la FOTO (pellizcar/girar con dos dedos,
+  // arrastrar con uno ya zoomeada) Y de texto/sticker vía los MISMOS dos
+  // dedos — ver por qué están acá y no en `StoryTransformable`.
+  //
+  // El pellizco/giro de un ítem chico (texto, emoji) tiene que poder
+  // agarrarse con un dedo ARRIBA del ítem y el otro en CUALQUIER OTRA parte
+  // de la pantalla — así funciona en Instagram, y es indispensable cuando
+  // el ítem es más chico que la separación natural entre dos dedos. Pero
+  // `react-native-gesture-handler` hace su propio hit-test por CADA dedo
+  // nuevo que toca la pantalla contra la vista a la que está pegado cada
+  // gesto — un `Gesture.Pinch()` colgado del `View` chiquito del texto NUNCA
+  // ve el segundo dedo si cae afuera de ese recuadro (ni con `hitSlop`,
+  // que sigue siendo un rectángulo acotado). La única forma de lograr "el
+  // segundo dedo en cualquier lado" es reconocer el pellizco/giro en un
+  // `GestureDetector` que cubra TODA la pantalla — acá, el mismo que ya
+  // envuelve el canvas entero — y in decidir DESPUÉS a qué le pega: si hay
+  // un texto/sticker seleccionado, a ese; si no y es una foto, a la foto.
+  // El arrastre de UN dedo (`pan`) sigue viviendo en cada ítem por su
+  // cuenta (`StoryTransformable`) porque ESE sí depende de dónde arranca el
+  // primer toque, que si hace bien el hit-test de por sí.
+  //
+  // "Base" congelada al arrancar cada gesto + delta contra eso — con
+  // `useSharedValue`, no `useRef`: la escribe un worklet (`.onStart`) y la
+  // lee otro (`.onUpdate`), y con un `useRef` común esos dos gestos dejan
+  // de estar sincronizados apenas se recrea el `Gesture...` en el medio del
+  // propio gesto. Y CRÍTICO — el motivo del "cambia constantemente, resetea
+  // tamaño": pellizco y rotación pueden pasar A LA VEZ (un pellizco real
+  // casi siempre trae algo de giro de los 2 dedos juntos), así que cada uno
+  // manda sólo el PARCHE que le toca (`{scale}` o `{rotation}`, nunca los
+  // dos juntos) a `updateText`/`updateSticker`/`patchFotoTransform` — las
+  // tres hacen un merge funcional (`setX((prev) => ({...prev, ...patch}))`)
+  // contra lo último confirmado, así ninguno pisa lo que el otro acaba de
+  // cambiar con un valor viejo (que es justo lo que pasaba antes, mandando
+  // el objeto COMPLETO leyendo el campo ajeno de un shared value que podía
+  // estar un cuadro atrasado).
+  const fotoBase = useSharedValue({ scale: 1, x: 0, y: 0, rotation: 0 });
+  const fotoActual = useSharedValue({
+    scale: fotoTransform.scale,
+    x: fotoTransform.x,
+    y: fotoTransform.y,
+    rotation: fotoTransform.rotation,
+    layoutW: layout.w,
+    layoutH: layout.h,
+  });
+  useEffect(() => {
+    fotoActual.value = {
+      scale: fotoTransform.scale,
+      x: fotoTransform.x,
+      y: fotoTransform.y,
+      rotation: fotoTransform.rotation,
+      layoutW: layout.w,
+      layoutH: layout.h,
+    };
+  }, [
+    fotoActual,
+    fotoTransform.scale,
+    fotoTransform.x,
+    fotoTransform.y,
+    fotoTransform.rotation,
+    layout.w,
+    layout.h,
+  ]);
+  const contentFitRef = useSharedValue(contentFit);
+  useEffect(() => {
+    contentFitRef.value = contentFit;
+  }, [contentFitRef, contentFit]);
+
+  const patchFotoTransform = useCallback((patch: Partial<StoryFotoTransform>) => {
+    setFotoTransform((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  // A qué le pega el pellizco/giro de dos dedos en este momento: al texto o
+  // sticker seleccionado (si hay uno) o, si no, a la foto (si el medio es
+  // foto). `base`/`rotation` acá son el valor YA confirmado del ítem
+  // apuntado, para que cada gesto pueda congelarlo en su propio `onStart`.
+  const targetInfo = useSharedValue<PinchRotateTarget>({ kind: 'none', id: null, scale: 1, rotation: 0, x: 0.5, y: 0.5 });
+  useEffect(() => {
+    if (selectedTextId) {
+      const item = overlay.texts.find((tx) => tx.id === selectedTextId);
+      targetInfo.value = {
+        kind: 'text',
+        id: selectedTextId,
+        scale: item?.scale ?? 1,
+        rotation: item?.rotation ?? 0,
+        x: item?.x ?? 0.5,
+        y: item?.y ?? 0.5,
+      };
+    } else if (selectedStickerId) {
+      const item = (overlay.stickers ?? []).find((s) => s.id === selectedStickerId);
+      targetInfo.value = {
+        kind: 'sticker',
+        id: selectedStickerId,
+        scale: item?.scale ?? 1,
+        rotation: item?.rotation ?? 0,
+        x: item?.x ?? 0.5,
+        y: item?.y ?? 0.5,
+      };
+    } else if (media.tipo === 'foto') {
+      targetInfo.value = {
+        kind: 'foto',
+        id: null,
+        scale: fotoTransform.scale,
+        rotation: fotoTransform.rotation,
+        x: fotoTransform.x,
+        y: fotoTransform.y,
+      };
+    } else {
+      targetInfo.value = { kind: 'none', id: null, scale: 1, rotation: 0, x: 0.5, y: 0.5 };
+    }
+  }, [
+    targetInfo,
+    selectedTextId,
+    selectedStickerId,
+    overlay.texts,
+    overlay.stickers,
+    fotoTransform.scale,
+    fotoTransform.rotation,
+    fotoTransform.x,
+    fotoTransform.y,
+    media.tipo,
+  ]);
+  // Base del ítem (texto/sticker) apuntado — separada de `fotoBase` porque
+  // usa fracciones (0.05–0.95) de canvas, no píxeles.
+  const itemBase = useSharedValue({ scale: 1, rotation: 0, x: 0.5, y: 0.5 });
+  // Punto focal (centro entre los 2 dedos) al arrancar el pellizco — para
+  // que MOVER, GIRAR y ESCALAR anden A LA VEZ: `Pinch` ya trae `focalX`/
+  // `focalY` (el punto medio entre los dos dedos, en píxeles del canvas)
+  // así que el DESPLAZAMIENTO de ese punto desde que arrancó el gesto es
+  // exactamente cuánto se movieron los dos dedos juntos — sin esto sólo se
+  // pellizcaba/giraba en el lugar, sin poder reubicar a la vez (el `pan` de
+  // 1 dedo de cada ítem no alcanza a cubrir esto: sólo ve el dedo que
+  // arrancó SOBRE el ítem, y con 2 dedos abajo `Pinch`/`Rotation` ya están
+  // activos a la vez que ese `pan`, pero cada uno resuelve un eje distinto
+  // del gesto — mover con el CENTRO de los dos dedos es lo que realmente
+  // se siente "real"). Sólo en `canvasPinch` (no en `canvasRotate`
+  // también): los dos comparten prácticamente el mismo punto focal, y
+  // aplicarlo dos veces sumaría el desplazamiento doble.
+  const focalBase = useSharedValue({ x: 0, y: 0 });
+
+  const fotoHabilitada = media.tipo === 'foto' && tool === 'none';
+  // El pellizco/arrastre de UN dedo de la foto SÍ se apaga con algo
+  // seleccionado (a diferencia del pellizco/giro de dos dedos, que ahora
+  // decide su propio destino vía `targetInfo` — ver arriba): con un dedo,
+  // arrastrar la foto o arrastrar el texto seleccionado son gestos
+  // DISTINTOS que competirían por el mismo toque si los dos quedan
+  // habilitados a la vez.
+  const fotoZoomHabilitada = fotoHabilitada && !selectedTextId && !selectedStickerId;
+
+  const gestoFoto = useMemo(() => {
+    const canvasPinch = Gesture.Pinch()
+      .enabled(tool === 'none')
+      .onStart((e) => {
+        const t = targetInfo.value;
+        focalBase.value = { x: e.focalX, y: e.focalY };
+        if (t.kind === 'foto') {
+          fotoBase.value = { ...fotoBase.value, scale: fotoActual.value.scale, x: fotoActual.value.x, y: fotoActual.value.y };
+        } else {
+          itemBase.value = { ...itemBase.value, scale: t.scale, x: t.x, y: t.y };
+        }
+      })
+      .onUpdate((e) => {
+        const t = targetInfo.value;
+        if (t.kind === 'foto') {
+          const nuevaEscala = Math.max(FOTO_ESCALA_MIN, Math.min(FOTO_ESCALA_MAX, fotoBase.value.scale * e.scale));
+          // Base + lo que se movió el pellizco entero (los 2 dedos juntos,
+          // no cada uno por su cuenta) desde que arrancó — así se puede
+          // agrandar/achicar Y reubicar en el mismo gesto.
+          const { x, y } = clampFotoPan(
+            fotoBase.value.x + (e.focalX - focalBase.value.x),
+            fotoBase.value.y + (e.focalY - focalBase.value.y),
+            nuevaEscala,
+            fotoActual.value
+          );
+          runOnJS(patchFotoTransform)({ scale: nuevaEscala, x, y });
+        } else if (t.kind !== 'none' && t.id) {
+          const { layoutW: w, layoutH: h } = fotoActual.value;
+          const nuevaEscala = Math.max(ITEM_ESCALA_MIN, Math.min(ITEM_ESCALA_MAX, itemBase.value.scale * e.scale));
+          const patch: Partial<StoryTextItem> = { scale: nuevaEscala };
+          if (w > 0 && h > 0) {
+            patch.x = Math.min(0.95, Math.max(0.05, itemBase.value.x + (e.focalX - focalBase.value.x) / w));
+            patch.y = Math.min(0.95, Math.max(0.05, itemBase.value.y + (e.focalY - focalBase.value.y) / h));
+          }
+          runOnJS(t.kind === 'text' ? updateText : updateSticker)(t.id, patch);
+        }
+      });
+
+    const canvasRotate = Gesture.Rotation()
+      .enabled(tool === 'none')
+      .onStart(() => {
+        const t = targetInfo.value;
+        if (t.kind === 'foto') {
+          fotoBase.value = { ...fotoBase.value, rotation: fotoActual.value.rotation };
+        } else {
+          itemBase.value = { ...itemBase.value, rotation: t.rotation };
+        }
+      })
+      .onUpdate((e) => {
+        const t = targetInfo.value;
+        const gradosDelta = (e.rotation * 180) / Math.PI;
+        if (t.kind === 'foto') {
+          runOnJS(patchFotoTransform)({ rotation: fotoBase.value.rotation + gradosDelta });
+        } else if (t.kind !== 'none' && t.id) {
+          runOnJS(t.kind === 'text' ? updateText : updateSticker)(t.id, { rotation: itemBase.value.rotation + gradosDelta });
+        }
+      });
+
+    const fotoPan = Gesture.Pan()
+      .enabled(fotoZoomHabilitada)
+      // Un solo dedo, siempre: sin este límite, `Pan` TAMBIÉN reconoce el
+      // toque de 2 dedos de un pellizco/giro y su `onUpdate` dispara a la
+      // vez con la escala vieja congelada al arrancar — pisando lo que
+      // `canvasPinch`/`canvasRotate` acababan de actualizar.
+      .minPointers(1)
+      .maxPointers(1)
+      .onStart(() => {
+        fotoBase.value = { ...fotoBase.value, scale: fotoActual.value.scale, x: fotoActual.value.x, y: fotoActual.value.y };
+      })
+      .onUpdate((e) => {
+        // Arrastrar con un solo dedo sólo tiene sentido si ya hay zoom
+        // aplicado (de cualquier signo: agrandada O achicada); si no, el
+        // toque es para tocar-para-cambiar-ajuste.
+        if (Math.abs(fotoBase.value.scale - 1) <= 0.01) return;
+        const { x, y } = clampFotoPan(
+          fotoBase.value.x + e.translationX,
+          fotoBase.value.y + e.translationY,
+          fotoBase.value.scale,
+          fotoActual.value
+        );
+        runOnJS(patchFotoTransform)({ x, y });
+      });
+
+    const fotoTap = Gesture.Tap()
+      .enabled(fotoHabilitada)
+      .onEnd(() => {
+        // Toque simple sin zoom activo: el gesto de siempre de "tocá de nuevo
+        // para llenar".
+        if (Math.abs(fotoActual.value.scale - 1) <= 0.01) {
+          const next = contentFitRef.value === 'cover' ? 'contain' : 'cover';
+          runOnJS(setContentFit)(next);
+        }
+      });
+
+    return Gesture.Simultaneous(fotoPan, canvasPinch, canvasRotate, fotoTap);
+  }, [
+    tool,
+    fotoHabilitada,
+    fotoZoomHabilitada,
+    fotoBase,
+    fotoActual,
+    itemBase,
+    focalBase,
+    targetInfo,
+    contentFitRef,
+    patchFotoTransform,
+    updateText,
+    updateSticker,
+    setContentFit,
+  ]);
 
   const agregarInteractivo = (interactivo: StoryInteractivo) => {
     setOverlay((o) => ({ ...o, interactivo }));
@@ -377,18 +613,20 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   const overlayForDraw: StoryOverlay = {
     ...overlay,
     texts: [], // textos interactivos aparte
+    stickers: [], // stickers interactivos aparte (mismo motivo que texts)
   };
 
   return (
     <View style={styles.root}>
-      <View
-        style={styles.canvas}
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          setLayout({ w: width, h: height });
-        }}
-        {...(tool === 'draw' ? pan.panHandlers : media.tipo === 'foto' ? panFoto.panHandlers : {})}
-      >
+      <GestureDetector gesture={gestoFoto}>
+        <View
+          style={styles.canvas}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setLayout({ w: width, h: height });
+          }}
+          {...(tool === 'draw' ? pan.panHandlers : {})}
+        >
         <StoryMediaFill
           uri={media.uri}
           tipo={media.tipo}
@@ -407,8 +645,9 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
         />
 
         {/* El video no tiene pellizco (sólo cover/contain de toda la vida):
-            un solo toque alcanza. La foto ya resuelve el toque simple adentro
-            de panFoto de arriba, junto con pellizco y arrastre. */}
+            un solo toque alcanza. La foto ya resuelve el toque simple con el
+            gesto compuesto de arriba (`gestoFoto`), junto con pellizco y
+            arrastre. */}
         {tool === 'none' && media.tipo === 'video' ? (
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -418,6 +657,24 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
 
         <StoryOverlayLayer overlay={overlayForDraw} width={layout.w} height={layout.h} />
 
+        {(overlay.stickers ?? []).map((item) => (
+          <StoryDraggableSticker
+            key={item.id}
+            item={item}
+            canvasW={layout.w}
+            canvasH={layout.h}
+            selected={selectedStickerId === item.id}
+            editable={tool !== 'draw'}
+            targetInfo={targetInfo}
+            onSelect={(id) => {
+              setSelectedStickerId(id);
+              setSelectedTextId(null);
+            }}
+            onDeselect={() => setSelectedStickerId(null)}
+            onChange={updateSticker}
+          />
+        ))}
+
         {overlay.texts.map((item) => (
           <StoryDraggableText
             key={item.id}
@@ -426,13 +683,24 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
             canvasH={layout.h}
             selected={selectedTextId === item.id}
             editable={tool !== 'draw'}
-            onSelect={setSelectedTextId}
+            targetInfo={targetInfo}
+            onSelect={(id) => {
+              setSelectedTextId(id);
+              setSelectedStickerId(null);
+            }}
+            onDeselect={() => setSelectedTextId(null)}
             onChange={updateText}
           />
         ))}
 
         {tool === 'text' && draftText.trim().length > 0 ? (
-          <View pointerEvents="none" style={styles.liveTextWrap}>
+          // Mientras se escribe, el preview va ARRIBA (no centrado): el
+          // panel de fuente/color/input le ocupa toda la mitad de abajo
+          // (y encima el teclado), así que centrado en el canvas queda
+          // tapado por eso. Una vez que se toca "Add" pasa a ser un
+          // `StoryDraggableText` normal con su posición guardada (0.42),
+          // que el usuario puede arrastrar a donde quiera.
+          <View pointerEvents="none" style={[styles.liveTextWrap, { paddingTop: insets.top + 90 }]}>
             <Text
               style={[
                 styles.liveText,
@@ -453,7 +721,8 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
             height={layout.h}
           />
         ) : null}
-      </View>
+        </View>
+      </GestureDetector>
 
       {overlay.interactivo ? (
         <Pressable onPress={quitarInteractivo} style={[styles.quitarInteractivo, { top: insets.top + 56 }]}>
@@ -604,7 +873,16 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
       ) : null}
 
       {tool === 'text' ? (
-        <View style={[styles.textPanel, { bottom: insets.bottom + 120 }]}>
+        <View
+          style={[
+            styles.textPanel,
+            // + `insets.bottom` incluso con teclado abierto: en algunos
+            // Android (visto en MIUI) `Keyboard`'s `endCoordinates.height`
+            // no incluye la barra de navegación por gestos, así que sin
+            // esto el panel queda esa franja tapado por el teclado.
+            { bottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom + 12 : insets.bottom + 120 },
+          ]}
+        >
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorRow}>
             {STORY_FONTS.map((f) => (
               <Pressable
@@ -703,6 +981,49 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
         </View>
       ) : null}
 
+      {selectedStickerId && tool === 'none' ? (
+        <View style={[styles.textToolbar, { top: insets.top + 56 }]}>
+          <View style={styles.rotateRow}>
+            <Pressable
+              onPress={() => {
+                const cur = (overlay.stickers ?? []).find((s) => s.id === selectedStickerId);
+                if (cur) updateSticker(selectedStickerId, { rotation: (cur.rotation || 0) - 15 });
+              }}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="reload-outline" size={20} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const cur = (overlay.stickers ?? []).find((s) => s.id === selectedStickerId);
+                if (cur) updateSticker(selectedStickerId, { rotation: (cur.rotation || 0) + 15 });
+              }}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="reload-outline" size={20} color="#fff" />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const cur = (overlay.stickers ?? []).find((s) => s.id === selectedStickerId);
+                if (cur) updateSticker(selectedStickerId, { scale: Math.min(3, (cur.scale || 1) + 0.15) });
+              }}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="add" size={22} color="#fff" />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const cur = (overlay.stickers ?? []).find((s) => s.id === selectedStickerId);
+                if (cur) updateSticker(selectedStickerId, { scale: Math.max(0.5, (cur.scale || 1) - 0.15) });
+              }}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="remove" size={22} color="#fff" />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {tool === 'draw' ? (
         <View style={[styles.drawPanel, { bottom: insets.bottom + 120 }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorRow}>
@@ -778,7 +1099,7 @@ const styles = StyleSheet.create({
   liveTextWrap: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
     zIndex: 3,
   },
