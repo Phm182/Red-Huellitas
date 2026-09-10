@@ -376,6 +376,18 @@ function rh_sala_resolver_turno_vencido(mysqli $conn, array $sala): array
         return ['politica' => $politica, 'salaJugadorAfectado' => $afectado, 'cerrada' => true, 'siguienteSalaJugadorId' => null];
     }
 
+    // Corte anti-loop: si ESTE salto ya completa una vuelta entera sin que
+    // nadie haya jugado una jugada real (todos los activos saltados
+    // seguidos), la sala está abandonada de verdad — se cierra acá en vez
+    // de seguir salteando. Sin esto, dos jugadores inactivos se pasan el
+    // turno cada 15 minutos PARA SIEMPRE, cada uno recibiendo "¡Te toca
+    // jugar!" cada ~30 minutos sin parar (bug real visto en producción).
+    $saltosSeguidos = (int) ($sala['SaltosSeguidos'] ?? 0) + 1;
+    if ($saltosSeguidos >= count($activos)) {
+        rh_sala_cerrar($conn, $sala, $activos, null, []);
+        return ['politica' => $politica, 'salaJugadorAfectado' => $afectado, 'cerrada' => true, 'siguienteSalaJugadorId' => null];
+    }
+
     usort($activos, fn ($a, $b) => (int) $a['Posicion'] <=> (int) $b['Posicion']);
     $posicionActual = (int) $afectado['Posicion'];
     $siguiente = null;
@@ -391,10 +403,10 @@ function rh_sala_resolver_turno_vencido(mysqli $conn, array $sala): array
     $siguienteId = (int) $siguiente['SalaJugadorId'];
 
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), SaltosSeguidos = ?, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
     );
     $plazo = (int) $sala['PlazoTurnoMinutos'];
-    $stmt->bind_param('iii', $siguienteId, $plazo, $salaId);
+    $stmt->bind_param('iiii', $siguienteId, $plazo, $saltosSeguidos, $salaId);
     $stmt->execute();
     $stmt->close();
 
@@ -427,11 +439,21 @@ function rh_sala_siguiente_jugador(array $activos, int $posicionActual): ?array
     return $activos[0];
 }
 
-/** Pasa el turno de la sala al asiento indicado y le da un plazo nuevo. */
+/**
+ * Pasa el turno de la sala al asiento indicado y le da un plazo nuevo.
+ *
+ * Se llama SIEMPRE que hay una jugada real de por medio (repartir al
+ * arrancar, una jugada aplicada, un turno extra) — a diferencia del salto
+ * automático por timeout de `rh_sala_resolver_turno_vencido()`, que hace su
+ * propio UPDATE aparte. Por eso acá se resetean `SaltosSeguidos` (cuenta
+ * saltos-sin-jugar consecutivos, corta el loop de una sala abandonada) y
+ * `RecordatorioTurnoEnviado` (el aviso de "10% del tiempo" es por turno,
+ * uno nuevo empieza de cero).
+ */
 function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJugadorId, int $plazoTurnoMinutos): void
 {
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), SaltosSeguidos = 0, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
     );
     $stmt->bind_param('iii', $siguienteSalaJugadorId, $plazoTurnoMinutos, $salaId);
     $stmt->execute();

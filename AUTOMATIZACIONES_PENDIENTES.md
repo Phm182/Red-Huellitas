@@ -87,6 +87,14 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
   ```
 - **Estado**: script hecho; falta la verificación end-to-end (queda para cuando HueLudo esté completo) y la tarea programada no se registró.
 
+### 8b. Tarea programada — Recordatorio de "10% del tiempo" para turnos de sala
+- **Qué**: corre `inc/cli/sala_turno_por_vencer.php`, el equivalente para salas (`JuegoSala`) de `juego_turno_por_vencer.php` (que sólo cubre duelos 1v1). Avisa UNA vez por turno cuando queda el último 10% del plazo configurado — a diferencia del duelo, acá es un porcentaje y no un fijo de 15 minutos, porque el plazo de una sala va de 3 minutos a 7 días.
+- **Por qué se sumó (2026-09-09)**: bug real en producción — una sala de HueLudo con `PoliticaAbandono='espera'` y plazo de 3 minutos (el mínimo posible) se pasaba el turno entre los 2 jugadores cada vez que corría `salas_turnos_vencidos.php` (cada 15 min), y CADA salto volvía a mandar "¡Te toca jugar!" sin que nada lo cortara — dos usuarios recibiendo el aviso cada ~30 minutos, sin parar, durante 2 días. Se arregló con dos cambios en `inc/funciones/salas.php`: `SaltosSeguidos` (columna nueva, `sql/066_sala_antinagging.sql`) cuenta saltos-por-timeout consecutivos SIN que nadie juegue una jugada real, y si llega a completar una vuelta entera (todos los activos saltados) la sala se cierra sola en vez de seguir saltando; se resetea a 0 en cada jugada real (`rh_sala_avanzar_turno`).
+- **Estado**: script hecho, verificado local (reproduce el escenario exacto de producción con un test automatizado) y desplegado — **la tarea SÍ está registrada**, a diferencia de los items 7/8 de arriba (que documentan el intento de `schtasks` local, superado): en producción todos los cron de HuePlay corren vía el cron de Hostinger (`hosting_createAccountCronJobV1`), cada 5 minutos:
+  ```
+  */5 * * * * php inc/cli/sala_turno_por_vencer.php
+  ```
+
 ### 9. Build de iOS — no se pudo hacer esta noche (2026-08-08)
 - **Qué**: se pidió compilar un instalador de iOS junto con el APK de Android. No hay Mac con Xcode en esta máquina (Windows), así que la única forma de compilar para iOS acá es el build en la nube de EAS (`eas build --platform ios`).
 - **Por qué pendiente**: `eas whoami` devuelve "Not logged in" — EAS Build necesita loguearse con la cuenta de Expo del usuario, y eso es un login interactivo (browser/credenciales) que no puedo hacer por mi cuenta. Tampoco hay carpeta `ios/` generada nunca ni perfiles de iOS en `eas.json` (ya los agregué, ver abajo).
