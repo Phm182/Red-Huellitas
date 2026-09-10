@@ -5,66 +5,64 @@ import { radii } from '../../theme/elevation';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ChipRow, ChipOption } from './ChipRow';
 
-const MIN = 3;
-const MAX = 10080; // 7 días — mismo tope que valida el backend.
+const MIN = 30; // 30 segundos — mismo piso que valida el backend.
+const MAX = 604800; // 7 días.
 
-const PRESETS_MINUTOS = [3, 5, 10, 30, 60, 360, 720, 1440, 4320, 10080];
+const PRESETS_SEGUNDOS = [30, 60, 300, 600, 1800, 3600, 21600, 43200, 86400, 259200, 604800];
 
-/** "3 min" / "6h" / "3d" — mismo formato corto en todos lados. */
-export function formatearPlazo(minutos: number): string {
-  if (minutos < 60) return `${minutos} min`;
-  if (minutos < 1440) return `${Math.round(minutos / 60)}h`;
-  return `${Math.round(minutos / 1440)}d`;
+/** "30 seg" / "5 min" / "6h" / "3d" — mismo formato corto en todos lados. */
+export function formatearPlazo(segundos: number): string {
+  if (segundos < 60) return `${segundos} seg`;
+  if (segundos < 3600) return `${Math.round(segundos / 60)} min`;
+  if (segundos < 86400) return `${Math.round(segundos / 3600)}h`;
+  return `${Math.round(segundos / 86400)}d`;
 }
 
-type Unidad = 'min' | 'h' | 'd';
+type Unidad = 'seg' | 'min' | 'h' | 'd';
 
 /**
  * Elegir cuánto tiempo tiene el rival para responder cada turno.
  *
- * Antes eran 4 chips fijos en horas (1/6/12/24) — ni una partida rápida de
- * unos minutos entre dos personas mirando el celular a la vez, ni una lenta
- * de varios días, entraban ahí. Los chips siguen para el caso común, pero
- * "Personalizado" deja escribir cualquier número en la unidad que se quiera.
+ * En segundos: los chips cubren desde 30 seg (partida casi en tiempo real,
+ * los dos mirando el celular) hasta 7 días. "Personalizado" deja escribir
+ * cualquier número en la unidad que se quiera.
  */
 export function PlazoTurnoSelector({
-  valorMinutos,
+  valorSegundos,
   onChange,
 }: {
-  valorMinutos: number;
-  onChange: (minutos: number) => void;
+  valorSegundos: number;
+  onChange: (segundos: number) => void;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const esPreset = PRESETS_MINUTOS.includes(valorMinutos);
+  const esPreset = PRESETS_SEGUNDOS.includes(valorSegundos);
   const [personalizado, setPersonalizado] = useState(!esPreset);
-  const [cantidadTexto, setCantidadTexto] = useState(
-    esPreset ? '' : String(valorMinutos)
-  );
+  const [cantidadTexto, setCantidadTexto] = useState(esPreset ? '' : String(valorSegundos));
   const [unidad, setUnidad] = useState<Unidad>('min');
 
   // 0 = sentinel de "Personalizado": nunca es un plazo válido de verdad
-  // (el mínimo es 3 minutos), así que sirve para no mezclar un string
+  // (el mínimo es 30 segundos), así que sirve para no mezclar un string
   // suelto en un ChipRow<number> y liarse con la angosta de tipos.
   const CUSTOM = 0;
   const opciones: ChipOption<number>[] = [
-    ...PRESETS_MINUTOS.map((m) => ({ valor: m, label: formatearPlazo(m) })),
+    ...PRESETS_SEGUNDOS.map((s) => ({ valor: s, label: formatearPlazo(s) })),
     { valor: CUSTOM, label: t('hueplay.plazoPersonalizado') },
   ];
 
   const aplicarPersonalizado = (texto: string, u: Unidad) => {
     const n = parseInt(texto, 10);
     if (!Number.isFinite(n) || n <= 0) return;
-    const factor = u === 'min' ? 1 : u === 'h' ? 60 : 1440;
-    const minutos = Math.max(MIN, Math.min(MAX, n * factor));
-    onChange(minutos);
+    const factor = u === 'seg' ? 1 : u === 'min' ? 60 : u === 'h' ? 3600 : 86400;
+    const segundos = Math.max(MIN, Math.min(MAX, n * factor));
+    onChange(segundos);
   };
 
   return (
     <View>
       <ChipRow
         opciones={opciones}
-        seleccionado={personalizado ? CUSTOM : valorMinutos}
+        seleccionado={personalizado ? CUSTOM : valorSegundos}
         onSelect={(v) => {
           if (v === CUSTOM) {
             setPersonalizado(true);
@@ -92,7 +90,7 @@ export function PlazoTurnoSelector({
               { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface },
             ]}
           />
-          {(['min', 'h', 'd'] as const).map((u) => (
+          {(['seg', 'min', 'h', 'd'] as const).map((u) => (
             <Pressable
               key={u}
               onPress={() => {
@@ -128,5 +126,5 @@ const styles = StyleSheet.create({
     width: 70,
     textAlign: 'center',
   },
-  unidad: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 8 },
+  unidad: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 8 },
 });

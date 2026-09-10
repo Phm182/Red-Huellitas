@@ -113,13 +113,13 @@ if ($gano) {
 } elseif ($turnoExtra) {
     // Turno extra: se refresca el plazo para que la tirada de más tenga el
     // mismo tiempo completo que cualquier otra.
-    rh_sala_avanzar_turno($conn, $salaId, (int) $miAsiento['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
+    rh_sala_avanzar_turno($conn, $salaId, (int) $miAsiento['SalaJugadorId'], (int) $sala['PlazoTurnoSegundos']);
     $sala = rh_sala_obtener($conn, $salaId);
 } else {
     $activos = array_values(array_filter($jugadores, fn ($j) => $j['Estado'] === 'jugando'));
     $siguiente = rh_sala_siguiente_jugador($activos, $miPosicion);
     if ($siguiente !== null) {
-        rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoMinutos']);
+        rh_sala_avanzar_turno($conn, $salaId, (int) $siguiente['SalaJugadorId'], (int) $sala['PlazoTurnoSegundos']);
     }
     $sala = rh_sala_obtener($conn, $salaId);
     $jugadores = rh_sala_jugadores($conn, $salaId);

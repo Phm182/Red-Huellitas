@@ -35,7 +35,7 @@ $botId = rh_juego_bot_user_id($conn);
 // entró en el 10% final — y todavía no venció (eso lo resuelve
 // salas_turnos_vencidos.php aparte).
 $stmt = $conn->prepare(
-    "SELECT s.SalaId, s.JuegoCodigo, s.PlazoTurnoMinutos, s.TurnoVenceEn,
+    "SELECT s.SalaId, s.JuegoCodigo, s.PlazoTurnoSegundos, s.TurnoVenceEn,
             j.SalaJugadorId, j.UserId
        FROM JuegoSala s
        JOIN JuegoSalaJugador j ON j.SalaJugadorId = s.TurnoDeSalaJugadorId
@@ -44,7 +44,7 @@ $stmt = $conn->prepare(
         AND s.TurnoVenceEn IS NOT NULL
         AND s.TurnoVenceEn > NOW()
         AND j.UserId <> ?
-        AND TIMESTAMPDIFF(SECOND, NOW(), s.TurnoVenceEn) <= s.PlazoTurnoMinutos * 60 * " . RH_SALA_FRACCION_AVISO
+        AND TIMESTAMPDIFF(SECOND, NOW(), s.TurnoVenceEn) <= s.PlazoTurnoSegundos * " . RH_SALA_FRACCION_AVISO
 );
 $stmt->bind_param('i', $botId);
 $stmt->execute();

@@ -29,9 +29,9 @@ if (!in_array($tamano, RH_TORNEO_TAMANOS, true)) {
 
 $esPublico = !isset($_POST['esPublico']) || $_POST['esPublico'] === '1' || $_POST['esPublico'] === 1 || $_POST['esPublico'] === true;
 
-$plazoTurnoMinutos = (int) ($_POST['plazoTurnoMinutos'] ?? 1440);
-if ($plazoTurnoMinutos < 3 || $plazoTurnoMinutos > 10080) {
-    json_error('El plazo por turno debe ser entre 3 minutos y 7 días');
+$plazoTurnoSegundos = (int) ($_POST['plazoTurnoSegundos'] ?? 86400);
+if ($plazoTurnoSegundos < 30 || $plazoTurnoSegundos > 604800) {
+    json_error('El plazo por turno debe ser entre 30 segundos y 7 días');
 }
 
 $plazoRondaMinutos = (int) ($_POST['plazoRondaMinutos'] ?? 0);
@@ -60,7 +60,7 @@ $torneo = rh_torneo_crear(
     $formato,
     $tamano,
     $esPublico,
-    $plazoTurnoMinutos,
+    $plazoTurnoSegundos,
     $plazoRondaMinutos,
     $invitados
 );

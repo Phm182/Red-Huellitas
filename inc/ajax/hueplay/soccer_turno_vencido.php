@@ -114,7 +114,7 @@ if ($terminoPorTiempo) {
     // Sin notificación push específica de "se te acabó el tiempo": decisión
     // a propósito, ver comentario de cabecera. rh_juego_avanzar_turno() ya
     // notifica al rival "te toca jugar", que alcanza.
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoSegundos'], $d['JuegoCodigo']);
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');

@@ -523,17 +523,17 @@ function rh_juego_avanzar_turno(
     int $desafioId,
     int $siguienteUserId,
     int $movidaDeUserId,
-    int $plazoTurnoMinutos,
+    int $plazoTurnoSegundos,
     ?string $juegoCodigo = null
 ): void {
     $stmt = $conn->prepare(
         "UPDATE JuegoDesafio
             SET TurnoDeUserId = ?, Estado = 'aceptado',
-                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? MINUTE),
+                ExpiraEn = DATE_ADD(NOW(), INTERVAL ? SECOND),
                 RecordatorioTurnoEnviado = 0
           WHERE DesafioId = ? AND TurnoDeUserId = ?"
     );
-    $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoMinutos, $desafioId, $movidaDeUserId);
+    $stmt->bind_param('iiii', $siguienteUserId, $plazoTurnoSegundos, $desafioId, $movidaDeUserId);
     $stmt->execute();
     $stmt->close();
 
@@ -895,7 +895,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],
-        'plazoTurnoMinutos' => (int) ($d['PlazoTurnoMinutos'] ?? 1440),
+        'plazoTurnoSegundos' => (int) ($d['PlazoTurnoSegundos'] ?? 86400),
         'esRivalIA' => rh_juego_es_bot($conn, $otroId),
     ];
 }

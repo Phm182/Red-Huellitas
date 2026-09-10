@@ -113,7 +113,7 @@ export const hueplayApi = {
     juegoCodigo: string,
     rivalUserId?: number,
     opciones?: {
-      plazoTurnoMinutos?: number;
+      plazoTurnoSegundos?: number;
       /** Plazo total de la partida en minutos; 0/ausente = sin límite. */
       plazoPartidaMinutos?: number;
       contraIA?: boolean;
@@ -125,7 +125,7 @@ export const hueplayApi = {
       {
         juegoCodigo,
         ...(rivalUserId ? { rivalUserId } : {}),
-        ...(opciones?.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
+        ...(opciones?.plazoTurnoSegundos ? { plazoTurnoSegundos: opciones.plazoTurnoSegundos } : {}),
         ...(opciones?.plazoPartidaMinutos ? { plazoPartidaMinutos: opciones.plazoPartidaMinutos } : {}),
         ...(opciones?.contraIA ? { contraIA: '1' } : {}),
         ...(opciones?.metaGoles ? { metaGoles: opciones.metaGoles } : {}),
@@ -257,7 +257,7 @@ export const hueplayApi = {
       maxJugadores: number;
       completarConIA: boolean;
       politicaAbandono: PoliticaAbandonoSala;
-      plazoTurnoMinutos: number;
+      plazoTurnoSegundos: number;
       /** Sólo salas de duelo: plazo total de la partida (0 = sin límite). */
       plazoPartidaMinutos?: number;
       invitadosUserIds?: number[];
@@ -272,7 +272,7 @@ export const hueplayApi = {
         maxJugadores: opciones.maxJugadores,
         completarConIA: opciones.completarConIA ? '1' : '0',
         politicaAbandono: opciones.politicaAbandono,
-        plazoTurnoMinutos: opciones.plazoTurnoMinutos,
+        plazoTurnoSegundos: opciones.plazoTurnoSegundos,
         ...(opciones.plazoPartidaMinutos ? { plazoPartidaMinutos: opciones.plazoPartidaMinutos } : {}),
         esPublica: opciones.esPublica === false ? '0' : '1',
         ...(opciones.invitadosUserIds?.length
@@ -318,7 +318,7 @@ export const hueplayApi = {
       formato: 'eliminacion' | 'liga';
       tamano: number;
       esPublico?: boolean;
-      plazoTurnoMinutos?: number;
+      plazoTurnoSegundos?: number;
       plazoRondaMinutos?: number;
       invitadosUserIds?: number[];
     }
@@ -330,7 +330,7 @@ export const hueplayApi = {
         formato: opciones.formato,
         tamano: opciones.tamano,
         esPublico: opciones.esPublico === false ? '0' : '1',
-        ...(opciones.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
+        ...(opciones.plazoTurnoSegundos ? { plazoTurnoSegundos: opciones.plazoTurnoSegundos } : {}),
         ...(opciones.plazoRondaMinutos ? { plazoRondaMinutos: opciones.plazoRondaMinutos } : {}),
         ...(opciones.invitadosUserIds?.length
           ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }

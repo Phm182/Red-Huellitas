@@ -72,17 +72,17 @@ function rh_sala_crear(
     int $maxJugadores,
     bool $completarConIA,
     string $politicaAbandono,
-    int $plazoTurnoMinutos,
+    int $plazoTurnoSegundos,
     array $invitadosUserIds
 ): array {
     $codigo = rh_sala_codigo_nuevo($conn);
     $completarConIAInt = $completarConIA ? 1 : 0;
 
     $stmt = $conn->prepare(
-        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoMinutos, CodigoInvitacion)
+        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoSegundos, CodigoInvitacion)
          VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->bind_param('siiisis', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoMinutos, $codigo);
+    $stmt->bind_param('siiisis', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoSegundos, $codigo);
     $stmt->execute();
     $salaId = $conn->insert_id;
     $stmt->close();
@@ -403,9 +403,9 @@ function rh_sala_resolver_turno_vencido(mysqli $conn, array $sala): array
     $siguienteId = (int) $siguiente['SalaJugadorId'];
 
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), SaltosSeguidos = ?, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? SECOND), SaltosSeguidos = ?, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
     );
-    $plazo = (int) $sala['PlazoTurnoMinutos'];
+    $plazo = (int) $sala['PlazoTurnoSegundos'];
     $stmt->bind_param('iiii', $siguienteId, $plazo, $saltosSeguidos, $salaId);
     $stmt->execute();
     $stmt->close();
@@ -450,12 +450,12 @@ function rh_sala_siguiente_jugador(array $activos, int $posicionActual): ?array
  * `RecordatorioTurnoEnviado` (el aviso de "10% del tiempo" es por turno,
  * uno nuevo empieza de cero).
  */
-function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJugadorId, int $plazoTurnoMinutos): void
+function rh_sala_avanzar_turno(mysqli $conn, int $salaId, int $siguienteSalaJugadorId, int $plazoTurnoSegundos): void
 {
     $stmt = $conn->prepare(
-        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), SaltosSeguidos = 0, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
+        'UPDATE JuegoSala SET TurnoDeSalaJugadorId = ?, TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? SECOND), SaltosSeguidos = 0, RecordatorioTurnoEnviado = 0 WHERE SalaId = ?'
     );
-    $stmt->bind_param('iii', $siguienteSalaJugadorId, $plazoTurnoMinutos, $salaId);
+    $stmt->bind_param('iii', $siguienteSalaJugadorId, $plazoTurnoSegundos, $salaId);
     $stmt->execute();
     $stmt->close();
 
@@ -537,7 +537,7 @@ function rh_sala_serializar(mysqli $conn, array $sala, array $jugadores, int $yo
         'maxJugadores' => (int) $sala['MaxJugadores'],
         'completarConIA' => (bool) $sala['CompletarConIA'],
         'politicaAbandono' => $sala['PoliticaAbandono'],
-        'plazoTurnoMinutos' => (int) $sala['PlazoTurnoMinutos'],
+        'plazoTurnoSegundos' => (int) $sala['PlazoTurnoSegundos'],
         'codigoInvitacion' => $sala['CodigoInvitacion'],
         'estado' => $sala['Estado'],
         // El tablero NO va acá: en juegos con información oculta (HueRummy,

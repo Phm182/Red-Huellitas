@@ -104,7 +104,7 @@ if ($terminoPorTiempo) {
     $progreso = $userId === $retador ? $cierre['progresoRetador'] : $cierre['progresoRetado'];
     $resultadoPropio = $ganador === null ? 'empate' : ($ganador === $userId ? 'gane' : 'perdiste');
 } else {
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoSegundos'], $d['JuegoCodigo']);
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');

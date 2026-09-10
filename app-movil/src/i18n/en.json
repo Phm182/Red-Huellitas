@@ -1174,7 +1174,7 @@
       "sinNada": "Nothing here yet",
       "invitacion": "You were invited",
       "armando": "Setting up the room",
-      "abiertas": "Open rooms",
+      "abiertas": "Rooms",
       "sinAbiertas": "No open rooms right now",
       "salaAbiertaInfo": "{{dentro}}/{{max}} players · {{cupos}} spot(s) left",
       "duelo1v1": "1-on-1 duel",
@@ -1413,7 +1413,7 @@
       "nuevaSala": "New {{juego}} room",
       "crearDe": "Create a {{juego}} room",
       "publica": "Public room",
-      "publicaDesc": "Shows up in \"Open rooms\" and anyone with a spot can join.",
+      "publicaDesc": "Shows in the Rooms tab; anyone with a free seat can join.",
       "privadaDesc": "Only people with the code or an invite can join."
     },
     "ludo": {
@@ -1583,6 +1583,7 @@
     },
     "plazoPersonalizado": "Custom",
     "unidad": {
+      "seg": "sec",
       "min": "min",
       "h": "h",
       "d": "days"

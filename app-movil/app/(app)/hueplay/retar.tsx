@@ -72,7 +72,7 @@ export default function RetarScreen() {
   const [rivales, setRivales] = useState<HuePlayRival[]>([]);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState<number | null>(null);
-  const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
+  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(86400);
   const [plazoPartidaMinutos, setPlazoPartidaMinutos] = useState(0);
   const [metaGoles, setMetaGoles] = useState(GOLES_PARA_GANAR_DEFAULT);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export default function RetarScreen() {
     setEnviando(r.userId);
     setError(null);
     const res = await hueplayApi.crearDesafio(JUEGO, r.userId, {
-      ...(esDeTurnos ? { plazoTurnoMinutos } : {}),
+      ...(esDeTurnos ? { plazoTurnoSegundos } : {}),
       ...(esDeTurnos && plazoPartidaMinutos ? { plazoPartidaMinutos } : {}),
       ...(esSoccer ? { metaGoles } : {}),
     });
@@ -252,7 +252,7 @@ export default function RetarScreen() {
             <Text style={[type.label, { color: colors.textMuted, marginBottom: 8 }]}>
               {t('hueplay.plazoTurno')}
             </Text>
-            <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+            <PlazoTurnoSelector valorSegundos={plazoTurnoSegundos} onChange={setPlazoTurnoSegundos} />
             <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6 }}>
               {t('hueplay.plazoTurnoAyuda')}
             </Text>

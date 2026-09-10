@@ -44,7 +44,7 @@ if ($contraIA) {
         json_error('La IA no está disponible ahora', 503);
     }
     // El plazo de turno no aplica: el bot nunca hace esperar a nadie.
-    $plazoTurnoMinutos = 1440;
+    $plazoTurnoSegundos = 86400;
 } else {
     $rivalId = (int) ($_POST['rivalUserId'] ?? 0);
     if ($rivalId <= 0) {
@@ -64,14 +64,14 @@ if ($contraIA) {
         json_error('Ese usuario no existe', 404);
     }
 
-    $plazoTurnoMinutos = 1440;
+    $plazoTurnoSegundos = 86400;
     if ($modo === 'turnos') {
-        $plazoTurnoMinutos = isset($_POST['plazoTurnoMinutos']) ? (int) $_POST['plazoTurnoMinutos'] : 1440;
-        // 3 minutos a 7 días. El tope de producto sigue siendo chico a
-        // propósito (antes 24h) para que un duelo no quede colgado
-        // indefinidamente, pero ahora el usuario elige la unidad.
-        if ($plazoTurnoMinutos < 3 || $plazoTurnoMinutos > 10080) {
-            json_error('El plazo debe ser entre 3 minutos y 7 días');
+        $plazoTurnoSegundos = isset($_POST['plazoTurnoSegundos']) ? (int) $_POST['plazoTurnoSegundos'] : 86400;
+        // 30 segundos a 7 días. El piso bajo permite partidas casi en tiempo
+        // real (los dos mirando el celular); el techo sigue chico a propósito
+        // para que un duelo no quede colgado indefinidamente.
+        if ($plazoTurnoSegundos < 30 || $plazoTurnoSegundos > 604800) {
+            json_error('El plazo debe ser entre 30 segundos y 7 días');
         }
     }
 
@@ -137,16 +137,16 @@ $partidaVenceExpr = $plazoPartidaMinutos > 0
 
 if ($modo === 'turnos') {
     $stmt = $conn->prepare(
-        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE), $partidaVenceExpr)"
+        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoSegundos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), $partidaVenceExpr)"
     );
-    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoMinutos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $plazoTurnoMinutos);
+    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoSegundos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $plazoTurnoSegundos);
 } else {
     $stmt = $conn->prepare(
-        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
+        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoSegundos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), $partidaVenceExpr)"
     );
-    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoMinutos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $dias);
+    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoSegundos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $dias);
 }
 $stmt->execute();
 $desafioId = $conn->insert_id;

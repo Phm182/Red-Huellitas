@@ -173,7 +173,7 @@ if ($turnoActual === null) {
     $stmt->execute();
     $stmt->close();
 
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoSegundos'], $d['JuegoCodigo']);
     rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
         rh_juego_nombre($conn, $userId) . ' ya movió en HueReversi', rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId),
         ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);

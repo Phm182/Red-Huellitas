@@ -91,7 +91,7 @@ export interface HuePlayTorneo {
   soyCreador: boolean;
   ganadorUserId: number | null;
   ganadorNombre: string | null;
-  plazoTurnoMinutos: number;
+  plazoTurnoSegundos: number;
   plazoRondaMinutos: number;
   participantes: HuePlayTorneoParticipante[];
   partidas: HuePlayTorneoPartida[];
@@ -242,7 +242,7 @@ export interface HuePlayDesafio {
   creadoEn: string;
   expiraEn: string;
   /** Horas que tiene el rival para responder cada movimiento (1-24). */
-  plazoTurnoMinutos: number;
+  plazoTurnoSegundos: number;
   /** Si el rival es la IA de la app y no otro usuario. */
   esRivalIA: boolean;
 }
@@ -456,7 +456,7 @@ export interface HuePlaySala {
   maxJugadores: number;
   completarConIA: boolean;
   politicaAbandono: PoliticaAbandonoSala;
-  plazoTurnoMinutos: number;
+  plazoTurnoSegundos: number;
   codigoInvitacion: string;
   /** Sólo lo mandan los endpoints de salas abiertas (`sala_publicas.php`,
    * `sala_unirse_publica.php`, `sala_crear.php`); en la bandeja normal viene undefined. */

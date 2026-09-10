@@ -48,13 +48,13 @@ if (rh_juego_es_duelo($juegoCodigo)) {
         $armado = rh_desafio_tablero_inicial($juegoCodigo, $retadorId, $retadoId, $semilla);
         $tableroDuelo = $armado['tablero'];
         $turnoDeDuelo = $armado['turnoDe'];
-        $plazoTurnoMinutos = (int) $sala['PlazoTurnoMinutos'];
-        $expiraMinutos = $plazoTurnoMinutos;
+        $plazoTurnoSegundos = (int) $sala['PlazoTurnoSegundos'];
+        $expiraSegundos = $plazoTurnoSegundos;
     } else {
         $tableroDuelo = null;
         $turnoDeDuelo = null;
-        $plazoTurnoMinutos = 1440;
-        $expiraMinutos = RH_DESAFIO_DIAS * 1440;
+        $plazoTurnoSegundos = 86400;
+        $expiraSegundos = RH_DESAFIO_DIAS * 86400;
     }
 
     // Plazo de partida elegido al armar la sala (0 = sin límite). Int ya
@@ -66,20 +66,20 @@ if (rh_juego_es_duelo($juegoCodigo)) {
 
     $stmt = $conn->prepare(
         "INSERT INTO JuegoDesafio
-            (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn, PartidaVenceEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? MINUTE), $partidaVenceExpr)"
+            (JuegoCodigo, Modo, PlazoTurnoSegundos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? SECOND), $partidaVenceExpr)"
     );
     $stmt->bind_param(
         'ssiiiisii',
         $juegoCodigo,
         $modo,
-        $plazoTurnoMinutos,
+        $plazoTurnoSegundos,
         $retadorId,
         $retadoId,
         $semilla,
         $tableroDuelo,
         $turnoDeDuelo,
-        $expiraMinutos
+        $expiraSegundos
     );
     $stmt->execute();
     $desafioId = $conn->insert_id;
@@ -122,12 +122,12 @@ if ($juegoCodigo === 'hueludo') {
 
 usort($jugadores, fn ($a, $b) => (int) $a['Posicion'] <=> (int) $b['Posicion']);
 $primerTurno = (int) $jugadores[0]['SalaJugadorId'];
-$plazo = (int) $sala['PlazoTurnoMinutos'];
+$plazo = (int) $sala['PlazoTurnoSegundos'];
 
 $stmt = $conn->prepare(
     "UPDATE JuegoSala
         SET Tablero = ?, Estado = 'jugando', TurnoDeSalaJugadorId = ?,
-            TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? MINUTE), IniciadaEn = NOW()
+            TurnoVenceEn = DATE_ADD(NOW(), INTERVAL ? SECOND), IniciadaEn = NOW()
       WHERE SalaId = ?"
 );
 $stmt->bind_param('siii', $tablero, $primerTurno, $plazo, $salaId);

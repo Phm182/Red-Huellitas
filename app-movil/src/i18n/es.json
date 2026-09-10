@@ -1189,7 +1189,7 @@
       "sinNada": "No tenés nada acá todavía",
       "invitacion": "Te invitaron",
       "armando": "Armando la sala",
-      "abiertas": "Salas abiertas",
+      "abiertas": "Salas",
       "sinAbiertas": "No hay salas abiertas ahora",
       "salaAbiertaInfo": "{{dentro}}/{{max}} jugadores · {{cupos}} lugar(es) libre(s)",
       "duelo1v1": "Duelo 1 contra 1",
@@ -1285,6 +1285,7 @@
       "sem1": "1 semana"
     },
     "unidad": {
+      "seg": "seg",
       "min": "min",
       "h": "h",
       "d": "días"
@@ -1434,7 +1435,7 @@
       "nuevaSala": "Nueva sala de {{juego}}",
       "crearDe": "Crear sala de {{juego}}",
       "publica": "Sala pública",
-      "publicaDesc": "Aparece en \"Salas abiertas\" y cualquiera con lugar se suma.",
+      "publicaDesc": "Aparece en la solapa Salas; cualquiera con lugar se suma.",
       "privadaDesc": "Sólo entra quien tenga el código o una invitación."
     },
     "ludo": {

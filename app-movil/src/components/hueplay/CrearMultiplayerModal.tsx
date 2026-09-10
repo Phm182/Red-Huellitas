@@ -107,21 +107,22 @@ export function CrearMultiplayerModal({ visible, onClose }: { visible: boolean; 
                   {t('hueplay.multiplayer.elegiJuego')}
                 </Text>
               </View>
-              <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={styles.grilla}>
+              <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={styles.grilla}>
                 {juegos.map((j) => (
-                  <Pressable
-                    key={j.codigo}
-                    onPress={() => elegirJuego(j.codigo)}
-                    style={[styles.chip, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
-                    <MaterialCommunityIcons name={j.icono} size={16} color={j.color} />
-                    <Text
-                      numberOfLines={1}
-                      style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 12, flexShrink: 1 }}
+                  <View key={j.codigo} style={styles.chipCell}>
+                    <Pressable
+                      onPress={() => elegirJuego(j.codigo)}
+                      style={[styles.chip, { backgroundColor: colors.background, borderColor: colors.border }]}
                     >
-                      {j.titulo}
-                    </Text>
-                  </Pressable>
+                      <MaterialCommunityIcons name={j.icono} size={16} color={j.color} />
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 12, flexShrink: 1 }}
+                      >
+                        {j.titulo}
+                      </Text>
+                    </Pressable>
+                  </View>
                 ))}
               </ScrollView>
             </>
@@ -148,16 +149,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   opcionIcono: { width: 36, height: 36, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
-  grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Dos columnas parejas siempre: la celda (View) lleva el 48%, el Pressable
+  // la llena; el título recorta con ellipsis en vez de estirar el chip a la
+  // fila entera (que dejaba los HueDoku de a uno por fila).
+  grilla: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
+  chipCell: { width: '48%' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
     borderRadius: radii.pill,
     paddingVertical: 10,
-    paddingHorizontal: 14,
-    minWidth: '47%',
-    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
 });

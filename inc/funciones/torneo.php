@@ -79,7 +79,7 @@ function rh_torneo_crear(
     string $formato,
     int $tamano,
     bool $esPublico,
-    int $plazoTurnoMinutos,
+    int $plazoTurnoSegundos,
     int $plazoRondaMinutos,
     array $invitadosUserIds
 ): array {
@@ -88,10 +88,10 @@ function rh_torneo_crear(
     $publicoInt = $esPublico ? 1 : 0;
 
     $stmt = $conn->prepare(
-        'INSERT INTO Torneo (JuegoCodigo, CreadorUserId, Nombre, Formato, Tamano, CodigoInvitacion, EsPublico, PlazoTurnoMinutos, PlazoRondaMinutos)
+        'INSERT INTO Torneo (JuegoCodigo, CreadorUserId, Nombre, Formato, Tamano, CodigoInvitacion, EsPublico, PlazoTurnoSegundos, PlazoRondaMinutos)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->bind_param('sissssiii', $juegoCodigo, $userId, $nombre, $formato, $tamano, $codigo, $publicoInt, $plazoTurnoMinutos, $plazoRondaMinutos);
+    $stmt->bind_param('sissssiii', $juegoCodigo, $userId, $nombre, $formato, $tamano, $codigo, $publicoInt, $plazoTurnoSegundos, $plazoRondaMinutos);
     $stmt->execute();
     $torneoId = $conn->insert_id;
     $stmt->close();
@@ -203,13 +203,13 @@ function rh_torneo_generar_duelo(mysqli $conn, array $torneo, array $partida): v
         $armado = rh_desafio_tablero_inicial($codigo, $a, $b, $semilla);
         $tablero = $armado['tablero'];
         $turnoDe = $armado['turnoDe'];
-        $plazoTurno = (int) $torneo['PlazoTurnoMinutos'];
-        $expiraMin = $plazoTurno;
+        $plazoTurno = (int) $torneo['PlazoTurnoSegundos'];
+        $expiraSeg = $plazoTurno;
     } else {
         $tablero = null;
         $turnoDe = null;
-        $plazoTurno = 1440;
-        $expiraMin = RH_DESAFIO_DIAS * 1440;
+        $plazoTurno = 86400;
+        $expiraSeg = RH_DESAFIO_DIAS * 86400;
     }
 
     $plazoRonda = (int) $torneo['PlazoRondaMinutos'];
@@ -217,10 +217,10 @@ function rh_torneo_generar_duelo(mysqli $conn, array $torneo, array $partida): v
 
     $stmt = $conn->prepare(
         "INSERT INTO JuegoDesafio
-            (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn, PartidaVenceEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? MINUTE), $partidaVenceExpr)"
+            (JuegoCodigo, Modo, PlazoTurnoSegundos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? SECOND), $partidaVenceExpr)"
     );
-    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurno, $a, $b, $semilla, $tablero, $turnoDe, $expiraMin);
+    $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurno, $a, $b, $semilla, $tablero, $turnoDe, $expiraSeg);
     $stmt->execute();
     $desafioId = $conn->insert_id;
     $stmt->close();
@@ -743,7 +743,7 @@ function rh_torneo_serializar(mysqli $conn, array $t, int $yo): array
         'soyCreador' => (int) $t['CreadorUserId'] === $yo,
         'ganadorUserId' => $t['GanadorUserId'] !== null ? (int) $t['GanadorUserId'] : null,
         'ganadorNombre' => $nom($t['GanadorUserId'] !== null ? (int) $t['GanadorUserId'] : 0),
-        'plazoTurnoMinutos' => (int) $t['PlazoTurnoMinutos'],
+        'plazoTurnoSegundos' => (int) $t['PlazoTurnoSegundos'],
         'plazoRondaMinutos' => (int) $t['PlazoRondaMinutos'],
         'participantes' => $participantes,
         'partidas' => $partidasSer,

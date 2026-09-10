@@ -32,7 +32,7 @@ export default function TorneoCrearScreen() {
   const [formato, setFormato] = useState<TorneoFormato>('eliminacion');
   const [tamano, setTamano] = useState(8);
   const [esPublico, setEsPublico] = useState(true);
-  const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
+  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(86400);
   const [plazoRondaMinutos, setPlazoRondaMinutos] = useState(0);
 
   const [busqueda, setBusqueda] = useState('');
@@ -65,7 +65,7 @@ export default function TorneoCrearScreen() {
       formato,
       tamano,
       esPublico,
-      plazoTurnoMinutos,
+      plazoTurnoSegundos,
       plazoRondaMinutos,
       invitadosUserIds: invitados.map((i) => i.userId),
     });
@@ -122,7 +122,7 @@ export default function TorneoCrearScreen() {
       {esTurnos ? (
         <>
           <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoTurno')}</Text>
-          <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+          <PlazoTurnoSelector valorSegundos={plazoTurnoSegundos} onChange={setPlazoTurnoSegundos} />
           <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6, paddingHorizontal: 16 }}>
             {t('hueplay.plazoTurnoAyuda')}
           </Text>

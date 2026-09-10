@@ -229,7 +229,7 @@ if ($terminada) {
     $progreso = $userId === $retador ? $cierre['progresoRetador'] : $cierre['progresoRetado'];
     $resultadoPropio = $ganador === null ? 'empate' : ($ganador === $userId ? 'gane' : 'perdiste');
 } elseif ($falta) {
-    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
+    rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoSegundos'], $d['JuegoCodigo']);
     rh_notificar($conn, [$rival], 'juego_desafio', '¡Bola en mano!',
         rh_juego_nombre($conn, $userId) . ' hizo falta en HuePool: tenés la blanca libre', rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId),
         ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
@@ -249,7 +249,7 @@ if ($terminada) {
     }
 
     if (!$sigoTirando) {
-        rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
+        rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoSegundos'], $d['JuegoCodigo']);
         rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
             rh_juego_nombre($conn, $userId) . ' ya tiró en HuePool', rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId),
             ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
