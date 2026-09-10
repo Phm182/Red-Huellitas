@@ -94,4 +94,18 @@ if (($sala['JuegoCodigo'] === 'hueludo' || $sala['JuegoCodigo'] === 'hueludoroya
     }
 }
 
+// Salas de duelo 1v1: el lobby necesita el `desafioId` (y la `semilla`, que
+// `rutaDelDesafio` usa para HueCrush/HueMemo/HueDoku) para mandar a los dos
+// jugadores al tablero del duelo una vez que arrancó.
+$salaSerializada['juegoModo'] = rh_juego_modo($sala['JuegoCodigo']);
+if (!empty($sala['DesafioId'])) {
+    $salaSerializada['desafioId'] = (int) $sala['DesafioId'];
+    $stmt = $conn->prepare('SELECT Semilla FROM JuegoDesafio WHERE DesafioId = ?');
+    $stmt->bind_param('i', $sala['DesafioId']);
+    $stmt->execute();
+    $dRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $salaSerializada['semilla'] = (int) ($dRow['Semilla'] ?? 0);
+}
+
 json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoScrabble' => $estadoScrabble]);

@@ -1189,7 +1189,8 @@
       "armando": "Armando la sala",
       "abiertas": "Salas abiertas",
       "sinAbiertas": "No hay salas abiertas ahora",
-      "salaAbiertaInfo": "{{dentro}}/{{max}} jugadores · {{cupos}} lugar(es) libre(s)"
+      "salaAbiertaInfo": "{{dentro}}/{{max}} jugadores · {{cupos}} lugar(es) libre(s)",
+      "duelo1v1": "Duelo 1 contra 1"
     },
     "tuRecord": "Tu récord: {{n}}",
     "retarA": "Retar a alguien",

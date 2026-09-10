@@ -1,11 +1,11 @@
 -- =============================================================================
--- Red Huellitas — schema completo (001 … 066)
+-- Red Huellitas — schema completo (001 … 068)
 --
 -- ARCHIVO GENERADO — no editar a mano.
 -- Se regenera con:  php inc/cli/build_schema.php
 -- Si agregás una migración a sql/, volvé a correr eso y commiteá el resultado.
 --
--- Última generación: 2026-09-09  ·  Migraciones incluidas: 66
+-- Última generación: 2026-09-10  ·  Migraciones incluidas: 68
 --
 -- Sirve para crear la base desde cero con la versión final del esquema:
 --   mysql --default-character-set=utf8mb4 -u root < sql/000_todo_schema.sql
@@ -5864,7 +5864,6 @@ SET @sql = (SELECT IF(
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 
-
 -- -----------------------------------------------------------------------------
 -- 067_sala_publica.sql
 -- -----------------------------------------------------------------------------
@@ -5885,9 +5884,37 @@ SET @sql = (SELECT IF(
     'SELECT 1'));
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
+-- Índice para el listado de salas abiertas (estado + pública), que corre en
+-- cada apertura del visualizador.
 SET @sql = (SELECT IF(
     (SELECT COUNT(*) FROM information_schema.STATISTICS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoSala' AND INDEX_NAME = 'idx_sala_abiertas') = 0,
     'ALTER TABLE JuegoSala ADD INDEX idx_sala_abiertas (Estado, EsPublica)',
     'SELECT 1'));
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- -----------------------------------------------------------------------------
+-- 068_sala_desafio.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- Salas (lobby) para los juegos de duelo 1v1.
+--
+-- Un `JuegoSala` de 2 asientos también sirve de lobby para HueConecta,
+-- HueDamas, HueAjedrez, HueReversi, HueTaTeTi, HuePool, HueSoccer y los
+-- duelos por puntaje. Al iniciar, la sala genera un `JuegoDesafio` entre
+-- los 2 jugadores y `DesafioId` lo linkea: el cliente entra a ese duelo
+-- por el flujo normal (`*_ver.php` / `turno_jugar.php` / etc.).
+--
+-- Queda NULL para las salas de los 4 juegos de sala (HueLudo, etc.).
+-- ============================================================
+
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'JuegoSala' AND COLUMN_NAME = 'DesafioId') = 0,
+    'ALTER TABLE JuegoSala ADD COLUMN DesafioId INT NULL AFTER EsPublica',
+    'SELECT 1'));
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+

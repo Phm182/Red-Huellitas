@@ -48,6 +48,34 @@ export function juegoDelCatalogo(codigo: string): JuegoCatalogoItem | undefined 
 }
 
 /**
+ * Juegos de tablero por turnos: los únicos donde el plazo de respuesta
+ * tiene sentido (mover primero es ventaja, hay que esperar al otro).
+ */
+export const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool'];
+
+/**
+ * Juegos que se pueden jugar 1 contra 1: retar a alguien puntual, o armar
+ * una sala de duelo (lobby con código + visualizador de salas abiertas).
+ * Espejo de `RH_JUEGOS_DUELO` en el backend
+ * (`inc/funciones/desafio_tablero.php`). No incluye los solo-solo
+ * (`huepacman`, `huegotchi`), que tampoco son `esSala`.
+ */
+export const JUEGOS_DUELO = [
+  ...JUEGOS_TURNOS,
+  'huematch',
+  'huememo',
+  'huetrivia',
+  'huezip',
+  'huedoku6',
+  'huedoku9facil',
+  'huedoku9dificil',
+];
+
+export function esJuegoDuelo(codigo: string): boolean {
+  return JUEGOS_DUELO.includes(codigo);
+}
+
+/**
  * Orden que deben tener las listas de juegos en toda la app: alfabético por
  * título, con los favoritos primero (también alfabético entre ellos). Los
  * títulos son nombres de marca fijos (no se traducen entre idiomas), así

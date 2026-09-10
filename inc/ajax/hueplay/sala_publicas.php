@@ -52,6 +52,7 @@ foreach ($salas as $sala) {
     ));
     $item['esPublica'] = true;
     $item['cuposLibres'] = max(0, (int) $sala['MaxJugadores'] - $ocupados);
+    $item['juegoModo'] = rh_juego_modo($sala['JuegoCodigo']);
     $items[] = $item;
 }
 

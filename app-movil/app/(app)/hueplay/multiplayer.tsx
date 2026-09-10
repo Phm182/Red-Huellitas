@@ -125,15 +125,18 @@ function salaAFila(s: HuePlaySala, origen: OrigenSala, t: TFunction): FilaMP {
 function salaPublicaAFila(s: HuePlaySala, t: TFunction, unirse: (salaId: number) => void): FilaMP {
   const juego = juegoDelCatalogo(s.juegoCodigo);
   const dentro = s.jugadores.filter((j) => j.estado === 'aceptado' || j.estado === 'invitado').length;
+  const esDuelo = s.juegoModo === 'turnos' || s.juegoModo === 'puntaje';
   return {
     key: `sp-${s.salaId}`,
     juegoCodigo: s.juegoCodigo,
     texto: juego?.titulo ?? s.juegoCodigo,
-    subtexto: t('hueplay.multiplayer.salaAbiertaInfo', {
-      dentro,
-      max: s.maxJugadores,
-      cupos: s.cuposLibres ?? Math.max(0, s.maxJugadores - dentro),
-    }),
+    subtexto: esDuelo
+      ? t('hueplay.multiplayer.duelo1v1')
+      : t('hueplay.multiplayer.salaAbiertaInfo', {
+          dentro,
+          max: s.maxJugadores,
+          cupos: s.cuposLibres ?? Math.max(0, s.maxJugadores - dentro),
+        }),
     avatarPath: s.jugadores.find((j) => j.userId === s.creadorUserId)?.avatarPath ?? null,
     badge: null,
     onPress: () => unirse(s.salaId),

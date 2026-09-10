@@ -1174,7 +1174,8 @@
       "armando": "Setting up the room",
       "abiertas": "Open rooms",
       "sinAbiertas": "No open rooms right now",
-      "salaAbiertaInfo": "{{dentro}}/{{max}} players · {{cupos}} spot(s) left"
+      "salaAbiertaInfo": "{{dentro}}/{{max}} players · {{cupos}} spot(s) left",
+      "duelo1v1": "1-on-1 duel"
     },
     "tuRecord": "Your best: {{n}}",
     "retarA": "Challenge someone",

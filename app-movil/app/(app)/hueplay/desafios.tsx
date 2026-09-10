@@ -8,7 +8,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { BotonFavorito } from '../../../src/components/hueplay/BotonFavorito';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { JUEGOS_CATALOGO, ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
+import { esJuegoDuelo, JUEGOS_CATALOGO, ordenarJuegos } from '../../../src/juego/hueplay/catalogo';
 import { rutaDelDesafio } from '../../../src/juego/hueplay/rutas';
 import { variantePorJuegoCodigo } from '../../../src/juego/huedoku/motor';
 import { HuePlayDesafio, HuePlayDesafiosBandeja } from '../../../src/types/hueplay';
@@ -283,6 +283,20 @@ export default function DesafiosScreen() {
                   {t('hueplay.retar')}
                 </Text>
               </Pressable>
+              {esJuegoDuelo(j.codigo) ? (
+                <Pressable
+                  onPress={() => {
+                    hapticLeve();
+                    router.push(`/(app)/hueplay/sala-crear?juego=${j.codigo}` as never);
+                  }}
+                  style={[styles.botonAccion, styles.botonAccionOutline, { borderColor: colors.border }]}
+                >
+                  <Ionicons name="people" size={16} color={colors.text} />
+                  <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                    {t('hueplay.sala.crearSala')}
+                  </Text>
+                </Pressable>
+              ) : null}
               {!JUEGOS_SIN_SOLO.includes(j.codigo) ? (
                 <Pressable
                   onPress={() => jugarSolo(j.codigo)}

@@ -399,6 +399,16 @@ export interface HuePlaySala {
   esPublica?: boolean;
   /** Asientos libres — sólo lo manda `sala_publicas.php`. */
   cuposLibres?: number;
+  /** Modo del juego de la sala. `'turnos'`/`'puntaje'` = sala de duelo 1v1
+   * (el lobby genera un `JuegoDesafio` al iniciar). Sólo lo mandan los
+   * endpoints actualizados (`sala_ver`, `sala_iniciar`, `sala_publicas`…). */
+  juegoModo?: 'sala' | 'turnos' | 'puntaje';
+  /** Duelo generado por una sala de duelo cuando arranca — para mandar a
+   * los dos jugadores al tablero (`rutaDelDesafio`). */
+  desafioId?: number;
+  /** Semilla del `JuegoDesafio` — `rutaDelDesafio` la usa para
+   * HueCrush/HueMemo/HueDoku. */
+  semilla?: number;
   estado: EstadoSala;
   /** JSON crudo (Ludo) o null antes de arrancar. */
   tablero: string | null;

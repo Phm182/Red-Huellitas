@@ -8,7 +8,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
-import { juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
+import { esJuegoDuelo, JUEGOS_TURNOS, juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
 import { HuePlayRival, PoliticaAbandonoSala } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -19,21 +19,28 @@ import { rhAvatarUrl } from '../../../src/utils/media';
 
 const POLITICAS: PoliticaAbandonoSala[] = ['espera', 'ia', 'expulsa'];
 
+const JUEGOS_SALA = ['hueludo', 'hueludoroyal', 'huerummy', 'huescrabble'];
+
 /**
- * Arma una sala nueva: cuántos asientos, si se completan con IA, qué pasa si
- * alguien no responde a tiempo, y a quién invitar de una — el resto se puede
- * sumar después con el código, desde el lobby.
+ * Arma una sala nueva. Para los juegos de sala (HueLudo…): cuántos
+ * asientos, si se completan con IA, qué pasa si alguien no responde, y a
+ * quién invitar. Para los juegos de duelo 1v1 (HueAjedrez, HuePool,
+ * HueCrush…): sala de 2, sólo el plazo (si es de turnos) y a quién invitar
+ * — el lobby genera el duelo al iniciar.
  */
 export default function SalaCrearScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ juego?: string }>();
-  const juegoCodigo = ['huerummy', 'huescrabble', 'hueludoroyal'].includes(params.juego ?? '')
-    ? (params.juego as string)
-    : 'hueludo';
+  const juegoCodigo =
+    params.juego && (JUEGOS_SALA.includes(params.juego) || esJuegoDuelo(params.juego))
+      ? params.juego
+      : 'hueludo';
   const tituloJuego = juegoDelCatalogo(juegoCodigo)?.titulo ?? 'HueLudo';
+  const esDuelo = esJuegoDuelo(juegoCodigo);
+  const esTurnos = JUEGOS_TURNOS.includes(juegoCodigo);
 
-  const [maxJugadores, setMaxJugadores] = useState(4);
+  const [maxJugadores, setMaxJugadores] = useState(esDuelo ? 2 : 4);
   const [completarConIA, setCompletarConIA] = useState(true);
   const [esPublica, setEsPublica] = useState(true);
   const [politicaAbandono, setPoliticaAbandono] = useState<PoliticaAbandonoSala>('espera');
@@ -69,7 +76,7 @@ export default function SalaCrearScreen() {
     setError(null);
     const res = await hueplayApi.crearSala(juegoCodigo, {
       maxJugadores,
-      completarConIA,
+      completarConIA: esDuelo ? false : completarConIA,
       politicaAbandono,
       plazoTurnoMinutos,
       esPublica,
@@ -89,26 +96,30 @@ export default function SalaCrearScreen() {
       <Text style={{ color: colors.text, fontFamily: fonts.displaySemi, fontSize: 20, marginBottom: 4 }}>
         {t('hueplay.sala.nuevaSala', { juego: tituloJuego })}
       </Text>
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.sala.cuantosJugadores')}</Text>
-      <ChipRow
-        opciones={[2, 3, 4].map((n) => ({ valor: n, label: String(n) }))}
-        seleccionado={maxJugadores}
-        onSelect={(n) => {
-          setMaxJugadores(n);
-          if (invitados.length > n - 1) setInvitados(invitados.slice(0, n - 1));
-        }}
-        scrollable={false}
-      />
+      {!esDuelo ? (
+        <>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.sala.cuantosJugadores')}</Text>
+          <ChipRow
+            opciones={[2, 3, 4].map((n) => ({ valor: n, label: String(n) }))}
+            seleccionado={maxJugadores}
+            onSelect={(n) => {
+              setMaxJugadores(n);
+              if (invitados.length > n - 1) setInvitados(invitados.slice(0, n - 1));
+            }}
+            scrollable={false}
+          />
 
-      <View style={[styles.filaSwitch, { borderColor: colors.border }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 14 }}>
-            {t('hueplay.sala.completarConIA')}
-          </Text>
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.sala.completarConIADesc')}</Text>
-        </View>
-        <Switch value={completarConIA} onValueChange={setCompletarConIA} />
-      </View>
+          <View style={[styles.filaSwitch, { borderColor: colors.border }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                {t('hueplay.sala.completarConIA')}
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.sala.completarConIADesc')}</Text>
+            </View>
+            <Switch value={completarConIA} onValueChange={setCompletarConIA} />
+          </View>
+        </>
+      ) : null}
 
       <View style={[styles.filaSwitch, { borderColor: colors.border }]}>
         <View style={{ flex: 1 }}>
@@ -122,19 +133,27 @@ export default function SalaCrearScreen() {
         <Switch value={esPublica} onValueChange={setEsPublica} />
       </View>
 
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.sala.siAlguienNoResponde')}</Text>
-      <ChipRow
-        opciones={POLITICAS.map((p) => ({ valor: p, label: t(`hueplay.sala.politica.${p}`) }))}
-        seleccionado={politicaAbandono}
-        onSelect={setPoliticaAbandono}
-        scrollable={false}
-      />
-      <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6 }}>
-        {t(`hueplay.sala.politica.${politicaAbandono}Desc`)}
-      </Text>
+      {!esDuelo ? (
+        <>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.sala.siAlguienNoResponde')}</Text>
+          <ChipRow
+            opciones={POLITICAS.map((p) => ({ valor: p, label: t(`hueplay.sala.politica.${p}`) }))}
+            seleccionado={politicaAbandono}
+            onSelect={setPoliticaAbandono}
+            scrollable={false}
+          />
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6 }}>
+            {t(`hueplay.sala.politica.${politicaAbandono}Desc`)}
+          </Text>
+        </>
+      ) : null}
 
-      <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoTurno')}</Text>
-      <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+      {!esDuelo || esTurnos ? (
+        <>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoTurno')}</Text>
+          <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+        </>
+      ) : null}
 
       <Text style={[styles.seccion, { color: colors.textMuted }]}>
         {t('hueplay.sala.invitarGente', { n: cuposLibres })}

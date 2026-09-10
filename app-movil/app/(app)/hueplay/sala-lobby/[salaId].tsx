@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../../src/api/hueplayApi';
-import { rutaDeSala } from '../../../../src/juego/hueplay/rutas';
+import { rutaDeSala, rutaDelDesafio } from '../../../../src/juego/hueplay/rutas';
 import { COLOR_JUGADOR } from '../../../../src/juego/hueludo/TableroLudo';
 import { HuePlaySala } from '../../../../src/types/hueplay';
 import { radii } from '../../../../src/theme/elevation';
@@ -63,7 +63,17 @@ export default function SalaLobbyScreen() {
   }, [sala, cargar]);
 
   useEffect(() => {
-    if (sala?.estado === 'jugando' || sala?.estado === 'terminada') {
+    if (sala?.estado !== 'jugando' && sala?.estado !== 'terminada') return;
+    if (sala.desafioId) {
+      // Sala de duelo 1v1: al arrancar se generó un `JuegoDesafio` — los dos
+      // jugadores van a ese tablero, no a una pantalla de sala.
+      const r = rutaDelDesafio({
+        juegoCodigo: sala.juegoCodigo,
+        desafioId: sala.desafioId,
+        semilla: sala.semilla ?? 0,
+      });
+      router.replace({ pathname: r.pathname as never, params: r.params });
+    } else {
       router.replace({ pathname: rutaDeSala(sala.juegoCodigo) as never, params: { salaId: sala.salaId } });
     }
   }, [sala]);

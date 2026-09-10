@@ -1,8 +1,13 @@
 <?php
 /**
- * Arma una sala de hasta 4 jugadores (por ahora sólo HueLudo). Quien crea
- * queda adentro ya aceptado; a cada invitado puntual se le crea un asiento
- * 'invitado' y se le avisa — el resto se puede sumar después con el código.
+ * Arma una sala. Dos usos:
+ *  - Juegos de sala (HueLudo, HueRummy…): hasta 4 asientos.
+ *  - Juegos de duelo 1v1 (HueAjedrez, HuePool, HueCrush…): sala de 2 que
+ *    hace de lobby; al iniciar genera el `JuegoDesafio` (ver `sala_iniciar`).
+ *
+ * Quien crea queda adentro ya aceptado; a cada invitado puntual se le crea
+ * un asiento 'invitado' y se le avisa — el resto se puede sumar después con
+ * el código.
  *
  * Por default la sala es PÚBLICA: aparece en el visualizador de salas
  * abiertas y cualquiera con cupo libre se suma sin código. Se manda
@@ -13,24 +18,30 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/juegos.php';
 require_once __DIR__ . '/../../funciones/salas.php';
+require_once __DIR__ . '/../../funciones/desafio_tablero.php';
 
 $userId = rh_require_auth($conn);
 
 $juegoCodigo = trim($_POST['juegoCodigo'] ?? '');
-if (!rh_juego_existe($juegoCodigo) || rh_juego_modo($juegoCodigo) !== 'sala') {
+if (!rh_juego_existe($juegoCodigo) || (rh_juego_modo($juegoCodigo) !== 'sala' && !rh_juego_es_duelo($juegoCodigo))) {
     json_error('Este juego no se juega en salas');
 }
 
-$maxJugadores = (int) ($_POST['maxJugadores'] ?? 4);
+// Los juegos de duelo son siempre sala de 2, sin IA de relleno ni política
+// de abandono: el vencimiento propio del `JuegoDesafio` cubre al que no
+// aparece, y para jugar contra la app ya está el botón de la IA en "Retar".
+$esDuelo = rh_juego_es_duelo($juegoCodigo);
+
+$maxJugadores = $esDuelo ? 2 : (int) ($_POST['maxJugadores'] ?? 4);
 if ($maxJugadores < 2 || $maxJugadores > 4) {
     json_error('La sala admite entre 2 y 4 jugadores');
 }
 
-$completarConIA = !empty($_POST['completarConIA']);
+$completarConIA = !$esDuelo && !empty($_POST['completarConIA']);
 
 $esPublica = !isset($_POST['esPublica']) || $_POST['esPublica'] === '1' || $_POST['esPublica'] === 1 || $_POST['esPublica'] === true;
 
-$politicaAbandono = trim($_POST['politicaAbandono'] ?? 'espera');
+$politicaAbandono = $esDuelo ? 'espera' : trim($_POST['politicaAbandono'] ?? 'espera');
 if (!in_array($politicaAbandono, ['ia', 'espera', 'expulsa'], true)) {
     json_error('Política de abandono desconocida');
 }

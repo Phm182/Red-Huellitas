@@ -71,4 +71,5 @@ $salaFresca = rh_sala_obtener($conn, $salaId);
 $jugadores = rh_sala_jugadores($conn, $salaId);
 $item = rh_sala_serializar($conn, $salaFresca, $jugadores, $userId);
 $item['esPublica'] = (bool) ($salaFresca['EsPublica'] ?? 1);
+$item['juegoModo'] = rh_juego_modo($salaFresca['JuegoCodigo']);
 json_success(['sala' => $item]);

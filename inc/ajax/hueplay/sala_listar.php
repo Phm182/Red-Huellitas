@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/juegos.php';
 require_once __DIR__ . '/../../funciones/salas.php';
+require_once __DIR__ . '/../../funciones/desafio_tablero.php';
 
 $userId = rh_require_auth($conn);
 
@@ -32,6 +33,12 @@ $esperando = [];
 $terminadas = [];
 
 foreach ($salas as $sala) {
+    // Una sala de duelo 1v1 que ya arrancó vive como `JuegoDesafio` y
+    // aparece en la bandeja de duelos — acá sólo interesa mientras se arma.
+    if (rh_juego_es_duelo($sala['JuegoCodigo']) && $sala['Estado'] !== 'esperando') {
+        continue;
+    }
+
     $salaId = (int) $sala['SalaId'];
     $jugadores = rh_sala_jugadores($conn, $salaId);
     $item = rh_sala_serializar($conn, $sala, $jugadores, $userId);

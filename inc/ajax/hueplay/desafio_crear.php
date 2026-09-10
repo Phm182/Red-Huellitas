@@ -22,6 +22,7 @@ require_once __DIR__ . '/../../funciones/soccer.php';
 require_once __DIR__ . '/../../funciones/reversi.php';
 require_once __DIR__ . '/../../funciones/tateti.php';
 require_once __DIR__ . '/../../funciones/pool.php';
+require_once __DIR__ . '/../../funciones/desafio_tablero.php';
 
 $userId = rh_require_auth($conn);
 
@@ -102,17 +103,8 @@ $dias = RH_DESAFIO_DIAS;
 $tablero = null;
 $turnoDe = null;
 if ($modo === 'turnos') {
-    if ($codigo === 'huedamas') {
-        $tablero = rh_damas_inicial();
-    } elseif ($codigo === 'hueajedrez') {
-        $tablero = rh_ajedrez_inicial();
-    } elseif ($codigo === 'huereversi') {
-        $tablero = rh_reversi_inicial();
-    } elseif ($codigo === 'huetateti') {
-        $tablero = rh_tateti_inicial();
-    } elseif ($codigo === 'huepool') {
-        $tablero = rh_pool_inicial();
-    } elseif ($codigo === 'huesoccer') {
+    $opts = [];
+    if ($codigo === 'huesoccer') {
         // Meta de goles configurable (además del plazo, ya genérico arriba):
         // sólo aplica a HueSoccer, así que se lee acá y no como un campo más
         // de JuegoDesafio — mismo criterio que el resto de la mecánica de
@@ -121,11 +113,12 @@ if ($modo === 'turnos') {
         if ($metaGoles < RH_SOCCER_GOLES_MIN || $metaGoles > RH_SOCCER_GOLES_MAX) {
             json_error('La meta de goles debe ser entre ' . RH_SOCCER_GOLES_MIN . ' y ' . RH_SOCCER_GOLES_MAX);
         }
-        $tablero = rh_soccer_inicial($metaGoles);
-    } else {
-        $tablero = rh_c4_vacio();
+        $opts['metaGoles'] = $metaGoles;
     }
-    $turnoDe = $semilla % 2 === 0 ? $userId : $rivalId;
+    // Mismo armado que usa `sala_iniciar.php` al arrancar una sala de duelo.
+    $armado = rh_desafio_tablero_inicial($codigo, $userId, $rivalId, $semilla, $opts);
+    $tablero = $armado['tablero'];
+    $turnoDe = $armado['turnoDe'];
 }
 
 if ($modo === 'turnos') {
