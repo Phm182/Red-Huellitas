@@ -202,6 +202,14 @@ const JUEGOS: JuegoDef[] = [
     duelo: true,
   },
   {
+    id: 'huepacman',
+    titulo: 'HuePacMan',
+    bajada: 'Comé todos los puntos del laberinto esquivando a los 3 fantasmas.',
+    icono: 'pac-man',
+    color: '#F0D830',
+    ruta: '/(app)/hueplay/huepacman',
+  },
+  {
     id: 'huegotchi',
     titulo: 'HueGotchi',
     bajada: 'Cuidá a tu mascota: alimentala, jugá, bañala y enseñale trucos.',

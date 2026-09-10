@@ -1288,6 +1288,13 @@
       "turnoRival": "{{rival}}'s turn",
       "tiempoNeto": "Net time used: {{usados}}/{{tope}}s"
     },
+    "pacman": {
+      "titulo": "HuePacMan",
+      "comoSeJuega": "Eat every dot in the maze without a ghost catching you. The 4 big dots in the corners turn them blue for a few seconds: while that lasts, you can eat them instead.",
+      "modoAsustado": "Eat them!",
+      "laberintoLimpio": "Maze cleared!",
+      "seAcabaron": "Out of lives"
+    },
     "sala": {
       "cuantosJugadores": "How many players?",
       "completarConIA": "Fill with the AI",

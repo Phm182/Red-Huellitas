@@ -5,9 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
+import { APP_HEADER_HEIGHT, APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { MesaPool, Posiciones, reproducir } from '../../../src/juego/huepool/MesaPool';
-import { SEGUNDOS_POR_TURNO, TOPE_SEGUNDOS_NETOS, TableroPool, Vector, grupoDe, simularTiro } from '../../../src/juego/huepool/motor';
+import {
+  PuntoTrayectoria,
+  SEGUNDOS_POR_TURNO,
+  TOPE_SEGUNDOS_NETOS,
+  TableroPool,
+  Vector,
+  grupoDe,
+  simularTiro,
+} from '../../../src/juego/huepool/motor';
 import { HuePlayDesafio } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -21,7 +29,7 @@ const MS_POR_CUADRO_FISICA = 9;
 const DURACION_MIN_MS = 450;
 const DURACION_MAX_MS = 2400;
 
-function duracionDeMiTiro(trayectorias: Record<number, Vector[]>): number {
+function duracionDeMiTiro(trayectorias: Record<number, PuntoTrayectoria[]>): number {
   let cuadros = 0;
   for (const arr of Object.values(trayectorias)) cuadros = Math.max(cuadros, arr.length);
   return Math.max(DURACION_MIN_MS, Math.min(DURACION_MAX_MS, cuadros * MS_POR_CUADRO_FISICA));
@@ -29,7 +37,7 @@ function duracionDeMiTiro(trayectorias: Record<number, Vector[]>): number {
 
 function posicionesDeTablero(t: TableroPool): Posiciones {
   const p: Posiciones = {};
-  for (const b of t.bolas) if (b.enMesa) p[b.n] = { x: b.x, y: b.y };
+  for (const b of t.bolas) if (b.enMesa) p[b.n] = { x: b.x, y: b.y, angulo: 0 };
   return p;
 }
 
@@ -87,11 +95,18 @@ export default function HuePoolScreen() {
 
         if (esCambioDelRival) {
           const nuevaPos = posicionesDeTablero(nuevoTablero);
-          const trayectorias: Record<number, Vector[]> = {};
+          // Interpolación "de alcance" directa (vieja posición → nueva), no
+          // el replay real del tiro del rival — no hay trayectoria física
+          // que reproducir acá, así que sin giro real: ángulo fijo en 0 en
+          // las dos puntas (no se nota, es una animación de ~1s).
+          const trayectorias: Record<number, PuntoTrayectoria[]> = {};
           for (const nStr of Object.keys(nuevaPos)) {
             const n = Number(nStr);
             const desde = posiciones[n] ?? nuevaPos[n]!;
-            trayectorias[n] = [desde, nuevaPos[n]!];
+            trayectorias[n] = [
+              { pos: desde, angulo: 0 },
+              { pos: nuevaPos[n]!, angulo: 0 },
+            ];
           }
           setAnimando(true);
           cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
@@ -215,7 +230,7 @@ export default function HuePoolScreen() {
         const bolas = prev.bolas.map((b) => (b.n === 0 ? { ...b, x, y } : b));
         return { ...prev, bolas };
       });
-      setPosiciones((prev) => ({ ...prev, 0: { x, y } }));
+      setPosiciones((prev) => ({ ...prev, 0: { x, y, angulo: 0 } }));
       hapticLeve();
     },
     [tablero]
@@ -246,7 +261,14 @@ export default function HuePoolScreen() {
 
   const alturaHudFijo = 170;
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
-  const altoDisponible = height - alturaHudFijo - alturaBarraInferior;
+  // `useWindowDimensions` da el alto de TODA la pantalla — el header de la
+  // app (flecha de volver + "HuePlay", ver `AppChrome.tsx`) se lleva su
+  // propio espacio arriba y esto no lo descontaba, así que el `lado`
+  // calculado quedaba más grande de lo que en verdad entraba: la mesa
+  // (bien más alta que ancha, 300x600) terminaba con la parte de abajo
+  // recortada. Bug real, reportado probando en el celular.
+  const alturaBarraSuperior = APP_HEADER_HEIGHT + insets.top;
+  const altoDisponible = height - alturaHudFijo - alturaBarraInferior - alturaBarraSuperior;
   const relacionAltoAncho = tablero.mesa.alto / tablero.mesa.ancho;
   const ladoPorAlto = altoDisponible / relacionAltoAncho;
   const lado = Math.max(180, Math.min(width - 32, 300, ladoPorAlto));

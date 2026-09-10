@@ -33,6 +33,7 @@ export const JUEGOS_CATALOGO: JuegoCatalogoItem[] = [
   { codigo: 'huereversi', titulo: 'HueReversi', icono: 'circle-half-full', color: '#2C2C2C' },
   { codigo: 'huetateti', titulo: 'HueTaTeTi', icono: 'close', color: '#E8577E' },
   { codigo: 'huepool', titulo: 'HuePool', icono: 'billiards-rack', color: '#2C5F3E' },
+  { codigo: 'huepacman', titulo: 'HuePacMan', icono: 'pac-man', color: '#F0D830' },
   { codigo: 'hueludo', titulo: 'HueLudo', icono: 'dice-multiple', color: '#B36FE0', esSala: true },
   { codigo: 'hueludoroyal', titulo: 'HueLudo Real', icono: 'crown', color: '#D4A017', esSala: true },
   { codigo: 'huerummy', titulo: 'HueRummy', icono: 'cards-playing-outline', color: '#4CC3A5', esSala: true },

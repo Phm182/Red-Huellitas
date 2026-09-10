@@ -61,6 +61,15 @@ const RH_JUEGOS = [
     'huedoku6' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 10],
     'huedoku9facil' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 45],
     'huedoku9dificil' => ['modo' => 'puntaje', 'maxPuntos' => 3000, 'minSegundos' => 90],
+    // HuePacMan: único juego en tiempo real del catálogo (los demás son por
+    // turnos o puzzles con semilla) — igual entra en 'puntaje' sin cambiar
+    // nada de este mecanismo, el cliente informa un número al final como
+    // cualquier otro. Techo calculado a mano desde `src/juego/huepacman/motor.ts`:
+    // 145 puntos*10 + 4 pellets*50 + comerse los 3 fantasmas en las 4
+    // rachas de power-pellet (200+400+800 cada una) = 7250 en una corrida
+    // perfecta; el margen extra es el mismo criterio "generoso, no exacto"
+    // del resto de la tabla.
+    'huepacman' => ['modo' => 'puntaje', 'maxPuntos' => 7500, 'minSegundos' => 20],
     // HueGotchi no se juega por partidas: suma de a poco con cada acción de
     // cuidado. No se puede retar, y el puntaje lo pone el servidor.
     'huegotchi' => ['modo' => 'cuidado', 'maxPuntos' => 100, 'minSegundos' => 0],

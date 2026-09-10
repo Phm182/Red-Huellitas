@@ -43,14 +43,23 @@ function rh_pool_grupo_de(int $n): ?string
     return null; // 0 (blanca) u 8
 }
 
-/** Los 6 centros de tronera: 4 esquinas + los 2 medios de banda larga. */
+/**
+ * Los 6 centros de tronera: 4 esquinas + los 2 medios de banda larga — la
+ * mesa es más alta que ancha (300x600), así que la banda larga es la
+ * izquierda/derecha, no la de arriba/abajo. Bug real (encontrado probando
+ * en el celular): estas coordenadas ponían los 2 del medio en la banda
+ * CORTA (arriba/abajo) — arreglado acá y en el mismo lugar del cliente
+ * (`app-movil/src/juego/huepool/motor.ts::troneras()`), tienen que
+ * coincidir siempre: es lo que decide qué bola se consideró embocada.
+ */
 function rh_pool_troneras(): array
 {
     $a = RH_POOL_ANCHO;
     $h = RH_POOL_ALTO;
     return [
-        [0, 0], [$a / 2, 0], [$a, 0],
-        [0, $h], [$a / 2, $h], [$a, $h],
+        [0, 0], [$a, 0],
+        [0, $h / 2], [$a, $h / 2],
+        [0, $h], [$a, $h],
     ];
 }
 

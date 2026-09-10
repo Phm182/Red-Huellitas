@@ -70,8 +70,27 @@ const FRICCION = 0.96;
 const VEL_MINIMA = 0.05;
 /** Guard anti-loop-infinito: cota de pasos, no de tiempo real (determinístico). */
 const MAX_FRAMES = 600;
+/** Mismos 4 ajustes de giro que `huepool/motor.ts` (ver sus comentarios) —
+ * ficha/pelota giran al moverse y de forma reactiva a los choques/rebotes,
+ * sin modelar física de rotación real. */
+const SUAVIZADO_GIRO = 0.15;
+const TORQUE_COLISION = 0.5;
+const TORQUE_BANDA = 0.3;
+const VEL_ANGULAR_MAX = 1.2;
 
-type Cuerpo = { id: string; pos: Vector; vel: Vector; radio: number };
+type Cuerpo = {
+  id: string;
+  pos: Vector;
+  vel: Vector;
+  radio: number;
+  /** Ángulo acumulado (rad, sin wrap) — puramente visual. */
+  angulo: number;
+  velAngular: number;
+};
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
 
 function magnitud(v: Vector): number {
   return Math.sqrt(v.x * v.x + v.y * v.y);
@@ -119,8 +138,17 @@ function aCuerpos(t: TableroSoccer): Cuerpo[] {
     pos: { x: f.x, y: f.y },
     vel: { x: 0, y: 0 },
     radio: t.cancha.radioFicha,
+    angulo: 0,
+    velAngular: 0,
   }));
-  cuerpos.push({ id: 'pelota', pos: { ...t.pelota }, vel: { x: 0, y: 0 }, radio: t.cancha.radioPelota });
+  cuerpos.push({
+    id: 'pelota',
+    pos: { ...t.pelota },
+    vel: { x: 0, y: 0 },
+    radio: t.cancha.radioPelota,
+    angulo: 0,
+    velAngular: 0,
+  });
   return cuerpos;
 }
 
@@ -156,9 +184,11 @@ function rebotePared(c: Cuerpo, cancha: Cancha, esPelota: boolean): 1 | 2 | null
   if (c.pos.x - c.radio < 0) {
     c.pos.x = c.radio;
     c.vel.x = Math.abs(c.vel.x);
+    c.velAngular = clamp(c.velAngular + (c.vel.y * TORQUE_BANDA) / c.radio, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
   } else if (c.pos.x + c.radio > cancha.ancho) {
     c.pos.x = cancha.ancho - c.radio;
     c.vel.x = -Math.abs(c.vel.x);
+    c.velAngular = clamp(c.velAngular + (c.vel.y * TORQUE_BANDA) / c.radio, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
   }
 
   const enFranja = esPelota && dentroDeLaFranjaDelArco(c.pos.x, cancha);
@@ -169,6 +199,7 @@ function rebotePared(c: Cuerpo, cancha: Cancha, esPelota: boolean): 1 | 2 | null
     if (!enFranja) {
       c.pos.y = c.radio;
       c.vel.y = Math.abs(c.vel.y);
+      c.velAngular = clamp(c.velAngular + (c.vel.x * TORQUE_BANDA) / c.radio, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
       return null;
     }
     if (c.pos.y + c.radio < 0) return 2; // borde trasero ya cruzó: gol
@@ -184,6 +215,7 @@ function rebotePared(c: Cuerpo, cancha: Cancha, esPelota: boolean): 1 | 2 | null
     if (!enFranja) {
       c.pos.y = cancha.alto - c.radio;
       c.vel.y = -Math.abs(c.vel.y);
+      c.velAngular = clamp(c.velAngular + (c.vel.x * TORQUE_BANDA) / c.radio, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
       return null;
     }
     if (c.pos.y - c.radio > cancha.alto) return 1; // borde trasero ya cruzó: gol
@@ -220,6 +252,18 @@ function resolverColision(a: Cuerpo, b: Cuerpo): void {
   b.pos.x += (nx * solape) / 2;
   b.pos.y += (ny * solape) / 2;
 
+  // Torque: con la velocidad relativa DE ANTES del intercambio (mismo
+  // criterio que `huepool/motor.ts::resolverColision`) — la componente
+  // TANGENCIAL (la que la colisión normal no toca) se reparte como giro
+  // en sentidos opuestos para cada cuerpo.
+  const tx = -ny;
+  const ty = nx;
+  const velRelTang = (b.vel.x - a.vel.x) * tx + (b.vel.y - a.vel.y) * ty;
+  const radioProm = (a.radio + b.radio) / 2;
+  const impulsoAngular = (velRelTang * TORQUE_COLISION) / radioProm;
+  a.velAngular = clamp(a.velAngular - impulsoAngular, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
+  b.velAngular = clamp(b.velAngular + impulsoAngular, -VEL_ANGULAR_MAX, VEL_ANGULAR_MAX);
+
   // Componente de cada velocidad a lo largo de la normal.
   const velA = a.vel.x * nx + a.vel.y * ny;
   const velB = b.vel.x * nx + b.vel.y * ny;
@@ -232,9 +276,14 @@ function resolverColision(a: Cuerpo, b: Cuerpo): void {
   b.vel.y += (velA - velB) * ny;
 }
 
+/** Un punto de trayectoria grabado: posición + ángulo de giro visual en ese
+ * instante — mismo shape que `huepool/motor.ts::PuntoTrayectoria`, e igual
+ * de libre de cambiar (nunca se serializa al backend). */
+export type PuntoTrayectoria = { pos: Vector; angulo: number };
+
 export type ResultadoTiro = {
   estadoFinal: TableroSoccer;
-  trayectorias: Record<string, Vector[]>;
+  trayectorias: Record<string, PuntoTrayectoria[]>;
   gol: 1 | 2 | null;
 };
 
@@ -253,8 +302,8 @@ export function simularTiro(estadoInicial: TableroSoccer, fichaId: string, impul
     golpeada.vel.y = impulso.y;
   }
 
-  const trayectorias: Record<string, Vector[]> = {};
-  for (const c of cuerpos) trayectorias[c.id] = [{ ...c.pos }];
+  const trayectorias: Record<string, PuntoTrayectoria[]> = {};
+  for (const c of cuerpos) trayectorias[c.id] = [{ pos: { ...c.pos }, angulo: c.angulo }];
 
   let gol: 1 | 2 | null = null;
 
@@ -264,13 +313,21 @@ export function simularTiro(estadoInicial: TableroSoccer, fichaId: string, impul
     for (const c of cuerpos) {
       if (magnitud(c.vel) <= VEL_MINIMA) {
         c.vel = { x: 0, y: 0 };
-        continue;
+        c.velAngular *= FRICCION; // el giro se apaga junto con la traslación, no de golpe
+      } else {
+        algoEnMovimiento = true;
+        c.pos.x += c.vel.x;
+        c.pos.y += c.vel.y;
+        c.vel.x *= FRICCION;
+        c.vel.y *= FRICCION;
+        // Rolling: converge hacia el giro "natural" de una rueda a esa
+        // velocidad (vel/radio), suavizado para no saltar de golpe — mismo
+        // criterio que `huepool/motor.ts`.
+        const velAngularObjetivo = magnitud(c.vel) / c.radio;
+        c.velAngular += (velAngularObjetivo - c.velAngular) * SUAVIZADO_GIRO;
+        c.velAngular *= FRICCION;
       }
-      algoEnMovimiento = true;
-      c.pos.x += c.vel.x;
-      c.pos.y += c.vel.y;
-      c.vel.x *= FRICCION;
-      c.vel.y *= FRICCION;
+      c.angulo += c.velAngular;
 
       const resultadoPared = rebotePared(c, cancha, c.id === 'pelota');
       if (resultadoPared) gol = resultadoPared;
@@ -282,7 +339,7 @@ export function simularTiro(estadoInicial: TableroSoccer, fichaId: string, impul
       }
     }
 
-    for (const c of cuerpos) trayectorias[c.id]!.push({ ...c.pos });
+    for (const c of cuerpos) trayectorias[c.id]!.push({ pos: { ...c.pos }, angulo: c.angulo });
     if (!algoEnMovimiento) break;
   }
 

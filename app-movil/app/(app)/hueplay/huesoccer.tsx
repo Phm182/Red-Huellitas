@@ -6,10 +6,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDi
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
+import { APP_HEADER_HEIGHT, APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { CanchaSoccer, Posiciones, SkinDeJugador, posicionesDeTablero, reproducir } from '../../../src/juego/huesoccer/CanchaSoccer';
-import { GOLES_PARA_GANAR_DEFAULT, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
+import { GOLES_PARA_GANAR_DEFAULT, PuntoTrayectoria, TOPE_SEGUNDOS_NETOS, TableroSoccer, Vector, simularTiro } from '../../../src/juego/huesoccer/motor';
 import {
   COLOR_FICHA_DEFAULT,
   SKIN_FICHA_DEFAULT,
@@ -53,7 +53,7 @@ const MS_POR_CUADRO_FISICA = 9;
 const DURACION_MIN_MS = 450;
 const DURACION_MAX_MS = 2200;
 
-function duracionDeMiTiro(trayectorias: Record<string, Vector[]>): number {
+function duracionDeMiTiro(trayectorias: Record<string, PuntoTrayectoria[]>): number {
   let cuadros = 0;
   for (const arr of Object.values(trayectorias)) cuadros = Math.max(cuadros, arr.length);
   return Math.max(DURACION_MIN_MS, Math.min(DURACION_MAX_MS, cuadros * MS_POR_CUADRO_FISICA));
@@ -155,10 +155,16 @@ export default function HueSoccerScreen() {
 
         if (esCambioDelRival) {
           const nuevaPos = posicionesDeTablero(nuevoTablero);
-          const trayectorias: Record<string, Vector[]> = {};
+          // Interpolación "de alcance", no el replay real del tiro del rival
+          // — sin trayectoria física que reproducir, ángulo fijo en 0 en las
+          // dos puntas (mismo criterio que `huepool.tsx`).
+          const trayectorias: Record<string, PuntoTrayectoria[]> = {};
           for (const id of Object.keys(nuevaPos)) {
             const desde = posiciones[id] ?? nuevaPos[id]!;
-            trayectorias[id] = [desde, nuevaPos[id]!];
+            trayectorias[id] = [
+              { pos: desde, angulo: 0 },
+              { pos: nuevaPos[id]!, angulo: 0 },
+            ];
           }
           setAnimando(true);
           cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
@@ -306,7 +312,11 @@ export default function HueSoccerScreen() {
   // barra igual).
   const alturaHudFijo = 150;
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
-  const altoDisponible = height - alturaHudFijo - alturaBarraInferior;
+  // Mismo bug real que `huepool.tsx` (arreglado ahí primero, ver su
+  // comentario): sin descontar el header de la app, el `lado` calculado
+  // salía más grande de lo que en verdad entra en pantalla.
+  const alturaBarraSuperior = APP_HEADER_HEIGHT + insets.top;
+  const altoDisponible = height - alturaHudFijo - alturaBarraInferior - alturaBarraSuperior;
   const ladoPorAlto = altoDisponible / relacionAltoAncho;
   const lado = Math.max(200, Math.min(width - 32, 340, ladoPorAlto));
 

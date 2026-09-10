@@ -5,11 +5,12 @@ import { runOnJS } from 'react-native-reanimated';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeProvider';
 import { FichaSkinSvg } from './FichaSkinSvg';
-import { Cancha, FichaSoccer, TableroSoccer, Vector } from './motor';
+import { Cancha, FichaSoccer, PuntoTrayectoria, TableroSoccer, Vector } from './motor';
 import { PelotaSkinSvg } from './PelotaSkinSvg';
 import { SkinFichaId, SkinPelotaId } from './skins';
 
-export type Posiciones = Record<string, Vector>;
+export type PosicionFicha = Vector & { angulo: number };
+export type Posiciones = Record<string, PosicionFicha>;
 
 export function idFicha(f: FichaSoccer): string {
   return `f${f.j}_${f.n}`;
@@ -17,8 +18,8 @@ export function idFicha(f: FichaSoccer): string {
 
 export function posicionesDeTablero(t: TableroSoccer): Posiciones {
   const p: Posiciones = {};
-  for (const f of t.fichas) p[idFicha(f)] = { x: f.x, y: f.y };
-  p.pelota = t.pelota;
+  for (const f of t.fichas) p[idFicha(f)] = { x: f.x, y: f.y, angulo: 0 };
+  p.pelota = { ...t.pelota, angulo: 0 };
   return p;
 }
 
@@ -44,7 +45,7 @@ function lerp(a: number, b: number, t: number): number {
  * Devuelve una función para cancelar (limpieza al desmontar).
  */
 export function reproducir(
-  trayectorias: Record<string, Vector[]>,
+  trayectorias: Record<string, PuntoTrayectoria[]>,
   duracionMs: number,
   onFrame: (pos: Posiciones) => void,
   onFin: () => void
@@ -65,7 +66,11 @@ export function reproducir(
       const frac = posIdx - i0;
       const a = arr[i0]!;
       const b = arr[i1]!;
-      pos[id] = { x: lerp(a.x, b.x, frac), y: lerp(a.y, b.y, frac) };
+      pos[id] = {
+        x: lerp(a.pos.x, b.pos.x, frac),
+        y: lerp(a.pos.y, b.pos.y, frac),
+        angulo: lerp(a.angulo, b.angulo, frac),
+      };
     }
     onFrame(pos);
     if (t < 1) {
@@ -243,7 +248,7 @@ export function CanchaSoccer({
 
       {fichas.map((f) => {
         const id = idFicha(f);
-        const pos = posiciones[id] ?? { x: f.x, y: f.y };
+        const pos = posiciones[id] ?? { x: f.x, y: f.y, angulo: 0 };
         const esMia = f.j === miFicha;
         // La ficha NO sigue al dedo — se apunta con la flecha (ver
         // `FlechaTiro`), la ficha se queda quieta hasta soltar, igual que en
@@ -260,7 +265,13 @@ export function CanchaSoccer({
           <View
             style={[
               styles.ficha,
-              { width: diametro * escalaSostenida, height: diametro * escalaSostenida, left, top },
+              {
+                width: diametro * escalaSostenida,
+                height: diametro * escalaSostenida,
+                left,
+                top,
+                transform: [{ rotate: `${((pos.angulo * 180) / Math.PI) % 360}deg` }],
+              },
             ]}
           >
             <FichaSkinSvg skin={skinInfo.skin} colorEquipo={skinInfo.color} size={diametro * escalaSostenida} idInstancia={id} />
@@ -276,12 +287,21 @@ export function CanchaSoccer({
       })}
 
       {(() => {
-        const pos = posiciones.pelota ?? { x: cancha.ancho / 2, y: cancha.alto / 2 };
+        const pos = posiciones.pelota ?? { x: cancha.ancho / 2, y: cancha.alto / 2, angulo: 0 };
         const diametro = px(cancha.radioPelota) * 2;
         return (
           <View
             pointerEvents="none"
-            style={[styles.pelota, { width: diametro, height: diametro, left: px(pos.x) - diametro / 2, top: py(pos.y) - diametro / 2 }]}
+            style={[
+              styles.pelota,
+              {
+                width: diametro,
+                height: diametro,
+                left: px(pos.x) - diametro / 2,
+                top: py(pos.y) - diametro / 2,
+                transform: [{ rotate: `${((pos.angulo * 180) / Math.PI) % 360}deg` }],
+              },
+            ]}
           >
             <PelotaSkinSvg skin={skinPelota} size={diametro} />
           </View>

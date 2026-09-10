@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
-import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
-import { Bola, Mesa, Vector } from './motor';
+import Svg, { Circle, Rect } from 'react-native-svg';
+import { BolaSkinSvg } from './BolaSkinSvg';
+import { Bola, Mesa, PuntoTrayectoria, Vector } from './motor';
+import { TacoBillar } from './TacoBillar';
 
-export type Posiciones = Record<number, Vector>;
+export type PosicionBola = Vector & { angulo: number };
+export type Posiciones = Record<number, PosicionBola>;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -13,7 +16,7 @@ function lerp(a: number, b: number, t: number): number {
 
 /** Mismo helper que `CanchaSoccer.tsx::reproducir()`, sólo que acá las claves son números de bola. */
 export function reproducir(
-  trayectorias: Record<number, Vector[]>,
+  trayectorias: Record<number, PuntoTrayectoria[]>,
   duracionMs: number,
   onFrame: (pos: Posiciones) => void,
   onFin: () => void
@@ -34,7 +37,11 @@ export function reproducir(
       const frac = posIdx - i0;
       const a = arr[i0]!;
       const b = arr[i1]!;
-      pos[n] = { x: lerp(a.x, b.x, frac), y: lerp(a.y, b.y, frac) };
+      pos[n] = {
+        x: lerp(a.pos.x, b.pos.x, frac),
+        y: lerp(a.pos.y, b.pos.y, frac),
+        angulo: lerp(a.angulo, b.angulo, frac),
+      };
     }
     onFrame(pos);
     if (t < 1) {
@@ -60,9 +67,35 @@ function esRayada(n: number): boolean {
   return n >= 9 && n <= 15;
 }
 
+/** Tween chico a mano (mismo criterio que `reproducir()` de arriba: rAF +
+ * lerp + callback por cuadro) para el golpe del taco — no hace falta
+ * Reanimated acá: es una animación de ~100ms de UN número (`separacion`)
+ * consumido directo por props de un componente SVG, no un estilo de
+ * `Animated.View`; un `useSharedValue` leído en el cuerpo del render NO
+ * dispara un re-render cuando cambia (`.value` no es estado de React), así
+ * que ese camino se ve "congelado" hasta el próximo render por otra razón
+ * — más simple resolverlo con estado común. */
+function animarNumero(desde: number, hasta: number, duracionMs: number, onFrame: (v: number) => void, onFin: () => void) {
+  const inicio = Date.now();
+  function paso() {
+    const t = Math.min(1, (Date.now() - inicio) / duracionMs);
+    onFrame(desde + (hasta - desde) * t);
+    if (t < 1) requestAnimationFrame(paso);
+    else onFin();
+  }
+  requestAnimationFrame(paso);
+}
+
 /** Cuánto se estira el arrastre antes de tirar: más lejos, más potencia. Misma idea que HueSoccer. */
 const FACTOR_POTENCIA = 0.22;
 const POTENCIA_MAXIMA = 16;
+/** Duración del golpe visual del taco (ver `onEnd` de `gestoTiro`) — el
+ * impulso real recién se aplica cuando termina, para que la bola no arranque
+ * a moverse mientras el taco todavía está a mitad de camino. */
+const DURACION_GOLPE_MS = 110;
+/** Cuánto se aleja la punta del taco de la bola por unidad de potencia cargada. */
+const SEPARACION_BASE = 10;
+const SEPARACION_MAXIMA = 100;
 
 type Props = {
   mesa: Mesa;
@@ -93,9 +126,29 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
   const py = (y: number) => y * escala;
 
   const [arrastre, setArrastre] = useState<{ dx: number; dy: number } | null>(null);
+  // `null` = mostrar la separación calculada en vivo desde `arrastre`
+  // (cargando el tiro); un número = el golpe ya está animando hacia la
+  // bola, ese valor manda. `arrastre` se mantiene con su ÚLTIMO valor
+  // durante todo el golpe (no se limpia hasta que termina) para no perder
+  // la dirección del taco a mitad de la animación.
+  const [separacionOverride, setSeparacionOverride] = useState<number | null>(null);
 
   const blanca = bolas.find((b) => b.n === 0);
-  const posBlanca = blanca ? (posiciones[0] ?? { x: blanca.x, y: blanca.y }) : null;
+  const posBlanca = blanca ? (posiciones[0] ?? { x: blanca.x, y: blanca.y, angulo: 0 }) : null;
+
+  const iniciarGolpe = (separacionInicial: number, impulso: Vector) => {
+    setSeparacionOverride(separacionInicial);
+    animarNumero(separacionInicial, 0, DURACION_GOLPE_MS, setSeparacionOverride, () => {
+      // El impulso real recién se aplica ACÁ, cuando el taco ya "llegó" a
+      // la bola — si se llamara a `onTiro` de inmediato en `onEnd`, la
+      // bola saldría disparada mientras el taco todavía está animando el
+      // golpe (confirmado en `huepool.tsx`: `onTiro` apaga `activo` de
+      // forma síncrona).
+      setSeparacionOverride(null);
+      setArrastre(null);
+      onTiro(impulso);
+    });
+  };
 
   const gestoTiro = Gesture.Pan()
     .enabled(activo && !bolaEnMano)
@@ -103,12 +156,15 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
       runOnJS(setArrastre)({ dx: e.translationX, dy: e.translationY });
     })
     .onEnd((e) => {
-      runOnJS(setArrastre)(null);
       const dist = Math.sqrt(e.translationX ** 2 + e.translationY ** 2);
-      if (dist < 6) return;
+      if (dist < 6) {
+        runOnJS(setArrastre)(null);
+        return;
+      }
       const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
       const impulso = { x: (-e.translationX / dist) * potencia, y: (-e.translationY / dist) * potencia };
-      runOnJS(onTiro)(impulso);
+      const separacionInicial = SEPARACION_BASE + (potencia / POTENCIA_MAXIMA) * SEPARACION_MAXIMA;
+      runOnJS(iniciarGolpe)(separacionInicial, impulso);
     });
 
   const gestoColocar = Gesture.Tap()
@@ -119,10 +175,34 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
       runOnJS(onColocarBlanca)(x, y);
     });
 
+  // 4 esquinas + los 2 medios de banda LARGA (izquierda/derecha — la mesa es
+  // más alta que ancha) — mismo layout que `motor.ts::troneras()`, tienen
+  // que coincidir sí o sí (acá es sólo dibujo, la física vive en el motor).
   const troneras = [
-    { x: 0, y: 0 }, { x: mesa.ancho / 2, y: 0 }, { x: mesa.ancho, y: 0 },
-    { x: 0, y: mesa.alto }, { x: mesa.ancho / 2, y: mesa.alto }, { x: mesa.ancho, y: mesa.alto },
+    { x: 0, y: 0 }, { x: mesa.ancho, y: 0 },
+    { x: 0, y: mesa.alto / 2 }, { x: mesa.ancho, y: mesa.alto / 2 },
+    { x: 0, y: mesa.alto }, { x: mesa.ancho, y: mesa.alto },
   ];
+
+  // Dirección de tiro + separación del taco, derivadas del arrastre en
+  // curso — mismo cálculo que ya hacía `FlechaTiro`, ahora alimenta al
+  // taco. Durante el golpe (`separacionOverride` no nulo) `arrastre` sigue
+  // con su último valor (recién se limpia al terminar la animación), así
+  // que la dirección no salta — sólo la separación, que la pisa el tween.
+  let direccionTiro: Vector | null = null;
+  let separacionTiro = 0;
+  if (arrastre) {
+    const dist = Math.sqrt(arrastre.dx ** 2 + arrastre.dy ** 2);
+    if (dist >= 4) {
+      direccionTiro = { x: -arrastre.dx / dist, y: -arrastre.dy / dist };
+      if (separacionOverride !== null) {
+        separacionTiro = separacionOverride;
+      } else {
+        const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
+        separacionTiro = SEPARACION_BASE + (potencia / POTENCIA_MAXIMA) * SEPARACION_MAXIMA;
+      }
+    }
+  }
 
   return (
     <GestureDetector gesture={gestoColocar}>
@@ -137,25 +217,25 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
         {bolas
           .filter((b) => b.n !== 0)
           .map((b) => {
-            const pos = posiciones[b.n] ?? { x: b.x, y: b.y };
+            const pos = posiciones[b.n] ?? { x: b.x, y: b.y, angulo: 0 };
             const diametro = px(mesa.radioBola) * 2;
             const color = b.n === 8 ? '#141414' : COLOR_BOLA[b.n] ?? '#999999';
             return (
               <View
                 key={b.n}
                 pointerEvents="none"
-                style={[styles.bola, { width: diametro, height: diametro, left: px(pos.x) - diametro / 2, top: py(pos.y) - diametro / 2 }]}
+                style={[
+                  styles.bola,
+                  {
+                    width: diametro,
+                    height: diametro,
+                    left: px(pos.x) - diametro / 2,
+                    top: py(pos.y) - diametro / 2,
+                    transform: [{ rotate: `${((pos.angulo * 180) / Math.PI) % 360}deg` }],
+                  },
+                ]}
               >
-                <Svg width={diametro} height={diametro}>
-                  <Circle cx={diametro / 2} cy={diametro / 2} r={diametro / 2 - 0.5} fill={esRayada(b.n) ? '#F4F1E6' : color} stroke="#00000040" strokeWidth={0.7} />
-                  {esRayada(b.n) ? (
-                    <Rect x={0} y={diametro * 0.32} width={diametro} height={diametro * 0.36} fill={color} />
-                  ) : null}
-                  <Circle cx={diametro / 2} cy={diametro / 2} r={diametro * 0.28} fill="#F4F1E6" />
-                  <SvgText x={diametro / 2} y={diametro / 2 + diametro * 0.11} fontSize={diametro * 0.32} fill="#1A1A1A" textAnchor="middle" fontWeight="bold">
-                    {b.n}
-                  </SvgText>
-                </Svg>
+                <BolaSkinSvg numero={b.n} esRayada={esRayada(b.n)} color={color} size={diametro} idInstancia={b.n} />
               </View>
             );
           })}
@@ -170,67 +250,28 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
                   height: px(mesa.radioBola) * 2,
                   left: px(posBlanca.x) - px(mesa.radioBola),
                   top: py(posBlanca.y) - px(mesa.radioBola),
-                  backgroundColor: '#F8F8F2',
-                  borderWidth: 0.7,
-                  borderColor: '#00000030',
+                  transform: [{ rotate: `${((posBlanca.angulo * 180) / Math.PI) % 360}deg` }],
                 },
               ]}
-            />
+            >
+              <BolaSkinSvg numero={0} esRayada={false} color="#F8F8F2" esBlanca size={px(mesa.radioBola) * 2} idInstancia={0} />
+            </View>
           </GestureDetector>
         ) : null}
 
-        {arrastre && posBlanca ? (
-          <FlechaTiro arrastre={arrastre} base={posBlanca} px={px} py={py} lado={lado} alto={alto} />
+        {direccionTiro && posBlanca ? (
+          <TacoBillar
+            direccion={direccionTiro}
+            separacion={separacionTiro}
+            base={posBlanca}
+            px={px}
+            py={py}
+            lado={lado}
+            alto={alto}
+          />
         ) : null}
       </View>
     </GestureDetector>
-  );
-}
-
-function FlechaTiro({
-  arrastre,
-  base,
-  px,
-  py,
-  lado,
-  alto,
-}: {
-  arrastre: { dx: number; dy: number };
-  base: Vector;
-  px: (x: number) => number;
-  py: (y: number) => number;
-  lado: number;
-  alto: number;
-}) {
-  const dist = Math.sqrt(arrastre.dx ** 2 + arrastre.dy ** 2);
-  if (dist < 4) return null;
-
-  const dirX = -arrastre.dx / dist;
-  const dirY = -arrastre.dy / dist;
-  const potencia = Math.min(POTENCIA_MAXIMA, dist * FACTOR_POTENCIA);
-  const largo = 24 + (potencia / POTENCIA_MAXIMA) * 100;
-
-  const cx = px(base.x);
-  const cy = py(base.y);
-  const puntaX = cx + dirX * largo;
-  const puntaY = cy + dirY * largo;
-
-  const angulo = Math.atan2(dirY, dirX);
-  const alaLargo = 12;
-  const alaAngulo = 0.5;
-  const ala1X = puntaX - alaLargo * Math.cos(angulo - alaAngulo);
-  const ala1Y = puntaY - alaLargo * Math.sin(angulo - alaAngulo);
-  const ala2X = puntaX - alaLargo * Math.cos(angulo + alaAngulo);
-  const ala2Y = puntaY - alaLargo * Math.sin(angulo + alaAngulo);
-
-  const color = potencia >= POTENCIA_MAXIMA * 0.85 ? '#FF4136' : '#FFFFFF';
-
-  return (
-    <Svg width={lado} height={alto} style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Line x1={cx} y1={cy} x2={puntaX} y2={puntaY} stroke={color} strokeWidth={3} strokeLinecap="round" opacity={0.95} />
-      <Line x1={puntaX} y1={puntaY} x2={ala1X} y2={ala1Y} stroke={color} strokeWidth={3} strokeLinecap="round" opacity={0.95} />
-      <Line x1={puntaX} y1={puntaY} x2={ala2X} y2={ala2Y} stroke={color} strokeWidth={3} strokeLinecap="round" opacity={0.95} />
-    </Svg>
   );
 }
 

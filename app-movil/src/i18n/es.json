@@ -1305,6 +1305,13 @@
       "turnoRival": "Turno de {{rival}}",
       "tiempoNeto": "Tiempo neto usado: {{usados}}/{{tope}}s"
     },
+    "pacman": {
+      "titulo": "HuePacMan",
+      "comoSeJuega": "Comé todos los puntos del laberinto sin que te agarre ningún fantasma. Las 4 bolitas grandes de las esquinas los ponen azules por unos segundos: mientras dure, podés comerlos vos a ellos.",
+      "modoAsustado": "¡Comételos!",
+      "laberintoLimpio": "¡Laberinto limpio!",
+      "seAcabaron": "Se acabaron las vidas"
+    },
     "sala": {
       "cuantosJugadores": "¿Cuántos jugadores?",
       "completarConIA": "Completar con la IA",
