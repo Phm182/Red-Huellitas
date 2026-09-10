@@ -1171,7 +1171,10 @@
       "historial": "History",
       "sinNada": "Nothing here yet",
       "invitacion": "You were invited",
-      "armando": "Setting up the room"
+      "armando": "Setting up the room",
+      "abiertas": "Open rooms",
+      "sinAbiertas": "No open rooms right now",
+      "salaAbiertaInfo": "{{dentro}}/{{max}} players · {{cupos}} spot(s) left"
     },
     "tuRecord": "Your best: {{n}}",
     "retarA": "Challenge someone",
@@ -1341,7 +1344,10 @@
       "armando": "Getting ready",
       "verSalas": "HueLudo rooms",
       "nuevaSala": "New {{juego}} room",
-      "crearDe": "Create a {{juego}} room"
+      "crearDe": "Create a {{juego}} room",
+      "publica": "Public room",
+      "publicaDesc": "Shows up in \"Open rooms\" and anyone with a spot can join.",
+      "privadaDesc": "Only people with the code or an invite can join."
     },
     "ludo": {
       "titulo": "HueLudo",

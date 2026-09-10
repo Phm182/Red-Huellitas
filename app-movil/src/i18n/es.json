@@ -1186,7 +1186,10 @@
       "historial": "Historial",
       "sinNada": "No tenés nada acá todavía",
       "invitacion": "Te invitaron",
-      "armando": "Armando la sala"
+      "armando": "Armando la sala",
+      "abiertas": "Salas abiertas",
+      "sinAbiertas": "No hay salas abiertas ahora",
+      "salaAbiertaInfo": "{{dentro}}/{{max}} jugadores · {{cupos}} lugar(es) libre(s)"
     },
     "tuRecord": "Tu récord: {{n}}",
     "retarA": "Retar a alguien",
@@ -1214,7 +1217,11 @@
     "plazoTurno": "Plazo máximo por turno",
     "plazoHoras": "{{n}} h",
     "plazoPersonalizado": "Personalizado",
-    "unidad": { "min": "min", "h": "h", "d": "días" },
+    "unidad": {
+      "min": "min",
+      "h": "h",
+      "d": "días"
+    },
     "venceEn": "vence en {{texto}}",
     "jugarContraIA": "Jugar contra la app",
     "jugandoContraIA": "La app",
@@ -1358,7 +1365,10 @@
       "armando": "Armándose",
       "verSalas": "Salas de HueLudo",
       "nuevaSala": "Nueva sala de {{juego}}",
-      "crearDe": "Crear sala de {{juego}}"
+      "crearDe": "Crear sala de {{juego}}",
+      "publica": "Sala pública",
+      "publicaDesc": "Aparece en \"Salas abiertas\" y cualquiera con lugar se suma.",
+      "privadaDesc": "Sólo entra quien tenga el código o una invitación."
     },
     "ludo": {
       "titulo": "HueLudo",

@@ -35,6 +35,7 @@ export default function SalaCrearScreen() {
 
   const [maxJugadores, setMaxJugadores] = useState(4);
   const [completarConIA, setCompletarConIA] = useState(true);
+  const [esPublica, setEsPublica] = useState(true);
   const [politicaAbandono, setPoliticaAbandono] = useState<PoliticaAbandonoSala>('espera');
   const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
 
@@ -71,6 +72,7 @@ export default function SalaCrearScreen() {
       completarConIA,
       politicaAbandono,
       plazoTurnoMinutos,
+      esPublica,
       invitadosUserIds: invitados.map((i) => i.userId),
     });
     setCreando(false);
@@ -106,6 +108,18 @@ export default function SalaCrearScreen() {
           <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.sala.completarConIADesc')}</Text>
         </View>
         <Switch value={completarConIA} onValueChange={setCompletarConIA} />
+      </View>
+
+      <View style={[styles.filaSwitch, { borderColor: colors.border }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+            {t('hueplay.sala.publica')}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+            {esPublica ? t('hueplay.sala.publicaDesc') : t('hueplay.sala.privadaDesc')}
+          </Text>
+        </View>
+        <Switch value={esPublica} onValueChange={setEsPublica} />
       </View>
 
       <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.sala.siAlguienNoResponde')}</Text>

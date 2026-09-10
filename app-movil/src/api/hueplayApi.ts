@@ -250,6 +250,8 @@ export const hueplayApi = {
       politicaAbandono: PoliticaAbandonoSala;
       plazoTurnoMinutos: number;
       invitadosUserIds?: number[];
+      /** Default true: aparece en el visualizador de salas abiertas. */
+      esPublica?: boolean;
     }
   ) =>
     apiPost<{ sala: HuePlaySala }>(
@@ -260,6 +262,7 @@ export const hueplayApi = {
         completarConIA: opciones.completarConIA ? '1' : '0',
         politicaAbandono: opciones.politicaAbandono,
         plazoTurnoMinutos: opciones.plazoTurnoMinutos,
+        esPublica: opciones.esPublica === false ? '0' : '1',
         ...(opciones.invitadosUserIds?.length
           ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }
           : {}),
@@ -269,6 +272,17 @@ export const hueplayApi = {
 
   unirseSala: (codigoInvitacion: string) =>
     apiPost<{ sala: HuePlaySala }>('ajax/hueplay/sala_unirse.php', { codigoInvitacion }, true),
+
+  /** Visualizador de salas abiertas: las públicas armándose con cupo libre. */
+  salasPublicas: (juegoCodigo?: string) =>
+    apiGet<{ salas: HuePlaySala[] }>(
+      'ajax/hueplay/sala_publicas.php',
+      juegoCodigo ? { juegoCodigo } : undefined,
+      true
+    ),
+
+  unirseSalaPublica: (salaId: number) =>
+    apiPost<{ sala: HuePlaySala }>('ajax/hueplay/sala_unirse_publica.php', { salaId }, true),
 
   responderSala: (salaId: number, aceptar: boolean) =>
     apiPost<{ sala: HuePlaySala }>(

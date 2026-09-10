@@ -24,6 +24,11 @@ if ($maxJugadores < 2 || $maxJugadores > 4) {
 
 $completarConIA = !empty($_POST['completarConIA']);
 
+// Pública por default: aparece en el visualizador de salas abiertas y
+// cualquiera con cupo libre se suma sin código. Se manda 'esPublica' = '0'
+// para armarla privada (sólo por invitación / código).
+$esPublica = !isset($_POST['esPublica']) || $_POST['esPublica'] === '1' || $_POST['esPublica'] === 1 || $_POST['esPublica'] === true;
+
 $politicaAbandono = trim($_POST['politicaAbandono'] ?? 'espera');
 if (!in_array($politicaAbandono, ['ia', 'espera', 'expulsa'], true)) {
     json_error('Política de abandono desconocida');
@@ -56,7 +61,8 @@ $sala = rh_sala_crear(
     $completarConIA,
     $politicaAbandono,
     $plazoTurnoMinutos,
-    $invitadosUserIds
+    $invitadosUserIds,
+    $esPublica
 );
 
 $jugadores = rh_sala_jugadores($conn, (int) $sala['SalaId']);

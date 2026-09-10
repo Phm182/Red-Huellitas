@@ -73,16 +73,18 @@ function rh_sala_crear(
     bool $completarConIA,
     string $politicaAbandono,
     int $plazoTurnoMinutos,
-    array $invitadosUserIds
+    array $invitadosUserIds,
+    bool $esPublica = true
 ): array {
     $codigo = rh_sala_codigo_nuevo($conn);
     $completarConIAInt = $completarConIA ? 1 : 0;
+    $esPublicaInt = $esPublica ? 1 : 0;
 
     $stmt = $conn->prepare(
-        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoMinutos, CodigoInvitacion)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO JuegoSala (JuegoCodigo, CreadorUserId, MaxJugadores, CompletarConIA, PoliticaAbandono, PlazoTurnoMinutos, CodigoInvitacion, EsPublica)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->bind_param('siiisis', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoMinutos, $codigo);
+    $stmt->bind_param('siiisisi', $juegoCodigo, $userId, $maxJugadores, $completarConIAInt, $politicaAbandono, $plazoTurnoMinutos, $codigo, $esPublicaInt);
     $stmt->execute();
     $salaId = $conn->insert_id;
     $stmt->close();
@@ -176,6 +178,66 @@ function rh_sala_unirse_codigo(mysqli $conn, int $userId, string $codigoInvitaci
         'juego_desafio',
         'Se sumó alguien a tu sala',
         rh_juego_nombre($conn, $userId) . ' se unió con el código a tu sala de ' . rh_juego_titulo($sala['JuegoCodigo']),
+        '/(app)/hueplay/desafios',
+        ['juegoCodigo' => $sala['JuegoCodigo']]
+    );
+
+    return ['sala' => rh_sala_obtener($conn, $salaId)];
+}
+
+/**
+ * Sumarse a una sala PÚBLICA desde el visualizador de salas abiertas (sin
+ * código, sin invitación). Mismas validaciones que `rh_sala_unirse_codigo()`
+ * pero por id y exigiendo `EsPublica = 1` — una sala privada sólo se puede
+ * abrir con su código.
+ */
+function rh_sala_unirse_publica(mysqli $conn, int $userId, int $salaId): array
+{
+    $stmt = $conn->prepare("SELECT * FROM JuegoSala WHERE SalaId = ? AND Estado = 'esperando' AND EsPublica = 1");
+    $stmt->bind_param('i', $salaId);
+    $stmt->execute();
+    $sala = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$sala) {
+        return ['error' => 'Esa sala ya no está abierta'];
+    }
+
+    $stmt = $conn->prepare('SELECT * FROM JuegoSalaJugador WHERE SalaId = ? AND UserId = ?');
+    $stmt->bind_param('ii', $salaId, $userId);
+    $stmt->execute();
+    $existente = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($existente) {
+        // Ya tiene asiento (invitación previa, o ya se había sumado): entrar
+        // equivale a aceptar.
+        if ($existente['Estado'] === 'invitado') {
+            $sjId = (int) $existente['SalaJugadorId'];
+            $stmt = $conn->prepare("UPDATE JuegoSalaJugador SET Estado = 'aceptado' WHERE SalaJugadorId = ?");
+            $stmt->bind_param('i', $sjId);
+            $stmt->execute();
+            $stmt->close();
+        }
+        return ['sala' => rh_sala_obtener($conn, $salaId)];
+    }
+
+    $ocupados = count(rh_sala_jugadores($conn, $salaId, ['invitado', 'aceptado']));
+    if ($ocupados >= (int) $sala['MaxJugadores']) {
+        return ['error' => 'La sala ya está completa'];
+    }
+
+    $stmt = $conn->prepare("INSERT INTO JuegoSalaJugador (SalaId, UserId, Estado, UnidoPorCodigo) VALUES (?, ?, 'aceptado', 1)");
+    $stmt->bind_param('ii', $salaId, $userId);
+    $stmt->execute();
+    $stmt->close();
+
+    rh_notificar(
+        $conn,
+        [(int) $sala['CreadorUserId']],
+        'juego_desafio',
+        'Se sumó alguien a tu sala',
+        rh_juego_nombre($conn, $userId) . ' se unió a tu sala abierta de ' . rh_juego_titulo($sala['JuegoCodigo']),
         '/(app)/hueplay/desafios',
         ['juegoCodigo' => $sala['JuegoCodigo']]
     );
@@ -539,6 +601,14 @@ function rh_sala_serializar(mysqli $conn, array $sala, array $jugadores, int $yo
         'politicaAbandono' => $sala['PoliticaAbandono'],
         'plazoTurnoMinutos' => (int) $sala['PlazoTurnoMinutos'],
         'codigoInvitacion' => $sala['CodigoInvitacion'],
+        'esPublica' => (bool) ($sala['EsPublica'] ?? 1),
+        // Cupos que todavía se pueden ocupar (asientos libres para gente
+        // nueva). Cuenta invitados + aceptados; la IA no ocupa asiento
+        // todavía (recién al iniciar).
+        'cuposLibres' => max(0, (int) $sala['MaxJugadores'] - count(array_filter(
+            $jugadores,
+            fn ($j) => in_array($j['Estado'], ['invitado', 'aceptado'], true)
+        ))),
         'estado' => $sala['Estado'],
         // El tablero NO va acá: en juegos con información oculta (HueRummy,
         // la mano de cada uno) mandar `Tablero` crudo sería mostrarle a

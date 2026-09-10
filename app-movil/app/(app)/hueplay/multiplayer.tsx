@@ -22,7 +22,7 @@ import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticLeve } from '../../../src/utils/haptics';
 import type { TFunction } from 'i18next';
 
-type SolapaMP = 'tuTurno' | 'enEspera' | 'historial';
+type SolapaMP = 'tuTurno' | 'enEspera' | 'abiertas' | 'historial';
 
 /** Fila ya normalizada — el mismo shape para un duelo 1v1 o una sala, para poder pintarlas juntas. */
 type FilaMP = {
@@ -119,6 +119,23 @@ function salaAFila(s: HuePlaySala, origen: OrigenSala, t: TFunction): FilaMP {
   };
 }
 
+/** Una sala abierta del visualizador: el `onPress` no navega, se SUMA (y
+ * después va al lobby). El texto muestra cuánta gente hay y cuántos cupos
+ * quedan. */
+function salaPublicaAFila(s: HuePlaySala, t: TFunction, unirse: (salaId: number) => void): FilaMP {
+  const juego = juegoDelCatalogo(s.juegoCodigo);
+  const dentro = s.jugadores.filter((j) => j.estado === 'aceptado' || j.estado === 'invitado').length;
+  return {
+    key: `sp-${s.salaId}`,
+    juegoCodigo: s.juegoCodigo,
+    texto: juego?.titulo ?? s.juegoCodigo,
+    subtexto: t('hueplay.multiplayer.salaAbiertaInfo', { dentro, max: s.maxJugadores, cupos: s.cuposLibres }),
+    avatarPath: s.jugadores.find((j) => j.userId === s.creadorUserId)?.avatarPath ?? null,
+    badge: null,
+    onPress: () => unirse(s.salaId),
+  };
+}
+
 /**
  * Multiplayer: todo lo que se juega con otra persona, en un solo lugar —
  * duelos 1 contra 1 (`desafios.tsx`) y salas de hasta 4 (`salas.tsx`),
@@ -135,18 +152,39 @@ export default function MultiplayerScreen() {
 
   const [desafios, setDesafios] = useState<HuePlayDesafiosBandeja | null>(null);
   const [salas, setSalas] = useState<HuePlaySalasBandeja | null>(null);
+  const [salasAbiertas, setSalasAbiertas] = useState<HuePlaySala[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uniendose, setUniendose] = useState<number | null>(null);
   const [solapa, setSolapa] = useState<SolapaMP>('tuTurno');
 
   const cargar = useCallback(() => {
-    Promise.all([hueplayApi.desafios(), hueplayApi.salas()]).then(([rd, rs]) => {
+    Promise.all([hueplayApi.desafios(), hueplayApi.salas(), hueplayApi.salasPublicas()]).then(([rd, rs, rp]) => {
       if (rd.success && rd.data) setDesafios(rd.data);
       if (rs.success && rs.data) setSalas(rs.data);
+      if (rp.success && rp.data) setSalasAbiertas(rp.data.salas);
       setLoading(false);
     });
   }, []);
 
   useFocusEffect(useCallback(() => cargar(), [cargar]));
+
+  const unirseAbierta = useCallback(
+    (salaId: number) => {
+      if (uniendose !== null) return;
+      hapticLeve();
+      setUniendose(salaId);
+      hueplayApi.unirseSalaPublica(salaId).then((res) => {
+        setUniendose(null);
+        if (res.success && res.data) {
+          router.push({ pathname: '/(app)/hueplay/sala-lobby/[salaId]', params: { salaId: res.data.sala.salaId } });
+        } else {
+          // La sala pudo llenarse justo — refrescar el listado.
+          cargar();
+        }
+      });
+    },
+    [uniendose, cargar]
+  );
 
   const porSolapa = useMemo<Record<SolapaMP, FilaMP[]>>(() => {
     return {
@@ -160,16 +198,18 @@ export default function MultiplayerScreen() {
         ...(salas?.esperando ?? []).map((s) => salaAFila(s, 'esperando', t)),
         ...(salas?.armando ?? []).map((s) => salaAFila(s, 'armando', t)),
       ],
+      abiertas: salasAbiertas.map((s) => salaPublicaAFila(s, t, unirseAbierta)),
       historial: [
         ...(desafios?.terminados ?? []).map((d) => desafioAFila(d, 'historial', yoId, t)),
         ...(salas?.terminadas ?? []).map((s) => salaAFila(s, 'terminada', t)),
       ],
     };
-  }, [desafios, salas, yoId, t]);
+  }, [desafios, salas, salasAbiertas, yoId, t, unirseAbierta]);
 
   const tabs: { key: SolapaMP; label: string }[] = [
     { key: 'tuTurno', label: t('hueplay.multiplayer.tuTurno') },
     { key: 'enEspera', label: t('hueplay.multiplayer.enEspera') },
+    { key: 'abiertas', label: t('hueplay.multiplayer.abiertas') },
     { key: 'historial', label: t('hueplay.multiplayer.historial') },
   ];
 
@@ -183,7 +223,10 @@ export default function MultiplayerScreen() {
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
         ) : lista.length === 0 ? (
-          <EmptyState icon="people-outline" titulo={t('hueplay.multiplayer.sinNada')} />
+          <EmptyState
+            icon="people-outline"
+            titulo={solapa === 'abiertas' ? t('hueplay.multiplayer.sinAbiertas') : t('hueplay.multiplayer.sinNada')}
+          />
         ) : (
           <FlatList
             contentContainerStyle={[styles.lista, centeredContent]}
@@ -191,6 +234,8 @@ export default function MultiplayerScreen() {
             keyExtractor={(item) => item.key}
             renderItem={({ item }) => {
               const juego = juegoDelCatalogo(item.juegoCodigo);
+              const esAbierta = item.key.startsWith('sp-');
+              const salaIdAbierta = esAbierta ? Number(item.key.slice(3)) : null;
               return (
                 <Pressable
                   onPress={() => {
@@ -212,7 +257,17 @@ export default function MultiplayerScreen() {
                       {juego?.titulo ?? item.juegoCodigo} · {item.subtexto}
                     </Text>
                   </View>
-                  {item.badge ? (
+                  {esAbierta ? (
+                    <View style={[styles.unirmePill, { backgroundColor: colors.primary }]}>
+                      {uniendose === salaIdAbierta ? (
+                        <ActivityIndicator size="small" color={colors.primaryText} />
+                      ) : (
+                        <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 12 }}>
+                          {t('hueplay.sala.unirse')}
+                        </Text>
+                      )}
+                    </View>
+                  ) : item.badge ? (
                     <View
                       style={[
                         styles.resultado,
@@ -263,4 +318,12 @@ const styles = StyleSheet.create({
   iconoJuego: { width: 32, height: 32, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
   resultado: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   resultadoTexto: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 12 },
+  unirmePill: {
+    minWidth: 64,
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
