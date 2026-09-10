@@ -176,7 +176,7 @@ function rh_sala_unirse_codigo(mysqli $conn, int $userId, string $codigoInvitaci
         'juego_desafio',
         'Se sumó alguien a tu sala',
         rh_juego_nombre($conn, $userId) . ' se unió con el código a tu sala de ' . rh_juego_titulo($sala['JuegoCodigo']),
-        '/(app)/hueplay/desafios',
+        '/(app)/hueplay/sala-lobby/' . $salaId,
         ['juegoCodigo' => $sala['JuegoCodigo']]
     );
 
@@ -316,7 +316,7 @@ function rh_sala_cerrar(mysqli $conn, array $sala, array $jugadores, ?int $ganad
     $userIds = array_column($humanos, 'userId');
     if ($userIds) {
         rh_notificar($conn, $userIds, 'juego_desafio_fin', 'Partida terminada',
-            'Terminó tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios',
+            'Terminó tu partida de ' . $nombreJuego, rh_hueplay_ruta_bandeja('historial'),
             ['juegoCodigo' => $juegoCodigo]);
     }
 }

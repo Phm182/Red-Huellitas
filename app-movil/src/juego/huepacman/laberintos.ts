@@ -22,7 +22,7 @@ export type LaberintoOpcion = {
   fijo?: string[];
 };
 
-/** Clásico de arcade, 28x31. Validado: todo tile transitable se alcanza desde el spawn. */
+/** Clásico de arcade, 28x30. Validado: todo tile transitable se alcanza desde el spawn. */
 const CLASICO: string[] = [
   '############################',
   '#............##............#',
@@ -52,7 +52,6 @@ const CLASICO: string[] = [
   '#......##....##....##......#',
   '#.##########.##.##########.#',
   '#.##########.##.##########.#',
-  '#..........................#',
   '#..........................#',
   '############################',
 ];

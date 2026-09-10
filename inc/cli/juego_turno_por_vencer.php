@@ -77,7 +77,7 @@ foreach ($porVencer as $d) {
             'juego_turno_por_vencer',
             '¡Se te acaba el tiempo!',
             'Tenés 15 minutos para jugar tu turno de ' . rh_juego_titulo($d['JuegoCodigo']) . ' antes de perder por no responder.',
-            '/(app)/hueplay/desafios',
+            rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId, (int) ($d['Semilla'] ?? 0)),
             ['juegoCodigo' => $d['JuegoCodigo']]
         );
 

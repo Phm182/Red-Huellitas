@@ -144,7 +144,7 @@ if ($gane) {
 } else {
     rh_juego_avanzar_turno($conn, $desafioId, $rival, $userId, (int) $d['PlazoTurnoMinutos'], $d['JuegoCodigo']);
     rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
-        rh_juego_nombre($conn, $userId) . ' ya movió en Damas', '/(app)/hueplay/desafios',
+        rh_juego_nombre($conn, $userId) . ' ya movió en Damas', rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId),
         ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
 }
 

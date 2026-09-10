@@ -63,7 +63,7 @@ if ($existente) {
         'juego_desafio',
         'Se sumó alguien a tu sala',
         rh_juego_nombre($conn, $userId) . ' se unió a tu sala abierta de ' . rh_juego_titulo($sala['JuegoCodigo']),
-        '/(app)/hueplay/desafios'
+        '/(app)/hueplay/sala-lobby/' . $salaId
     );
 }
 

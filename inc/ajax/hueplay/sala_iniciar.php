@@ -88,7 +88,7 @@ if (rh_juego_es_duelo($juegoCodigo)) {
     if (!rh_juego_es_bot($conn, $retadoId)) {
         rh_notificar($conn, [$retadoId], 'juego_desafio', 'Arrancó la partida',
             rh_juego_nombre($conn, $userId) . ' inició la sala de ' . rh_juego_titulo($juegoCodigo),
-            '/(app)/hueplay/desafios', ['juegoCodigo' => $juegoCodigo]);
+            rh_hueplay_ruta_duelo($juegoCodigo, $desafioId, (int) $semilla), ['juegoCodigo' => $juegoCodigo]);
     }
 
     $salaFinal = rh_sala_obtener($conn, $salaId);
@@ -134,7 +134,7 @@ if ($humanoIds) {
     if ($otros) {
         rh_notificar($conn, $otros, 'juego_desafio', 'Arrancó la partida',
             rh_juego_nombre($conn, $userId) . ' inició la sala de ' . rh_juego_titulo($juegoCodigo),
-            '/(app)/hueplay/desafios', ['juegoCodigo' => $juegoCodigo]);
+            rh_hueplay_ruta_bandeja('tuTurno'), ['juegoCodigo' => $juegoCodigo]);
     }
 }
 

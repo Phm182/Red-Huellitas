@@ -209,7 +209,7 @@ if (!$contraIA) {
         'juego_desafio',
         'Te retaron a jugar',
         rh_juego_nombre($conn, $userId) . ' te retó en ' . $nombreJuego,
-        '/(app)/hueplay/desafios',
+        rh_hueplay_ruta_duelo($codigo, $desafioId, (int) $semilla),
         ['actorUserId' => $userId, 'juegoCodigo' => $codigo]
     );
 }

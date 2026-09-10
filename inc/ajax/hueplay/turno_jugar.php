@@ -96,7 +96,7 @@ if ($gano || $empate) {
 
     if (!rh_juego_es_bot($conn, $rival)) {
         rh_notificar($conn, [$rival], 'juego_desafio', 'Te toca jugar',
-            rh_juego_nombre($conn, $userId) . ' ya movió en HueConecta', '/(app)/hueplay/desafios',
+            rh_juego_nombre($conn, $userId) . ' ya movió en HueConecta', rh_hueplay_ruta_duelo($d['JuegoCodigo'], $desafioId),
             ['actorUserId' => $userId, 'juegoCodigo' => $d['JuegoCodigo']]);
     }
 }

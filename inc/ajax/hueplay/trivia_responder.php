@@ -104,15 +104,16 @@ if ($desafioId !== null) {
         $ganador = $cierre['ganadorUserId'];
         $titulo = rh_juego_titulo('huetrivia');
 
+        $rutaFin = rh_hueplay_ruta_bandeja('historial');
         if ($ganador === null) {
             rh_notificar($conn, [$retador, $retado], 'juego_desafio_fin', 'Empate en ' . $titulo,
-                'El duelo terminó empatado', '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
+                'El duelo terminó empatado', $rutaFin, ['juegoCodigo' => 'huetrivia']);
         } else {
             $perdedor = $ganador === $retador ? $retado : $retador;
             rh_notificar($conn, [$ganador], 'juego_desafio_fin', '¡Ganaste el duelo!',
-                'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . $titulo, '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
+                'Le ganaste a ' . rh_juego_nombre($conn, $perdedor) . ' en ' . $titulo, $rutaFin, ['juegoCodigo' => 'huetrivia']);
             rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo',
-                rh_juego_nombre($conn, $ganador) . ' te ganó en ' . $titulo, '/(app)/hueplay/desafios', ['juegoCodigo' => 'huetrivia']);
+                rh_juego_nombre($conn, $ganador) . ' te ganó en ' . $titulo, $rutaFin, ['juegoCodigo' => 'huetrivia']);
         }
 
         $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');
@@ -124,7 +125,7 @@ if ($desafioId !== null) {
         rh_notificar($conn, [$soyRetador ? (int) $d['UserIdRetado'] : (int) $d['UserIdRetador']],
             'juego_desafio', 'Te toca jugar',
             rh_juego_nombre($conn, $userId) . ' ya jugó su partida en ' . rh_juego_titulo('huetrivia'),
-            '/(app)/hueplay/desafios', ['actorUserId' => $userId, 'juegoCodigo' => 'huetrivia']);
+            rh_hueplay_ruta_duelo('huetrivia', $desafioId, (int) $d['Semilla']), ['actorUserId' => $userId, 'juegoCodigo' => 'huetrivia']);
     }
 
     json_success([

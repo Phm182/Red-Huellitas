@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -156,13 +156,19 @@ export default function MultiplayerScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
   const yoId = user?.userId ?? 0;
+  // Solapa inicial por deep link (`?solapa=historial` desde una notif de fin
+  // de partida, `?solapa=tuTurno` desde "arrancó la sala", etc.).
+  const params = useLocalSearchParams<{ solapa?: string }>();
 
   const [desafios, setDesafios] = useState<HuePlayDesafiosBandeja | null>(null);
   const [salas, setSalas] = useState<HuePlaySalasBandeja | null>(null);
   const [salasAbiertas, setSalasAbiertas] = useState<HuePlaySala[]>([]);
   const [loading, setLoading] = useState(true);
   const [uniendose, setUniendose] = useState<number | null>(null);
-  const [solapa, setSolapa] = useState<SolapaMP>('tuTurno');
+  const SOLAPAS_VALIDAS: SolapaMP[] = ['tuTurno', 'enEspera', 'abiertas', 'historial'];
+  const [solapa, setSolapa] = useState<SolapaMP>(
+    SOLAPAS_VALIDAS.includes(params.solapa as SolapaMP) ? (params.solapa as SolapaMP) : 'tuTurno'
+  );
 
   const cargar = useCallback(() => {
     Promise.all([hueplayApi.desafios(), hueplayApi.salas(), hueplayApi.salasPublicas()]).then(([rd, rs, rp]) => {

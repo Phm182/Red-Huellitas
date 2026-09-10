@@ -475,6 +475,41 @@ function rh_juego_semilla(): int
 }
 
 /**
+ * A qué pantalla del cliente lleva un duelo — espejo de
+ * `app-movil/src/juego/hueplay/rutas.ts::rutaDelDesafio()`. Se usa como
+ * `ruta` de las notificaciones de turno para que el toque caiga directo en
+ * el tablero, no en una lista.
+ */
+function rh_hueplay_ruta_duelo(string $codigo, int $desafioId, int $semilla = 0): string
+{
+    $pantallas = [
+        'hueconecta' => 'hueconecta',
+        'huedamas' => 'damas',
+        'hueajedrez' => 'ajedrez',
+        'huereversi' => 'reversi',
+        'huetateti' => 'tateti',
+        'huepool' => 'huepool',
+        'huesoccer' => 'huesoccer',
+    ];
+    if (isset($pantallas[$codigo])) {
+        return '/(app)/hueplay/' . $pantallas[$codigo] . '?desafioId=' . $desafioId;
+    }
+    $variantesDoku = ['huedoku6' => '6', 'huedoku9facil' => '9facil', 'huedoku9dificil' => '9dificil'];
+    if (isset($variantesDoku[$codigo])) {
+        return '/(app)/hueplay/huedoku?desafioId=' . $desafioId . '&semilla=' . $semilla . '&variante=' . $variantesDoku[$codigo];
+    }
+    $otras = ['huememo' => 'huememo', 'huetrivia' => 'huetrivia', 'huezip' => 'huezip'];
+    $pantalla = $otras[$codigo] ?? 'huematch';
+    return '/(app)/hueplay/' . $pantalla . '?desafioId=' . $desafioId . '&semilla=' . $semilla;
+}
+
+/** Bandeja unificada nueva de multiplayer, con solapa opcional. */
+function rh_hueplay_ruta_bandeja(string $solapa = ''): string
+{
+    return '/(app)/hueplay/multiplayer' . ($solapa !== '' ? '?solapa=' . $solapa : '');
+}
+
+/**
  * Pasa el turno al rival y recalcula cuándo vence, según el plazo elegido al
  * armar el duelo. El `WHERE TurnoDeUserId = ?` es el mismo guard de
  * concurrencia que ya usaba `turno_jugar.php`: si dos jugadas llegaran a la
@@ -503,13 +538,16 @@ function rh_juego_avanzar_turno(
     $stmt->close();
 
     require_once __DIR__ . '/notificaciones.php';
+    $ruta = $juegoCodigo !== null
+        ? rh_hueplay_ruta_duelo($juegoCodigo, $desafioId)
+        : rh_hueplay_ruta_bandeja('tuTurno');
     rh_notificar(
         $conn,
         [$siguienteUserId],
         'juego_tu_turno',
         '¡Te toca jugar!',
         'Tenés un movimiento esperando.',
-        '/(app)/hueplay/desafios',
+        $ruta,
         $juegoCodigo !== null ? ['juegoCodigo' => $juegoCodigo] : []
     );
 }
@@ -577,7 +615,7 @@ function rh_juego_cerrar_desafio_turnos(
             $stmt->close();
 
             rh_notificar($conn, [$ganadorUserId], 'juego_desafio_fin', '¡Ganaste el duelo!',
-                'Ganaste tu partida de ' . $nombreJuego, '/(app)/hueplay/desafios',
+                'Ganaste tu partida de ' . $nombreJuego, rh_hueplay_ruta_bandeja('historial'),
                 ['juegoCodigo' => $codigo]);
         }
 
@@ -590,14 +628,14 @@ function rh_juego_cerrar_desafio_turnos(
             $cuerpo = $porVencimiento
                 ? 'No respondiste a tiempo y perdiste tu partida de ' . $nombreJuego
                 : 'Perdiste tu partida de ' . $nombreJuego;
-            rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', $cuerpo, '/(app)/hueplay/desafios',
+            rh_notificar($conn, [$perdedor], 'juego_desafio_fin', 'Perdiste el duelo', $cuerpo, rh_hueplay_ruta_bandeja('historial'),
                 ['juegoCodigo' => $codigo]);
         }
     } else {
         $humanos = array_values(array_filter([$retador, $retado], fn (int $u) => !rh_juego_es_bot($conn, $u)));
         if ($humanos) {
             rh_notificar($conn, $humanos, 'juego_desafio_fin', 'Empate',
-                'Tu partida de ' . $nombreJuego . ' terminó empatada', '/(app)/hueplay/desafios',
+                'Tu partida de ' . $nombreJuego . ' terminó empatada', rh_hueplay_ruta_bandeja('historial'),
                 ['juegoCodigo' => $codigo]);
         }
     }
