@@ -1215,9 +1215,20 @@
     "sinRivalesDesc": "Probá buscando por nombre o usuario.",
     "loSeguis": "lo seguís",
     "subisteDeNivel": "¡subiste de nivel!",
-    "plazoTurno": "Plazo máximo por turno",
+    "plazoTurno": "Plazo por turno",
+    "plazoTurnoAyuda": "Lo que tiene el rival para responder cada jugada.",
     "plazoHoras": "{{n}} h",
     "plazoPersonalizado": "Personalizado",
+    "plazoPartida": {
+      "titulo": "Plazo de la partida",
+      "ayuda": "Si nadie ganó cuando llega, el duelo queda en tablas.",
+      "sinLimite": "Sin límite",
+      "min30": "30 min",
+      "h2": "2 h",
+      "d1": "1 día",
+      "d3": "3 días",
+      "sem1": "1 semana"
+    },
     "unidad": {
       "min": "min",
       "h": "h",

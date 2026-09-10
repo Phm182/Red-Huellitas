@@ -84,3 +84,10 @@ printf(
     $dryRun ? 'seleccionados' : 'resueltos',
     $fallidos
 );
+
+// Plazo de PARTIDA entero vencido (distinto del de turno): los duelos que
+// llegaron a su límite sin ganador quedan en tablas.
+if (!$dryRun) {
+    rh_juego_expirar_partidas($conn, 0);
+    echo "Plazos de partida vencidos procesados.\n";
+}

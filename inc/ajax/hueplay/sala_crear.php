@@ -51,6 +51,13 @@ if ($plazoTurnoMinutos < 3 || $plazoTurnoMinutos > 10080) {
     json_error('El plazo debe ser entre 3 minutos y 7 días');
 }
 
+// Plazo de la partida entera (sólo salas de duelo): se guarda para pasárselo
+// al JuegoDesafio al iniciar. 0 = sin límite.
+$plazoPartidaMinutos = $esDuelo ? (int) ($_POST['plazoPartidaMinutos'] ?? 0) : 0;
+if ($plazoPartidaMinutos !== 0 && ($plazoPartidaMinutos < 10 || $plazoPartidaMinutos > 20160)) {
+    json_error('El plazo de partida debe ser entre 10 minutos y 14 días');
+}
+
 $invitadosUserIds = [];
 $invitadosRaw = trim($_POST['invitadosUserIds'] ?? '');
 if ($invitadosRaw !== '') {
@@ -86,6 +93,15 @@ if (!$esPublica) {
     $stmt->execute();
     $stmt->close();
     $sala['EsPublica'] = 0;
+}
+
+if ($plazoPartidaMinutos > 0) {
+    $salaId = (int) $sala['SalaId'];
+    $stmt = $conn->prepare('UPDATE JuegoSala SET PlazoPartidaMinutos = ? WHERE SalaId = ?');
+    $stmt->bind_param('ii', $plazoPartidaMinutos, $salaId);
+    $stmt->execute();
+    $stmt->close();
+    $sala['PlazoPartidaMinutos'] = $plazoPartidaMinutos;
 }
 
 $jugadores = rh_sala_jugadores($conn, (int) $sala['SalaId']);

@@ -13,10 +13,12 @@ type Props = {
   /** Sin márgenes laterales; pensado para ir en una fila junto a chips. */
   embedded?: boolean;
   style?: ViewStyle;
+  onFocus?: () => void;
+  onBlur?: () => void;
 };
 
 /** Buscador compacto para filtrar listas por texto. */
-export function ListSearchBar({ value, onChangeText, placeholder, embedded, style }: Props) {
+export function ListSearchBar({ value, onChangeText, placeholder, embedded, style, onFocus, onBlur }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
@@ -40,6 +42,8 @@ export function ListSearchBar({ value, onChangeText, placeholder, embedded, styl
         autoCorrect={false}
         clearButtonMode="while-editing"
         returnKeyType="search"
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
       {value.length > 0 ? (
         <Ionicons

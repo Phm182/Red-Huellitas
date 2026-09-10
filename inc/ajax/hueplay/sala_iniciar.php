@@ -57,10 +57,17 @@ if (rh_juego_es_duelo($juegoCodigo)) {
         $expiraMinutos = RH_DESAFIO_DIAS * 1440;
     }
 
+    // Plazo de partida elegido al armar la sala (0 = sin límite). Int ya
+    // sano de la DB: se interpola directo.
+    $plazoPartida = (int) ($sala['PlazoPartidaMinutos'] ?? 0);
+    $partidaVenceExpr = $plazoPartida > 0
+        ? 'DATE_ADD(NOW(), INTERVAL ' . $plazoPartida . ' MINUTE)'
+        : 'NULL';
+
     $stmt = $conn->prepare(
         "INSERT INTO JuegoDesafio
-            (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? MINUTE))"
+            (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, Estado, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aceptado', DATE_ADD(NOW(), INTERVAL ? MINUTE), $partidaVenceExpr)"
     );
     $stmt->bind_param(
         'ssiiiisii',

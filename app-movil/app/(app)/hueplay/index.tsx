@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { BarraNivel } from '../../../src/components/ui/BarraNivel';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { BotonFavorito } from '../../../src/components/hueplay/BotonFavorito';
@@ -229,6 +228,10 @@ export default function HuePlayScreen() {
   // Arranca siempre en "dinámica" (pedido explícito) — no se persiste entre
   // aperturas de la app, no hay mecanismo de preferencias por-pantalla acá.
   const [vista, setVista] = useState<VistaJuegos>('dinamica');
+  // Con el buscador enfocado se colapsa el resto del chrome (tarjeta de
+  // nivel, accesos, ranking) para que el carrusel / la grilla de resultados
+  // quede arriba del teclado y se vea filtrar en vivo, sin cerrar el teclado.
+  const [buscando, setBuscando] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -268,7 +271,7 @@ export default function HuePlayScreen() {
 
   const nivelYAcciones = (
     <>
-      {loading ? (
+      {buscando ? null : loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
       ) : p ? (
         <View style={[styles.nivelCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -305,7 +308,9 @@ export default function HuePlayScreen() {
           puertas de entrada grandes de HuePlay — el diario (mismo tablero
           para todo el mundo ese día) y todo lo que se juega con otra
           persona (duelos 1v1 + salas de hasta 4, unificados en una sola
-          bandeja). */}
+          bandeja). Se ocultan mientras se busca para dejar lugar a los
+          resultados sobre el teclado. */}
+      {buscando ? null : (
       <View style={styles.filaMitades}>
         <Pressable
           onPress={() => {
@@ -343,9 +348,26 @@ export default function HuePlayScreen() {
         </Pressable>
       </View>
 
+      )}
+
       <View style={styles.seccionFila}>
         <Text style={[styles.seccion, styles.seccionSinMargen, { color: colors.textMuted }]}>{t('hueplay.juegos')}</Text>
-        <ListSearchBar embedded value={busqueda} onChangeText={setBusqueda} placeholder={t('hueplay.buscarJuego')} />
+        <ListSearchBar
+          embedded
+          value={busqueda}
+          onChangeText={(v) => {
+            setBusqueda(v);
+            if (v.trim()) setBuscando(true);
+          }}
+          placeholder={t('hueplay.buscarJuego')}
+          onFocus={() => setBuscando(true)}
+          // Al perder foco se colapsa sólo si no quedó texto: así podés
+          // tipear, tocar un resultado (el teclado se cierra) y la grilla
+          // sigue expandida para entrar.
+          onBlur={() => {
+            if (!busqueda.trim()) setBuscando(false);
+          }}
+        />
       </View>
 
       <ChipRow
@@ -360,62 +382,44 @@ export default function HuePlayScreen() {
     </>
   );
 
+  // Vista "desplegada": grilla de 2 columnas parejas (chips ícono + nombre),
+  // en vez de una tarjeta grande por fila. Los favoritos van primero
+  // (mismo orden que el carrusel).
   const listaDesplegada = (
-    <>
-      {juegosOrdenados.map((j) => (
-        <Pressable
-          key={j.id}
-          onPress={() => {
-            hapticLeve();
-            j.ruta && router.push(j.ruta as never);
-          }}
-          style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          <View style={[styles.icono, { backgroundColor: `${j.color}22` }]}>
-            {j.id === 'huematch' ? (
-              <Ficha tipo={0} size={30} />
-            ) : (
-              <MaterialCommunityIcons name={j.icono} size={24} color={j.color} />
-            )}
-          </View>
-          <View style={styles.texto}>
-            <Text style={[styles.tarjetaTitulo, { color: colors.text }]}>{j.titulo}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{j.bajada}</Text>
-            {perfil?.records[j.id] ? (
-              <Text style={{ color: colors.primary, fontSize: 11, marginTop: 2 }}>
-                {t('hueplay.tuRecord', { n: perfil.records[j.id] })}
+    <View style={styles.grillaJuegos}>
+      {juegosOrdenados.map((j) => {
+        const nivelJuego = perfil?.porJuego?.[j.id]?.nivel;
+        return (
+          <Pressable
+            key={j.id}
+            onPress={() => {
+              hapticLeve();
+              j.ruta && router.push(j.ruta as never);
+            }}
+            style={[styles.chipJuego, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <View style={[styles.chipIcono, { backgroundColor: `${j.color}22` }]}>
+              {j.id === 'huematch' ? (
+                <Ficha tipo={0} size={22} />
+              ) : (
+                <MaterialCommunityIcons name={j.icono} size={20} color={j.color} />
+              )}
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.tarjetaTitulo, { color: colors.text, fontSize: 13 }]} numberOfLines={1}>
+                {j.titulo}
               </Text>
-            ) : null}
-            {/* Nivel propio del juego. Se muestra siempre que haya perfil, aun
-                en nivel 1 con 0 puntos: ver la barra vacía invita a jugar mucho
-                más que no ver nada. */}
-            {perfil?.porJuego?.[j.id] ? (
-              <BarraNivel
-                compacta
-                color={j.color}
-                progreso={perfil.porJuego[j.id]!}
-                etiqueta={t('hueplay.nivel', { n: perfil.porJuego[j.id]!.nivel })}
-              />
-            ) : null}
-          </View>
-          {j.id === 'huesoccer' ? (
-            <Pressable
-              hitSlop={10}
-              onPress={(e) => {
-                e.stopPropagation();
-                hapticLeve();
-                router.push('/(app)/ajustes/huesoccer-skins' as never);
-              }}
-              style={[styles.skinBoton, { backgroundColor: colors.primarySoft }]}
-            >
-              <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
-            </Pressable>
-          ) : null}
-          <BotonFavorito juegoCodigo={j.id} esFavorito={favoritos.includes(j.id)} onCambiar={onFavoritoCambiar} />
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </Pressable>
-      ))}
-    </>
+              {nivelJuego ? (
+                <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1}>
+                  {t('hueplay.nivelCorto', { n: nivelJuego })}
+                </Text>
+              ) : null}
+            </View>
+            <BotonFavorito juegoCodigo={j.id} esFavorito={favoritos.includes(j.id)} onCambiar={onFavoritoCambiar} size={16} />
+          </Pressable>
+        );
+      })}
+    </View>
   );
 
   const rankingLista = perfil?.ranking.map((r) => (
@@ -445,10 +449,14 @@ export default function HuePlayScreen() {
   // veía antes de este rediseño — el ranking no tiene límite de alto.
   if (vista === 'desplegada') {
     return (
-      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.contenido, centeredContent]}>
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={[styles.contenido, centeredContent]}
+        keyboardShouldPersistTaps="handled"
+      >
         {nivelYAcciones}
         {listaDesplegada}
-        {perfil && perfil.ranking.length > 0 ? (
+        {!buscando && perfil && perfil.ranking.length > 0 ? (
           <>
             <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
             <View style={[styles.rankingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -493,7 +501,7 @@ export default function HuePlayScreen() {
         </View>
       ) : null}
 
-      {perfil && perfil.ranking.length > 0 ? (
+      {!buscando && perfil && perfil.ranking.length > 0 ? (
         <View style={styles.rankingFlex}>
           <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
           <ScrollView style={[styles.rankingCard, styles.rankingCardMinAlto, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -547,18 +555,20 @@ const styles = StyleSheet.create({
   barra: { height: 8, borderRadius: 4, overflow: 'hidden' },
   barraLlena: { height: '100%', borderRadius: 4 },
   stats: { flexDirection: 'row', marginTop: 6 },
-  tarjeta: {
+  icono: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  // Grilla de 2 columnas parejas para la vista "desplegada".
+  grillaJuegos: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 10, rowGap: 10, marginTop: 4 },
+  chipJuego: {
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: radii.lg,
-    padding: 14,
-    marginBottom: 10,
-    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    gap: 8,
   },
-  icono: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  skinBoton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  texto: { flex: 1 },
+  chipIcono: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   tarjetaTitulo: { fontSize: 16, fontFamily: fonts.bodySemi, marginBottom: 2 },
   pill: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
   pillTexto: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 11 },

@@ -714,6 +714,47 @@ function rh_juego_expirar_desafios(mysqli $conn, int $userId): void
     foreach ($vencidos as $d) {
         rh_juego_resolver_turno_vencido($conn, $d);
     }
+
+    rh_juego_expirar_partidas($conn, $userId);
+}
+
+/**
+ * Cierra los duelos cuyo PLAZO DE PARTIDA entero venció sin que nadie ganara
+ * (distinto del plazo por turno). Queda en tablas: en turnos se cierra con
+ * ganador nulo; en puntaje se marca 'expirado' (neutro, como el vencimiento
+ * de turno de puntaje). `$userId = 0` procesa todos (para el cron).
+ */
+function rh_juego_expirar_partidas(mysqli $conn, int $userId = 0): void
+{
+    $filtroUsuario = $userId > 0 ? ' AND (UserIdRetador = ? OR UserIdRetado = ?)' : '';
+
+    $sql = "SELECT * FROM JuegoDesafio
+             WHERE Modo = 'turnos' AND Estado IN ('pendiente','aceptado')
+               AND PartidaVenceEn IS NOT NULL AND PartidaVenceEn <= NOW()" . $filtroUsuario;
+    $stmt = $conn->prepare($sql);
+    if ($userId > 0) {
+        $stmt->bind_param('ii', $userId, $userId);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $enTablas = [];
+    while ($fila = $res->fetch_assoc()) {
+        $enTablas[] = $fila;
+    }
+    $stmt->close();
+    foreach ($enTablas as $d) {
+        rh_juego_cerrar_desafio_turnos($conn, $d, null, 0, 0);
+    }
+
+    $sql = "UPDATE JuegoDesafio SET Estado = 'expirado'
+             WHERE Modo = 'puntaje' AND Estado IN ('pendiente','aceptado')
+               AND PartidaVenceEn IS NOT NULL AND PartidaVenceEn <= NOW()" . $filtroUsuario;
+    $stmt = $conn->prepare($sql);
+    if ($userId > 0) {
+        $stmt->bind_param('ii', $userId, $userId);
+    }
+    $stmt->execute();
+    $stmt->close();
 }
 
 /**

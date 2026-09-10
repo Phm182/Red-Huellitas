@@ -29,6 +29,7 @@ $userId = rh_require_auth($conn);
 $codigo = trim($_POST['juegoCodigo'] ?? '');
 $contraIA = !empty($_POST['contraIA']);
 $modo = rh_juego_modo($codigo);
+$plazoPartidaMinutos = 0; // se pisa abajo en el duelo contra otra persona
 
 if (!rh_juego_existe($codigo)) {
     json_error('Juego desconocido');
@@ -72,6 +73,13 @@ if ($contraIA) {
         if ($plazoTurnoMinutos < 3 || $plazoTurnoMinutos > 10080) {
             json_error('El plazo debe ser entre 3 minutos y 7 días');
         }
+    }
+
+    // Plazo de la partida entera (distinto del de turno): si nadie ganó para
+    // entonces, el duelo queda en tablas. 0 / ausente = sin límite.
+    $plazoPartidaMinutos = isset($_POST['plazoPartidaMinutos']) ? (int) $_POST['plazoPartidaMinutos'] : 0;
+    if ($plazoPartidaMinutos !== 0 && ($plazoPartidaMinutos < 10 || $plazoPartidaMinutos > 20160)) {
+        json_error('El plazo de partida debe ser entre 10 minutos y 14 días');
     }
 }
 
@@ -121,16 +129,22 @@ if ($modo === 'turnos') {
     $turnoDe = $armado['turnoDe'];
 }
 
+// `PartidaVenceEn` es un int ya validado (0 = sin límite): se interpola
+// directo, no como parámetro, para no duplicar el bind en las dos variantes.
+$partidaVenceExpr = $plazoPartidaMinutos > 0
+    ? 'DATE_ADD(NOW(), INTERVAL ' . (int) $plazoPartidaMinutos . ' MINUTE)'
+    : 'NULL';
+
 if ($modo === 'turnos') {
     $stmt = $conn->prepare(
-        'INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))'
+        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE), $partidaVenceExpr)"
     );
     $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoMinutos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $plazoTurnoMinutos);
 } else {
     $stmt = $conn->prepare(
-        'INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))'
+        "INSERT INTO JuegoDesafio (JuegoCodigo, Modo, PlazoTurnoMinutos, UserIdRetador, UserIdRetado, Semilla, Tablero, TurnoDeUserId, ExpiraEn, PartidaVenceEn)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), $partidaVenceExpr)"
     );
     $stmt->bind_param('ssiiiisii', $codigo, $modo, $plazoTurnoMinutos, $userId, $rivalId, $semilla, $tablero, $turnoDe, $dias);
 }

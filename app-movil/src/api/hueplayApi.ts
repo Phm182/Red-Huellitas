@@ -110,7 +110,13 @@ export const hueplayApi = {
   crearDesafio: (
     juegoCodigo: string,
     rivalUserId?: number,
-    opciones?: { plazoTurnoMinutos?: number; contraIA?: boolean; metaGoles?: number }
+    opciones?: {
+      plazoTurnoMinutos?: number;
+      /** Plazo total de la partida en minutos; 0/ausente = sin límite. */
+      plazoPartidaMinutos?: number;
+      contraIA?: boolean;
+      metaGoles?: number;
+    }
   ) =>
     apiPost<{ desafio: HuePlayDesafio }>(
       'ajax/hueplay/desafio_crear.php',
@@ -118,6 +124,7 @@ export const hueplayApi = {
         juegoCodigo,
         ...(rivalUserId ? { rivalUserId } : {}),
         ...(opciones?.plazoTurnoMinutos ? { plazoTurnoMinutos: opciones.plazoTurnoMinutos } : {}),
+        ...(opciones?.plazoPartidaMinutos ? { plazoPartidaMinutos: opciones.plazoPartidaMinutos } : {}),
         ...(opciones?.contraIA ? { contraIA: '1' } : {}),
         ...(opciones?.metaGoles ? { metaGoles: opciones.metaGoles } : {}),
       },
@@ -249,6 +256,8 @@ export const hueplayApi = {
       completarConIA: boolean;
       politicaAbandono: PoliticaAbandonoSala;
       plazoTurnoMinutos: number;
+      /** Sólo salas de duelo: plazo total de la partida (0 = sin límite). */
+      plazoPartidaMinutos?: number;
       invitadosUserIds?: number[];
       /** Default true: aparece en el visualizador de salas abiertas. */
       esPublica?: boolean;
@@ -262,6 +271,7 @@ export const hueplayApi = {
         completarConIA: opciones.completarConIA ? '1' : '0',
         politicaAbandono: opciones.politicaAbandono,
         plazoTurnoMinutos: opciones.plazoTurnoMinutos,
+        ...(opciones.plazoPartidaMinutos ? { plazoPartidaMinutos: opciones.plazoPartidaMinutos } : {}),
         esPublica: opciones.esPublica === false ? '0' : '1',
         ...(opciones.invitadosUserIds?.length
           ? { invitadosUserIds: opciones.invitadosUserIds.join(',') }

@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Vie
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
+import { PlazoPartidaSelector } from '../../../src/components/ui/PlazoPartidaSelector';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
 import { esJuegoDuelo, JUEGOS_TURNOS, juegoDelCatalogo } from '../../../src/juego/hueplay/catalogo';
 import { HuePlayRival, PoliticaAbandonoSala } from '../../../src/types/hueplay';
@@ -45,6 +46,7 @@ export default function SalaCrearScreen() {
   const [esPublica, setEsPublica] = useState(true);
   const [politicaAbandono, setPoliticaAbandono] = useState<PoliticaAbandonoSala>('espera');
   const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
+  const [plazoPartidaMinutos, setPlazoPartidaMinutos] = useState(0);
 
   const [busqueda, setBusqueda] = useState('');
   const [rivales, setRivales] = useState<HuePlayRival[]>([]);
@@ -79,6 +81,7 @@ export default function SalaCrearScreen() {
       completarConIA: esDuelo ? false : completarConIA,
       politicaAbandono,
       plazoTurnoMinutos,
+      plazoPartidaMinutos: esDuelo ? plazoPartidaMinutos : 0,
       esPublica,
       invitadosUserIds: invitados.map((i) => i.userId),
     });
@@ -152,6 +155,16 @@ export default function SalaCrearScreen() {
         <>
           <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoTurno')}</Text>
           <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6, paddingHorizontal: 16 }}>
+            {t('hueplay.plazoTurnoAyuda')}
+          </Text>
+        </>
+      ) : null}
+
+      {esDuelo ? (
+        <>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.plazoPartida.titulo')}</Text>
+          <PlazoPartidaSelector valorMinutos={plazoPartidaMinutos} onChange={setPlazoPartidaMinutos} />
         </>
       ) : null}
 

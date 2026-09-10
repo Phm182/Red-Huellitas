@@ -11,6 +11,7 @@ import { GOLES_MAX, GOLES_MIN, GOLES_PARA_GANAR_DEFAULT } from '../../../src/jue
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { FilterChip } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
+import { PlazoPartidaSelector } from '../../../src/components/ui/PlazoPartidaSelector';
 import { PlazoTurnoSelector } from '../../../src/components/ui/PlazoTurnoSelector';
 import { HuePlayRival } from '../../../src/types/hueplay';
 import { elevation, radii } from '../../../src/theme/elevation';
@@ -72,6 +73,7 @@ export default function RetarScreen() {
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState<number | null>(null);
   const [plazoTurnoMinutos, setPlazoTurnoMinutos] = useState(1440);
+  const [plazoPartidaMinutos, setPlazoPartidaMinutos] = useState(0);
   const [metaGoles, setMetaGoles] = useState(GOLES_PARA_GANAR_DEFAULT);
   const [error, setError] = useState<string | null>(null);
   /**
@@ -106,6 +108,7 @@ export default function RetarScreen() {
     setError(null);
     const res = await hueplayApi.crearDesafio(JUEGO, r.userId, {
       ...(esDeTurnos ? { plazoTurnoMinutos } : {}),
+      ...(esDeTurnos && plazoPartidaMinutos ? { plazoPartidaMinutos } : {}),
       ...(esSoccer ? { metaGoles } : {}),
     });
     setEnviando(null);
@@ -250,6 +253,14 @@ export default function RetarScreen() {
               {t('hueplay.plazoTurno')}
             </Text>
             <PlazoTurnoSelector valorMinutos={plazoTurnoMinutos} onChange={setPlazoTurnoMinutos} />
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 6 }}>
+              {t('hueplay.plazoTurnoAyuda')}
+            </Text>
+
+            <Text style={[type.label, { color: colors.textMuted, marginTop: 18, marginBottom: 8 }]}>
+              {t('hueplay.plazoPartida.titulo')}
+            </Text>
+            <PlazoPartidaSelector valorMinutos={plazoPartidaMinutos} onChange={setPlazoPartidaMinutos} />
 
             {esSoccer ? (
               <>
