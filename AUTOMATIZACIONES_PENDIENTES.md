@@ -95,6 +95,17 @@ Este archivo se va completando durante el desarrollo. Cada item indica **qué es
   */5 * * * * php inc/cli/sala_turno_por_vencer.php
   ```
 
+### 8c. Tarea programada — Resolver rondas de torneo vencidas
+- **Qué**: corre `inc/cli/torneo_ronda_vencida.php` — si el plazo por ronda de un torneo venció y el duelo de esa `TorneoPartida` sigue abierto, lo resuelve (por plazo de partida / walkover) y el hook `rh_torneo_al_cerrar_desafio()` avanza la llave o la tabla solo. Sin este cron, una ronda de torneo vencida por plazo se queda colgada para siempre si ninguno de los dos jugadores vuelve a abrir la app.
+- **Estado (2026-09-10)**: **registrada en producción**, mismo mecanismo que 8b (`hosting_createAccountCronJobV1`), cada 15 minutos:
+  ```
+  */15 * * * * php inc/cli/torneo_ronda_vencida.php
+  ```
+
+### 8d. Migraciones `sql/069`, `sql/070`, `sql/071` — **corridas en producción (2026-09-10)**
+- **Qué**: `069` agrega `PartidaVenceEn`/`PlazoPartidaMinutos` (plazo total de la partida, distinto del plazo por turno); `070` crea las tablas de Torneos (`Torneo`, `TorneoParticipante`, `TorneoPartida`); `071` renombra `PlazoTurnoMinutos` → `PlazoTurnoSegundos` en `JuegoDesafio`/`JuegoSala`/`Torneo` (×60 a los valores existentes) para poder ofrecer plazos de 30 seg / 1 min. Las tres son idempotentes.
+- **Estado**: confirmadas corridas en prod por el usuario. Torneos y el plazo de partida ya operan en vivo.
+
 ### 9. Build de iOS — no se pudo hacer esta noche (2026-08-08)
 - **Qué**: se pidió compilar un instalador de iOS junto con el APK de Android. No hay Mac con Xcode en esta máquina (Windows), así que la única forma de compilar para iOS acá es el build en la nube de EAS (`eas build --platform ios`).
 - **Por qué pendiente**: `eas whoami` devuelve "Not logged in" — EAS Build necesita loguearse con la cuenta de Expo del usuario, y eso es un login interactivo (browser/credenciales) que no puedo hacer por mi cuenta. Tampoco hay carpeta `ios/` generada nunca ni perfiles de iOS en `eas.json` (ya los agregué, ver abajo).
