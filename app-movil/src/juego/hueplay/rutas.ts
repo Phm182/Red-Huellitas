@@ -44,6 +44,7 @@ export function rutaDelDesafio(d: DesafioParaRuta): { pathname: string; params: 
     huememo: '/(app)/hueplay/huememo',
     huetrivia: '/(app)/hueplay/huetrivia',
     huezip: '/(app)/hueplay/huezip',
+    huepacman: '/(app)/hueplay/huepacman',
   };
   return {
     pathname: rutas[d.juegoCodigo] ?? '/(app)/hueplay/huematch',

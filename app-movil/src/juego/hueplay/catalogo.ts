@@ -54,11 +54,11 @@ export function juegoDelCatalogo(codigo: string): JuegoCatalogoItem | undefined 
 export const JUEGOS_TURNOS = ['hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool'];
 
 /**
- * Juegos que se pueden jugar 1 contra 1: retar a alguien puntual, o armar
- * una sala de duelo (lobby con código + visualizador de salas abiertas).
- * Espejo de `RH_JUEGOS_DUELO` en el backend
- * (`inc/funciones/desafio_tablero.php`). No incluye los solo-solo
- * (`huepacman`, `huegotchi`), que tampoco son `esSala`.
+ * Juegos que se pueden jugar 1 contra 1: retar a alguien puntual, armar una
+ * sala de duelo, o un torneo. Espejo de `RH_JUEGOS_DUELO` en el backend
+ * (`inc/funciones/desafio_tablero.php`) — los de puntaje (incluido
+ * `huepacman`) compiten por quién saca más puntos, sin tablero compartido.
+ * El único que queda afuera es HueGotchi: no se juega por partidas.
  */
 export const JUEGOS_DUELO = [
   ...JUEGOS_TURNOS,
@@ -66,6 +66,7 @@ export const JUEGOS_DUELO = [
   'huememo',
   'huetrivia',
   'huezip',
+  'huepacman',
   'huedoku6',
   'huedoku9facil',
   'huedoku9dificil',

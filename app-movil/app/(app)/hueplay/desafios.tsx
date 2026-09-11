@@ -96,6 +96,7 @@ export default function DesafiosScreen() {
       huememo: '/(app)/hueplay/huememo',
       huetrivia: '/(app)/hueplay/huetrivia',
       huezip: '/(app)/hueplay/huezip',
+      huepacman: '/(app)/hueplay/huepacman',
     };
     router.push((rutas[codigo] ?? '/(app)/hueplay/huematch') as never);
   };

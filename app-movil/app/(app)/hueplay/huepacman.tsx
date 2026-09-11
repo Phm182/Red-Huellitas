@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -14,7 +14,7 @@ import { calcularDireccionFantasma } from '../../../src/juego/huepacman/fantasma
 import { LABERINTOS, LaberintoId, obtenerLaberinto } from '../../../src/juego/huepacman/laberintos';
 import { ANCHO, ALTO, Direccion, EstadoFantasma, EstadoJuego, PerfilFantasma, crearEstadoInicial, actualizar } from '../../../src/juego/huepacman/motor';
 import { TableroPacman } from '../../../src/juego/huepacman/TableroPacman';
-import { HuePlayProgreso } from '../../../src/types/hueplay';
+import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
@@ -84,6 +84,14 @@ export default function HuePacManScreen() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
+  // Desde un duelo 1v1 o el reto del día hay que jugar el laberinto CLÁSICO
+  // sí o sí — es el único fijo (el "aleatorio" arma uno distinto cada vez),
+  // así que es el único donde el puntaje de dos personas se puede comparar.
+  const params = useLocalSearchParams<{ desafioId?: string; diario?: string }>();
+  const desafioId = params.desafioId ? Number(params.desafioId) : null;
+  const esDiario = params.diario === '1';
+  const esRetoAjeno = desafioId !== null || esDiario;
+
   const [fase, setFase] = useState<Fase>('listo');
   const [laberintoId, setLaberintoId] = useState<LaberintoId>('clasico');
   // Dimensiones del laberinto de la partida en curso — el clásico y el
@@ -94,7 +102,13 @@ export default function HuePacManScreen() {
   const [puntosVisibles, setPuntosVisibles] = useState<Set<string>>(new Set());
   const [pelletsVisibles, setPelletsVisibles] = useState<Set<string>>(new Set());
   const [hud, setHud] = useState({ puntaje: 0, vidas: 3, asustado: false });
-  const [resultado, setResultado] = useState<{ puntos: number; esRecord?: boolean; progreso?: HuePlayProgreso } | null>(null);
+  const [resultado, setResultado] = useState<{
+    puntos: number;
+    esRecord?: boolean;
+    progreso?: HuePlayProgreso;
+    duelo?: { misPuntos: number; susPuntos: number | null; gane: boolean | null; rival: string };
+    diario?: DiarioResultado;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const estadoRef = useRef<EstadoJuego | null>(null);
@@ -141,19 +155,53 @@ export default function HuePacManScreen() {
     else hapticError();
 
     try {
-      const res = await hueplayApi.guardarPartida(JUEGO, puntos, segundos);
-      if (!vivoRef.current) return;
-      if (res.success && res.data) {
-        setResultado({ puntos, esRecord: res.data.esRecord, progreso: res.data });
+      if (desafioId) {
+        const res = await hueplayApi.jugarDesafio(desafioId, puntos, segundos);
+        if (!vivoRef.current) return;
+        if (res.success && res.data) {
+          const d = res.data.desafio;
+          const cerrado = d.misPuntos !== null && d.susPuntos !== null;
+          const gane = cerrado
+            ? d.misPuntos === d.susPuntos
+              ? null
+              : (d.misPuntos ?? 0) > (d.susPuntos ?? 0)
+            : null;
+          setResultado({
+            puntos,
+            progreso: res.data.progreso,
+            duelo: {
+              misPuntos: d.misPuntos ?? puntos,
+              susPuntos: d.susPuntos,
+              gane,
+              rival: d.otro.username || d.otro.nombreCompleto,
+            },
+          });
+        } else {
+          setError(res.message ?? t('common.error'));
+        }
+      } else if (esDiario) {
+        const res = await hueplayApi.diarioJugar(JUEGO, puntos, segundos);
+        if (!vivoRef.current) return;
+        if (res.success && res.data) {
+          setResultado({ puntos, progreso: res.data.progreso, diario: res.data });
+        } else {
+          setError(res.message ?? t('common.error'));
+        }
       } else {
-        setError(res.message ?? t('common.error'));
+        const res = await hueplayApi.guardarPartida(JUEGO, puntos, segundos);
+        if (!vivoRef.current) return;
+        if (res.success && res.data) {
+          setResultado({ puntos, esRecord: res.data.esRecord, progreso: res.data });
+        } else {
+          setError(res.message ?? t('common.error'));
+        }
       }
     } catch {
       if (vivoRef.current) setError(t('common.error'));
     }
 
     if (vivoRef.current) setFase('fin');
-  }, [t]);
+  }, [desafioId, esDiario, t]);
 
   const loop = useCallback(
     (ts: number) => {
@@ -194,8 +242,10 @@ export default function HuePacManScreen() {
 
   const arrancar = useCallback(() => {
     hapticLeve();
-    // 'aleatorio' arma un laberinto nuevo cada vez que se llama.
-    const estado = crearEstadoInicial(obtenerLaberinto(laberintoId));
+    // 'aleatorio' arma un laberinto nuevo cada vez que se llama — en un
+    // duelo o el reto del día eso no compara nada, así que se fuerza el
+    // clásico pase lo que pase con el picker (que además queda oculto).
+    const estado = crearEstadoInicial(obtenerLaberinto(esRetoAjeno ? 'clasico' : laberintoId));
     estadoRef.current = estado;
     setMazeDims({ ancho: estado.ancho, alto: estado.alto });
     terminadoLlamadoRef.current = false;
@@ -209,7 +259,7 @@ export default function HuePacManScreen() {
     setError(null);
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
-  }, [loop, laberintoId]);
+  }, [loop, laberintoId, esRetoAjeno]);
 
   const pedirDireccion = useCallback((dir: Direccion) => {
     if (estadoRef.current) estadoRef.current.pacman.dirDeseada = dir;
@@ -238,29 +288,39 @@ export default function HuePacManScreen() {
         <Text style={[styles.titulo, { color: colors.text }]}>{t('hueplay.pacman.titulo')}</Text>
         <Text style={[styles.bajada, { color: colors.textMuted }]}>{t('hueplay.pacman.comoSeJuega')}</Text>
 
-        <Text style={[styles.pickerLabel, { color: colors.textMuted }]}>{t('hueplay.pacman.mapa')}</Text>
-        <View style={styles.pickerFila}>
-          {LABERINTOS.map((l) => {
-            const activo = l.id === laberintoId;
-            return (
-              <Pressable
-                key={l.id}
-                onPress={() => {
-                  hapticLeve();
-                  setLaberintoId(l.id);
-                }}
-                style={[
-                  styles.chip,
-                  { borderColor: activo ? colors.primary : colors.border, backgroundColor: activo ? colors.primarySoft : 'transparent' },
-                ]}
-              >
-                <Text style={{ color: activo ? colors.primary : colors.textMuted, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                  {l.id === 'clasico' ? t('hueplay.pacman.mapaClasico') : t('hueplay.pacman.mapaAleatorio')}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {esRetoAjeno ? (
+          // Duelo 1v1 o reto del día: siempre el clásico (es el único fijo,
+          // el único donde dos puntajes se pueden comparar) — sin picker.
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 14, textAlign: 'center' }}>
+            {t('hueplay.pacman.mapaClasico')}
+          </Text>
+        ) : (
+          <>
+            <Text style={[styles.pickerLabel, { color: colors.textMuted }]}>{t('hueplay.pacman.mapa')}</Text>
+            <View style={styles.pickerFila}>
+              {LABERINTOS.map((l) => {
+                const activo = l.id === laberintoId;
+                return (
+                  <Pressable
+                    key={l.id}
+                    onPress={() => {
+                      hapticLeve();
+                      setLaberintoId(l.id);
+                    }}
+                    style={[
+                      styles.chip,
+                      { borderColor: activo ? colors.primary : colors.border, backgroundColor: activo ? colors.primarySoft : 'transparent' },
+                    ]}
+                  >
+                    <Text style={{ color: activo ? colors.primary : colors.textMuted, fontFamily: fonts.bodySemi, fontSize: 13 }}>
+                      {l.id === 'clasico' ? t('hueplay.pacman.mapaClasico') : t('hueplay.pacman.mapaAleatorio')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <Pressable onPress={arrancar} style={[styles.boton, { backgroundColor: colors.primary }]}>
           <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.empezar')}</Text>
@@ -296,6 +356,34 @@ export default function HuePacManScreen() {
           </View>
         ) : null}
 
+        {resultado?.duelo ? (
+          <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {resultado.duelo.susPuntos === null ? (
+              <Text style={{ color: colors.textMuted, textAlign: 'center' }}>
+                {t('hueplay.match.esperandoRival', { rival: resultado.duelo.rival })}
+              </Text>
+            ) : (
+              <>
+                <Text
+                  style={[
+                    styles.veredicto,
+                    { color: resultado.duelo.gane === null ? colors.text : resultado.duelo.gane ? colors.success : colors.danger },
+                  ]}
+                >
+                  {resultado.duelo.gane === null
+                    ? t('hueplay.match.empate')
+                    : resultado.duelo.gane
+                      ? t('hueplay.match.ganaste')
+                      : t('hueplay.match.perdiste')}
+                </Text>
+                <Text style={{ color: colors.textMuted, textAlign: 'center' }}>
+                  {resultado.duelo.misPuntos} · {resultado.duelo.rival} {resultado.duelo.susPuntos}
+                </Text>
+              </>
+            )}
+          </View>
+        ) : null}
+
         {resultado?.progreso ? (
           <View style={[styles.tarjeta, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={{ color: colors.text, fontFamily: fonts.bodySemi }}>
@@ -309,9 +397,11 @@ export default function HuePacManScreen() {
         ) : null}
 
         <View style={styles.botonera}>
-          <Pressable onPress={arrancar} style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}>
-            <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.otraVez')}</Text>
-          </Pressable>
+          {!esRetoAjeno ? (
+            <Pressable onPress={arrancar} style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}>
+              <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.otraVez')}</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={() => router.replace('/(app)/hueplay')} style={[styles.boton, styles.botonSec, { borderColor: colors.border, flex: 1 }]}>
             <Text style={[styles.botonTexto, { color: colors.text }]}>{t('hueplay.volver')}</Text>
           </Pressable>
@@ -385,6 +475,7 @@ const styles = StyleSheet.create({
   puntajeFinal: { fontSize: 56, fontFamily: fonts.displaySemi },
   aviso: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: radii.md, padding: 12, marginTop: 18, maxWidth: 420 },
   tarjeta: { borderWidth: 1, borderRadius: radii.lg, padding: 16, marginTop: 18, gap: 8, alignSelf: 'stretch', maxWidth: 420 },
+  veredicto: { fontSize: 20, fontFamily: fonts.displaySemi, textAlign: 'center', marginBottom: 4 },
   boton: { borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 34, marginTop: 24, alignItems: 'center', justifyContent: 'center' },
   botonSec: { borderWidth: 1, backgroundColor: 'transparent' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' },

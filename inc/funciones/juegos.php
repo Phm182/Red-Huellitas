@@ -498,7 +498,7 @@ function rh_hueplay_ruta_duelo(string $codigo, int $desafioId, int $semilla = 0)
     if (isset($variantesDoku[$codigo])) {
         return '/(app)/hueplay/huedoku?desafioId=' . $desafioId . '&semilla=' . $semilla . '&variante=' . $variantesDoku[$codigo];
     }
-    $otras = ['huememo' => 'huememo', 'huetrivia' => 'huetrivia', 'huezip' => 'huezip'];
+    $otras = ['huememo' => 'huememo', 'huetrivia' => 'huetrivia', 'huezip' => 'huezip', 'huepacman' => 'huepacman'];
     $pantalla = $otras[$codigo] ?? 'huematch';
     return '/(app)/hueplay/' . $pantalla . '?desafioId=' . $desafioId . '&semilla=' . $semilla;
 }
@@ -720,6 +720,65 @@ function rh_juego_expirar_desafios(mysqli $conn, int $userId): void
     }
 
     rh_juego_expirar_partidas($conn, $userId);
+}
+
+/**
+ * Cuántos "te toca a vos" hay en total, para el globito de Multiplayer en el
+ * hub — duelos donde es mi turno + salas donde es mi turno o tengo una
+ * invitación sin responder.
+ *
+ * Antes esto sólo contaba desafíos de PUNTAJE sin responder
+ * (`UserIdRetado = ? AND PuntosRetado IS NULL`), un criterio de antes de que
+ * existieran los duelos por TURNOS y las salas: alguien con el turno de un
+ * duelo de Ajedrez, o con una sala esperando su jugada, veía el globito
+ * apagado aunque `multiplayer.tsx` sí le mostrara la partida en "Tu turno".
+ * Este cálculo replica exactamente el criterio de esa pantalla
+ * (`esMiTurno` de `rh_juego_serializar_desafio()` / `rh_sala_serializar()`),
+ * pero como COUNT en vez de traer y serializar cada fila.
+ */
+function rh_juego_notif_turno_count(mysqli $conn, int $userId): int
+{
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS N FROM JuegoDesafio
+          WHERE Estado IN ('pendiente','aceptado')
+            AND (
+                (Modo = 'turnos' AND TurnoDeUserId = ?)
+                OR (Modo = 'puntaje' AND (
+                        (UserIdRetador = ? AND PuntosRetador IS NULL) OR
+                        (UserIdRetado = ? AND PuntosRetado IS NULL)
+                    ))
+            )"
+    );
+    $stmt->bind_param('iii', $userId, $userId, $userId);
+    $stmt->execute();
+    $n = (int) ($stmt->get_result()->fetch_assoc()['N'] ?? 0);
+    $stmt->close();
+
+    require_once __DIR__ . '/desafio_tablero.php';
+    $stmt = $conn->prepare(
+        "SELECT s.JuegoCodigo, s.Estado, s.TurnoDeSalaJugadorId, sj.SalaJugadorId, sj.Estado AS EstadoJugador
+           FROM JuegoSala s
+           INNER JOIN JuegoSalaJugador sj ON sj.SalaId = s.SalaId
+          WHERE sj.UserId = ? AND sj.Estado <> 'rechazado' AND s.Estado NOT IN ('cancelada','terminada')"
+    );
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($s = $res->fetch_assoc()) {
+        // Una sala de duelo 1v1 que ya arrancó vive como JuegoDesafio —
+        // ya contada arriba. Sólo cuenta acá mientras se arma.
+        if (rh_juego_es_duelo($s['JuegoCodigo']) && $s['Estado'] !== 'esperando') {
+            continue;
+        }
+        if ($s['EstadoJugador'] === 'invitado') {
+            $n++;
+        } elseif ($s['Estado'] === 'jugando' && (int) $s['TurnoDeSalaJugadorId'] === (int) $s['SalaJugadorId']) {
+            $n++;
+        }
+    }
+    $stmt->close();
+
+    return $n;
 }
 
 /**

@@ -65,16 +65,9 @@ $stmt->execute();
 $miPuesto = (int) ($stmt->get_result()->fetch_assoc()['Puesto'] ?? 1);
 $stmt->close();
 
-// Desafíos esperando una respuesta mía, para el globito del hub.
+// "Te toca a vos" — duelos + salas, para el globito del hub.
 rh_juego_expirar_desafios($conn, $userId);
-$stmt = $conn->prepare(
-    "SELECT COUNT(*) AS N FROM JuegoDesafio
-      WHERE UserIdRetado = ? AND Estado IN ('pendiente','aceptado') AND PuntosRetado IS NULL"
-);
-$stmt->bind_param('i', $userId);
-$stmt->execute();
-$pendientes = (int) ($stmt->get_result()->fetch_assoc()['N'] ?? 0);
-$stmt->close();
+$pendientes = rh_juego_notif_turno_count($conn, $userId);
 
 // Torneos ganados: total y desglose por juego (sólo los que tienen >= 1).
 $torneosGanados = 0;

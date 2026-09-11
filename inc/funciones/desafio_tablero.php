@@ -18,11 +18,13 @@ require_once __DIR__ . '/pool.php';
 /**
  * Juegos que se pueden jugar 1 contra 1 (por turnos o por puntaje). Es el
  * espejo de la constante `CODIGOS` de `app-movil/.../retar.tsx`: cualquier
- * juego que se pueda retar, se puede armar como sala de duelo. Los juegos
- * solo-solo (`huepacman`, `huegotchi`) quedan afuera.
+ * juego que se pueda retar, se puede armar como sala de duelo o como
+ * torneo. Los de puntaje (incluido `huepacman`) compiten por quién saca más
+ * puntos, sin tablero compartido. El único que queda afuera es HueGotchi:
+ * no se juega por partidas, así que no hay un número que comparar.
  */
 const RH_JUEGOS_DUELO = [
-    'huematch', 'huememo', 'huetrivia', 'huezip',
+    'huematch', 'huememo', 'huetrivia', 'huezip', 'huepacman',
     'hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool',
     'huedoku6', 'huedoku9facil', 'huedoku9dificil',
 ];

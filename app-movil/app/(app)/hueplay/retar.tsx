@@ -51,6 +51,7 @@ export default function RetarScreen() {
     'huememo',
     'huetrivia',
     'huezip',
+    'huepacman',
     'hueconecta',
     'huedamas',
     'hueajedrez',
