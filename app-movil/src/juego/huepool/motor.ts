@@ -30,9 +30,12 @@ export const MESA: Mesa = { ancho: 300, alto: 600, radioBola: 9, radioTronera: 1
 export const SEGUNDOS_POR_TURNO = 25;
 export const TOPE_SEGUNDOS_NETOS = 240;
 
-const FRICCION = 0.985;
+// Antes 0.985: frenaba de golpe apenas rebotaba una vez (la caída
+// exponencial se notaba en pocos cuadros). Más cerca de 1 estira la
+// desaceleración — la bola desliza un poco más, como en una mesa real.
+const FRICCION = 0.991;
 const VEL_MINIMA = 0.04;
-const MAX_FRAMES = 900;
+const MAX_FRAMES = 1400;
 
 type Cuerpo = {
   n: number;

@@ -64,12 +64,17 @@ export function BolaSkinSvg({
   // Proyección del punto "cara al espectador" tras rodar `rod`.
   const c = Math.cos(rod);
   const s = Math.sin(rod);
-  const visible = c > -0.15;
   const esc = Math.sqrt(Math.max(0.001, Math.min(1, c)));
   // La marca queda ATRÁS respecto del avance: -dir.
   const mx = 50 - RECORRIDO * s * dirX;
   const my = 50 - RECORRIDO * s * dirY;
-  const opacidadMarca = visible ? Math.max(0, Math.min(1, c * 1.2 + 0.15)) : 0;
+  // Una sola curva de opacidad para TODO lo que rueda con la bola (número,
+  // franja de las rayadas). Antes la franja tenía su propio corte binario
+  // (`visible ? 0.95 : 0`) en un umbral apenas distinto del número/disco
+  // (-0.15 contra el -0.125 donde esta fórmula ya da 0 sola): a mitad de
+  // vuelta la franja desaparecía de golpe medio cuadro antes o después que
+  // el número, y se veía como si la bola "perdiera" si era rayada o lisa.
+  const opacidadMarca = Math.max(0, Math.min(1, c * 1.2 + 0.15));
 
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
@@ -100,13 +105,15 @@ export function BolaSkinSvg({
         {esRayada ? (
           // Franja: banda que rueda con la bola (centro desplazado por la
           // rodadura, perpendicular al avance da lo mismo: se ve girar).
+          // Misma opacidad Y el mismo achique (`esc`) que el número/disco,
+          // para que las dos cosas aparezcan/desaparezcan juntas.
           <Rect
             x={-10}
-            y={my - 18}
+            y={my - 18 * esc}
             width={120}
-            height={36}
+            height={36 * esc}
             fill={color}
-            opacity={visible ? 0.95 : 0}
+            opacity={opacidadMarca}
           />
         ) : null}
 

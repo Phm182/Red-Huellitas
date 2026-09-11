@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import '../src/i18n/i18n';
 import { AuthProvider } from '../src/auth/AuthProvider';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { FontBootstrap } from '../src/theme/FontBootstrap';
 import { ocultarBarrasDeScroll } from '../src/theme/hideScrollbars';
 import { fonts } from '../src/theme/typography';
@@ -44,13 +45,15 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <FontBootstrap>
-          <AuthProvider>
-            <StackWithTheme />
-          </AuthProvider>
-        </FontBootstrap>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <FontBootstrap>
+            <AuthProvider>
+              <StackWithTheme />
+            </AuthProvider>
+          </FontBootstrap>
+        </ThemeProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

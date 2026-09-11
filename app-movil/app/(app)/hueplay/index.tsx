@@ -1,9 +1,9 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { ChipRow } from '../../../src/components/ui/ChipRow';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
@@ -233,6 +233,16 @@ export default function HuePlayScreen() {
   // quede arriba del teclado y se vea filtrar en vivo, sin cerrar el teclado.
   const [buscando, setBuscando] = useState(false);
   const [modalTorneos, setModalTorneos] = useState(false);
+
+  // El `onBlur` del buscador alcanza cuando se cierra el teclado tocando
+  // afuera, pero en Android cerrarlo con el gesto/botón de "atrás" esconde
+  // el teclado SIN sacarle el foco al input — `onBlur` no dispara y el
+  // layout quedaba colapsado aunque ya no hubiera teclado en pantalla. Este
+  // listener cubre ese caso: escucha el teclado en sí, no el foco del input.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => setBuscando(false));
+    return () => sub.remove();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -484,6 +494,18 @@ export default function HuePlayScreen() {
     </View>
   ));
 
+  // Compartido entre las dos vistas: la tarjeta de ranking, si hay alguien
+  // rankeado y no se está buscando (mismo criterio en las dos).
+  const rankingSeccion =
+    !buscando && perfil && perfil.ranking.length > 0 ? (
+      <>
+        <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
+        <View style={[styles.rankingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {rankingLista}
+        </View>
+      </>
+    ) : null;
+
   // Modo "desplegada": todo apilado en un único ScrollView, tal cual se
   // veía antes de este rediseño — el ranking no tiene límite de alto.
   if (vista === 'desplegada') {
@@ -496,25 +518,22 @@ export default function HuePlayScreen() {
         {modalTorneosNode}
         {nivelYAcciones}
         {listaDesplegada}
-        {!buscando && perfil && perfil.ranking.length > 0 ? (
-          <>
-            <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
-            <View style={[styles.rankingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              {rankingLista}
-            </View>
-          </>
-        ) : null}
+        {rankingSeccion}
       </ScrollView>
     );
   }
 
-  // Modo "dinámica": nada de esto scrollea salvo el propio ranking — todo
-  // el resto (nivel, fila de accesos, buscador+selector, carrusel) tiene
-  // que entrar en una pantalla, así que el contenedor raíz es un `View`
-  // fijo en vez de un `ScrollView`, y el ranking se lleva el alto que
-  // sobra con un scroll interno propio.
+  // Modo "dinámica": el carrusel es lo primero que se ve, pero la pantalla
+  // entera scrollea igual que "desplegada" — un `View` fijo dejaba el
+  // ranking sin espacio en pantallas bajas (con nivel + accesos + carrusel
+  // ya no quedaba alto para sus 230px mínimos) y, al no haber scroll en el
+  // contenedor, quedaba directamente inalcanzable, no sólo apretado.
   return (
-    <View style={[styles.contenidoFijo, { backgroundColor: colors.background }, centeredContent]}>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={[styles.contenido, centeredContent]}
+      keyboardShouldPersistTaps="handled"
+    >
       {modalTorneosNode}
       {nivelYAcciones}
 
@@ -542,15 +561,8 @@ export default function HuePlayScreen() {
         </View>
       ) : null}
 
-      {!buscando && perfil && perfil.ranking.length > 0 ? (
-        <View style={styles.rankingFlex}>
-          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.ranking')}</Text>
-          <ScrollView style={[styles.rankingCard, styles.rankingCardMinAlto, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {rankingLista}
-          </ScrollView>
-        </View>
-      ) : null}
-    </View>
+      {rankingSeccion}
+    </ScrollView>
   );
 }
 
@@ -565,9 +577,6 @@ function Stat({ label, valor, colors }: { label: string; valor: number; colors: 
 
 const styles = StyleSheet.create({
   contenido: { padding: 16, paddingBottom: 32 },
-  // Modo "dinámica": ocupa toda la pantalla disponible (la da AppChrome) sin
-  // scrollear — sólo el ranking, más abajo, tiene su propio scroll interno.
-  contenidoFijo: { flex: 1, padding: 16 },
   seccion: { fontSize: 12, fontFamily: fonts.bodySemi, marginTop: 22, marginBottom: 10, textTransform: 'uppercase' },
   seccionSinMargen: { marginTop: 0, marginBottom: 0 },
   seccionFila: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 22, marginBottom: 10 },
@@ -585,10 +594,6 @@ const styles = StyleSheet.create({
   // Separado del selector Dinámica/Desplegada, que quedaba pegado al
   // carrusel sin aire.
   carruselWrap: { marginTop: 18, marginBottom: 6 },
-  // `minHeight` además de `flex: 1`: en pantallas bajas el ranking se podía
-  // achicar hasta mostrar 1 o 2 filas nomás — con esto entran mínimo 4-5
-  // (el propio `ScrollView` de adentro se encarga de scrollear el resto).
-  rankingFlex: { flex: 1, marginTop: 4, minHeight: 230 },
   nivelCard: { borderWidth: 1, borderRadius: radii.lg, padding: 16, marginBottom: 14, gap: 8 },
   nivelFila: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nivelBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -614,7 +619,6 @@ const styles = StyleSheet.create({
   pill: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
   pillTexto: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 11 },
   rankingCard: { borderWidth: 1, borderRadius: radii.lg, padding: 8 },
-  rankingCardMinAlto: { minHeight: 190 },
   rankFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, paddingHorizontal: 8 },
   rankPos: { width: 20, fontFamily: fonts.bodyBold, fontSize: 13 },
   rankAvatar: { width: 26, height: 26, borderRadius: 13 },

@@ -169,6 +169,28 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
   const ultimaPosRef = useRef<Record<number, Vector>>({});
   const bolasPrevRef = useRef<number[]>([]);
   const [hundiendo, setHundiendo] = useState<{ n: number; x: number; y: number; id: number }[]>([]);
+  // Bolas para las que YA se disparó la animación de hundido en este tiro —
+  // evita que la detección "en vivo" (de abajo) y la de "recién desapareció
+  // de `bolas`" (server-confirmed, al final del tiro) la disparen dos veces.
+  // Se poda cuando la bola ya no está en `bolas` (terminó su ciclo) para que
+  // un rerack pueda volver a trackear el mismo número.
+  const yaHundiendoRef = useRef<Set<number>>(new Set());
+
+  // `holgura` grande (2.4x) para la posición FANTASMA de una bola que ya
+  // desapareció de `bolas` — es la última posición conocida, y puede quedar
+  // a un par de píxeles de la boca por la granularidad del último cuadro.
+  // Para la detección EN VIVO (bola que sigue en `bolas` pero ya llegó al
+  // agujero) hay que ser estrictos y calcar el radio real de
+  // `motor.ts::estaEmbocada()` (sin holgura): una bola sólo pasando cerca de
+  // la boca, sin caer, no tiene que verse "hundida" a mitad de camino.
+  const idxTron = (v: Vector, holgura = 2.4) => {
+    for (const t of TRONERAS_REL) {
+      const tx = t.x * mesa.ancho;
+      const ty = t.y * mesa.alto;
+      if (Math.hypot(v.x - tx, v.y - ty) <= mesa.radioTronera * holgura) return { x: tx, y: ty };
+    }
+    return null;
+  };
 
   useEffect(() => {
     for (const b of bolas) {
@@ -176,25 +198,45 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
       if (p) ultimaPosRef.current[b.n] = { x: p.x, y: p.y };
     }
     const ahora = bolas.map((b) => b.n);
-    const idxTron = (v: Vector) => {
-      for (const t of TRONERAS_REL) {
-        const tx = t.x * mesa.ancho;
-        const ty = t.y * mesa.alto;
-        if (Math.hypot(v.x - tx, v.y - ty) <= mesa.radioTronera * 2.4) return { x: tx, y: ty };
-      }
-      return null;
-    };
+
+    // 1) La bola YA desapareció de `bolas` (server confirmó el embocado):
+    // fallback para lo que la detección en vivo (2) no haya alcanzado a
+    // agarrar. Si (2) ya la marcó, no se repite.
     for (const n of bolasPrevRef.current) {
-      if (ahora.includes(n)) continue;
+      if (ahora.includes(n) || yaHundiendoRef.current.has(n)) continue;
       const last = ultimaPosRef.current[n];
       const cerca = last ? idxTron(last) : null;
       if (cerca) {
+        yaHundiendoRef.current.add(n);
         const id = Date.now() + n;
         setHundiendo((h) => [...h, { n, x: cerca.x, y: cerca.y, id }]);
         setTimeout(() => setHundiendo((h) => h.filter((x) => x.id !== id)), 260);
       }
     }
     bolasPrevRef.current = ahora;
+
+    // 2) EN VIVO, mientras se reproduce la trayectoria de un tiro: la bola
+    // sigue en `bolas` (el server todavía no contestó) pero su posición
+    // interpolada ya llegó a la boca de una tronera y se quedó ahí quieta
+    // (el motor deja de moverla apenas cae) — sin esto, se la veía "atascada"
+    // en el agujero hasta que terminaba TODO el tiro y recién ahí se hundía.
+    for (const b of bolas) {
+      if (yaHundiendoRef.current.has(b.n)) continue;
+      const p = posiciones[b.n];
+      const cerca = p ? idxTron(p, 1.02) : null;
+      if (cerca) {
+        yaHundiendoRef.current.add(b.n);
+        const id = Date.now() + b.n;
+        setHundiendo((h) => [...h, { n: b.n, x: cerca.x, y: cerca.y, id }]);
+        setTimeout(() => setHundiendo((h) => h.filter((x) => x.id !== id)), 260);
+      }
+    }
+
+    // Podar: una bola que ya no está en `bolas` terminó su ciclo — si algún
+    // día vuelve (rerack / partida nueva) tiene que poder trackearse de cero.
+    for (const n of Array.from(yaHundiendoRef.current)) {
+      if (!ahora.includes(n)) yaHundiendoRef.current.delete(n);
+    }
   }, [bolas, posiciones, mesa.ancho, mesa.alto, mesa.radioTronera]);
 
   const iniciarGolpe = (separacionInicial: number, impulso: Vector) => {
@@ -272,13 +314,28 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
 
       <GestureDetector gesture={gestoColocar}>
         <View style={[styles.felt, { width: lado, height: alto, top: MARCO, left: MARCO }]}>
-          <Svg width={lado} height={alto} style={StyleSheet.absoluteFill} pointerEvents="none">
-            {/* Troneras: boca oscura en cada esquina y en los medios de banda
-                larga. Se dibujan bajo las bolas para que una bola que pasa
-                cerca se siga viendo; al embocar, `BolaHundiendo` la hunde. */}
+          <View pointerEvents="none" style={[styles.banda, { width: lado, height: alto }]} />
+
+          {/* Troneras en un Svg más grande que el paño (mordiendo `MARCO` px
+              de banda/madera para cada lado) y con `overflow` visible en
+              `felt` (ver estilo) para que no se recorten a la mitad: antes
+              una boca centrada justo en el borde del paño quedaba cortada
+              — se veía "adentro de la mesa" en vez de mordiendo la banda
+              como en una mesa real. Va ANTES que las bolas a propósito: una
+              bola pasando cerca de la boca se tiene que seguir viendo
+              encima, no tapada por el agujero. */}
+          <Svg
+            width={lado + MARCO * 2}
+            height={alto + MARCO * 2}
+            style={{ position: 'absolute', top: -MARCO, left: -MARCO }}
+            pointerEvents="none"
+          >
             {troneras.map((tr, i) => (
-              <Circle key={i} cx={px(tr.x)} cy={py(tr.y)} r={px(mesa.radioTronera)} fill="#0A0A0A" />
+              <Circle key={i} cx={px(tr.x) + MARCO} cy={py(tr.y) + MARCO} r={px(mesa.radioTronera)} fill="#0A0A0A" />
             ))}
+          </Svg>
+
+          <Svg width={lado} height={alto} style={StyleSheet.absoluteFill} pointerEvents="none">
             {/* Línea de apuntado: desde la blanca hacia donde sale, más larga
                 cuanto más fuerte el tiro. Igual que la flecha de HueSoccer. */}
             {mostrarLinea && direccionTiro && posBlanca
@@ -304,7 +361,11 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
           </Svg>
 
           {bolas
-            .filter((b) => b.n !== 0)
+            // Las que ya están animando el hundido (detectadas en vivo o al
+            // confirmarse el embocado) no se dibujan acá: se ven quietas y
+            // "atascadas" en la boca si además se sigue pintando la bola
+            // normal por encima de `BolaHundiendo`.
+            .filter((b) => b.n !== 0 && !hundiendo.some((h) => h.n === b.n))
             .map((b) => {
               const pos = posiciones[b.n] ?? { x: b.x, y: b.y, rod: 0, dirX: 0, dirY: 0 };
               const color = b.n === 8 ? '#141414' : COLOR_BOLA[b.n] ?? '#999999';
@@ -443,6 +504,13 @@ const styles = StyleSheet.create({
     borderColor: '#3E2415',
   },
   bisel: { position: 'absolute', borderRadius: 8, backgroundColor: '#7A4A2C' },
-  felt: { position: 'absolute', borderRadius: 6, backgroundColor: '#1F6B3A', overflow: 'hidden' },
+  // Sin `overflow: 'hidden'` a propósito: las troneras se dibujan más
+  // grandes que el paño, mordiendo la banda — recortarlas acá las volvía a
+  // cortar a la mitad.
+  felt: { position: 'absolute', borderRadius: 6, backgroundColor: '#1F6B3A' },
+  // Línea de la banda/cojín: un anillo apenas más oscuro pegado al borde del
+  // paño, puramente decorativo (no es padre de nada, así que no corre la
+  // posición de bolas/troneras/taco, que siguen midiendo contra `felt`).
+  banda: { position: 'absolute', borderRadius: 6, borderWidth: 5, borderColor: '#154D2A' },
   bola: { position: 'absolute', borderRadius: 999 },
 });

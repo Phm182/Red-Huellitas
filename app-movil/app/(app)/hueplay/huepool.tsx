@@ -306,12 +306,24 @@ export default function HuePoolScreen() {
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
       <View style={[styles.marcador, centeredContent]}>
         <View style={styles.marcadorLado}>
-          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
-            {miGrupo ? t(`hueplay.pool.${miGrupo}`) : t('hueplay.pool.sinGrupo')}
-          </Text>
+          {/* "Vos" pegado a MI etiqueta, no como separador flotando en el
+              medio — así apuntaba a los dos lados por igual y con el grupo
+              recién asignado (arranca en "Sin grupo" hasta la primera bola
+              legal) el marcador entero quedaba en "Sin grupo · Vos · Sin
+              grupo", sin ninguna pista de cuál lado era el propio. */}
+          <View style={styles.marcadorFilaLabel}>
+            <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
+              {miGrupo ? t(`hueplay.pool.${miGrupo}`) : t('hueplay.pool.sinGrupo')}
+            </Text>
+            <View style={[styles.pillVos, { backgroundColor: colors.primarySoft }]}>
+              <Text style={{ color: colors.primary, fontSize: 10, fontFamily: fonts.bodySemi }}>
+                {t('hueplay.pool.vos')}
+              </Text>
+            </View>
+          </View>
           <Text style={[styles.marcadorValor, { color: colors.text }]}>{misRestantes ?? '—'}</Text>
         </View>
-        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.pool.vos')}</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.torneo.vs')}</Text>
         <View style={styles.marcadorLado}>
           <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
             {susGrupo ? t(`hueplay.pool.${susGrupo}`) : t('hueplay.pool.sinGrupo')}
@@ -361,7 +373,9 @@ const styles = StyleSheet.create({
   juego: { flex: 1, paddingTop: 8, position: 'relative' },
   marcador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 4 },
   marcadorLado: { alignItems: 'center' },
+  marcadorFilaLabel: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   marcadorLabel: { fontSize: 11, textTransform: 'uppercase' },
+  pillVos: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1 },
   marcadorValor: { fontSize: 26, fontFamily: fonts.displaySemi },
   turno: { textAlign: 'center', fontFamily: fonts.bodySemi, fontSize: 13, marginTop: 4 },
   mesaWrap: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', marginTop: 8 },

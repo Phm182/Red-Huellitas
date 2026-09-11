@@ -66,7 +66,11 @@ export const SEGUNDOS_POR_TURNO = 20;
 /** Tope de tiempo neto de juego del partido entero, sumado entre los dos. */
 export const TOPE_SEGUNDOS_NETOS = 180;
 
-const FRICCION = 0.96;
+// Antes 0.96: frenaba de golpe apenas rebotaba una vez. Más cerca de 1
+// estira la desaceleración — la pelota desliza un poco más, sin tocar el
+// margen de MAX_FRAMES (con la potencia máxima tarda ~240 cuadros en
+// llegar a VEL_MINIMA, bien por debajo de los 600 disponibles).
+const FRICCION = 0.975;
 const VEL_MINIMA = 0.05;
 /** Guard anti-loop-infinito: cota de pasos, no de tiempo real (determinístico). */
 const MAX_FRAMES = 600;
