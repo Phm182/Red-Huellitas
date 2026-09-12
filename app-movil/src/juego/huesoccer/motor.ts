@@ -38,6 +38,8 @@ export type TableroSoccer = {
    * (`$anterior['metaGoles'] ?? RH_SOCCER_GOLES_PARA_GANAR_DEFAULT`).
    */
   metaGoles?: number;
+  /** La ficha e impulso del último tiro ya resuelto — para que el rival pueda reproducir la física real en vez de una interpolación falsa. Ver `soccer_mover.php`. */
+  ultimoTiro?: { fichaId: string; impulso: Vector } | null;
 };
 
 export const CANCHA: Cancha = {

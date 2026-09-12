@@ -204,6 +204,7 @@ function rh_usuario_publico(mysqli $conn, array $u): array
         'tipoUsuarioCodigo' => $tipoUsuarioCodigo,
         'notificarProximidad' => (bool) ($u['NotificarProximidad'] ?? 1),
         'perfilPrivado' => (bool) ($u['PerfilPrivado'] ?? 0),
+        'verJugadaRivalEnVivo' => (bool) ($u['VerJugadaRivalEnVivo'] ?? 0),
         'mensajePersonal' => $u['MensajePersonal'] ?? null,
         'planCodigo' => rh_usuario_plan_codigo_activo($conn, (int) $u['UserId']),
     ];

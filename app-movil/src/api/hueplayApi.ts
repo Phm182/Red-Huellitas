@@ -188,9 +188,16 @@ export const hueplayApi = {
    * Un tiro de HueSoccer: `tableroNuevo` es el `TableroSoccer` ya simulado
    * en el cliente (ver `src/juego/huesoccer/motor.ts`), serializado a JSON.
    * El servidor decide el gol por su cuenta, no confía en un flag acá.
+   * `fichaId`+`impulso` son sólo para que el RIVAL pueda reproducir la
+   * física real de este tiro — el servidor los guarda tal cual, nunca los
+   * usa para decidir el resultado.
    */
-  soccerMover: (desafioId: number, tableroNuevo: string) =>
-    apiPost<HuePlaySoccerTurno>('ajax/hueplay/soccer_mover.php', { desafioId, tableroNuevo }, true),
+  soccerMover: (desafioId: number, tableroNuevo: string, fichaId?: string, impulso?: { x: number; y: number }) =>
+    apiPost<HuePlaySoccerTurno>(
+      'ajax/hueplay/soccer_mover.php',
+      fichaId && impulso ? { desafioId, tableroNuevo, fichaId, impulso: JSON.stringify(impulso) } : { desafioId, tableroNuevo },
+      true
+    ),
 
   /** Se agotaron los 20 segundos del turno: el servidor valida de verdad que pasó el tiempo. */
   soccerTurnoVencido: (desafioId: number) =>
@@ -477,10 +484,17 @@ export const hueplayApi = {
    * Un tiro de HuePool: `bolas` son las que seguían en mesa antes de este
    * tiro, con su posición final ya simulada en el cliente (ver
    * `src/juego/huepool/motor.ts`), serializado a JSON. El servidor decide
-   * qué se embocó por su cuenta, no confía en un flag acá.
+   * qué se embocó por su cuenta, no confía en un flag acá. `impulso` es
+   * sólo para que el RIVAL pueda reproducir la física real de este tiro
+   * (`{x,y}` tal cual se le pasó a `simularTiro`) — el servidor lo guarda
+   * tal cual, sin validarlo, nunca se usa para decidir el resultado.
    */
-  poolMover: (desafioId: number, bolas: string) =>
-    apiPost<HuePlayPoolTiro>('ajax/hueplay/pool_mover.php', { desafioId, bolas }, true),
+  poolMover: (desafioId: number, bolas: string, impulso?: { x: number; y: number }) =>
+    apiPost<HuePlayPoolTiro>(
+      'ajax/hueplay/pool_mover.php',
+      impulso ? { desafioId, bolas, impulso: JSON.stringify(impulso) } : { desafioId, bolas },
+      true
+    ),
 
   /** Se agotó el tiempo del turno: el servidor valida de verdad que pasó. */
   poolTurnoVencido: (desafioId: number) =>

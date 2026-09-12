@@ -1,11 +1,11 @@
 -- =============================================================================
--- Red Huellitas — schema completo (001 … 071)
+-- Red Huellitas — schema completo (001 … 072)
 --
 -- ARCHIVO GENERADO — no editar a mano.
 -- Se regenera con:  php inc/cli/build_schema.php
 -- Si agregás una migración a sql/, volvé a correr eso y commiteá el resultado.
 --
--- Última generación: 2026-09-11  ·  Migraciones incluidas: 71
+-- Última generación: 2026-09-12  ·  Migraciones incluidas: 72
 --
 -- Sirve para crear la base desde cero con la versión final del esquema:
 --   mysql --default-character-set=utf8mb4 -u root < sql/000_todo_schema.sql
@@ -6092,6 +6092,32 @@ SET @sql := IF(@mig = 1,
     'SELECT 1');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql := IF(@mig = 1, 'UPDATE Torneo SET PlazoTurnoSegundos = PlazoTurnoSegundos * 60', 'SELECT 1');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- -----------------------------------------------------------------------------
+-- 072_ver_jugada_rival_vivo.sql
+-- -----------------------------------------------------------------------------
+
+-- ============================================================
+-- Preferencia de usuario: ver el tiro real del rival en HuePool/HueSoccer
+-- (replay de física con el `impulso` que mandó quien tiró) en vez de sólo
+-- el tablero final una vez que ya jugó. Default OFF: mantiene el
+-- comportamiento actual salvo que el usuario lo prenda a propósito.
+--
+-- No hace falta columna nueva en JuegoDesafio: el último `impulso` de cada
+-- tiro se guarda DENTRO del JSON de `Tablero` (mismo patrón que ya usan
+-- `bolaEnMano`/`turnoEmpezoEn` en HuePool) — ver `pool_mover.php` y
+-- `soccer_mover.php`.
+--
+-- Idempotente: sólo agrega la columna si todavía no existe.
+-- ============================================================
+
+SET @mig := (SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Usuario' AND COLUMN_NAME = 'VerJugadaRivalEnVivo');
+SET @sql := IF(@mig = 0,
+    'ALTER TABLE Usuario ADD COLUMN VerJugadaRivalEnVivo TINYINT(1) NOT NULL DEFAULT 0 AFTER NotificarProximidad',
+    'SELECT 1');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 

@@ -34,6 +34,8 @@ export interface Usuario {
   notificarProximidad: boolean;
   /** Cuenta privada: sólo tus seguidores ven tu contenido. */
   perfilPrivado: boolean;
+  /** HuePool/HueSoccer: ver el tiro real del rival (replay de física) al detectar que jugó, en vez de sólo el tablero final. Default false. */
+  verJugadaRivalEnVivo: boolean;
   /** El "mensaje personal" del MSN, debajo del nombre en el chat. */
   mensajePersonal: string | null;
   /** Código del plan activo (hue_plus / hue_plus_comercial) o null. */

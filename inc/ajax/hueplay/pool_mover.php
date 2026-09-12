@@ -18,6 +18,7 @@ $userId = rh_require_auth($conn);
 
 $desafioId = (int) ($_POST['desafioId'] ?? 0);
 $bolasRaw = $_POST['bolas'] ?? '';
+$impulsoRaw = $_POST['impulso'] ?? null;
 
 if ($desafioId <= 0) {
     json_error('Falta desafioId');
@@ -26,6 +27,17 @@ if ($desafioId <= 0) {
 $bolasNuevas = is_string($bolasRaw) ? json_decode($bolasRaw, true) : null;
 if (!is_array($bolasNuevas)) {
     json_error('Falta o es inválido bolas');
+}
+
+// Sólo para que el rival pueda reproducir la física real de este tiro
+// (`hueplay.pool.tsx`, si tiene la preferencia activada) — nunca se usa acá
+// para decidir el resultado, así que no hace falta validarlo a fondo.
+$impulso = null;
+if (is_string($impulsoRaw)) {
+    $decodificado = json_decode($impulsoRaw, true);
+    if (is_array($decodificado) && isset($decodificado['x'], $decodificado['y']) && is_numeric($decodificado['x']) && is_numeric($decodificado['y'])) {
+        $impulso = ['x' => (float) $decodificado['x'], 'y' => (float) $decodificado['y']];
+    }
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');
@@ -183,6 +195,7 @@ $estadoGuardar = [
     'bolaEnMano' => $falta,
     'turnoEmpezoEn' => time(),
     'segundosNetosUsados' => $segundosNetos,
+    'ultimoImpulso' => $impulso,
 ];
 $tablero = rh_pool_codificar($estadoGuardar);
 

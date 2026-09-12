@@ -154,23 +154,39 @@ export default function HueSoccerScreen() {
         movimientosVistosRef.current = d.movimientos;
 
         if (esCambioDelRival) {
-          const nuevaPos = posicionesDeTablero(nuevoTablero);
-          // Interpolación "de alcance", no el replay real del tiro del rival
-          // — sin trayectoria física que reproducir, ángulo fijo en 0 en las
-          // dos puntas (mismo criterio que `huepool.tsx`).
-          const trayectorias: Record<string, PuntoTrayectoria[]> = {};
-          for (const id of Object.keys(nuevaPos)) {
-            const desde = posiciones[id] ?? nuevaPos[id]!;
-            trayectorias[id] = [
-              { pos: desde, angulo: 0 },
-              { pos: nuevaPos[id]!, angulo: 0 },
-            ];
+          // Con la preferencia activada y el tiro guardado, reproducimos la
+          // física REAL del tiro del rival (mismo `simularTiro`
+          // determinístico que usa quien tira) en vez de la interpolación
+          // falsa — ver `settings.verJugadaRivalEnVivoLabel`.
+          const ultimoTiro = nuevoTablero.ultimoTiro;
+          if (user?.verJugadaRivalEnVivo && ultimoTiro && tablero) {
+            const r = simularTiro(tablero, ultimoTiro.fichaId, ultimoTiro.impulso);
+            setAnimando(true);
+            cancelarAnimRef.current = reproducir(r.trayectorias, duracionDeMiTiro(r.trayectorias), setPosiciones, () => {
+              if (!vivoRef.current) return;
+              setAnimando(false);
+            });
+          } else {
+            const nuevaPos = posicionesDeTablero(nuevoTablero);
+            // Interpolación "de alcance", no el replay real del tiro del rival
+            // — sin trayectoria física que reproducir, ángulo fijo en 0 en las
+            // dos puntas (comportamiento de siempre cuando la preferencia
+            // está apagada o no hay tiro guardado, mismo criterio que
+            // `huepool.tsx`).
+            const trayectorias: Record<string, PuntoTrayectoria[]> = {};
+            for (const id of Object.keys(nuevaPos)) {
+              const desde = posiciones[id] ?? nuevaPos[id]!;
+              trayectorias[id] = [
+                { pos: desde, angulo: 0 },
+                { pos: nuevaPos[id]!, angulo: 0 },
+              ];
+            }
+            setAnimando(true);
+            cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
+              if (!vivoRef.current) return;
+              setAnimando(false);
+            });
           }
-          setAnimando(true);
-          cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
-            if (!vivoRef.current) return;
-            setAnimando(false);
-          });
         } else if (movimientosVistosRef.current === d.movimientos && Object.keys(posiciones).length === 0) {
           setPosiciones(posicionesDeTablero(nuevoTablero));
         }
@@ -246,7 +262,7 @@ export default function HueSoccerScreen() {
         if (r.gol) hapticCelebracion();
 
         setEnviando(true);
-        const res = await hueplayApi.soccerMover(desafioId, JSON.stringify(r.estadoFinal));
+        const res = await hueplayApi.soccerMover(desafioId, JSON.stringify(r.estadoFinal), fichaId, impulso);
         if (!vivoRef.current) return;
         setEnviando(false);
         setAnimando(false);

@@ -48,4 +48,11 @@ export const perfilApi = {
       { activo: activo ? '1' : '0' },
       true
     ),
+
+  guardarJugadaRivalVivo: (activo: boolean) =>
+    apiPost<{ verJugadaRivalEnVivo: boolean }>(
+      'ajax/perfil/jugada_rival_vivo_guardar.php',
+      { activo: activo ? '1' : '0' },
+      true
+    ),
 };

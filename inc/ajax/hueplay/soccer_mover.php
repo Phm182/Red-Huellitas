@@ -16,6 +16,8 @@ $userId = rh_require_auth($conn);
 
 $desafioId = (int) ($_POST['desafioId'] ?? 0);
 $tableroNuevoRaw = $_POST['tableroNuevo'] ?? '';
+$fichaIdRaw = $_POST['fichaId'] ?? null;
+$impulsoRaw = $_POST['impulso'] ?? null;
 
 if ($desafioId <= 0) {
     json_error('Falta desafioId');
@@ -24,6 +26,17 @@ if ($desafioId <= 0) {
 $estadoPropuesto = is_string($tableroNuevoRaw) ? json_decode($tableroNuevoRaw, true) : null;
 if (!is_array($estadoPropuesto)) {
     json_error('Falta o es inválido tableroNuevo');
+}
+
+// Sólo para que el rival pueda reproducir la física real de este tiro
+// (`huesoccer.tsx`, si tiene la preferencia activada) — nunca se usa acá
+// para decidir el gol, así que no hace falta validarlo a fondo.
+$ultimoTiro = null;
+if (is_string($fichaIdRaw) && $fichaIdRaw !== '' && is_string($impulsoRaw)) {
+    $decodificado = json_decode($impulsoRaw, true);
+    if (is_array($decodificado) && isset($decodificado['x'], $decodificado['y']) && is_numeric($decodificado['x']) && is_numeric($decodificado['y'])) {
+        $ultimoTiro = ['fichaId' => $fichaIdRaw, 'impulso' => ['x' => (float) $decodificado['x'], 'y' => (float) $decodificado['y']]];
+    }
 }
 
 $stmt = $conn->prepare('SELECT * FROM JuegoDesafio WHERE DesafioId = ?');
@@ -119,6 +132,7 @@ $estadoGuardar = [
     'turnoEmpezoEn' => time(),
     'segundosNetosUsados' => $segundosNetos,
     'metaGoles' => $metaGoles,
+    'ultimoTiro' => $ultimoTiro,
 ];
 $tablero = rh_soccer_codificar($estadoGuardar);
 

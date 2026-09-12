@@ -88,6 +88,7 @@ export default function ConfiguracionScreen() {
   const { user, logout, actualizarUsuario, accounts } = useAuth();
 
   const [notifBusy, setNotifBusy] = useState(false);
+  const [jugadaVivoBusy, setJugadaVivoBusy] = useState(false);
   const [privBusy, setPrivBusy] = useState(false);
   const [pendientes, setPendientes] = useState(0);
 
@@ -109,6 +110,14 @@ export default function ConfiguracionScreen() {
     const res = await perfilApi.guardarNotificacionProximidad(valor);
     setNotifBusy(false);
     if (res.success) actualizarUsuario({ ...user, notificarProximidad: valor });
+  };
+
+  const onToggleJugadaRivalVivo = async (valor: boolean) => {
+    if (!user || jugadaVivoBusy) return;
+    setJugadaVivoBusy(true);
+    const res = await perfilApi.guardarJugadaRivalVivo(valor);
+    setJugadaVivoBusy(false);
+    if (res.success) actualizarUsuario({ ...user, verJugadaRivalEnVivo: valor });
   };
 
   const onTogglePrivado = async (valor: boolean) => {
@@ -219,6 +228,20 @@ export default function ConfiguracionScreen() {
               value={user?.notificarProximidad ?? true}
               onValueChange={onToggleProximidad}
               disabled={notifBusy}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+        </Seccion>
+
+        <Seccion titulo={t('configuracion.hueplay')}>
+          <View style={styles.fila}>
+            <Text style={{ color: colors.text, fontFamily: fonts.bodyMedium, flex: 1, paddingRight: 12 }}>
+              {t('settings.verJugadaRivalEnVivoLabel')}
+            </Text>
+            <Switch
+              value={user?.verJugadaRivalEnVivo ?? false}
+              onValueChange={onToggleJugadaRivalVivo}
+              disabled={jugadaVivoBusy}
               trackColor={{ true: colors.primary, false: colors.border }}
             />
           </View>

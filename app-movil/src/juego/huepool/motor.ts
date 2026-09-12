@@ -24,6 +24,8 @@ export type TableroPool = {
   bolaEnMano: boolean;
   turnoEmpezoEn: number;
   segundosNetosUsados: number;
+  /** El `impulso` del último tiro ya resuelto (nulo antes del primer tiro) — para que el rival pueda reproducir la física real en vez de una interpolación falsa. Ver `pool_mover.php`. */
+  ultimoImpulso?: Vector | null;
 };
 
 export const MESA: Mesa = { ancho: 300, alto: 600, radioBola: 9, radioTronera: 17 };

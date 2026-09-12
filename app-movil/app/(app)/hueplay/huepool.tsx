@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
+import { useAuth } from '../../../src/auth/AuthProvider';
 import { APP_HEADER_HEIGHT, APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { MesaPool, Posiciones, reproducir } from '../../../src/juego/huepool/MesaPool';
 import {
@@ -51,6 +52,7 @@ function posicionesDeTablero(t: TableroPool): Posiciones {
 export default function HuePoolScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ desafioId?: string }>();
@@ -94,28 +96,43 @@ export default function HuePoolScreen() {
         movimientosVistosRef.current = d.movimientos;
 
         if (esCambioDelRival) {
-          const nuevaPos = posicionesDeTablero(nuevoTablero);
-          // Interpolación "de alcance" directa (vieja posición → nueva), no
-          // el replay real del tiro del rival — no hay trayectoria física
-          // que reproducir acá, así que sin giro real: ángulo fijo en 0 en
-          // las dos puntas (no se nota, es una animación de ~1s).
-          const trayectorias: Record<number, PuntoTrayectoria[]> = {};
-          for (const nStr of Object.keys(nuevaPos)) {
-            const n = Number(nStr);
-            const desde = posiciones[n] ?? nuevaPos[n]!;
-            // Rodadura acumulada proporcional a la distancia recorrida, así
-            // la bola "rueda" hacia su lugar nuevo en vez de deslizar.
-            const rodLlegada = Math.hypot(nuevaPos[n]!.x - desde.x, nuevaPos[n]!.y - desde.y) / 9;
-            trayectorias[n] = [
-              { pos: desde, rod: 0 },
-              { pos: nuevaPos[n]!, rod: rodLlegada },
-            ];
+          // Con la preferencia activada y el impulso del tiro guardado,
+          // reproducimos la física REAL del tiro del rival (mismo
+          // `simularTiro` determinístico que usa quien tira) en vez de la
+          // interpolación falsa — ver `settings.verJugadaRivalEnVivoLabel`.
+          const impulsoRival = nuevoTablero.ultimoImpulso;
+          if (user?.verJugadaRivalEnVivo && impulsoRival && tablero) {
+            const r = simularTiro(tablero, impulsoRival);
+            setAnimando(true);
+            cancelarAnimRef.current = reproducir(r.trayectorias, duracionDeMiTiro(r.trayectorias), setPosiciones, () => {
+              if (!vivoRef.current) return;
+              setAnimando(false);
+            });
+          } else {
+            const nuevaPos = posicionesDeTablero(nuevoTablero);
+            // Interpolación "de alcance" directa (vieja posición → nueva),
+            // sin trayectoria física real: ángulo fijo en 0 en las dos
+            // puntas (no se nota, es una animación de ~1s) — comportamiento
+            // de siempre cuando la preferencia está apagada o no hay
+            // impulso guardado (tiros previos a este cambio).
+            const trayectorias: Record<number, PuntoTrayectoria[]> = {};
+            for (const nStr of Object.keys(nuevaPos)) {
+              const n = Number(nStr);
+              const desde = posiciones[n] ?? nuevaPos[n]!;
+              // Rodadura acumulada proporcional a la distancia recorrida, así
+              // la bola "rueda" hacia su lugar nuevo en vez de deslizar.
+              const rodLlegada = Math.hypot(nuevaPos[n]!.x - desde.x, nuevaPos[n]!.y - desde.y) / 9;
+              trayectorias[n] = [
+                { pos: desde, rod: 0 },
+                { pos: nuevaPos[n]!, rod: rodLlegada },
+              ];
+            }
+            setAnimando(true);
+            cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
+              if (!vivoRef.current) return;
+              setAnimando(false);
+            });
           }
-          setAnimando(true);
-          cancelarAnimRef.current = reproducir(trayectorias, DURACION_ANIM_MS, setPosiciones, () => {
-            if (!vivoRef.current) return;
-            setAnimando(false);
-          });
         } else if (movimientosVistosRef.current === d.movimientos && Object.keys(posiciones).length === 0) {
           setPosiciones(posicionesDeTablero(nuevoTablero));
         }
@@ -177,13 +194,14 @@ export default function HuePoolScreen() {
   }, [restanteTurno, desafio?.esMiTurno, desafioId, enviando, animando, cargar]);
 
   const enviarTablero = useCallback(
-    async (estadoFinal: TableroPool) => {
+    async (estadoFinal: TableroPool, impulso: Vector) => {
       setEnviando(true);
       // Se manda el estado de las 16 bolas tal cual quedó la simulación — el
       // servidor sólo usa las que él mismo sabía que seguían en mesa ANTES
       // de este tiro (`rh_pool_normalizar_bolas`), así que mandar de más
-      // (bolas ya embocadas de antes) es inofensivo.
-      const res = await hueplayApi.poolMover(desafioId, JSON.stringify(estadoFinal.bolas));
+      // (bolas ya embocadas de antes) es inofensivo. `impulso` viaja aparte
+      // sólo para que el rival pueda reproducir la física real de este tiro.
+      const res = await hueplayApi.poolMover(desafioId, JSON.stringify(estadoFinal.bolas), impulso);
       if (!vivoRef.current) return;
       setEnviando(false);
       setAnimando(false);
@@ -219,7 +237,7 @@ export default function HuePoolScreen() {
       setAnimando(true);
       cancelarAnimRef.current = reproducir(r.trayectorias, duracionDeMiTiro(r.trayectorias), setPosiciones, () => {
         if (!vivoRef.current) return;
-        void enviarTablero(r.estadoFinal);
+        void enviarTablero(r.estadoFinal, impulso);
       });
     },
     [desafio, tablero, enviando, animando, restanteTurno, enviarTablero]

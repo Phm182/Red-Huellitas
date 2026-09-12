@@ -120,7 +120,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "language": "Language",
-    "notificarProximidadLabel": "Notify me about nearby campaigns and lost pets"
+    "notificarProximidadLabel": "Notify me about nearby campaigns and lost pets",
+    "verJugadaRivalEnVivoLabel": "In HuePool/HueSoccer, show the opponent's real shot when they play (off = you only see how the board ended up)"
   },
   "mascotas": {
     "title": "My Pets",
@@ -1050,6 +1051,7 @@
     "cuenta": "Account",
     "privacidad": "Privacy",
     "notificaciones": "Notifications",
+    "hueplay": "HuePlay",
     "apariencia": "Appearance",
     "moderacion": "Moderation",
     "ayuda": "Help",

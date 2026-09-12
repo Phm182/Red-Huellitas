@@ -123,7 +123,8 @@
     "themeLight": "Claro",
     "themeDark": "Oscuro",
     "language": "Idioma",
-    "notificarProximidadLabel": "Notificarme de campañas y mascotas perdidas cerca mío"
+    "notificarProximidadLabel": "Notificarme de campañas y mascotas perdidas cerca mío",
+    "verJugadaRivalEnVivoLabel": "En HuePool/HueSoccer, ver el tiro real del rival al detectar que jugó (si está apagado, sólo ves cómo quedó el tablero)"
   },
   "mascotas": {
     "title": "Mis Mascotas",
@@ -1064,6 +1065,7 @@
     "cuenta": "Cuenta",
     "privacidad": "Privacidad",
     "notificaciones": "Notificaciones",
+    "hueplay": "HuePlay",
     "apariencia": "Apariencia",
     "moderacion": "Moderación",
     "ayuda": "Ayuda",
