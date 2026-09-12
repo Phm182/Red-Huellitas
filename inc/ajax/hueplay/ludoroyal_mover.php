@@ -5,7 +5,7 @@
  * tiene el servidor guardados (`dadoPendiente`/`simboloPendiente`), nunca se
  * confía en lo que informe el cliente.
  *
- * Si hay turno extra (6 en el numérico, o cualquier símbolo especial) el
+ * Si hay turno extra (SÓLO Corona, ver `rh_ludoroyal_da_turno_extra()`) el
  * turno sigue siendo tuyo: no se avanza y el cliente vuelve a llamar a
  * `ludoroyal_tirar.php`. Si no, se pasa el turno y se encadena la IA.
  */
@@ -55,6 +55,9 @@ if ((int) $sala['TurnoDeSalaJugadorId'] !== (int) $miAsiento['SalaJugadorId']) {
 }
 
 $estado = json_decode($sala['Tablero'], true);
+if (!is_array($estado) || !isset($estado['fichas']) || !is_array($estado['fichas'])) {
+    json_error('El tablero de esta sala quedó en un estado inválido, volvé a intentar', 500);
+}
 $miPosicion = (int) $miAsiento['Posicion'];
 $dado = $estado['dadoPendiente'] ?? null;
 $simbolo = (string) ($estado['simboloPendiente'] ?? 'vacio');
@@ -100,7 +103,7 @@ $jugada = [
 
 $gano = rh_ludo_gano($estado, $miPosicion);
 $jugadasIA = [];
-$turnoExtra = (int) $dado === 6 || $simbolo !== 'vacio';
+$turnoExtra = rh_ludoroyal_da_turno_extra($simbolo);
 
 if ($gano) {
     $puntos = [];

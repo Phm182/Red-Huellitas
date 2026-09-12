@@ -48,6 +48,13 @@ if ($sala['TurnoVenceEn'] !== null && strtotime($sala['TurnoVenceEn']) <= time()
 }
 
 $estado = json_decode($sala['Tablero'], true);
+if (!is_array($estado) || !isset($estado['fichas']) || !is_array($estado['fichas'])) {
+    // Tablero corrupto o de un esquema viejo: sin esto, cualquier acceso de
+    // más abajo (`$estado['fichas']` en foreach, etc.) es un fatal error de
+    // PHP -> 500 -> "hay que cerrar la app" reportado por el usuario. Con la
+    // guarda, al menos se ve como un error de juego normal y reintentable.
+    json_error('El tablero de esta sala quedó en un estado inválido, volvé a intentar', 500);
+}
 $miPosicion = (int) $miAsiento['Posicion'];
 
 if (($estado['dadoPendiente'] ?? null) !== null) {

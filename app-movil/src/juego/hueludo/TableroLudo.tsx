@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 /**
  * Geometría del tablero de HueLudo: una grilla de 15x15 casillas. Cada
@@ -83,10 +83,22 @@ export function esCasillaSeguraAbs(absoluta: number): boolean {
 const SAFE_ABS = new Set(Array.from({ length: 52 }, (_, i) => i).filter(esCasillaSeguraAbs));
 const SAFE_CELLS = new Set(Array.from(SAFE_ABS).map((abs) => PATH[abs].join(',')));
 
-type Props = { tamano: number };
+/** De las 8 casillas seguras, las de offset 0 (entrada de cada jugador) son
+ * "Corona" en HueLudo Real y las de offset 8 son "Pluma" — mismo par que ya
+ * usa `ludoroyal.php::RH_LUDOROYAL_CORONAS_REL` para el salto de checkpoint,
+ * alternando Corona/Pluma alrededor del anillo. */
+const CORONA_ABS = new Set([0, 13, 26, 39]);
+const PLUMA_ABS = new Set([8, 21, 34, 47]);
+
+/** Corona: silueta simple de 3 puntas sobre una base. */
+const CROWN_PATH = 'M-6,4 L-6,-2 L-2.4,1.4 L0,-4 L2.4,1.4 L6,-2 L6,4 Z';
+/** Pluma: óvalo alargado con el nervio central, inclinado como una pluma real. */
+const FEATHER_PATH = 'M0,-6 C3.4,-4 3.4,4 0,7 C-3.4,4 -3.4,-4 0,-6 Z M0,-6 L0,7';
+
+type Props = { tamano: number; variante?: 'clasico' | 'royal' };
 
 /** El fondo estático del tablero: corrales, camino, tramos finales y centro. Las fichas se dibujan aparte, encima. */
-export function TableroLudo({ tamano }: Props) {
+export function TableroLudo({ tamano, variante = 'clasico' }: Props) {
   const cell = tamano / 15;
 
   return (
@@ -147,8 +159,35 @@ export function TableroLudo({ tamano }: Props) {
         ))}
         {Array.from(SAFE_ABS).map((abs) => {
           const [r, c] = PATH[abs];
+          const cx = c * 20 + 10;
+          const cy = r * 20 + 10;
+          if (variante !== 'royal') {
+            return <Circle key={`safe-${abs}`} cx={cx} cy={cy} r={3.5} fill="#D9A32B" opacity={0.6} />;
+          }
+          const esCorona = CORONA_ABS.has(abs);
+          const esPluma = PLUMA_ABS.has(abs);
           return (
-            <Circle key={`safe-${abs}`} cx={c * 20 + 10} cy={r * 20 + 10} r={3.5} fill="#D9A32B" opacity={0.6} />
+            <React.Fragment key={`safe-${abs}`}>
+              <Circle
+                cx={cx}
+                cy={cy}
+                r={7.5}
+                fill={esCorona ? '#FFE9A8' : '#CDEDF6'}
+                stroke={esCorona ? '#D9A32B' : '#2E7D9A'}
+                strokeWidth={0.8}
+              />
+              {esCorona ? (
+                <Path d={CROWN_PATH} transform={`translate(${cx}, ${cy + 1})`} fill="#B8860B" />
+              ) : esPluma ? (
+                <Path
+                  d={FEATHER_PATH}
+                  transform={`translate(${cx}, ${cy})`}
+                  fill="#CDEDF6"
+                  stroke="#2E7D9A"
+                  strokeWidth={0.9}
+                />
+              ) : null}
+            </React.Fragment>
           );
         })}
 

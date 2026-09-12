@@ -49,6 +49,9 @@ type Cuerpo = {
    * "hacer rodar" el número/franja sobre la cara de la bola, en vez de
    * girarla en el lugar. Puramente visual, no toca la trayectoria. */
   rod: number;
+  /** Cuadros que lleva "cayendo" dentro de una tronera (ver más abajo). 0 =
+   * todavía no entró a ninguna. */
+  cayendoDesde: number;
 };
 
 function magnitud(v: Vector): number {
@@ -82,6 +85,27 @@ function troneras(mesa: Mesa): Vector[] {
 function estaEmbocada(pos: Vector, mesa: Mesa): boolean {
   return troneras(mesa).some((t) => magnitud({ x: pos.x - t.x, y: pos.y - t.y }) <= mesa.radioTronera);
 }
+
+/** La tronera cuya boca (radio real, la misma que valida el servidor)
+ * contiene este punto, o `null` si no hay ninguna. */
+function troneraDeBoca(pos: Vector, mesa: Mesa): Vector | null {
+  for (const t of troneras(mesa)) {
+    if (magnitud({ x: pos.x - t.x, y: pos.y - t.y }) <= mesa.radioTronera) return t;
+  }
+  return null;
+}
+
+/** Cuánto se frena una bola DENTRO del pozo de la tronera — mucho más que en
+ * el paño: está cayendo, no rodando. */
+const FRICCION_POZO = 0.82;
+/** Radio del "pozo" interior contra el que rebota si entra fuerte — más
+ * chico que la boca visual, así una bola rápida pega contra la pared de
+ * adentro en vez de atravesarla de largo. */
+const RADIO_POZO_FRAC = 0.5;
+/** Cuadros máximo que se la deja "cayendo" antes de darla por hundida de
+ * una vez, aunque no haya perdido toda la velocidad — guard anti-cuelgue,
+ * nunca debería llegar acá con `FRICCION_POZO` tan baja. */
+const MAX_CUADROS_CAYENDO = 40;
 
 /**
  * Tablero inicial: triángulo de 15 bolas con la 8 en el centro exacto y una
@@ -134,6 +158,7 @@ function aCuerpos(t: TableroPool): Cuerpo[] {
       radio: t.mesa.radioBola,
       enMesa: true,
       rod: 0,
+      cayendoDesde: 0,
     }));
 }
 
@@ -225,28 +250,75 @@ export function simularTiro(estadoInicial: TableroPool, impulso: Vector): Result
 
     for (const c of cuerpos) {
       if (!c.enMesa) continue;
+
+      const cayendo = c.cayendoDesde > 0;
+      const friccion = cayendo ? FRICCION_POZO : FRICCION;
+
       if (magnitud(c.vel) <= VEL_MINIMA) {
         c.vel = { x: 0, y: 0 };
       } else {
         algoEnMovimiento = true;
         c.pos.x += c.vel.x;
         c.pos.y += c.vel.y;
-        c.vel.x *= FRICCION;
-        c.vel.y *= FRICCION;
+        c.vel.x *= friccion;
+        c.vel.y *= friccion;
         // Rodadura: una esfera que avanza `d` píxeles rueda `d/radio` rad.
         c.rod += magnitud(c.vel) / c.radio;
       }
 
-      if (estaEmbocada(c.pos, mesa)) {
+      if (!cayendo) {
+        // Recién entra a la boca: a partir de acá deja de rebotar contra
+        // las bandas (ya está "adentro" del agujero) y pasa a la física del
+        // pozo, más abajo. Antes esto sacaba la bola de la mesa de una, sin
+        // dejarla avanzar más — llegaba y se quedaba tildada en el borde de
+        // la boca en vez de caer, y si venía fuerte no pasaba nada especial.
+        const boca = troneraDeBoca(c.pos, mesa);
+        if (boca) {
+          c.cayendoDesde = frame + 1; // > 0 marca "cayendo" desde el próximo cuadro
+        } else {
+          rebotePared(c, mesa);
+        }
+        continue;
+      }
+
+      // Dentro del pozo: la tronera más cercana (no cambia mientras cae).
+      const pozo = troneraDeBoca(c.pos, mesa) ?? troneras(mesa).reduce((a, b) =>
+        magnitud({ x: c.pos.x - a.x, y: c.pos.y - a.y }) <= magnitud({ x: c.pos.x - b.x, y: c.pos.y - b.y }) ? a : b
+      );
+      const dx = c.pos.x - pozo.x;
+      const dy = c.pos.y - pozo.y;
+      const dist = magnitud({ x: dx, y: dy });
+      const radioPozo = mesa.radioTronera * RADIO_POZO_FRAC;
+      if (dist > radioPozo && dist > 0) {
+        // Rebote elástico contra la pared interior del pozo — si viene
+        // fuerte, pega y vuelve hacia el centro en vez de atravesar de
+        // largo. Mismo cálculo que `rebotePared`, pero circular.
+        const nx = dx / dist;
+        const ny = dy / dist;
+        c.pos.x = pozo.x + nx * radioPozo;
+        c.pos.y = pozo.y + ny * radioPozo;
+        const velNormal = c.vel.x * nx + c.vel.y * ny;
+        if (velNormal > 0) {
+          c.vel.x -= 2 * velNormal * nx;
+          c.vel.y -= 2 * velNormal * ny;
+        }
+      }
+
+      const yaSeAsento = magnitud(c.vel) <= VEL_MINIMA * 3;
+      const seAcabaElTiempo = frame - c.cayendoDesde >= MAX_CUADROS_CAYENDO;
+      if (yaSeAsento || seAcabaElTiempo) {
+        // Última posición: bien adentro del pozo (dentro de `radioTronera`,
+        // que es lo que valida `rh_pool_embocada()` en el servidor), nunca
+        // en el borde de la boca.
+        c.pos.x = pozo.x;
+        c.pos.y = pozo.y;
         c.enMesa = false;
         c.vel = { x: 0, y: 0 };
         embocadasEsteTiro.push(c.n);
-        continue;
       }
-      rebotePared(c, mesa);
     }
 
-    const activos = cuerpos.filter((c) => c.enMesa);
+    const activos = cuerpos.filter((c) => c.enMesa && c.cayendoDesde === 0);
     for (let i = 0; i < activos.length; i++) {
       for (let j = i + 1; j < activos.length; j++) {
         resolverColision(activos[i]!, activos[j]!);

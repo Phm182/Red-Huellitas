@@ -231,7 +231,14 @@ export default function HuePoolScreen() {
       setTablero((prev) => {
         if (!prev) return prev;
         const bolas = prev.bolas.map((b) => (b.n === 0 ? { ...b, x, y } : b));
-        return { ...prev, bolas };
+        // Sin esto `bolaEnMano` (derivado de `tablero.bolaEnMano`) seguía en
+        // true después de tocar para dejar la blanca: el gesto de tiro sigue
+        // deshabilitado (`.enabled(activo && !bolaEnMano)` en MesaPool) y
+        // cada toque vuelve a "colocar" en vez de disparar — quedaba
+        // trabado, sin forma de tirar. Colocarla se resuelve del todo acá
+        // mismo, en el cliente; el servidor recién se entera cuando se
+        // manda el tiro.
+        return { ...prev, bolas, bolaEnMano: false };
       });
       setPosiciones((prev) => ({ ...prev, 0: { x, y, rod: 0, dirX: 0, dirY: 0 } }));
       hapticLeve();

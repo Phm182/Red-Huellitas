@@ -330,7 +330,7 @@ export default function LudoRoyalScreen() {
       </View>
 
       <View style={{ width: tamanoTablero, height: tamanoTablero, position: 'relative' }}>
-        <TableroLudo tamano={tamanoTablero} />
+        <TableroLudo tamano={tamanoTablero} variante="royal" />
         {piezas.map((f) => (
           <Ficha
             key={`${f.jugador}-${f.num}`}

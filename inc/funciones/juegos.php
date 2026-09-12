@@ -31,8 +31,13 @@ const RH_JUEGOS = [
     'huememo' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
     // Puntaje pensado para que gane ESTRICTAMENTE el más rápido (ver
     // huezip/motor.ts::puntaje) — 5000 es el techo exacto de la fórmula
-    // (0 segundos, 0 reinicios), no un margen arbitrario.
-    'huezip' => ['modo' => 'puntaje', 'maxPuntos' => 5000, 'minSegundos' => 8],
+    // (0 segundos, 0 reinicios), no un margen arbitrario. Por eso
+    // `minSegundos` tiene que ser MUY bajo acá y no un piso "razonable" como
+    // en el resto de la tabla: el propio diseño del puntaje premia terminar
+    // rapidísimo, así que con 8 (el valor viejo) una partida buena de
+    // verdad — la que el juego está pensado para premiar — se rechazaba
+    // sola como "Partida inválida". Bug real reportado, pasaba seguido.
+    'huezip' => ['modo' => 'puntaje', 'maxPuntos' => 5000, 'minSegundos' => 2],
     // 'turnos': un solo tablero que los dos van modificando. Acá `maxPuntos` no
     // aplica porque el puntaje lo pone el servidor, no el cliente.
     'hueconecta' => ['modo' => 'turnos'],
