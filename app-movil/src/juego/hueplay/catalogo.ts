@@ -37,6 +37,7 @@ export const JUEGOS_CATALOGO: JuegoCatalogoItem[] = [
   { codigo: 'hueludo', titulo: 'HueLudo', icono: 'dice-multiple', color: '#B36FE0', esSala: true },
   { codigo: 'hueludoroyal', titulo: 'HueLudo Real', icono: 'crown', color: '#D4A017', esSala: true },
   { codigo: 'huerummy', titulo: 'HueRummy', icono: 'cards-playing-outline', color: '#4CC3A5', esSala: true },
+  { codigo: 'hueburako', titulo: 'HueBurako', icono: 'cards', color: '#D9834F', esSala: true },
   { codigo: 'huescrabble', titulo: 'HueScrabble', icono: 'alphabetical-variant', color: '#B08D57', esSala: true },
   { codigo: 'huedoku6', titulo: 'HueDoku 6x6', icono: 'view-grid-outline', color: '#D9834F' },
   { codigo: 'huedoku9facil', titulo: 'HueDoku 9x9 Fácil', icono: 'view-grid-outline', color: '#D9834F' },

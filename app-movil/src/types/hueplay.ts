@@ -598,29 +598,35 @@ export interface HistorialPar {
 }
 
 /**
- * HueRummy: `palo` 0-3 (picas/corazones/diamantes/tréboles), `valor` 1-13
- * (as=1, J/Q/K=11/12/13). El servidor nunca manda las manos ajenas — sólo
- * `cantidadCartasPorJugador`.
+ * HueRummy y HueBurako comparten el mismo mazo físico: `color` 0-3 (negro,
+ * rojo, azul, amarillo), `valor` 1-13. Un comodín suelto (en la mano o el
+ * mazo) es `color: -1, valor: 0`; uno ya bajado en un meld además trae
+ * `sustituyeColor`/`sustituyeValor` — la ficha que representa ahí. El
+ * servidor nunca manda las manos ajenas — sólo `cantidadCartasPorJugador`.
  */
-export interface CartaRummy {
-  palo: number;
+export interface FichaRummy {
+  color: number;
   valor: number;
+  sustituyeColor?: number;
+  sustituyeValor?: number;
 }
 
 export interface MeldRummy {
   jugador: number;
-  cartas: CartaRummy[];
+  cartas: FichaRummy[];
 }
 
 /** Vista redactada del estado de una sala de Rummy, propia de quien la pide. */
 export interface EstadoRummyVisible {
-  miMano: CartaRummy[];
+  miMano: FichaRummy[];
   cantidadCartasPorJugador: number[];
   cartasEnMazo: number;
-  descarte: CartaRummy[];
+  descarte: FichaRummy[];
   melds: MeldRummy[];
   fase: 'robar' | 'descartar';
   jugadores: number;
+  /** Si ya hizo su jugada inicial de 30 puntos — habilita extender melds y canjear comodines. */
+  bajoInicial: boolean;
 }
 
 /** Respuesta de los endpoints genéricos de sala (`sala_ver.php`, `sala_iniciar.php`): sirven para cualquier juego de sala. */
@@ -628,21 +634,22 @@ export interface HuePlaySalaGenerica {
   sala: HuePlaySala;
   jugadasIA: (JugadasIASalaJugador | JugadaIARummy | JugadaIAScrabble)[];
   estadoRummy: EstadoRummyVisible | null;
+  estadoBurako: EstadoBurakoVisible | null;
   estadoScrabble: EstadoScrabbleVisible | null;
 }
 
 export interface JugadaIARummy {
   salaJugadorId: number;
-  robo: CartaRummy | null;
-  melds: CartaRummy[][];
-  descarte: CartaRummy | null;
+  robo: FichaRummy | null;
+  melds: FichaRummy[][];
+  descarte: FichaRummy | null;
 }
 
 export type JugadasIASalaRummy = JugadaIARummy;
 
 export interface HuePlayRummyRobar {
   sala: HuePlaySala;
-  carta: CartaRummy | null;
+  carta: FichaRummy | null;
   rondaCortada: boolean;
   estadoRummy: EstadoRummyVisible;
 }
@@ -652,12 +659,62 @@ export interface HuePlayRummyBajar {
   estadoRummy: EstadoRummyVisible;
 }
 
+export type HuePlayRummyExtender = HuePlayRummyBajar;
+export type HuePlayRummyComodin = HuePlayRummyBajar;
+
 export interface HuePlayRummyDescartar {
   sala: HuePlaySala;
-  cartaDescartada: CartaRummy | null;
+  cartaDescartada: FichaRummy | null;
   gane: boolean;
   jugadasIA: JugadaIARummy[];
   estadoRummy: EstadoRummyVisible | null;
+}
+
+/**
+ * HueBurako: mismo mazo de fichas que HueRummy (`FichaRummy`), pero sin
+ * mínimo de apertura y con "muerto" — ver `inc/funciones/burako.php`.
+ */
+export interface EstadoBurakoVisible {
+  miMano: FichaRummy[];
+  cantidadCartasPorJugador: number[];
+  cartasEnMazo: number;
+  descarte: FichaRummy[];
+  melds: MeldRummy[];
+  fase: 'robar' | 'descartar';
+  jugadores: number;
+  compradoMuerto: boolean[];
+  /** Si a mí me queda mi muerto sin recibir todavía (false = ya lo recibí o ya lo usé). */
+  miMuertoPendiente: boolean;
+}
+
+export interface JugadaIABurako {
+  salaJugadorId: number;
+  robo: FichaRummy | null;
+  melds: FichaRummy[][];
+  descarte: FichaRummy | null;
+}
+
+export interface HuePlayBurakoRobar {
+  sala: HuePlaySala;
+  carta: FichaRummy | null;
+  rondaCortada: boolean;
+  estadoBurako: EstadoBurakoVisible;
+}
+
+export interface HuePlayBurakoBajar {
+  sala: HuePlaySala;
+  estadoBurako: EstadoBurakoVisible;
+}
+
+export type HuePlayBurakoExtender = HuePlayBurakoBajar;
+export type HuePlayBurakoComodin = HuePlayBurakoBajar;
+
+export interface HuePlayBurakoDescartar {
+  sala: HuePlaySala;
+  cartaDescartada: FichaRummy | null;
+  gane: boolean;
+  jugadasIA: JugadaIABurako[];
+  estadoBurako: EstadoBurakoVisible | null;
 }
 
 /**

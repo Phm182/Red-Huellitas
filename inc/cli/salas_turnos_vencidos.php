@@ -33,6 +33,7 @@ require_once __DIR__ . '/../funciones/salas.php';
 require_once __DIR__ . '/../funciones/ludo.php';
 require_once __DIR__ . '/../funciones/ludoroyal.php';
 require_once __DIR__ . '/../funciones/rummy.php';
+require_once __DIR__ . '/../funciones/burako.php';
 require_once __DIR__ . '/../funciones/scrabble.php';
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
@@ -66,6 +67,8 @@ foreach ($vencidas as $sala) {
             rh_ludoroyal_sala_actualizar($conn, $sala);
         } elseif ($sala['JuegoCodigo'] === 'huerummy') {
             rh_rummy_sala_actualizar($conn, $sala);
+        } elseif ($sala['JuegoCodigo'] === 'hueburako') {
+            rh_burako_sala_actualizar($conn, $sala);
         } elseif ($sala['JuegoCodigo'] === 'huescrabble') {
             rh_scrabble_sala_actualizar($conn, $sala);
         } else {

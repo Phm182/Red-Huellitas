@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../funciones/salas.php';
 require_once __DIR__ . '/../../funciones/ludo.php';
 require_once __DIR__ . '/../../funciones/ludoroyal.php';
 require_once __DIR__ . '/../../funciones/rummy.php';
+require_once __DIR__ . '/../../funciones/burako.php';
 require_once __DIR__ . '/../../funciones/scrabble.php';
 require_once __DIR__ . '/../../funciones/desafio_tablero.php';
 
@@ -105,7 +106,7 @@ if (rh_juego_es_duelo($juegoCodigo)) {
     $salaSerializada['desafioId'] = (int) $desafioId;
     $salaSerializada['semilla'] = (int) $semilla;
 
-    json_success(['sala' => $salaSerializada, 'jugadasIA' => [], 'estadoRummy' => null, 'estadoScrabble' => null]);
+    json_success(['sala' => $salaSerializada, 'jugadasIA' => [], 'estadoRummy' => null, 'estadoBurako' => null, 'estadoScrabble' => null]);
 }
 
 if ($juegoCodigo === 'hueludo') {
@@ -114,6 +115,8 @@ if ($juegoCodigo === 'hueludo') {
     $tablero = rh_ludoroyal_inicial(count($jugadores));
 } elseif ($juegoCodigo === 'huerummy') {
     $tablero = rh_rummy_inicial(count($jugadores));
+} elseif ($juegoCodigo === 'hueburako') {
+    $tablero = rh_burako_inicial(count($jugadores));
 } elseif ($juegoCodigo === 'huescrabble') {
     $tablero = rh_scrabble_inicial(count($jugadores));
 } else {
@@ -164,6 +167,11 @@ if ($juegoCodigo === 'hueludo') {
     $sala = $resultado['sala'];
     $jugadores = $resultado['jugadores'];
     $jugadasIA = $resultado['jugadasIA'];
+} elseif ($juegoCodigo === 'hueburako') {
+    $resultado = rh_burako_sala_resolver_ia_en_cadena($conn, $sala, $jugadores);
+    $sala = $resultado['sala'];
+    $jugadores = $resultado['jugadores'];
+    $jugadasIA = $resultado['jugadasIA'];
 } elseif ($juegoCodigo === 'huescrabble') {
     $resultado = rh_scrabble_sala_resolver_ia_en_cadena($conn, $sala, $jugadores);
     $sala = $resultado['sala'];
@@ -173,6 +181,7 @@ if ($juegoCodigo === 'hueludo') {
 
 $salaSerializada = rh_sala_serializar($conn, $sala, $jugadores, $userId);
 $estadoRummy = null;
+$estadoBurako = null;
 $estadoScrabble = null;
 
 if ($juegoCodigo === 'hueludo' || $juegoCodigo === 'hueludoroyal') {
@@ -188,6 +197,17 @@ if ($juegoCodigo === 'hueludo' || $juegoCodigo === 'hueludoroyal') {
     if ($miPosicion !== null) {
         $estadoRummy = rh_rummy_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
     }
+} elseif ($juegoCodigo === 'hueburako' && $salaSerializada['miAsientoId'] !== null) {
+    $miPosicion = null;
+    foreach ($jugadores as $j) {
+        if ((int) $j['SalaJugadorId'] === $salaSerializada['miAsientoId']) {
+            $miPosicion = (int) $j['Posicion'];
+            break;
+        }
+    }
+    if ($miPosicion !== null) {
+        $estadoBurako = rh_burako_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
+    }
 } elseif ($juegoCodigo === 'huescrabble' && $salaSerializada['miAsientoId'] !== null) {
     $miPosicion = null;
     foreach ($jugadores as $j) {
@@ -201,4 +221,4 @@ if ($juegoCodigo === 'hueludo' || $juegoCodigo === 'hueludoroyal') {
     }
 }
 
-json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoScrabble' => $estadoScrabble]);
+json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoBurako' => $estadoBurako, 'estadoScrabble' => $estadoScrabble]);

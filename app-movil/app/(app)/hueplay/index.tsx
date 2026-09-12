@@ -183,10 +183,19 @@ const JUEGOS: JuegoDef[] = [
   {
     id: 'huerummy',
     titulo: 'HueRummy',
-    bajada: 'El Rummy de cartas de siempre, en salas de hasta 4 con código para compartir.',
+    bajada: 'El Rummy Israelí de fichas de siempre, en salas de hasta 4 con código para compartir.',
     icono: 'cards-playing-outline',
     color: '#4CC3A5',
     ruta: '/(app)/hueplay/salas?juego=huerummy',
+    duelo: true,
+  },
+  {
+    id: 'hueburako',
+    titulo: 'HueBurako',
+    bajada: 'Escaleras, Piernas y Canastas con comodines — el otro clásico de fichas, en salas de hasta 4.',
+    icono: 'cards',
+    color: '#D9834F',
+    ruta: '/(app)/hueplay/salas?juego=hueburako',
     duelo: true,
   },
   {

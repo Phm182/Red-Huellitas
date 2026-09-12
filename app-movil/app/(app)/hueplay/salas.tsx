@@ -26,7 +26,7 @@ export default function SalasScreen() {
   // bandeja de abajo sigue mostrando las salas de los dos juegos juntas: eso
   // sí tiene sentido, es "todas mis salas".
   const params = useLocalSearchParams<{ juego?: string }>();
-  const juegoCodigo = ['huerummy', 'huescrabble', 'hueludoroyal'].includes(params.juego ?? '')
+  const juegoCodigo = ['huerummy', 'hueburako', 'huescrabble', 'hueludoroyal'].includes(params.juego ?? '')
     ? (params.juego as string)
     : 'hueludo';
   const [bandeja, setBandeja] = useState<HuePlaySalasBandeja | null>(null);

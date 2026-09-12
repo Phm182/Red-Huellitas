@@ -54,6 +54,7 @@ const RH_JUEGOS = [
     'hueludo' => ['modo' => 'sala'],
     'hueludoroyal' => ['modo' => 'sala'],
     'huerummy' => ['modo' => 'sala'],
+    'hueburako' => ['modo' => 'sala'],
     'huescrabble' => ['modo' => 'sala'],
     // HueTrivia tampoco necesita techo: el puntaje lo calcula el servidor a
     // partir de las respuestas, el cliente no informa ningún número.
@@ -159,6 +160,7 @@ function rh_juego_titulo(string $codigo): string
         'hueludo' => 'HueLudo',
         'hueludoroyal' => 'HueLudo Real',
         'huerummy' => 'HueRummy',
+        'hueburako' => 'HueBurako',
         'huescrabble' => 'HueScrabble',
         'huezip' => 'HueZip',
         'huesoccer' => 'HueSoccer',

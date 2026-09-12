@@ -20,7 +20,7 @@ import { rhAvatarUrl } from '../../../src/utils/media';
 
 const POLITICAS: PoliticaAbandonoSala[] = ['espera', 'ia', 'expulsa'];
 
-const JUEGOS_SALA = ['hueludo', 'hueludoroyal', 'huerummy', 'huescrabble'];
+const JUEGOS_SALA = ['hueludo', 'hueludoroyal', 'huerummy', 'hueburako', 'huescrabble'];
 
 /**
  * Arma una sala nueva. Para los juegos de sala (HueLudo…): cuántos

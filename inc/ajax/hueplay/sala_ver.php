@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../funciones/salas.php';
 require_once __DIR__ . '/../../funciones/ludo.php';
 require_once __DIR__ . '/../../funciones/ludoroyal.php';
 require_once __DIR__ . '/../../funciones/rummy.php';
+require_once __DIR__ . '/../../funciones/burako.php';
 require_once __DIR__ . '/../../funciones/scrabble.php';
 
 $userId = rh_require_auth($conn);
@@ -40,6 +41,7 @@ if (!$esParticipante) {
 
 $jugadasIA = [];
 $estadoRummy = null;
+$estadoBurako = null;
 $estadoScrabble = null;
 
 if ($sala['JuegoCodigo'] === 'hueludo') {
@@ -54,6 +56,11 @@ if ($sala['JuegoCodigo'] === 'hueludo') {
     $jugadasIA = $resultado['jugadasIA'];
 } elseif ($sala['JuegoCodigo'] === 'huerummy') {
     $resultado = rh_rummy_sala_actualizar($conn, $sala);
+    $sala = $resultado['sala'];
+    $jugadores = $resultado['jugadores'];
+    $jugadasIA = $resultado['jugadasIA'];
+} elseif ($sala['JuegoCodigo'] === 'hueburako') {
+    $resultado = rh_burako_sala_actualizar($conn, $sala);
     $sala = $resultado['sala'];
     $jugadores = $resultado['jugadores'];
     $jugadasIA = $resultado['jugadasIA'];
@@ -80,6 +87,17 @@ if (($sala['JuegoCodigo'] === 'hueludo' || $sala['JuegoCodigo'] === 'hueludoroya
     }
     if ($miPosicion !== null) {
         $estadoRummy = rh_rummy_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
+    }
+} elseif ($sala['JuegoCodigo'] === 'hueburako' && $sala['Tablero'] !== null && $salaSerializada['miAsientoId'] !== null) {
+    $miPosicion = null;
+    foreach ($jugadores as $j) {
+        if ((int) $j['SalaJugadorId'] === $salaSerializada['miAsientoId']) {
+            $miPosicion = (int) $j['Posicion'];
+            break;
+        }
+    }
+    if ($miPosicion !== null) {
+        $estadoBurako = rh_burako_estado_visible(json_decode($sala['Tablero'], true), $miPosicion);
     }
 } elseif ($sala['JuegoCodigo'] === 'huescrabble' && $sala['Tablero'] !== null && $salaSerializada['miAsientoId'] !== null) {
     $miPosicion = null;
@@ -108,4 +126,4 @@ if (!empty($sala['DesafioId'])) {
     $salaSerializada['semilla'] = (int) ($dRow['Semilla'] ?? 0);
 }
 
-json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoScrabble' => $estadoScrabble]);
+json_success(['sala' => $salaSerializada, 'jugadasIA' => $jugadasIA, 'estadoRummy' => $estadoRummy, 'estadoBurako' => $estadoBurako, 'estadoScrabble' => $estadoScrabble]);

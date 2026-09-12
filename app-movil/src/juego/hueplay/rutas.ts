@@ -55,6 +55,7 @@ export function rutaDelDesafio(d: DesafioParaRuta): { pathname: string; params: 
 /** Pantalla de sala (hasta 4 jugadores) según el juego. */
 const PANTALLA_SALA: Record<string, string> = {
   huerummy: '/(app)/hueplay/rummy',
+  hueburako: '/(app)/hueplay/burako',
   huescrabble: '/(app)/hueplay/huescrabble',
   hueludoroyal: '/(app)/hueplay/ludoroyal',
 };
@@ -65,6 +66,7 @@ export function rutaDeSala(juegoCodigo: string): string {
 /** Clave de i18n (`hueplay.<clave>.*`) de un juego de sala. */
 const CLAVE_I18N_SALA: Record<string, string> = {
   huerummy: 'rummy',
+  hueburako: 'burako',
   huescrabble: 'scrabble',
   hueludoroyal: 'ludoroyal',
 };

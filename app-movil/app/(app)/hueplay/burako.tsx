@@ -7,7 +7,7 @@ import { hueplayApi } from '../../../src/api/hueplayApi';
 import { CelebracionPatitas } from '../../../src/juego/comun/CelebracionPatitas';
 import { Carta, ManoRivalOculta } from '../../../src/juego/huerummy/Carta';
 import { COLOR_JUGADOR } from '../../../src/juego/hueludo/TableroLudo';
-import { EstadoRummyVisible, HuePlaySala } from '../../../src/types/hueplay';
+import { EstadoBurakoVisible, HuePlaySala } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
@@ -17,19 +17,20 @@ import { hapticCelebracion, hapticError, hapticLeve, hapticMedio } from '../../.
 const POLL_MS = 4000;
 
 /**
- * HueRummy: hasta 4 jugadores, cada uno con su mano oculta. El servidor
- * nunca manda las cartas ajenas (`estadoRummy.miMano` es siempre la propia,
- * `cantidadCartasPorJugador` es lo único que se sabe de los demás) — ver
- * `rh_rummy_estado_visible()` en el backend.
+ * HueBurako: mismas fichas que HueRummy (reusa `Carta`/`ManoRivalOculta`
+ * de `src/juego/huerummy/`, es el mismo mazo físico), pero reglas propias
+ * — sin mínimo de apertura, con "muerto" personal y Canastas — ver
+ * `inc/funciones/burako.php`. Variante INDIVIDUAL (sin parejas), documentada
+ * ahí mismo.
  */
-export default function RummyScreen() {
+export default function BurakoScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ salaId?: string }>();
   const salaId = params.salaId ? Number(params.salaId) : 0;
 
   const [sala, setSala] = useState<HuePlaySala | null>(null);
-  const [estado, setEstado] = useState<EstadoRummyVisible | null>(null);
+  const [estado, setEstado] = useState<EstadoBurakoVisible | null>(null);
   const [seleccionadas, setSeleccionadas] = useState<number[]>([]);
   const [meldSeleccionado, setMeldSeleccionado] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -55,7 +56,7 @@ export default function RummyScreen() {
     if (res.success && res.data) {
       setError(null);
       setSala(res.data.sala);
-      if (res.data.estadoRummy) setEstado(res.data.estadoRummy);
+      if (res.data.estadoBurako) setEstado(res.data.estadoBurako);
       setSeleccionadas([]);
     } else {
       setError(res.message ?? t('common.error'));
@@ -94,7 +95,7 @@ export default function RummyScreen() {
   };
 
   const alternarMeld = (i: number) => {
-    if (!sala?.esMiTurno || estado?.fase !== 'descartar' || enviando || !estado?.bajoInicial) return;
+    if (!sala?.esMiTurno || estado?.fase !== 'descartar' || enviando) return;
     hapticLeve();
     setMeldSeleccionado((prev) => (prev === i ? null : i));
   };
@@ -105,7 +106,7 @@ export default function RummyScreen() {
     setEnviando(true);
     setError(null);
     setAviso(null);
-    const res = await hueplayApi.rummyRobar(sala.salaId, origen);
+    const res = await hueplayApi.burakoRobar(sala.salaId, origen);
     if (!vivoRef.current) return;
     setEnviando(false);
     if (!res.success || !res.data) {
@@ -113,10 +114,10 @@ export default function RummyScreen() {
       return;
     }
     setSala(res.data.sala);
-    setEstado(res.data.estadoRummy);
+    setEstado(res.data.estadoBurako);
     setMeldSeleccionado(null);
     if (res.data.rondaCortada) {
-      setAviso(t('hueplay.rummy.rondaCortada'));
+      setAviso(t('hueplay.burako.rondaCortada'));
     }
   };
 
@@ -125,7 +126,7 @@ export default function RummyScreen() {
     hapticMedio();
     setEnviando(true);
     setError(null);
-    const res = await hueplayApi.rummyBajar(sala.salaId, seleccionadas);
+    const res = await hueplayApi.burakoBajar(sala.salaId, seleccionadas);
     if (!vivoRef.current) return;
     setEnviando(false);
     if (!res.success || !res.data) {
@@ -133,7 +134,7 @@ export default function RummyScreen() {
       setError(res.message ?? t('common.error'));
       return;
     }
-    setEstado(res.data.estadoRummy);
+    setEstado(res.data.estadoBurako);
     setSeleccionadas([]);
   };
 
@@ -142,7 +143,7 @@ export default function RummyScreen() {
     hapticMedio();
     setEnviando(true);
     setError(null);
-    const res = await hueplayApi.rummyExtender(sala.salaId, meldSeleccionado, seleccionadas);
+    const res = await hueplayApi.burakoExtender(sala.salaId, meldSeleccionado, seleccionadas);
     if (!vivoRef.current) return;
     setEnviando(false);
     if (!res.success || !res.data) {
@@ -150,7 +151,7 @@ export default function RummyScreen() {
       setError(res.message ?? t('common.error'));
       return;
     }
-    setEstado(res.data.estadoRummy);
+    setEstado(res.data.estadoBurako);
     setSeleccionadas([]);
     setMeldSeleccionado(null);
   };
@@ -160,7 +161,7 @@ export default function RummyScreen() {
     hapticMedio();
     setEnviando(true);
     setError(null);
-    const res = await hueplayApi.rummyComodin(sala.salaId, meldSeleccionado, seleccionadas[0]);
+    const res = await hueplayApi.burakoComodin(sala.salaId, meldSeleccionado, seleccionadas[0]);
     if (!vivoRef.current) return;
     setEnviando(false);
     if (!res.success || !res.data) {
@@ -168,7 +169,7 @@ export default function RummyScreen() {
       setError(res.message ?? t('common.error'));
       return;
     }
-    setEstado(res.data.estadoRummy);
+    setEstado(res.data.estadoBurako);
     setSeleccionadas([]);
     setMeldSeleccionado(null);
   };
@@ -178,7 +179,7 @@ export default function RummyScreen() {
     hapticMedio();
     setEnviando(true);
     setError(null);
-    const res = await hueplayApi.rummyDescartar(sala.salaId, seleccionadas[0]);
+    const res = await hueplayApi.burakoDescartar(sala.salaId, seleccionadas[0]);
     if (!vivoRef.current) return;
     setEnviando(false);
     if (!res.success || !res.data) {
@@ -187,7 +188,7 @@ export default function RummyScreen() {
       return;
     }
     setSala(res.data.sala);
-    setEstado(res.data.estadoRummy);
+    setEstado(res.data.estadoBurako);
     setSeleccionadas([]);
     setMeldSeleccionado(null);
   };
@@ -247,6 +248,9 @@ export default function RummyScreen() {
                 ({estado.cantidadCartasPorJugador[j.posicion] ?? '—'})
               </Text>
             ) : null}
+            {estado?.compradoMuerto[j.posicion] ? (
+              <Ionicons name="checkmark-circle" size={12} color={colors.textMuted} />
+            ) : null}
             {j.tomadoPorIA ? <Ionicons name="hardware-chip-outline" size={12} color={colors.textMuted} /> : null}
           </View>
         ))}
@@ -265,19 +269,19 @@ export default function RummyScreen() {
         <Text style={{ color: colors.text, fontSize: 13, flex: 1 }}>
           {terminado
             ? gane
-              ? t('hueplay.rummy.ganasteFin')
-              : t('hueplay.rummy.perdisteFin')
+              ? t('hueplay.burako.ganasteFin')
+              : t('hueplay.burako.perdisteFin')
             : aviso
               ? aviso
               : sala.esMiTurno
                 ? estado?.fase === 'robar'
-                  ? t('hueplay.rummy.tocaRobar')
+                  ? t('hueplay.burako.tocaRobar')
                   : seleccionadas.length >= 3
-                    ? t('hueplay.rummy.podesBajar')
+                    ? t('hueplay.burako.podesBajar')
                     : seleccionadas.length === 1
-                      ? t('hueplay.rummy.podesDescartar')
-                      : t('hueplay.rummy.elegiCartas')
-                : t('hueplay.rummy.turnoDe', {
+                      ? t('hueplay.burako.podesDescartar')
+                      : t('hueplay.burako.elegiCartas')
+                : t('hueplay.burako.turnoDe', {
                     rival: asientoDelTurno ? (asientoDelTurno.esBot ? t('hueplay.jugandoContraIA') : nombreDe(asientoDelTurno)) : '',
                   })}
         </Text>
@@ -295,7 +299,7 @@ export default function RummyScreen() {
                 <Ionicons name="albums" size={28} color={colors.primary} />
                 <Text style={{ color: colors.textMuted, fontSize: 11 }}>{estado?.cartasEnMazo ?? 0}</Text>
               </Pressable>
-              <Text style={{ color: colors.textMuted, fontSize: 11 }}>{t('hueplay.rummy.mazo')}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>{t('hueplay.burako.mazo')}</Text>
             </View>
 
             <View style={styles.pila}>
@@ -306,7 +310,9 @@ export default function RummyScreen() {
               >
                 {topeDescarte ? <Carta carta={topeDescarte} tamano={48} /> : <View style={{ width: 48, height: 67 }} />}
               </Pressable>
-              <Text style={{ color: colors.textMuted, fontSize: 11 }}>{t('hueplay.rummy.descarte')}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                {t('hueplay.burako.descarte', { n: estado?.descarte.length ?? 0 })}
+              </Text>
             </View>
           </View>
 
@@ -316,7 +322,7 @@ export default function RummyScreen() {
                 <Pressable
                   key={i}
                   onPress={() => alternarMeld(i)}
-                  disabled={!sala.esMiTurno || estado.fase !== 'descartar' || !estado.bajoInicial}
+                  disabled={!sala.esMiTurno || estado.fase !== 'descartar'}
                   style={[
                     styles.meldFila,
                     meldSeleccionado === i ? { backgroundColor: colors.primarySoft, borderRadius: radii.sm } : null,
@@ -327,6 +333,11 @@ export default function RummyScreen() {
                       <Carta carta={c} tamano={36} />
                     </View>
                   ))}
+                  {m.cartas.length >= 7 ? (
+                    <Text style={{ color: colors.primary, fontSize: 10, fontFamily: fonts.bodySemi, marginLeft: 6, alignSelf: 'center' }}>
+                      {t('hueplay.burako.canasta')}
+                    </Text>
+                  ) : null}
                 </Pressable>
               ))}
             </View>
@@ -353,7 +364,7 @@ export default function RummyScreen() {
 
       {!terminado && estado ? (
         <>
-          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.rummy.tuMano')}</Text>
+          <Text style={[styles.seccion, { color: colors.textMuted }]}>{t('hueplay.burako.tuMano')}</Text>
           <View style={styles.mano}>
             {estado.miMano.map((c, i) => (
               <Carta
@@ -368,7 +379,7 @@ export default function RummyScreen() {
 
           {sala.esMiTurno && estado.fase === 'descartar' && meldSeleccionado !== null ? (
             <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
-              {t('hueplay.rummy.juegoSeleccionado', { n: meldSeleccionado + 1 })}
+              {t('hueplay.burako.juegoSeleccionado', { n: meldSeleccionado + 1 })}
             </Text>
           ) : null}
 
@@ -381,7 +392,7 @@ export default function RummyScreen() {
                   style={[styles.botonAccion, { backgroundColor: colors.primarySoft, opacity: seleccionadas.length >= 3 ? 1 : 0.4 }]}
                 >
                   <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                    {t('hueplay.rummy.bajar')}
+                    {t('hueplay.burako.bajar')}
                   </Text>
                 </Pressable>
               ) : (
@@ -391,7 +402,7 @@ export default function RummyScreen() {
                   style={[styles.botonAccion, { backgroundColor: colors.primarySoft, opacity: seleccionadas.length >= 1 ? 1 : 0.4 }]}
                 >
                   <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                    {t('hueplay.rummy.agregar')}
+                    {t('hueplay.burako.agregar')}
                   </Text>
                 </Pressable>
               )}
@@ -402,7 +413,7 @@ export default function RummyScreen() {
                   style={[styles.botonAccion, { backgroundColor: colors.primarySoft }]}
                 >
                   <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                    {t('hueplay.rummy.canjearComodin')}
+                    {t('hueplay.burako.canjearComodin')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -418,7 +429,7 @@ export default function RummyScreen() {
                   <ActivityIndicator size="small" color={colors.primaryText} />
                 ) : (
                   <Text style={{ color: colors.primaryText, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-                    {t('hueplay.rummy.descartar')}
+                    {t('hueplay.burako.descartarAccion')}
                   </Text>
                 )}
               </Pressable>
@@ -477,7 +488,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   melds: { gap: 6 },
-  meldFila: { flexDirection: 'row' },
+  meldFila: { flexDirection: 'row', alignItems: 'center' },
   filaRival: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   seccion: { fontSize: 12, fontFamily: fonts.bodySemi, marginTop: 16, marginBottom: 8, textTransform: 'uppercase', alignSelf: 'flex-start' },
   mano: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', alignSelf: 'stretch' },

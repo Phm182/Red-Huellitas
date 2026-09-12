@@ -17,8 +17,15 @@ import {
   HuePlayPerfil,
   HuePlayProgreso,
   HuePlayRival,
+  HuePlayBurakoBajar,
+  HuePlayBurakoComodin,
+  HuePlayBurakoDescartar,
+  HuePlayBurakoExtender,
+  HuePlayBurakoRobar,
   HuePlayRummyBajar,
+  HuePlayRummyComodin,
   HuePlayRummyDescartar,
+  HuePlayRummyExtender,
   HuePlayRummyRobar,
   HuePlayScrabbleIntercambiar,
   HuePlayScrabbleJugar,
@@ -394,6 +401,42 @@ export const hueplayApi = {
   /** Descarta una carta de tu mano (por índice) y cierra tu turno. */
   rummyDescartar: (salaId: number, indice: number) =>
     apiPost<HuePlayRummyDescartar>('ajax/hueplay/rummy_descartar.php', { salaId, indice }, true),
+
+  /** Agrega fichas de tu mano a un meld ya bajado en la mesa (propio o ajeno). */
+  rummyExtender: (salaId: number, meldIndex: number, indices: number[]) =>
+    apiPost<HuePlayRummyExtender>(
+      'ajax/hueplay/rummy_extender.php',
+      { salaId, meldIndex, indices: indices.join(',') },
+      true
+    ),
+
+  /** Canjea un comodín ya bajado en una Escalera por la ficha real que sustituye. */
+  rummyComodin: (salaId: number, meldIndex: number, indice: number) =>
+    apiPost<HuePlayRummyComodin>('ajax/hueplay/rummy_comodin.php', { salaId, meldIndex, indice }, true),
+
+  /** Roba una ficha en HueBurako: del mazo, o TODO el pozo del descarte. */
+  burakoRobar: (salaId: number, origen: 'mazo' | 'descarte') =>
+    apiPost<HuePlayBurakoRobar>('ajax/hueplay/burako_robar.php', { salaId, origen }, true),
+
+  /** Baja un meld nuevo con fichas de tu mano en HueBurako. */
+  burakoBajar: (salaId: number, indices: number[]) =>
+    apiPost<HuePlayBurakoBajar>('ajax/hueplay/burako_bajar.php', { salaId, indices: indices.join(',') }, true),
+
+  /** Agrega fichas de tu mano a un meld ya bajado en la mesa de HueBurako. */
+  burakoExtender: (salaId: number, meldIndex: number, indices: number[]) =>
+    apiPost<HuePlayBurakoExtender>(
+      'ajax/hueplay/burako_extender.php',
+      { salaId, meldIndex, indices: indices.join(',') },
+      true
+    ),
+
+  /** Canjea un comodín ya bajado en una Escalera de HueBurako por la ficha real que sustituye. */
+  burakoComodin: (salaId: number, meldIndex: number, indice: number) =>
+    apiPost<HuePlayBurakoComodin>('ajax/hueplay/burako_comodin.php', { salaId, meldIndex, indice }, true),
+
+  /** Descarta una ficha de tu mano en HueBurako (por índice) y cierra tu turno. */
+  burakoDescartar: (salaId: number, indice: number) =>
+    apiPost<HuePlayBurakoDescartar>('ajax/hueplay/burako_descartar.php', { salaId, indice }, true),
 
   /** Coloca fichas nuevas en el tablero de HueScrabble y cierra el turno. */
   scrabbleJugar: (salaId: number, fichas: FichaScrabblePropuesta[]) =>
