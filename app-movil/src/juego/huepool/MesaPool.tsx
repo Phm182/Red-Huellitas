@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
@@ -158,6 +159,15 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
   // durante todo el golpe (no se limpia hasta que termina) para no perder
   // la dirección del taco a mitad de la animación.
   const [separacionOverride, setSeparacionOverride] = useState<number | null>(null);
+  // Bola en mano: el toque ya NO coloca directo (se reportó que por accidente
+  // se dejaba en cualquier lado) — primero propone una posición (fantasma
+  // translúcido) y hace falta confirmar con el botón de check. Tocar de
+  // nuevo en otro lado sólo mueve la propuesta, no confirma nada.
+  const [propuesta, setPropuesta] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!bolaEnMano) setPropuesta(null);
+  }, [bolaEnMano]);
 
   const blanca = bolas.find((b) => b.n === 0);
   const posBlanca = blanca
@@ -275,8 +285,14 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
     .onEnd((e) => {
       const x = Math.max(mesa.radioBola, Math.min(mesa.ancho - mesa.radioBola, e.x / escala));
       const y = Math.max(mesa.radioBola, Math.min(mesa.alto - mesa.radioBola, e.y / escala));
-      runOnJS(onColocarBlanca)(x, y);
+      runOnJS(setPropuesta)({ x, y });
     });
+
+  const confirmarPropuesta = () => {
+    if (!propuesta) return;
+    onColocarBlanca(propuesta.x, propuesta.y);
+    setPropuesta(null);
+  };
 
   const troneras = TRONERAS_REL.map((t) => ({ x: t.x * mesa.ancho, y: t.y * mesa.alto }));
 
@@ -361,11 +377,19 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
           </Svg>
 
           {bolas
-            // Las que ya están animando el hundido (detectadas en vivo o al
-            // confirmarse el embocado) no se dibujan acá: se ven quietas y
-            // "atascadas" en la boca si además se sigue pintando la bola
-            // normal por encima de `BolaHundiendo`.
-            .filter((b) => b.n !== 0 && !hundiendo.some((h) => h.n === b.n))
+            // Las que ya se marcaron como hundidas (`yaHundiendoRef`, NO el
+            // array `hundiendo` en sí) no se dibujan acá. Antes se excluían
+            // sólo mientras `hundiendo` tenía la entrada (~260ms de fade) —
+            // como la bola sigue en `bolas` hasta que el servidor confirma
+            // el tiro entero (que puede tardar bastante más que 260ms si
+            // otras bolas siguen en movimiento), apenas terminaba el fade
+            // volvía a dibujarse acá, quieta y opaca en el agujero, hasta
+            // que por fin llegaba la respuesta del servidor y desaparecía
+            // de golpe — el "entra, desaparece, se vuelve a ver un segundo y
+            // se va" reportado. `yaHundiendoRef` en cambio se mantiene hasta
+            // que la bola realmente sale de `bolas` (ver la poda más abajo),
+            // así que la exclusión dura todo lo que hace falta.
+            .filter((b) => b.n !== 0 && !yaHundiendoRef.current.has(b.n))
             .map((b) => {
               const pos = posiciones[b.n] ?? { x: b.x, y: b.y, rod: 0, dirX: 0, dirY: 0 };
               const color = b.n === 8 ? '#141414' : COLOR_BOLA[b.n] ?? '#999999';
@@ -420,6 +444,24 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
             </GestureDetector>
           ) : null}
 
+          {propuesta ? (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.bola,
+                styles.bolaFantasma,
+                {
+                  width: diametro,
+                  height: diametro,
+                  left: px(propuesta.x) - diametro / 2,
+                  top: py(propuesta.y) - diametro / 2,
+                },
+              ]}
+            >
+              <BolaSkinSvg numero={0} esRayada={false} color="#F8F8F2" esBlanca size={diametro} idInstancia={0} />
+            </View>
+          ) : null}
+
           {hundiendo.map((h) => (
             <BolaHundiendo
               key={h.id}
@@ -446,6 +488,31 @@ export function MesaPool({ mesa, bolas, posiciones, bolaEnMano, activo, lado, on
           ) : null}
         </View>
       </GestureDetector>
+
+      {propuesta ? (
+        // A propósito FUERA del `GestureDetector` de arriba: un `Pressable`
+        // anidado adentro de un `Gesture.Tap()` de gesture-handler compite
+        // por el toque con el gesto exterior (los dos pueden llegar a
+        // dispararse), así que estos dos botones van como hermanos del
+        // paño, no adentro — con el offset de `MARCO` sumado a mano para
+        // seguir alineados con la bola fantasma de ahí adentro.
+        <View
+          style={[
+            styles.confirmarFila,
+            {
+              left: MARCO + Math.min(Math.max(px(propuesta.x) - 44, 0), lado - 88),
+              top: MARCO + Math.min(py(propuesta.y) + diametro / 2 + 6, alto - 34),
+            },
+          ]}
+        >
+          <Pressable onPress={() => setPropuesta(null)} style={[styles.botonPropuesta, styles.botonCancelar]} hitSlop={8}>
+            <Ionicons name="close" size={18} color="#FFFFFF" />
+          </Pressable>
+          <Pressable onPress={confirmarPropuesta} style={[styles.botonPropuesta, styles.botonConfirmar]} hitSlop={8}>
+            <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -513,4 +580,20 @@ const styles = StyleSheet.create({
   // posición de bolas/troneras/taco, que siguen midiendo contra `felt`).
   banda: { position: 'absolute', borderRadius: 6, borderWidth: 5, borderColor: '#154D2A' },
   bola: { position: 'absolute', borderRadius: 999 },
+  bolaFantasma: { opacity: 0.55 },
+  confirmarFila: { position: 'absolute', flexDirection: 'row', gap: 8, zIndex: 10 },
+  botonPropuesta: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  botonCancelar: { backgroundColor: '#B23A3A' },
+  botonConfirmar: { backgroundColor: '#2E8B4A' },
 });

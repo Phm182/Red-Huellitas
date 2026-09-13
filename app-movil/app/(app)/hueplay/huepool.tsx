@@ -28,7 +28,11 @@ const POLL_MS = 4000;
 const DURACION_ANIM_MS = 900;
 const MS_POR_CUADRO_FISICA = 9;
 const DURACION_MIN_MS = 450;
-const DURACION_MAX_MS = 2400;
+// Antes 2400: un tiro fuerte de rompimiento puede andar en varios cientos de
+// cuadros reales; topeado tan bajo, se comprimía tanto que se veía "frenar
+// de golpe" en vez de perder velocidad gradual (ver el cambio de
+// `VEL_MINIMA` en motor.ts, que ataca la otra mitad del mismo problema).
+const DURACION_MAX_MS = 3600;
 
 function duracionDeMiTiro(trayectorias: Record<number, PuntoTrayectoria[]>): number {
   let cuadros = 0;
@@ -286,6 +290,15 @@ export default function HuePoolScreen() {
   const bolasEnMesa = tablero.bolas.filter((b) => b.enMesa && b.n !== 0 && b.n !== 8);
   const misRestantes = miGrupo ? bolasEnMesa.filter((b) => grupoDe(b.n) === miGrupo).length : null;
   const susRestantes = susGrupo ? bolasEnMesa.filter((b) => grupoDe(b.n) === susGrupo).length : null;
+  // Mesa abierta (nadie tiene grupo todavía): antes acá los dos lados
+  // mostraban "—" sin ninguna pista, aunque ya hubiese caído más de una bola
+  // en el rompimiento (mezclando lisas y rayadas) — no había forma de saber
+  // si ya entraron varias de cada lado. Mientras está abierta se muestra el
+  // progreso GENERAL de las 14 bolas de grupo (no por jugador, todavía no
+  // hay a quién asignárselo), separado en lisas/rayadas.
+  const mesaAbierta = tablero.grupoJ1 === null;
+  const lisasEnMesa = mesaAbierta ? bolasEnMesa.filter((b) => grupoDe(b.n) === 'lisas').length : null;
+  const rayadasEnMesa = mesaAbierta ? bolasEnMesa.filter((b) => grupoDe(b.n) === 'rayadas').length : null;
 
   const alturaHudFijo = 170;
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
@@ -329,33 +342,52 @@ export default function HuePoolScreen() {
 
   return (
     <View style={[styles.juego, { backgroundColor: colors.background }]}>
-      <View style={[styles.marcador, centeredContent]}>
-        <View style={styles.marcadorLado}>
-          {/* "Vos" pegado a MI etiqueta, no como separador flotando en el
-              medio — así apuntaba a los dos lados por igual y con el grupo
-              recién asignado (arranca en "Sin grupo" hasta la primera bola
-              legal) el marcador entero quedaba en "Sin grupo · Vos · Sin
-              grupo", sin ninguna pista de cuál lado era el propio. */}
-          <View style={styles.marcadorFilaLabel}>
-            <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
-              {miGrupo ? t(`hueplay.pool.${miGrupo}`) : t('hueplay.pool.sinGrupo')}
-            </Text>
-            <View style={[styles.pillVos, { backgroundColor: colors.primarySoft }]}>
-              <Text style={{ color: colors.primary, fontSize: 10, fontFamily: fonts.bodySemi }}>
-                {t('hueplay.pool.vos')}
-              </Text>
-            </View>
-          </View>
-          <Text style={[styles.marcadorValor, { color: colors.text }]}>{misRestantes ?? '—'}</Text>
-        </View>
-        <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.torneo.vs')}</Text>
-        <View style={styles.marcadorLado}>
-          <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
-            {susGrupo ? t(`hueplay.pool.${susGrupo}`) : t('hueplay.pool.sinGrupo')}
+      {mesaAbierta ? (
+        // Mesa abierta: todavía nadie tiene grupo asignado. Antes acá los
+        // dos lados mostraban "Sin grupo · —" sin ninguna pista, aunque ya
+        // hubiese caído más de una bola en el rompimiento — no había forma
+        // de saber si ya entraron varias mezcladas (lisas Y rayadas) y por
+        // eso la mesa sigue abierta. Un solo indicador compartido con el
+        // progreso real de las 14 bolas de grupo, todavía sin dueño.
+        <View style={[styles.marcadorAbierto, centeredContent]}>
+          <Text style={{ color: colors.textMuted, fontSize: 11, textTransform: 'uppercase' }}>
+            {t('hueplay.pool.mesaAbierta')}
           </Text>
-          <Text style={[styles.marcadorValor, { color: colors.text }]}>{susRestantes ?? '—'}</Text>
+          <View style={styles.marcadorAbiertoFila}>
+            <Text style={{ color: colors.text, fontSize: 13 }}>
+              {t('hueplay.pool.lisas')}: {7 - (lisasEnMesa ?? 7)}/7
+            </Text>
+            <Text style={{ color: colors.text, fontSize: 13 }}>
+              {t('hueplay.pool.rayadas')}: {7 - (rayadasEnMesa ?? 7)}/7
+            </Text>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={[styles.marcador, centeredContent]}>
+          <View style={styles.marcadorLado}>
+            {/* "Vos" pegado a MI etiqueta, no como separador flotando en el
+                medio — así apuntaba a los dos lados por igual. */}
+            <View style={styles.marcadorFilaLabel}>
+              <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
+                {miGrupo ? t(`hueplay.pool.${miGrupo}`) : t('hueplay.pool.sinGrupo')}
+              </Text>
+              <View style={[styles.pillVos, { backgroundColor: colors.primarySoft }]}>
+                <Text style={{ color: colors.primary, fontSize: 10, fontFamily: fonts.bodySemi }}>
+                  {t('hueplay.pool.vos')}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.marcadorValor, { color: colors.text }]}>{misRestantes ?? '—'}</Text>
+          </View>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('hueplay.torneo.vs')}</Text>
+          <View style={styles.marcadorLado}>
+            <Text style={[styles.marcadorLabel, { color: colors.textMuted }]}>
+              {susGrupo ? t(`hueplay.pool.${susGrupo}`) : t('hueplay.pool.sinGrupo')}
+            </Text>
+            <Text style={[styles.marcadorValor, { color: colors.text }]}>{susRestantes ?? '—'}</Text>
+          </View>
+        </View>
+      )}
 
       {desafio.esMiTurno ? (
         <Text style={[styles.turno, { color: tiempoUrgente ? colors.danger : colors.primary }]}>
@@ -397,6 +429,8 @@ const styles = StyleSheet.create({
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15 },
   juego: { flex: 1, paddingTop: 8, position: 'relative' },
   marcador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 4 },
+  marcadorAbierto: { alignItems: 'center', marginBottom: 4, gap: 2 },
+  marcadorAbiertoFila: { flexDirection: 'row', gap: 20 },
   marcadorLado: { alignItems: 'center' },
   marcadorFilaLabel: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   marcadorLabel: { fontSize: 11, textTransform: 'uppercase' },

@@ -1355,8 +1355,9 @@
       "lisas": "Solids",
       "rayadas": "Stripes",
       "sinGrupo": "No group yet",
+      "mesaAbierta": "Open table",
       "tuTurno": "Your turn",
-      "bolaEnMano": "Ball in hand: tap the table to place it",
+      "bolaEnMano": "Ball in hand: tap the table, then confirm where to place it",
       "turnoRival": "{{rival}}'s turn",
       "tiempoNeto": "Net time used: {{usados}}/{{tope}}s"
     },

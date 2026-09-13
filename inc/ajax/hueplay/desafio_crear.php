@@ -64,9 +64,14 @@ if ($contraIA) {
         json_error('Ese usuario no existe', 404);
     }
 
-    $plazoTurnoSegundos = 86400;
+    $plazoTurnoSegundos = 604800;
     if ($modo === 'turnos') {
-        $plazoTurnoSegundos = isset($_POST['plazoTurnoSegundos']) ? (int) $_POST['plazoTurnoSegundos'] : 86400;
+        // Si el cliente no manda nada, el plazo por turno queda en el TECHO
+        // (7 días) — pedido explícito del usuario: "si no elegís nada, tiene
+        // que ser el plazo máximo", no un valor intermedio que puede vencer
+        // la partida antes de lo esperado a quien no configuró nada a
+        // propósito. Antes acá caía en 86400 (1 día).
+        $plazoTurnoSegundos = isset($_POST['plazoTurnoSegundos']) ? (int) $_POST['plazoTurnoSegundos'] : 604800;
         // 30 segundos a 7 días. El piso bajo permite partidas casi en tiempo
         // real (los dos mirando el celular); el techo sigue chico a propósito
         // para que un duelo no quede colgado indefinidamente.

@@ -961,7 +961,7 @@ function rh_juego_serializar_desafio(mysqli $conn, array $d, int $yo): array
         ],
         'creadoEn' => $d['CreatedAt'],
         'expiraEn' => $d['ExpiraEn'],
-        'plazoTurnoSegundos' => (int) ($d['PlazoTurnoSegundos'] ?? 86400),
+        'plazoTurnoSegundos' => (int) ($d['PlazoTurnoSegundos'] ?? 604800),
         'esRivalIA' => rh_juego_es_bot($conn, $otroId),
     ];
 }

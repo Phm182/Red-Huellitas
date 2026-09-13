@@ -45,7 +45,9 @@ export default function SalaCrearScreen() {
   const [completarConIA, setCompletarConIA] = useState(true);
   const [esPublica, setEsPublica] = useState(true);
   const [politicaAbandono, setPoliticaAbandono] = useState<PoliticaAbandonoSala>('espera');
-  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(86400);
+  // Si no se toca el selector, el plazo por turno queda en el máximo (7
+  // días) — mismo criterio que `retar.tsx`/`torneo-crear.tsx`.
+  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(604800);
   const [plazoPartidaMinutos, setPlazoPartidaMinutos] = useState(0);
 
   const [busqueda, setBusqueda] = useState('');

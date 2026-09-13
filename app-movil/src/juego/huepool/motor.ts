@@ -36,7 +36,19 @@ export const TOPE_SEGUNDOS_NETOS = 240;
 // exponencial se notaba en pocos cuadros). Más cerca de 1 estira la
 // desaceleración — la bola desliza un poco más, como en una mesa real.
 const FRICCION = 0.991;
-const VEL_MINIMA = 0.04;
+// Antes 0.04: con fricción puramente multiplicativa, la "cola" final (donde
+// la velocidad ya es chica pero todavía no llegó al corte) dura CIENTOS de
+// cuadros extra — proporcionalmente mucho más en un tiro fuerte (más cuadros
+// totales) que en uno suave. Como la animación (`reproducir()` en
+// MesaPool.tsx) reparte un tiempo de pantalla TOPEADO entre todos los
+// cuadros por igual, un tiro fuerte con esa cola larga terminaba
+// "atropellado": se veía frenar de golpe en vez de ir perdiendo velocidad
+// gradual. Subir el corte recorta esa cola por igual en TODOS los tiros
+// (en cuadros absolutos, no proporcional), lo cual angosta bastante más el
+// hueco entre "cuadros reales" y "tiempo de pantalla" para los tiros
+// fuertes — reportado real probando en el celular ("tiro maximo... frena
+// brusco, tiros despacio anda bastante mejor").
+const VEL_MINIMA = 0.22;
 const MAX_FRAMES = 1400;
 
 type Cuerpo = {

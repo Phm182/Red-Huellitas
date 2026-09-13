@@ -32,7 +32,9 @@ export default function TorneoCrearScreen() {
   const [formato, setFormato] = useState<TorneoFormato>('eliminacion');
   const [tamano, setTamano] = useState(8);
   const [esPublico, setEsPublico] = useState(true);
-  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(86400);
+  // Si no se toca el selector, el plazo por turno queda en el máximo (7
+  // días) — mismo criterio que `retar.tsx`/`sala-crear.tsx`.
+  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(604800);
   const [plazoRondaMinutos, setPlazoRondaMinutos] = useState(0);
 
   const [busqueda, setBusqueda] = useState('');

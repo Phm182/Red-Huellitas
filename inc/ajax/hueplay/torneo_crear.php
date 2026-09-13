@@ -29,7 +29,8 @@ if (!in_array($tamano, RH_TORNEO_TAMANOS, true)) {
 
 $esPublico = !isset($_POST['esPublico']) || $_POST['esPublico'] === '1' || $_POST['esPublico'] === 1 || $_POST['esPublico'] === true;
 
-$plazoTurnoSegundos = (int) ($_POST['plazoTurnoSegundos'] ?? 86400);
+// Si el cliente no manda nada, el máximo (7 días) — no un valor intermedio.
+$plazoTurnoSegundos = (int) ($_POST['plazoTurnoSegundos'] ?? 604800);
 if ($plazoTurnoSegundos < 30 || $plazoTurnoSegundos > 604800) {
     json_error('El plazo por turno debe ser entre 30 segundos y 7 días');
 }

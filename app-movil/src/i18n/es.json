@@ -1377,8 +1377,9 @@
       "lisas": "Lisas",
       "rayadas": "Rayadas",
       "sinGrupo": "Sin grupo",
+      "mesaAbierta": "Mesa abierta",
       "tuTurno": "Tu turno",
-      "bolaEnMano": "Bola en mano: tocá la mesa para ubicarla",
+      "bolaEnMano": "Bola en mano: tocá la mesa y confirmá dónde dejarla",
       "turnoRival": "Turno de {{rival}}",
       "tiempoNeto": "Tiempo neto usado: {{usados}}/{{tope}}s"
     },

@@ -73,7 +73,11 @@ export default function RetarScreen() {
   const [rivales, setRivales] = useState<HuePlayRival[]>([]);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState<number | null>(null);
-  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(86400);
+  // Si no se toca el selector, el plazo por turno queda en el máximo (7
+  // días) — pedido explícito: "si no elegís nada, tiene que ser el plazo
+  // máximo", no uno intermedio que puede vencer la partida antes de lo
+  // esperado a quien no configuró nada a propósito.
+  const [plazoTurnoSegundos, setPlazoTurnoSegundos] = useState(604800);
   const [plazoPartidaMinutos, setPlazoPartidaMinutos] = useState(0);
   const [metaGoles, setMetaGoles] = useState(GOLES_PARA_GANAR_DEFAULT);
   const [error, setError] = useState<string | null>(null);
