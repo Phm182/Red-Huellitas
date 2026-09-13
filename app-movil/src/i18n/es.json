@@ -1393,6 +1393,20 @@
       "mapaClasico": "Clásico",
       "mapaAleatorio": "Aleatorio"
     },
+    "tetris": {
+      "titulo": "HueTetris",
+      "comoSeJuega": "Acomodá las piezas que caen para completar filas enteras — se limpian y suman puntos. Subís de nivel con el tiempo, y cada nivel cae más rápido: aguantá lo que puedas.",
+      "next": "Próxima",
+      "puntos": "Puntos",
+      "lineas": "Líneas",
+      "nivel": "Nivel"
+    },
+    "columns": {
+      "titulo": "HueColumns",
+      "comoSeJuega": "Caen gemas de a 3 en columna: movelas y girá el orden para juntar 3 o más del mismo color en fila, columna o diagonal — explotan en cadena. Mismo criterio que HueTetris: subís de nivel con el tiempo, cada vez más rápido.",
+      "next": "Próxima",
+      "combo": "Combo"
+    },
     "sala": {
       "cuantosJugadores": "¿Cuántos jugadores?",
       "completarConIA": "Completar con la IA",

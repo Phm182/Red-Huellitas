@@ -76,6 +76,15 @@ const RH_JUEGOS = [
     // perfecta; el margen extra es el mismo criterio "generoso, no exacto"
     // del resto de la tabla.
     'huepacman' => ['modo' => 'puntaje', 'maxPuntos' => 7500, 'minSegundos' => 20],
+    // HueTetris/HueColumns: juegos SIN FIN natural (suben de nivel con el
+    // tiempo hasta que se pierde) — no hay una "corrida perfecta" contra la
+    // que calcular un techo exacto como el resto de la tabla.
+    // `rh_juego_puntaje_valido()` sólo RECORTA al techo (no rechaza), así
+    // que un techo generoso no bloquea a nadie: sólo hace falta que ningún
+    // valor real de una sesión lo alcance. `minSegundos` en cambio sí
+    // importa: bloquea un envío con 0 duración de un cliente corrupto.
+    'huetetris' => ['modo' => 'puntaje', 'maxPuntos' => 999999, 'minSegundos' => 15],
+    'huecolumns' => ['modo' => 'puntaje', 'maxPuntos' => 999999, 'minSegundos' => 15],
     // HueGotchi no se juega por partidas: suma de a poco con cada acción de
     // cuidado. No se puede retar, y el puntaje lo pone el servidor.
     'huegotchi' => ['modo' => 'cuidado', 'maxPuntos' => 100, 'minSegundos' => 0],
@@ -167,6 +176,11 @@ function rh_juego_titulo(string $codigo): string
         'huedoku6' => 'HueDoku 6x6',
         'huedoku9facil' => 'HueDoku 9x9 Fácil',
         'huedoku9dificil' => 'HueDoku 9x9 Difícil',
+        // Faltaba también para HuePacMan (se veía el código crudo en las
+        // notificaciones, "huepacman", en vez de un nombre) — de paso.
+        'huepacman' => 'HuePacMan',
+        'huetetris' => 'HueTetris',
+        'huecolumns' => 'HueColumns',
     ];
     return $nombres[$codigo] ?? $codigo;
 }
@@ -505,7 +519,10 @@ function rh_hueplay_ruta_duelo(string $codigo, int $desafioId, int $semilla = 0)
     if (isset($variantesDoku[$codigo])) {
         return '/(app)/hueplay/huedoku?desafioId=' . $desafioId . '&semilla=' . $semilla . '&variante=' . $variantesDoku[$codigo];
     }
-    $otras = ['huememo' => 'huememo', 'huetrivia' => 'huetrivia', 'huezip' => 'huezip', 'huepacman' => 'huepacman'];
+    $otras = [
+        'huememo' => 'huememo', 'huetrivia' => 'huetrivia', 'huezip' => 'huezip', 'huepacman' => 'huepacman',
+        'huetetris' => 'huetetris', 'huecolumns' => 'huecolumns',
+    ];
     $pantalla = $otras[$codigo] ?? 'huematch';
     return '/(app)/hueplay/' . $pantalla . '?desafioId=' . $desafioId . '&semilla=' . $semilla;
 }

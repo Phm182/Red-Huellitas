@@ -218,6 +218,22 @@ const JUEGOS: JuegoDef[] = [
     ruta: '/(app)/hueplay/huepacman',
   },
   {
+    id: 'huetetris',
+    titulo: 'HueTetris',
+    bajada: 'El clásico de las piezas que caen — subís de nivel con el tiempo, cada vez más rápido.',
+    icono: 'view-grid',
+    color: '#31C7E8',
+    ruta: '/(app)/hueplay/huetetris',
+  },
+  {
+    id: 'huecolumns',
+    titulo: 'HueColumns',
+    bajada: 'Gemas que caen de a 3 — juntá 3 o más del mismo color para hacerlas explotar en cadena.',
+    icono: 'diamond-stone',
+    color: '#B060D0',
+    ruta: '/(app)/hueplay/huecolumns',
+  },
+  {
     id: 'huegotchi',
     titulo: 'HueGotchi',
     bajada: 'Cuidá a tu mascota: alimentala, jugá, bañala y enseñale trucos.',

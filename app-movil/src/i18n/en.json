@@ -1371,6 +1371,20 @@
       "mapaClasico": "Classic",
       "mapaAleatorio": "Random"
     },
+    "tetris": {
+      "titulo": "HueTetris",
+      "comoSeJuega": "Arrange the falling pieces to complete full rows — they clear and score points. You level up over time, and each level falls faster: hold on as long as you can.",
+      "next": "Next",
+      "puntos": "Score",
+      "lineas": "Lines",
+      "nivel": "Level"
+    },
+    "columns": {
+      "titulo": "HueColumns",
+      "comoSeJuega": "Gems fall in columns of 3: move them and cycle their order to line up 3 or more of the same color in a row, column, or diagonal — they chain-explode. Same rule as HueTetris: you level up over time, faster each time.",
+      "next": "Next",
+      "combo": "Combo"
+    },
     "sala": {
       "cuantosJugadores": "How many players?",
       "completarConIA": "Fill with the AI",

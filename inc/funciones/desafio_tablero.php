@@ -24,7 +24,7 @@ require_once __DIR__ . '/pool.php';
  * no se juega por partidas, así que no hay un número que comparar.
  */
 const RH_JUEGOS_DUELO = [
-    'huematch', 'huememo', 'huetrivia', 'huezip', 'huepacman',
+    'huematch', 'huememo', 'huetrivia', 'huezip', 'huepacman', 'huetetris', 'huecolumns',
     'hueconecta', 'huedamas', 'hueajedrez', 'huereversi', 'huetateti', 'huesoccer', 'huepool',
     'huedoku6', 'huedoku9facil', 'huedoku9dificil',
 ];
