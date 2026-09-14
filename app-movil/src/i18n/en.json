@@ -1377,13 +1377,15 @@
       "next": "Next",
       "puntos": "Score",
       "lineas": "Lines",
-      "nivel": "Level"
+      "nivel": "Level",
+      "ayudaControles": "Tap to rotate · drag sideways to move · drag down to hard-drop"
     },
     "columns": {
       "titulo": "HueColumns",
       "comoSeJuega": "Gems fall in columns of 3: move them and cycle their order to line up 3 or more of the same color in a row, column, or diagonal — they chain-explode. Same rule as HueTetris: you level up over time, faster each time.",
       "next": "Next",
-      "combo": "Combo"
+      "combo": "Combo",
+      "ayudaControles": "Tap to cycle order · drag sideways to move · drag down to hard-drop"
     },
     "sala": {
       "cuantosJugadores": "How many players?",

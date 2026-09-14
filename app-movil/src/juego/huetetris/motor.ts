@@ -111,7 +111,6 @@ export type EstadoTetris = {
   terminado: boolean;
   duracionSegundos: number;
   tiempoCaidaAcumulado: number;
-  cayendoRapido: boolean;
   /** Última tanda de líneas limpiadas (para flash visual), se vacía al cuadro siguiente. */
   lineasLimpiadasAhora: number[];
 };
@@ -186,7 +185,6 @@ export function crearEstadoInicial(semilla: number): EstadoTetris {
     terminado: false,
     duracionSegundos: 0,
     tiempoCaidaAcumulado: 0,
-    cayendoRapido: false,
     lineasLimpiadasAhora: [],
   };
   generadores.set(estado, gen);
@@ -268,10 +266,16 @@ export function caidaDura(estado: EstadoTetris): void {
 
 /**
  * Un cuadro de simulación: acumula `dt` y aplica la caída automática según
- * el nivel (o mucho más rápido si `estado.cayendoRapido`, la caída suave
- * mientras se mantiene apretado abajo). También actualiza el reloj y el
- * nivel — ver la nota de diseño arriba del archivo sobre por qué es por
- * TIEMPO y no por líneas.
+ * el nivel. También actualiza el reloj y el nivel — ver la nota de diseño
+ * arriba del archivo sobre por qué es por TIEMPO y no por líneas.
+ *
+ * No hay caída "suave" (mantener apretado para acelerar): el control es
+ * tocar/arrastrar sobre el tablero — deslizar hacia abajo dispara
+ * `caidaDura()` directo, sin paso intermedio. Antes existía un modo
+ * `cayendoRapido` con un botón de mantener apretado, pero mezclaba mal con
+ * el acumulado de esta función (a veces la caída se sentía suave, a veces
+ * saltaba 2-3 bloques de golpe — bug real reportado) y quedó afuera al
+ * rediseñar los controles.
  */
 export function actualizar(estado: EstadoTetris, dt: number): void {
   if (estado.terminado) return;
@@ -281,16 +285,13 @@ export function actualizar(estado: EstadoTetris, dt: number): void {
   const nivelNuevo = Math.min(NIVEL_MAX, Math.floor(estado.duracionSegundos / SEGUNDOS_POR_NIVEL));
   if (nivelNuevo !== estado.nivel) estado.nivel = nivelNuevo;
 
-  const intervalo = estado.cayendoRapido ? Math.min(intervaloCaida(estado.nivel), 0.06) : intervaloCaida(estado.nivel);
+  const intervalo = intervaloCaida(estado.nivel);
   estado.tiempoCaidaAcumulado += dt;
   while (estado.tiempoCaidaAcumulado >= intervalo && !estado.terminado) {
     estado.tiempoCaidaAcumulado -= intervalo;
     if (!moverPieza(estado, 0, 1)) {
-      if (estado.cayendoRapido) estado.puntaje += 1; // caída suave: 1 punto por celda, igual que el resto del catálogo de Tetris modernos
       fijarPieza(estado);
       break; // el tablero cambió de raíz (pieza nueva u otra fijada): no sigue consumiendo el acumulado con la pieza vieja
-    } else if (estado.cayendoRapido) {
-      estado.puntaje += 1;
     }
   }
 }

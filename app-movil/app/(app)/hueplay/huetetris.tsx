@@ -3,10 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
-import { ControlesCaida } from '../../../src/juego/comun/ControlesCaida';
+import { crearGestoCaida } from '../../../src/juego/comun/useGestoCaida';
 import {
   ALTO_OCULTO,
   ALTO_VISIBLE,
@@ -91,9 +92,12 @@ export default function HueTetrisScreen() {
     };
   }, []);
 
+  // El control ahora es gestual (tocar/arrastrar sobre el propio tablero,
+  // ver `useGestoCaida.ts`) — ya no hay una fila de botones abajo, sólo el
+  // renglón de ayuda de una línea.
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const ALTURA_HUD = 90;
-  const ALTURA_CONTROLES = 130;
+  const ALTURA_CONTROLES = 40;
   const altoParaTablero = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 24;
   const anchoDisponible = width - 32 - 150; // deja lugar a la columna de NEXT/LINE/LEVEL al costado
   const tileSize = Math.max(8, Math.min(Math.floor(anchoDisponible / ANCHO), Math.floor(altoParaTablero / ALTO_VISIBLE), 26));
@@ -211,9 +215,6 @@ export default function HueTetrisScreen() {
     if (estadoRef.current) rotarPieza(estadoRef.current);
     hapticLeve();
   }, []);
-  const caidaRapida = useCallback((activa: boolean) => {
-    if (estadoRef.current) estadoRef.current.cayendoRapido = activa;
-  }, []);
   const caidaInstantanea = useCallback(() => {
     if (estadoRef.current) {
       caidaDura(estadoRef.current);
@@ -319,17 +320,28 @@ export default function HueTetrisScreen() {
   const sombra = calcularSombra(estado);
   const siguienteForma = FORMAS[estado.siguiente][0]!;
 
+  const gesto = crearGestoCaida({
+    tileSize,
+    onIzquierda: izquierda,
+    onDerecha: derecha,
+    onRotar: rotar,
+    onCaidaDura: caidaInstantanea,
+    activo: fase === 'jugando',
+  });
+
   return (
     <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
       <View style={styles.filaPrincipal}>
-        <TableroTetris
-          tablero={estado.tablero}
-          actual={estado.actual}
-          sombra={sombra}
-          siguiente={estado.siguiente}
-          tileSize={tileSize}
-          filasFlash={filasFlash}
-        />
+        <GestureDetector gesture={gesto}>
+          <TableroTetris
+            tablero={estado.tablero}
+            actual={estado.actual}
+            sombra={sombra}
+            siguiente={estado.siguiente}
+            tileSize={tileSize}
+            filasFlash={filasFlash}
+          />
+        </GestureDetector>
 
         <View style={styles.panelLateral}>
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
@@ -370,15 +382,7 @@ export default function HueTetrisScreen() {
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 4 }}>{error}</Text> : null}
 
-      <ControlesCaida
-        onIzquierda={izquierda}
-        onDerecha={derecha}
-        onRotar={rotar}
-        onCaidaRapida={caidaRapida}
-        onCaidaDura={caidaInstantanea}
-        color={colors.primary}
-        colorFondo={colors.primarySoft}
-      />
+      <Text style={[styles.ayudaControles, { color: colors.textMuted }]}>{t('hueplay.tetris.ayudaControles')}</Text>
     </View>
   );
 }
@@ -404,4 +408,5 @@ const styles = StyleSheet.create({
   cajaLabel: { fontSize: 9, textTransform: 'uppercase', fontFamily: fonts.bodySemi },
   cajaValor: { fontSize: 18, fontFamily: fonts.displaySemi, marginTop: 2 },
   previewGrilla: { marginTop: 4 },
+  ayudaControles: { fontSize: 11, textAlign: 'center', marginTop: 8 },
 });

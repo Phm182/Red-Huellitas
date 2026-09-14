@@ -1399,13 +1399,15 @@
       "next": "Próxima",
       "puntos": "Puntos",
       "lineas": "Líneas",
-      "nivel": "Nivel"
+      "nivel": "Nivel",
+      "ayudaControles": "Tocá para rotar · deslizá a los costados para mover · deslizá hacia abajo para bajar de golpe"
     },
     "columns": {
       "titulo": "HueColumns",
       "comoSeJuega": "Caen gemas de a 3 en columna: movelas y girá el orden para juntar 3 o más del mismo color en fila, columna o diagonal — explotan en cadena. Mismo criterio que HueTetris: subís de nivel con el tiempo, cada vez más rápido.",
       "next": "Próxima",
-      "combo": "Combo"
+      "combo": "Combo",
+      "ayudaControles": "Tocá para girar el orden · deslizá a los costados para mover · deslizá hacia abajo para bajar de golpe"
     },
     "sala": {
       "cuantosJugadores": "¿Cuántos jugadores?",

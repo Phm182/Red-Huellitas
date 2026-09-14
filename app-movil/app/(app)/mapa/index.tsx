@@ -315,7 +315,21 @@ export default function MapaScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesion, cargarPuntos]);
 
-  /** Al soltar el mapa, sólo recargar si se alejó de verdad del último pedido. */
+  const moverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * Al soltar el mapa, sólo recargar si se alejó de verdad del último pedido
+   * — y con un debounce corto (600ms) antes de disparar el pedido.
+   *
+   * Sin el debounce, arrastrar varias veces seguidas (paneos rápidos) dispara
+   * un `cargarPuntos()` por cada suelte, cada uno reescribiendo `puntos` y
+   * por lo tanto el diccionario de `<Images>` de `MapaLienzo.tsx` —
+   * actualizar las imágenes del estilo MIENTRAS el motor nativo todavía está
+   * asentando el paneo anterior es justo el patrón que reportan varios
+   * crashes de MapLibre en iOS (fotos dentro de la fuente de datos). El
+   * debounce le da un respiro al mapa antes de tocarle las imágenes de
+   * nuevo.
+   */
   const onMover = useCallback(
     (c: { lat: number; lng: number }) => {
       // Si el mapa se movió porque el usuario lo arrastró, deja de seguirlo:
@@ -328,11 +342,18 @@ export default function MapaScreen() {
       const dLng = Math.abs(c.lng - previo.lng);
       // ~2 km. Menos que eso ya está cubierto por el radio que se pidió.
       if (dLat > 0.02 || dLng > 0.02) {
-        cargarPuntos(c);
+        if (moverDebounceRef.current) clearTimeout(moverDebounceRef.current);
+        moverDebounceRef.current = setTimeout(() => cargarPuntos(c), 600);
       }
     },
     [cargarPuntos]
   );
+
+  useEffect(() => {
+    return () => {
+      if (moverDebounceRef.current) clearTimeout(moverDebounceRef.current);
+    };
+  }, []);
 
   /**
    * Centrar en mi ubicación real.
@@ -444,6 +465,19 @@ export default function MapaScreen() {
       <View style={StyleSheet.absoluteFill}>
         {sesion && centro ? (
           <MapaLienzo
+            // Fuerza a React a desmontar y volver a montar TODO el árbol del
+            // mapa cuando cambia claro/oscuro, en vez de dejar que MapLibre
+            // recargue el estilo con las mismas capas/fuentes ya montadas.
+            // Hay un bug conocido de la librería (maplibre-react-native#1647,
+            // confirmado en Android con el mismo síntoma) donde una capa/
+            // fuente que quedó con una referencia "vieja" de ANTES del
+            // recargado del estilo crashea al intentar limpiarse — coincide
+            // con el crash real de iOS reportado acá (SIGSEGV en el hilo
+            // principal, adentro de MapLibre.framework, idéntico en dos
+            // builds con distinta versión de la librería). Remontar de cero
+            // es más caro (se pierde el zoom/paneo actual) pero no deja
+            // ninguna referencia vieja dando vueltas.
+            key={esOscuro ? 'oscuro' : 'claro'}
             sesion={sesion}
             puntos={puntos}
             centro={centro}

@@ -3,10 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
-import { ControlesCaida } from '../../../src/juego/comun/ControlesCaida';
+import { crearGestoCaida } from '../../../src/juego/comun/useGestoCaida';
 import {
   ALTO_OCULTO,
   ALTO_VISIBLE,
@@ -75,9 +76,11 @@ export default function HueColumnsScreen() {
     };
   }, []);
 
+  // El control es gestual sobre el propio tablero (ver `useGestoCaida.ts`) —
+  // no hay fila de botones, sólo el renglón de ayuda de una línea.
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const ALTURA_HUD = 90;
-  const ALTURA_CONTROLES = 130;
+  const ALTURA_CONTROLES = 40;
   const altoParaTablero = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 24;
   const anchoDisponible = width - 32 - 150;
   const tileSize = Math.max(10, Math.min(Math.floor(anchoDisponible / ANCHO), Math.floor(altoParaTablero / ALTO_VISIBLE), 34));
@@ -196,9 +199,6 @@ export default function HueColumnsScreen() {
     if (estadoRef.current) rotarTrio(estadoRef.current);
     hapticLeve();
   }, []);
-  const caidaRapida = useCallback((activa: boolean) => {
-    if (estadoRef.current) estadoRef.current.cayendoRapido = activa;
-  }, []);
   const caidaInstantanea = useCallback(() => {
     if (estadoRef.current) {
       caidaDura(estadoRef.current);
@@ -303,10 +303,21 @@ export default function HueColumnsScreen() {
   if (!estado) return null;
   const sombra = calcularSombra(estado);
 
+  const gesto = crearGestoCaida({
+    tileSize,
+    onIzquierda: izquierda,
+    onDerecha: derecha,
+    onRotar: rotar,
+    onCaidaDura: caidaInstantanea,
+    activo: fase === 'jugando',
+  });
+
   return (
     <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
       <View style={styles.filaPrincipal}>
-        <TableroColumns tablero={estado.tablero} actual={estado.actual} sombra={sombra} tileSize={tileSize} celdasFlash={celdasFlash} />
+        <GestureDetector gesture={gesto}>
+          <TableroColumns tablero={estado.tablero} actual={estado.actual} sombra={sombra} tileSize={tileSize} celdasFlash={celdasFlash} />
+        </GestureDetector>
 
         <View style={styles.panelLateral}>
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
@@ -334,15 +345,7 @@ export default function HueColumnsScreen() {
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 4 }}>{error}</Text> : null}
 
-      <ControlesCaida
-        onIzquierda={izquierda}
-        onDerecha={derecha}
-        onRotar={rotar}
-        onCaidaRapida={caidaRapida}
-        onCaidaDura={caidaInstantanea}
-        color={colors.primary}
-        colorFondo={colors.primarySoft}
-      />
+      <Text style={[styles.ayudaControles, { color: colors.textMuted }]}>{t('hueplay.columns.ayudaControles')}</Text>
     </View>
   );
 }
@@ -368,4 +371,5 @@ const styles = StyleSheet.create({
   cajaLabel: { fontSize: 9, textTransform: 'uppercase', fontFamily: fonts.bodySemi },
   cajaValor: { fontSize: 18, fontFamily: fonts.displaySemi, marginTop: 2 },
   previewFila: { marginTop: 4, alignItems: 'center' },
+  ayudaControles: { fontSize: 11, textAlign: 'center', marginTop: 8 },
 });

@@ -41,7 +41,6 @@ export type EstadoColumns = {
   terminado: boolean;
   duracionSegundos: number;
   tiempoCaidaAcumulado: number;
-  cayendoRapido: boolean;
   /** Casillas limpiadas en el último cuadro (para el flash visual), `"fila,col"`. Se vacía cada cuadro. */
   limpiadasAhora: string[];
   /** true un instante mientras el motor está resolviendo la cascada de matches — el jugador no controla nada en ese rato. */
@@ -79,7 +78,6 @@ export function crearEstadoInicial(semilla: number): EstadoColumns {
     terminado: false,
     duracionSegundos: 0,
     tiempoCaidaAcumulado: 0,
-    cayendoRapido: false,
     limpiadasAhora: [],
     resolviendo: false,
   };
@@ -221,6 +219,12 @@ export function caidaDura(estado: EstadoColumns): void {
   fijarTrio(estado);
 }
 
+/**
+ * No hay caída "suave" — el control es tocar/arrastrar sobre el tablero;
+ * deslizar hacia abajo dispara `caidaDura()` directo. Ver la nota
+ * equivalente en `huetetris/motor.ts::actualizar()` sobre por qué se sacó
+ * el modo de mantener apretado.
+ */
 export function actualizar(estado: EstadoColumns, dt: number): void {
   if (estado.terminado) return;
   estado.limpiadasAhora = [];
@@ -229,16 +233,13 @@ export function actualizar(estado: EstadoColumns, dt: number): void {
   const nivelNuevo = Math.min(NIVEL_MAX, Math.floor(estado.duracionSegundos / SEGUNDOS_POR_NIVEL));
   if (nivelNuevo !== estado.nivel) estado.nivel = nivelNuevo;
 
-  const intervalo = estado.cayendoRapido ? Math.min(intervaloCaida(estado.nivel), 0.06) : intervaloCaida(estado.nivel);
+  const intervalo = intervaloCaida(estado.nivel);
   estado.tiempoCaidaAcumulado += dt;
   while (estado.tiempoCaidaAcumulado >= intervalo && !estado.terminado) {
     estado.tiempoCaidaAcumulado -= intervalo;
     if (!moverTrio(estado, 0, 1)) {
-      if (estado.cayendoRapido) estado.puntaje += 1;
       fijarTrio(estado);
       break;
-    } else if (estado.cayendoRapido) {
-      estado.puntaje += 1;
     }
   }
 }
