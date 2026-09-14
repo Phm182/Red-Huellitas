@@ -246,9 +246,23 @@ export function MapaLienzo({
    */
   const brujula = useBrujula(true);
 
-  // La animación sólo corre si hay algo que animar.
+  /**
+   * Recién true cuando MapLibre terminó de cargar el estilo (tiles/sprites
+   * del `mapStyle` remoto). Antes de eso, `useRelojGrupo` de abajo NO debe
+   * arrancar: escribe 9 propiedades de paint por cuadro (80ms) en las capas
+   * del anillo/brillo, y si esas escrituras llegan mientras el motor nativo
+   * todavía está construyendo el árbol de capas del estilo, se pisa con esa
+   * construcción — que es exactamente la firma del crash real reportado en
+   * iOS (SIGSEGV adentro de MapLibre.framework, siempre a los pocos segundos
+   * de abrir el mapa, nunca por algo que hizo el usuario). Con el mapa recién
+   * montado no hay drama en perderse el giro de los primeros cuadros: el
+   * anillo igual arranca en cuanto el estilo está listo.
+   */
+  const [estiloListo, setEstiloListo] = useState(false);
+
+  // La animación sólo corre si hay algo que animar Y el estilo ya cargó.
   const hayGrupos = puntos.length > 1;
-  const { giroRad, brilloOffset, brilloOpacidad } = useRelojGrupo(hayGrupos);
+  const { giroRad, brilloOffset, brilloOpacidad } = useRelojGrupo(hayGrupos && estiloListo);
   const anillo = anilloDeCapas(giroRad);
 
   /**
@@ -319,6 +333,7 @@ export function MapaLienzo({
           const c = e.nativeEvent?.center;
           if (c) onMover?.({ lat: c[1], lng: c[0] });
         }}
+        onDidFinishLoadingStyle={() => setEstiloListo(true)}
       >
         <Camera
           ref={camara}
