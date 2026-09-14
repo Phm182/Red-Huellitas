@@ -64,9 +64,11 @@
     "@types/react": "~19.2.2",
     "@types/supercluster": "^7.1.3",
     "@types/three": "^0.185.1",
+    "patch-package": "^8.0.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

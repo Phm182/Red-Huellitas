@@ -1,0 +1,15 @@
+diff --git a/node_modules/@maplibre/maplibre-react-native/ios/components/images/MLRNImagesComponentView.mm b/node_modules/@maplibre/maplibre-react-native/ios/components/images/MLRNImagesComponentView.mm
+index acff651..361b473 100644
+--- a/node_modules/@maplibre/maplibre-react-native/ios/components/images/MLRNImagesComponentView.mm
++++ b/node_modules/@maplibre/maplibre-react-native/ios/components/images/MLRNImagesComponentView.mm
+@@ -23,6 +23,10 @@ using namespace facebook::react;
+   MLRNImages *_view;
+ }
+ 
+++ (BOOL)shouldBeRecycled {
++  return NO;
++}
++
+ - (instancetype)initWithFrame:(CGRect)frame {
+   if (self = [super initWithFrame:frame]) {
+     static const auto defaultProps = std::make_shared<const MLRNImagesProps>();
