@@ -74,7 +74,14 @@
     },
     "plugins": [
       "expo-router",
-      "@maplibre/maplibre-react-native",
+      [
+        "@maplibre/maplibre-react-native",
+        {
+          "ios": {
+            "nativeVersion": "6.26.1"
+          }
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       [
