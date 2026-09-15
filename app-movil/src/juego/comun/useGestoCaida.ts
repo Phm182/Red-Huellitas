@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 
@@ -51,56 +52,70 @@ export function useGestoCaida(opts: {
   const yaCayoDuro = useSharedValue(false);
   const huboMovimiento = useSharedValue(false);
 
-  return Gesture.Pan()
-    .enabled(opts.activo)
-    // Sin esto, un toque real (con casi cero movimiento) puede no llegar
-    // NUNCA a activar el gesto -- `Gesture.Pan()` por default exige un
-    // mínimo de arrastre antes de reconocerse, y si ese mínimo es mayor a
-    // `UMBRAL_TAP_PX` el toque para rotar directamente no dispara `onEnd`
-    // (reportado real: "no anda ni con tap ni con deslizar", confirmado que
-    // mis pruebas por ADB usaban arrastres más largos que un dedo real).
-    // Con `minDistance(0)` el gesto arranca apenas se apoya el dedo, así
-    // `onStart`/`onUpdate`/`onEnd` siempre corren pase lo que pase.
-    .minDistance(0)
-    .onStart(() => {
-      ultimoPasoX.value = 0;
-      yaCayoDuro.value = false;
-      huboMovimiento.value = false;
-    })
-    .onUpdate((e) => {
-      if (yaCayoDuro.value) return;
+  // `useMemo`, no un `Gesture.Pan()` nuevo en cada render: esta pantalla
+  // fuerza un re-render por cuadro (`setTick` en el loop de física, ~60/s)
+  // mientras se juega. Sin memoizar, `GestureDetector` recibía un objeto de
+  // gesto DISTINTO en cada uno de esos renders y volvía a montar el handler
+  // nativo constantemente -- un arrastre (varios cuadros) sobrevivía porque
+  // siempre había ALGÚN handler activo al final, pero un toque corto (un
+  // solo evento down+up) podía caer justo entre dos remontajes y perder su
+  // `onFinalize` sin ningún error visible (reportado real: el botón de
+  // rotar sí giraba la pieza, el toque sobre el tablero no).
+  return useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(opts.activo)
+        // Sin esto, un toque real (con casi cero movimiento) puede no llegar
+        // NUNCA a activar el gesto -- `Gesture.Pan()` por default exige un
+        // mínimo de arrastre antes de reconocerse, y si ese mínimo es mayor a
+        // `UMBRAL_TAP_PX` el toque para rotar directamente no dispara `onEnd`
+        // (reportado real: "no anda ni con tap ni con deslizar", confirmado que
+        // mis pruebas por ADB usaban arrastres más largos que un dedo real).
+        // Con `minDistance(0)` el gesto arranca apenas se apoya el dedo, así
+        // `onStart`/`onUpdate`/`onEnd` siempre corren pase lo que pase.
+        .minDistance(0)
+        .onStart(() => {
+          ultimoPasoX.value = 0;
+          yaCayoDuro.value = false;
+          huboMovimiento.value = false;
+        })
+        .onUpdate((e) => {
+          if (yaCayoDuro.value) return;
 
-      if (e.translationY >= UMBRAL_CAIDA_PX && Math.abs(e.translationY) > Math.abs(e.translationX)) {
-        yaCayoDuro.value = true;
-        huboMovimiento.value = true;
-        runOnJS(opts.onCaidaDura)();
-        return;
-      }
+          if (e.translationY >= UMBRAL_CAIDA_PX && Math.abs(e.translationY) > Math.abs(e.translationX)) {
+            yaCayoDuro.value = true;
+            huboMovimiento.value = true;
+            runOnJS(opts.onCaidaDura)();
+            return;
+          }
 
-      while (e.translationX - ultimoPasoX.value >= paso) {
-        ultimoPasoX.value = ultimoPasoX.value + paso;
-        huboMovimiento.value = true;
-        runOnJS(opts.onDerecha)();
-      }
-      while (e.translationX - ultimoPasoX.value <= -paso) {
-        ultimoPasoX.value = ultimoPasoX.value - paso;
-        huboMovimiento.value = true;
-        runOnJS(opts.onIzquierda)();
-      }
-    })
-    // `onFinalize` y no `onEnd`: leyendo el código de gesture-handler
-    // (`eventReceiver.js`), `onEnd` sólo se llama si el gesto llegó a estar
-    // ACTIVE antes de terminar -- un toque real, corto y casi sin
-    // movimiento, puede quedar en BEGAN -> FAILED sin pasar nunca por
-    // ACTIVE (no hay eventos de movimiento que evaluar), y con eso `onEnd`
-    // NUNCA se llama pase lo que pase con `minDistance`. `onFinalize` sí se
-    // llama siempre, haya activado el gesto o no -- es la única forma
-    // confiable de detectar "fue un toque" en vez de un arrastre.
-    .onFinalize((e) => {
-      if (huboMovimiento.value) return;
-      const dist = Math.hypot(e.translationX, e.translationY);
-      if (dist < UMBRAL_TAP_PX) {
-        runOnJS(opts.onRotar)();
-      }
-    });
+          while (e.translationX - ultimoPasoX.value >= paso) {
+            ultimoPasoX.value = ultimoPasoX.value + paso;
+            huboMovimiento.value = true;
+            runOnJS(opts.onDerecha)();
+          }
+          while (e.translationX - ultimoPasoX.value <= -paso) {
+            ultimoPasoX.value = ultimoPasoX.value - paso;
+            huboMovimiento.value = true;
+            runOnJS(opts.onIzquierda)();
+          }
+        })
+        // `onFinalize` y no `onEnd`: leyendo el código de gesture-handler
+        // (`eventReceiver.js`), `onEnd` sólo se llama si el gesto llegó a estar
+        // ACTIVE antes de terminar -- un toque real, corto y casi sin
+        // movimiento, puede quedar en BEGAN -> FAILED sin pasar nunca por
+        // ACTIVE (no hay eventos de movimiento que evaluar), y con eso `onEnd`
+        // NUNCA se llama pase lo que pase con `minDistance`. `onFinalize` sí se
+        // llama siempre, haya activado el gesto o no -- es la única forma
+        // confiable de detectar "fue un toque" en vez de un arrastre.
+        .onFinalize((e) => {
+          if (huboMovimiento.value) return;
+          const dist = Math.hypot(e.translationX, e.translationY);
+          if (dist < UMBRAL_TAP_PX) {
+            runOnJS(opts.onRotar)();
+          }
+        }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [opts.activo, paso, opts.onIzquierda, opts.onDerecha, opts.onRotar, opts.onCaidaDura]
+  );
 }
