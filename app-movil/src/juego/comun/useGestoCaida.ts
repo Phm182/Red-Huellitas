@@ -88,7 +88,15 @@ export function useGestoCaida(opts: {
         runOnJS(opts.onIzquierda)();
       }
     })
-    .onEnd((e) => {
+    // `onFinalize` y no `onEnd`: leyendo el código de gesture-handler
+    // (`eventReceiver.js`), `onEnd` sólo se llama si el gesto llegó a estar
+    // ACTIVE antes de terminar -- un toque real, corto y casi sin
+    // movimiento, puede quedar en BEGAN -> FAILED sin pasar nunca por
+    // ACTIVE (no hay eventos de movimiento que evaluar), y con eso `onEnd`
+    // NUNCA se llama pase lo que pase con `minDistance`. `onFinalize` sí se
+    // llama siempre, haya activado el gesto o no -- es la única forma
+    // confiable de detectar "fue un toque" en vez de un arrastre.
+    .onFinalize((e) => {
       if (huboMovimiento.value) return;
       const dist = Math.hypot(e.translationX, e.translationY);
       if (dist < UMBRAL_TAP_PX) {

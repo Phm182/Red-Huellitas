@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useGestoCaida } from '../../../src/juego/comun/useGestoCaida';
+import { ControlesCaida } from '../../../src/juego/comun/ControlesCaida';
 import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
 import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import {
@@ -79,11 +80,11 @@ export default function HueColumnsScreen() {
     };
   }, []);
 
-  // El control es gestual sobre el propio tablero (ver `useGestoCaida.ts`) —
-  // no hay fila de botones, sólo el renglón de ayuda de una línea.
+  // Dos formas de jugar a la vez: el gesto sobre el propio tablero
+  // (`useGestoCaida.ts`) Y la fila de botones de abajo (`ControlesCaida.tsx`).
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const ALTURA_HUD = 90;
-  const ALTURA_CONTROLES = 40;
+  const ALTURA_CONTROLES = 130;
   const altoParaTablero = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 24;
   const anchoDisponible = width - 32 - 150;
   const tileSize = Math.max(10, Math.min(Math.floor(anchoDisponible / ANCHO), Math.floor(altoParaTablero / ALTO_VISIBLE), 34));
@@ -434,6 +435,14 @@ export default function HueColumnsScreen() {
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 4 }}>{error}</Text> : null}
 
+      <ControlesCaida
+        onIzquierda={izquierda}
+        onDerecha={derecha}
+        onRotar={rotar}
+        onCaidaDura={caidaInstantanea}
+        color={colors.primary}
+        colorFondo={colors.primarySoft}
+      />
       <Text style={[styles.ayudaControles, { color: colors.textMuted }]}>{t('hueplay.columns.ayudaControles')}</Text>
     </View>
   );

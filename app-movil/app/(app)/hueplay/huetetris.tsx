@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useGestoCaida } from '../../../src/juego/comun/useGestoCaida';
+import { ControlesCaida } from '../../../src/juego/comun/ControlesCaida';
 import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
 import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import {
@@ -95,12 +96,12 @@ export default function HueTetrisScreen() {
     };
   }, []);
 
-  // El control ahora es gestual (tocar/arrastrar sobre el propio tablero,
-  // ver `useGestoCaida.ts`) — ya no hay una fila de botones abajo, sólo el
-  // renglón de ayuda de una línea.
+  // Dos formas de jugar a la vez, ninguna en reemplazo de la otra: el gesto
+  // sobre el propio tablero (`useGestoCaida.ts`) Y la fila de botones de
+  // abajo (`ControlesCaida.tsx`) — pedido explícito de mantener las dos.
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const ALTURA_HUD = 90;
-  const ALTURA_CONTROLES = 40;
+  const ALTURA_CONTROLES = 130;
   const altoParaTablero = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 24;
   const anchoDisponible = width - 32 - 150; // deja lugar a la columna de NEXT/LINE/LEVEL al costado
   const tileSize = Math.max(8, Math.min(Math.floor(anchoDisponible / ANCHO), Math.floor(altoParaTablero / ALTO_VISIBLE), 26));
@@ -478,6 +479,14 @@ export default function HueTetrisScreen() {
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 4 }}>{error}</Text> : null}
 
+      <ControlesCaida
+        onIzquierda={izquierda}
+        onDerecha={derecha}
+        onRotar={rotar}
+        onCaidaDura={caidaInstantanea}
+        color={colors.primary}
+        colorFondo={colors.primarySoft}
+      />
       <Text style={[styles.ayudaControles, { color: colors.textMuted }]}>{t('hueplay.tetris.ayudaControles')}</Text>
     </View>
   );
