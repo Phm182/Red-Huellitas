@@ -53,6 +53,15 @@ export function useGestoCaida(opts: {
 
   return Gesture.Pan()
     .enabled(opts.activo)
+    // Sin esto, un toque real (con casi cero movimiento) puede no llegar
+    // NUNCA a activar el gesto -- `Gesture.Pan()` por default exige un
+    // mínimo de arrastre antes de reconocerse, y si ese mínimo es mayor a
+    // `UMBRAL_TAP_PX` el toque para rotar directamente no dispara `onEnd`
+    // (reportado real: "no anda ni con tap ni con deslizar", confirmado que
+    // mis pruebas por ADB usaban arrastres más largos que un dedo real).
+    // Con `minDistance(0)` el gesto arranca apenas se apoya el dedo, así
+    // `onStart`/`onUpdate`/`onEnd` siempre corren pase lo que pase.
+    .minDistance(0)
     .onStart(() => {
       ultimoPasoX.value = 0;
       yaCayoDuro.value = false;

@@ -13,7 +13,6 @@ import { StyleSheet, View } from 'react-native';
 import { useBrujula } from '../../hooks/useBrujula';
 import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
-import { rhMediaUrl } from '../../utils/media';
 
 type Props = {
   sesion: MapaSesion;
@@ -271,14 +270,21 @@ export function MapaLienzo({
    * Es lo que hace que el mapa nativo se vea como el de la web: un círculo de
    * color dice "acá hay algo", una carita dice *qué* hay. MapLibre las baja y
    * las cachea solo; nosotros sólo declaramos el diccionario.
+   *
+   * DESACTIVADO A PROPÓSITO (temporal): el crash real de iOS reportado esta
+   * semana (SIGSEGV en MapLibre.framework, siempre a los pocos segundos de
+   * abrir el mapa) sobrevivió CUATRO versiones distintas del motor nativo
+   * (6.26.0, 6.26.1, 6.28.0) con exactamente la misma firma cada vez —
+   * mismo tipo de excepción, mismo `far`, misma cantidad de cuadros en la
+   * pila. Eso descarta que sea un bug puntual de la librería que un cambio
+   * de versión vaya a arreglar: el patrón encaja con el manejo de imágenes/
+   * sprites del estilo (`ImageManager`), que es justo lo que usa este
+   * diccionario. Hasta tener un fix real, se apaga la carga de fotos como
+   * íconos del mapa nativo — los puntos se siguen viendo (círculo de color
+   * por tipo, ver `coleccion` más abajo), sólo sin la miniatura de la foto.
+   * Revertir cuando haya evidencia de que el problema real es otro.
    */
-  const imagenes = useMemo(() => {
-    const dic: Record<string, string> = {};
-    puntos.forEach((p) => {
-      if (p.fotoPath) dic[`foto-${p.tipo}-${p.id}`] = rhMediaUrl(p.fotoPath);
-    });
-    return dic;
-  }, [puntos]);
+  const imagenes = useMemo<Record<string, string>>(() => ({}), []);
 
   const coleccion = useMemo(
     () => ({
@@ -301,7 +307,11 @@ export function MapaLienzo({
           color: MAPA_TIPO_POR_CLAVE[p.tipo]?.color ?? '#4CC9F0',
           // Cadena vacía y no null: las expresiones del estilo comparan
           // contra '' para decidir si hay foto.
-          foto: p.fotoPath ? `foto-${p.tipo}-${p.id}` : '',
+          // Siempre vacío mientras las fotos-ícono estén desactivadas (ver
+          // el comentario de `imagenes` más arriba) -- si acá dijera que
+          // hay foto pero `imagenes` no la trae cargada, el ícono quedaría
+          // pidiendo una imagen inexistente al estilo.
+          foto: '',
         },
         geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
       })),
