@@ -1,5 +1,5 @@
-import React, { forwardRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React from 'react';
+import { PanResponderInstance, StyleSheet, View } from 'react-native';
 import { aclarar, oscurecer } from '../comun/blockRetro';
 import { ALTO_OCULTO, ALTO_VISIBLE, ANCHO, COLOR_PIEZA, PiezaActiva, TipoPieza, celdasPieza } from './motor';
 
@@ -34,6 +34,8 @@ type Props = {
   tileSize: number;
   /** Filas (índice VISIBLE, ya restado `ALTO_OCULTO`) limpiadas en el último cuadro — flash blanco de festejo. */
   filasFlash: number[];
+  /** `.panHandlers` de `useGestoCaida` (PanResponder) — se aplican directo sobre el marco. */
+  panHandlers?: PanResponderInstance['panHandlers'];
 };
 
 /**
@@ -43,19 +45,13 @@ type Props = {
  * arriba son colchón interno del motor para que una pieza recién aparecida
  * nunca choque contra el techo antes de poder moverse.
  *
- * `forwardRef` a propósito: lo envuelve `<GestureDetector>` en la pantalla
- * (`useGestoCaida.ts`), y `GestureDetector` necesita poder engancharle una
- * ref a un componente NATIVO para atar el handler de gestos. Un componente
- * de función común no acepta ref (queda `null`), así que el gesto nunca se
- * ataba a nada -- ni tap ni arrastre respondían, en el celular real Y con
- * `adb shell input` (que despacha por el mismo camino de hit-testing), sin
- * ningún error ni warning visible en producción (los botones de al lado sí
- * andaban porque son `Pressable` normales, sin este problema).
+ * `panHandlers` (de `useGestoCaida`, un `PanResponder`) se aplica directo
+ * sobre el `View` del marco -- no hace falta envolver en nada (a diferencia
+ * de `GestureDetector` de `react-native-gesture-handler`, que se probó
+ * primero y nunca recibió un solo toque en este build; ver la nota larga en
+ * `useGestoCaida.ts`).
  */
-export const TableroTetris = forwardRef<View, Props>(function TableroTetris(
-  { tablero, actual, sombra, tileSize, filasFlash },
-  ref
-) {
+export function TableroTetris({ tablero, actual, sombra, tileSize, filasFlash, panHandlers }: Props) {
   const ancho = ANCHO * tileSize;
   const alto = ALTO_VISIBLE * tileSize;
   const marco = Math.max(6, Math.round(tileSize * 0.5));
@@ -71,7 +67,10 @@ export const TableroTetris = forwardRef<View, Props>(function TableroTetris(
   const flashSet = new Set(filasFlash);
 
   return (
-    <View ref={ref} style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
+    <View
+      {...panHandlers}
+      style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}
+    >
       {/* Remaches — 4 esquinas, decorativos, mismo look que la mesa de HuePool. */}
       {[
         { top: 3, left: 3 },
@@ -121,7 +120,7 @@ export const TableroTetris = forwardRef<View, Props>(function TableroTetris(
       </View>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   marco: {

@@ -1,5 +1,5 @@
-import React, { forwardRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React from 'react';
+import { PanResponderInstance, StyleSheet, View } from 'react-native';
 import { aclarar, oscurecer } from '../comun/blockRetro';
 import { ALTO_OCULTO, ALTO_VISIBLE, ANCHO, Gema, TrioActivo, celdasTrio } from './motor';
 
@@ -34,17 +34,15 @@ type Props = {
   tileSize: number;
   /** Casillas limpiadas en el último cuadro (índices VISIBLES, ya restado `ALTO_OCULTO`), `"fila,col"` — flash blanco de festejo. */
   celdasFlash: string[];
+  /** `.panHandlers` de `useGestoCaida` (PanResponder) — se aplican directo sobre el marco. */
+  panHandlers?: PanResponderInstance['panHandlers'];
 };
 
-// `forwardRef` a propósito: lo envuelve `<GestureDetector>` en la pantalla
-// (`useGestoCaida.ts`, mismo hook que HueTetris), y `GestureDetector`
-// necesita poder engancharle una ref a un componente NATIVO para atar el
-// handler de gestos -- ver la nota completa en `TableroTetris.tsx`, mismo
-// bug real (ni tap ni arrastre respondían, en el celular Y por ADB).
-export const TableroColumns = forwardRef<View, Props>(function TableroColumns(
-  { tablero, actual, sombra, tileSize, celdasFlash },
-  ref
-) {
+// `panHandlers` (de `useGestoCaida`, un `PanResponder`) se aplica directo
+// sobre el `View` del marco -- ver la nota larga en `useGestoCaida.ts` de
+// por qué ya no es `GestureDetector` de `react-native-gesture-handler`
+// (nunca recibió un solo toque en este build).
+export function TableroColumns({ tablero, actual, sombra, tileSize, celdasFlash, panHandlers }: Props) {
   const ancho = ANCHO * tileSize;
   const alto = ALTO_VISIBLE * tileSize;
   const marco = Math.max(6, Math.round(tileSize * 0.5));
@@ -59,7 +57,10 @@ export const TableroColumns = forwardRef<View, Props>(function TableroColumns(
   }
 
   return (
-    <View ref={ref} style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
+    <View
+      {...panHandlers}
+      style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}
+    >
       {[
         { top: 3, left: 3 },
         { top: 3, right: 3 },
@@ -105,7 +106,7 @@ export const TableroColumns = forwardRef<View, Props>(function TableroColumns(
       </View>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   marco: { position: 'relative', backgroundColor: '#2A5C52', borderWidth: 2, borderColor: '#173B34' },

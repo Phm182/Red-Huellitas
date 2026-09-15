@@ -3,7 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
@@ -420,16 +419,15 @@ export default function HueTetrisScreen() {
   return (
     <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
       <View style={styles.filaPrincipal}>
-        <GestureDetector gesture={gesto}>
-          <TableroTetris
-            tablero={estado.tablero}
-            actual={estado.actual}
-            sombra={sombra}
-            siguiente={estado.siguiente}
-            tileSize={tileSize}
-            filasFlash={filasFlash}
-          />
-        </GestureDetector>
+        <TableroTetris
+          tablero={estado.tablero}
+          actual={estado.actual}
+          sombra={sombra}
+          siguiente={estado.siguiente}
+          tileSize={tileSize}
+          filasFlash={filasFlash}
+          panHandlers={gesto.panHandlers}
+        />
 
         <View style={styles.panelLateral}>
           {!esRetoAjeno ? (

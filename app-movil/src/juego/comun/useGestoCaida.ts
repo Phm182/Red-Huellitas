@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
-import { Gesture } from 'react-native-gesture-handler';
-import { runOnJS, useSharedValue } from 'react-native-reanimated';
+import { useRef } from 'react';
+import { GestureResponderEvent, PanResponder, PanResponderGestureState, PanResponderInstance } from 'react-native';
+
+const UMBRAL_TAP_PX = 10;
+const UMBRAL_CAIDA_PX = 34;
 
 /**
  * El gesto único de HueTetris/HueColumns sobre el tablero mismo — pedido
@@ -18,23 +20,23 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
  * - Arrastre hacia abajo más de `UMBRAL_CAIDA_PX` → caída DURA (al piso
  *   de una vez), una sola vez por gesto.
  *
- * Un solo `Gesture.Pan()` para las tres cosas (no un `Tap()` + `Pan()`
- * separados): así no compiten por reconocer el mismo toque, y el criterio
- * de "fue toque o fue arrastre" queda en UNA sola decisión al soltar.
- *
- * Es un HOOK (no una función suelta) a propósito: los callbacks de un gesto
- * corren como "worklets" de Reanimated en el hilo de UI, y necesitan estado
- * mutable que sobreviva entre `.onStart`/`.onUpdate`/`.onEnd` de un mismo
- * gesto. La versión anterior usaba variables `let` normales capturadas por
- * cierre -- ANDABA MAL: crasheaba la app entera en Android apenas se tocaba
- * el tablero (`com.facebook.jni.CppException: invalid assignment
- * left-hand side`, confirmado con `adb logcat` en el celular). El babel
- * plugin de Reanimated reescribe cada lectura/escritura de una variable de
- * cierre dentro de un worklet como acceso a un objeto de clausura aparte, y
- * con `+=`/`-=` sobre esas variables generaba JS inválido al reconstruirlo
- * en el hilo de UI. `useSharedValue` es la forma soportada de tener estado
- * mutable compartido entre worklets — por eso el nombre del archivo/export
- * ya decía "use", aunque antes no lo era de verdad.
+ * `PanResponder` (API nativa de React Native), NO `react-native-gesture-
+ * handler`, a propósito -- probado a fondo con `Gesture.Pan()` +
+ * `GestureDetector` y el gesto NUNCA recibía un solo toque, ni con el dedo
+ * real ni por ADB: se instrumentó `onBegin` (el callback más temprano
+ * posible, antes de cualquier criterio de activación) con un contador
+ * visible en pantalla y se quedó SIEMPRE en cero, tocando directo sobre el
+ * tablero. Mientras tanto los botones de `ControlesCaida.tsx` (`Pressable`
+ * normal, sistema de touch clásico de RN, sin gesture-handler) andaban
+ * perfecto. Eso aisló el problema a la vinculación nativa de
+ * `react-native-gesture-handler` en este build específico, no al código del
+ * gesto en sí (se probaron y descartaron, en orden: `minDistance(0)`,
+ * `onEnd` vs `onFinalize`, memoizar con `useMemo`, agregar `forwardRef` a
+ * `TableroTetris`/`TableroColumns` -- ninguno cambió nada porque ningún
+ * evento llegaba nunca). `PanResponder` usa el mismo sistema de respuesta a
+ * toques que ya se sabía andando (el de `Pressable`), corre en el hilo de
+ * JS sin necesitar que nada se compile como "worklet", y no depende de
+ * gesture-handler en absoluto.
  */
 export function useGestoCaida(opts: {
   tileSize: number;
@@ -43,79 +45,60 @@ export function useGestoCaida(opts: {
   onRotar: () => void;
   onCaidaDura: () => void;
   activo: boolean;
-}) {
-  const UMBRAL_TAP_PX = 10;
-  const UMBRAL_CAIDA_PX = 34;
-  const paso = Math.max(12, opts.tileSize);
+}): PanResponderInstance {
+  // Ref a las opciones (no closures capturadas al crear el PanResponder,
+  // que se crea UNA sola vez): así los callbacks siempre ven la versión
+  // más nueva de `activo`/`onIzquierda`/etc. sin tener que recrear nada.
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
 
-  const ultimoPasoX = useSharedValue(0);
-  const yaCayoDuro = useSharedValue(false);
-  const huboMovimiento = useSharedValue(false);
+  const pasoRef = useRef(Math.max(12, opts.tileSize));
+  pasoRef.current = Math.max(12, opts.tileSize);
 
-  // `useMemo`, no un `Gesture.Pan()` nuevo en cada render: esta pantalla
-  // fuerza un re-render por cuadro (`setTick` en el loop de física, ~60/s)
-  // mientras se juega. Sin memoizar, `GestureDetector` recibía un objeto de
-  // gesto DISTINTO en cada uno de esos renders y volvía a montar el handler
-  // nativo constantemente -- un arrastre (varios cuadros) sobrevivía porque
-  // siempre había ALGÚN handler activo al final, pero un toque corto (un
-  // solo evento down+up) podía caer justo entre dos remontajes y perder su
-  // `onFinalize` sin ningún error visible (reportado real: el botón de
-  // rotar sí giraba la pieza, el toque sobre el tablero no).
-  return useMemo(
-    () =>
-      Gesture.Pan()
-        .enabled(opts.activo)
-        // Sin esto, un toque real (con casi cero movimiento) puede no llegar
-        // NUNCA a activar el gesto -- `Gesture.Pan()` por default exige un
-        // mínimo de arrastre antes de reconocerse, y si ese mínimo es mayor a
-        // `UMBRAL_TAP_PX` el toque para rotar directamente no dispara `onEnd`
-        // (reportado real: "no anda ni con tap ni con deslizar", confirmado que
-        // mis pruebas por ADB usaban arrastres más largos que un dedo real).
-        // Con `minDistance(0)` el gesto arranca apenas se apoya el dedo, así
-        // `onStart`/`onUpdate`/`onEnd` siempre corren pase lo que pase.
-        .minDistance(0)
-        .onStart(() => {
-          ultimoPasoX.value = 0;
-          yaCayoDuro.value = false;
-          huboMovimiento.value = false;
-        })
-        .onUpdate((e) => {
-          if (yaCayoDuro.value) return;
+  const ultimoPasoX = useRef(0);
+  const yaCayoDuro = useRef(false);
+  const huboMovimiento = useRef(false);
 
-          if (e.translationY >= UMBRAL_CAIDA_PX && Math.abs(e.translationY) > Math.abs(e.translationX)) {
-            yaCayoDuro.value = true;
-            huboMovimiento.value = true;
-            runOnJS(opts.onCaidaDura)();
-            return;
-          }
+  const panResponderRef = useRef<PanResponderInstance | null>(null);
+  if (!panResponderRef.current) {
+    panResponderRef.current = PanResponder.create({
+      onStartShouldSetPanResponder: () => optsRef.current.activo,
+      onMoveShouldSetPanResponder: () => optsRef.current.activo,
+      onPanResponderGrant: () => {
+        ultimoPasoX.current = 0;
+        yaCayoDuro.current = false;
+        huboMovimiento.current = false;
+      },
+      onPanResponderMove: (_evt: GestureResponderEvent, g: PanResponderGestureState) => {
+        if (yaCayoDuro.current) return;
+        const paso = pasoRef.current;
 
-          while (e.translationX - ultimoPasoX.value >= paso) {
-            ultimoPasoX.value = ultimoPasoX.value + paso;
-            huboMovimiento.value = true;
-            runOnJS(opts.onDerecha)();
-          }
-          while (e.translationX - ultimoPasoX.value <= -paso) {
-            ultimoPasoX.value = ultimoPasoX.value - paso;
-            huboMovimiento.value = true;
-            runOnJS(opts.onIzquierda)();
-          }
-        })
-        // `onFinalize` y no `onEnd`: leyendo el código de gesture-handler
-        // (`eventReceiver.js`), `onEnd` sólo se llama si el gesto llegó a estar
-        // ACTIVE antes de terminar -- un toque real, corto y casi sin
-        // movimiento, puede quedar en BEGAN -> FAILED sin pasar nunca por
-        // ACTIVE (no hay eventos de movimiento que evaluar), y con eso `onEnd`
-        // NUNCA se llama pase lo que pase con `minDistance`. `onFinalize` sí se
-        // llama siempre, haya activado el gesto o no -- es la única forma
-        // confiable de detectar "fue un toque" en vez de un arrastre.
-        .onFinalize((e) => {
-          if (huboMovimiento.value) return;
-          const dist = Math.hypot(e.translationX, e.translationY);
-          if (dist < UMBRAL_TAP_PX) {
-            runOnJS(opts.onRotar)();
-          }
-        }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [opts.activo, paso, opts.onIzquierda, opts.onDerecha, opts.onRotar, opts.onCaidaDura]
-  );
+        if (g.dy >= UMBRAL_CAIDA_PX && Math.abs(g.dy) > Math.abs(g.dx)) {
+          yaCayoDuro.current = true;
+          huboMovimiento.current = true;
+          optsRef.current.onCaidaDura();
+          return;
+        }
+
+        while (g.dx - ultimoPasoX.current >= paso) {
+          ultimoPasoX.current += paso;
+          huboMovimiento.current = true;
+          optsRef.current.onDerecha();
+        }
+        while (g.dx - ultimoPasoX.current <= -paso) {
+          ultimoPasoX.current -= paso;
+          huboMovimiento.current = true;
+          optsRef.current.onIzquierda();
+        }
+      },
+      onPanResponderRelease: (_evt: GestureResponderEvent, g: PanResponderGestureState) => {
+        if (huboMovimiento.current) return;
+        if (Math.hypot(g.dx, g.dy) < UMBRAL_TAP_PX) {
+          optsRef.current.onRotar();
+        }
+      },
+    });
+  }
+
+  return panResponderRef.current;
 }
