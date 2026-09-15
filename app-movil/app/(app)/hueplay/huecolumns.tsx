@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { crearGestoCaida } from '../../../src/juego/comun/useGestoCaida';
+import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
+import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import {
   ALTO_OCULTO,
   ALTO_VISIBLE,
@@ -18,6 +20,7 @@ import {
   calcularSombra,
   crearEstadoInicial,
   moverTrio,
+  restaurarEstado,
   rotarTrio,
 } from '../../../src/juego/huecolumns/motor';
 import { TableroColumns } from '../../../src/juego/huecolumns/TableroColumns';
@@ -28,7 +31,7 @@ import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticError, hapticExito, hapticLeve } from '../../../src/utils/haptics';
 
-type Fase = 'listo' | 'jugando' | 'enviando' | 'fin';
+type Fase = 'listo' | 'jugando' | 'pausado' | 'enviando' | 'fin';
 
 const JUEGO = 'huecolumns';
 
@@ -91,6 +94,7 @@ export default function HueColumnsScreen() {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     setFase('enviando');
     hapticError();
+    borrarPausa(JUEGO);
 
     const estado = estadoRef.current;
     const puntos = Math.round(estado?.puntaje ?? 0);
@@ -188,6 +192,63 @@ export default function HueColumnsScreen() {
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
   }, [loop, esRetoAjeno, params.semilla]);
+
+  const continuarDesdeGuardado = useCallback(
+    (guardado: EstadoColumns) => {
+      const estado = restaurarEstado(guardado);
+      estadoRef.current = estado;
+      terminadoLlamadoRef.current = false;
+      gemasVistasRef.current = estado.gemasLimpiadas;
+      ultimoTsRef.current = 0;
+      setResultado(null);
+      setError(null);
+      setCeldasFlash([]);
+      setFase('jugando');
+      rafRef.current = requestAnimationFrame(loop);
+    },
+    [loop]
+  );
+
+  useEffect(() => {
+    if (esRetoAjeno) return;
+    (async () => {
+      const guardado = await cargarPausa<EstadoColumns>(JUEGO);
+      if (!guardado || !vivoRef.current) return;
+      const continuar = await preguntarContinuar(t);
+      if (!vivoRef.current) return;
+      if (continuar) continuarDesdeGuardado(guardado);
+      else borrarPausa(JUEGO);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pausar = useCallback(() => {
+    if (!estadoRef.current) return;
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    hapticLeve();
+    guardarPausa(JUEGO, estadoRef.current);
+    setFase('pausado');
+  }, []);
+
+  const reanudar = useCallback(() => {
+    if (!estadoRef.current) return;
+    hapticLeve();
+    ultimoTsRef.current = 0;
+    setFase('jugando');
+    rafRef.current = requestAnimationFrame(loop);
+  }, [loop]);
+
+  const salirDesdePausa = useCallback(() => {
+    router.replace('/(app)/hueplay');
+  }, []);
+
+  usePausaAlSalir(
+    fase === 'jugando' && !esRetoAjeno,
+    useCallback(() => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (estadoRef.current) guardarPausa(JUEGO, estadoRef.current);
+    }, [])
+  );
 
   const izquierda = useCallback(() => {
     if (estadoRef.current) moverTrio(estadoRef.current, -1, 0);
@@ -299,6 +360,23 @@ export default function HueColumnsScreen() {
     );
   }
 
+  if (fase === 'pausado') {
+    return (
+      <View style={[styles.centro, { backgroundColor: colors.background }]}>
+        <MaterialCommunityIcons name="pause-circle" size={56} color={colors.primary} />
+        <Text style={[styles.titulo, { color: colors.text, marginTop: 12 }]}>{t('hueplay.pausa.titulo')}</Text>
+        <View style={styles.botonera}>
+          <Pressable onPress={reanudar} style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}>
+            <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.pausa.continuar')}</Text>
+          </Pressable>
+          <Pressable onPress={salirDesdePausa} style={[styles.boton, styles.botonSec, { borderColor: colors.border, flex: 1 }]}>
+            <Text style={[styles.botonTexto, { color: colors.text }]}>{t('hueplay.pausa.salir')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   const estado = estadoRef.current;
   if (!estado) return null;
   const sombra = calcularSombra(estado);
@@ -320,6 +398,15 @@ export default function HueColumnsScreen() {
         </GestureDetector>
 
         <View style={styles.panelLateral}>
+          {!esRetoAjeno ? (
+            <Pressable
+              onPress={pausar}
+              style={[styles.botonPausa, { borderColor: colors.border, backgroundColor: colors.surface }]}
+              accessibilityLabel={t('hueplay.pausa.boton')}
+            >
+              <Ionicons name="pause" size={18} color={colors.text} />
+            </Pressable>
+          ) : null}
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.columns.next')}</Text>
             <View style={styles.previewFila}>
@@ -367,6 +454,7 @@ const styles = StyleSheet.create({
   juego: { flex: 1, paddingTop: 10, justifyContent: 'space-between', alignItems: 'center' },
   filaPrincipal: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', justifyContent: 'center' },
   panelLateral: { gap: 8, width: 96 },
+  botonPausa: { borderWidth: 1.5, borderRadius: radii.sm, padding: 8, alignItems: 'center', justifyContent: 'center' },
   caja: { borderWidth: 1.5, borderRadius: radii.sm, padding: 8, alignItems: 'center' },
   cajaLabel: { fontSize: 9, textTransform: 'uppercase', fontFamily: fonts.bodySemi },
   cajaValor: { fontSize: 18, fontFamily: fonts.displaySemi, marginTop: 2 },

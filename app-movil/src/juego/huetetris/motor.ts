@@ -305,4 +305,20 @@ export function calcularSombra(estado: EstadoTetris): PiezaActiva {
   return sombra;
 }
 
+/**
+ * Reconecta un `EstadoTetris` recién deserializado (JSON.parse de lo que
+ * guardó `pausaJuego.ts`) con un generador de piezas nuevo — el objeto
+ * original y su generador viven pegados por identidad en el `WeakMap`
+ * `generadores`, y esa asociación NO sobrevive un viaje por JSON (la
+ * deserialización crea un objeto con otra identidad). No hace falta que la
+ * bolsa/semilla sean las mismas de antes de pausar: es una partida solo, no
+ * un duelo, así que no hace falta reproducibilidad — sólo que las piezas
+ * sigan saliendo.
+ */
+export function restaurarEstado(estado: EstadoTetris): EstadoTetris {
+  const semilla = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  generadores.set(estado, { rnd: prng(semilla), bolsa: [] });
+  return estado;
+}
+
 export { celdasPieza };

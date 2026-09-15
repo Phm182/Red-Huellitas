@@ -12,7 +12,21 @@ import { DPad } from '../../../src/juego/huepacman/DPad';
 import { JoystickPacman } from '../../../src/juego/huepacman/JoystickPacman';
 import { calcularDireccionFantasma } from '../../../src/juego/huepacman/fantasmas';
 import { LABERINTOS, LaberintoId, obtenerLaberinto } from '../../../src/juego/huepacman/laberintos';
-import { ANCHO, ALTO, Direccion, EstadoFantasma, EstadoJuego, PerfilFantasma, crearEstadoInicial, actualizar } from '../../../src/juego/huepacman/motor';
+import {
+  ANCHO,
+  ALTO,
+  Direccion,
+  EstadoFantasma,
+  EstadoJuego,
+  EstadoJuegoSerializado,
+  PerfilFantasma,
+  crearEstadoInicial,
+  actualizar,
+  deserializarEstado,
+  serializarEstado,
+} from '../../../src/juego/huepacman/motor';
+import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
+import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import { TableroPacman } from '../../../src/juego/huepacman/TableroPacman';
 import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
@@ -21,7 +35,7 @@ import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticCelebracion, hapticError, hapticExito, hapticLeve } from '../../../src/utils/haptics';
 
-type Fase = 'listo' | 'jugando' | 'enviando' | 'fin';
+type Fase = 'listo' | 'jugando' | 'pausado' | 'enviando' | 'fin';
 
 const JUEGO = 'huepacman';
 /** Umbral de arrastre (px) antes de considerar que hubo una intención de
@@ -147,6 +161,7 @@ export default function HuePacManScreen() {
     terminadoLlamadoRef.current = true;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     setFase('enviando');
+    borrarPausa(JUEGO);
 
     const estado = estadoRef.current;
     const puntos = estado?.puntaje ?? 0;
@@ -260,6 +275,67 @@ export default function HuePacManScreen() {
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
   }, [loop, laberintoId, esRetoAjeno]);
+
+  const continuarDesdeGuardado = useCallback(
+    (guardado: EstadoJuegoSerializado) => {
+      const estado = deserializarEstado(guardado);
+      estadoRef.current = estado;
+      setMazeDims({ ancho: estado.ancho, alto: estado.alto });
+      terminadoLlamadoRef.current = false;
+      ganoRef.current = false;
+      ultimoTsRef.current = 0;
+      setPuntosVisibles(new Set(estado.puntos));
+      setPelletsVisibles(new Set(estado.pellets));
+      setPosiciones(snapshotPosiciones(estado));
+      setHud({ puntaje: estado.puntaje, vidas: estado.vidas, asustado: estado.asustadoRestante > 0 });
+      setResultado(null);
+      setError(null);
+      setFase('jugando');
+      rafRef.current = requestAnimationFrame(loop);
+    },
+    [loop]
+  );
+
+  useEffect(() => {
+    if (esRetoAjeno) return;
+    (async () => {
+      const guardado = await cargarPausa<EstadoJuegoSerializado>(JUEGO);
+      if (!guardado || !vivoRef.current) return;
+      const continuar = await preguntarContinuar(t);
+      if (!vivoRef.current) return;
+      if (continuar) continuarDesdeGuardado(guardado);
+      else borrarPausa(JUEGO);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pausar = useCallback(() => {
+    if (!estadoRef.current) return;
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    hapticLeve();
+    guardarPausa(JUEGO, serializarEstado(estadoRef.current));
+    setFase('pausado');
+  }, []);
+
+  const reanudar = useCallback(() => {
+    if (!estadoRef.current) return;
+    hapticLeve();
+    ultimoTsRef.current = 0;
+    setFase('jugando');
+    rafRef.current = requestAnimationFrame(loop);
+  }, [loop]);
+
+  const salirDesdePausa = useCallback(() => {
+    router.replace('/(app)/hueplay');
+  }, []);
+
+  usePausaAlSalir(
+    fase === 'jugando' && !esRetoAjeno,
+    useCallback(() => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (estadoRef.current) guardarPausa(JUEGO, serializarEstado(estadoRef.current));
+    }, [])
+  );
 
   const pedirDireccion = useCallback((dir: Direccion) => {
     if (estadoRef.current) estadoRef.current.pacman.dirDeseada = dir;
@@ -410,6 +486,23 @@ export default function HuePacManScreen() {
     );
   }
 
+  if (fase === 'pausado') {
+    return (
+      <View style={[styles.centro, { backgroundColor: colors.background }]}>
+        <MaterialCommunityIcons name="pause-circle" size={56} color={colors.primary} />
+        <Text style={[styles.titulo, { color: colors.text, marginTop: 12 }]}>{t('hueplay.pausa.titulo')}</Text>
+        <View style={styles.botonera}>
+          <Pressable onPress={reanudar} style={[styles.boton, { backgroundColor: colors.primary, flex: 1 }]}>
+            <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.pausa.continuar')}</Text>
+          </Pressable>
+          <Pressable onPress={salirDesdePausa} style={[styles.boton, styles.botonSec, { borderColor: colors.border, flex: 1 }]}>
+            <Text style={[styles.botonTexto, { color: colors.text }]}>{t('hueplay.pausa.salir')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   const estado = estadoRef.current;
   return (
     <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
@@ -423,6 +516,11 @@ export default function HuePacManScreen() {
             <MaterialCommunityIcons key={i} name="pac-man" size={18} color={i < hud.vidas ? '#F5D300' : colors.border} />
           ))}
         </View>
+        {!esRetoAjeno ? (
+          <Pressable onPress={pausar} style={[styles.botonPausa, { borderColor: colors.border }]} accessibilityLabel={t('hueplay.pausa.boton')}>
+            <Ionicons name="pause" size={18} color={colors.text} />
+          </Pressable>
+        ) : null}
       </View>
 
       {hud.asustado ? (
@@ -485,6 +583,7 @@ const styles = StyleSheet.create({
   hudLabel: { fontSize: 11, textTransform: 'uppercase' },
   hudValor: { fontSize: 24, fontFamily: fonts.displaySemi },
   vidas: { flexDirection: 'row', gap: 4, alignItems: 'center', paddingTop: 6 },
+  botonPausa: { borderWidth: 1.5, borderRadius: radii.sm, padding: 8, alignItems: 'center', justifyContent: 'center' },
   pillAsustado: { borderRadius: radii.pill, paddingVertical: 4, paddingHorizontal: 12, marginBottom: 4 },
   tableroWrap: { alignItems: 'center', justifyContent: 'center' },
   controles: {

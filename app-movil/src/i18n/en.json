@@ -1361,6 +1361,19 @@
       "turnoRival": "{{rival}}'s turn",
       "tiempoNeto": "Net time used: {{usados}}/{{tope}}s"
     },
+    "pausa": {
+      "boton": "Pause",
+      "tituloConfirmarSalida": "Pause the game?",
+      "mensajeConfirmarSalida": "We'll save your progress so you can pick it back up later.",
+      "seguirJugando": "Keep playing",
+      "pausarYSalir": "Pause and exit",
+      "titulo": "Paused",
+      "continuar": "Continue",
+      "salir": "Exit",
+      "tituloContinuar": "You have a paused game",
+      "mensajeContinuar": "Continue where you left off?",
+      "empezarDeNuevo": "Start over"
+    },
     "pacman": {
       "titulo": "HuePacMan",
       "comoSeJuega": "Eat every dot in the maze without a ghost catching you. The 4 big dots in the corners turn them blue for a few seconds: while that lasts, you can eat them instead.",

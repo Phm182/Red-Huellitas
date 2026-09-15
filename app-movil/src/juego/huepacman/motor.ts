@@ -244,6 +244,23 @@ export function crearEstadoInicial(maze: string[] = LABERINTO_CLASICO): EstadoJu
   };
 }
 
+/** Forma JSON-serializable de `EstadoJuego`: los únicos dos campos que no
+ * son planos son `puntos`/`pellets` (`Set<string>`), que `JSON.stringify`
+ * convertiría en `{}` sin este paso — usado por `pausaJuego.ts` para guardar
+ * y retomar una partida solo. */
+export type EstadoJuegoSerializado = Omit<EstadoJuego, 'puntos' | 'pellets'> & {
+  puntos: string[];
+  pellets: string[];
+};
+
+export function serializarEstado(estado: EstadoJuego): EstadoJuegoSerializado {
+  return { ...estado, puntos: [...estado.puntos], pellets: [...estado.pellets] };
+}
+
+export function deserializarEstado(s: EstadoJuegoSerializado): EstadoJuego {
+  return { ...s, puntos: new Set(s.puntos), pellets: new Set(s.pellets) };
+}
+
 /** Posición continua (en unidades de tile) de una entidad — la misma cuenta
  * que usa la detección de colisión y que debe usar el render (`TableroPacman`)
  * para que lo que se ve coincida exactamente con lo que decide el motor. */

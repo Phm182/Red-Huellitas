@@ -244,6 +244,16 @@ export function actualizar(estado: EstadoColumns, dt: number): void {
   }
 }
 
+/**
+ * Reconecta un `EstadoColumns` recién deserializado con un generador nuevo —
+ * mismo motivo y mismo criterio que `huetetris/motor.ts::restaurarEstado`.
+ */
+export function restaurarEstado(estado: EstadoColumns): EstadoColumns {
+  const semilla = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  generadores.set(estado, prng(semilla));
+  return estado;
+}
+
 export function calcularSombra(estado: EstadoColumns): TrioActivo {
   let sombra = { ...estado.actual };
   while (!colisionaTrio(estado.tablero, { ...sombra, y: sombra.y + 1 })) {

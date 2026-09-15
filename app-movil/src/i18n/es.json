@@ -1383,6 +1383,19 @@
       "turnoRival": "Turno de {{rival}}",
       "tiempoNeto": "Tiempo neto usado: {{usados}}/{{tope}}s"
     },
+    "pausa": {
+      "boton": "Pausar",
+      "tituloConfirmarSalida": "¿Pausar la partida?",
+      "mensajeConfirmarSalida": "Guardamos tu progreso para que puedas seguir después.",
+      "seguirJugando": "Seguir jugando",
+      "pausarYSalir": "Pausar y salir",
+      "titulo": "Pausado",
+      "continuar": "Continuar",
+      "salir": "Salir",
+      "tituloContinuar": "Tenés una partida pausada",
+      "mensajeContinuar": "¿Querés continuar donde la dejaste?",
+      "empezarDeNuevo": "Empezar de nuevo"
+    },
     "pacman": {
       "titulo": "HuePacMan",
       "comoSeJuega": "Comé todos los puntos del laberinto sin que te agarre ningún fantasma. Las 4 bolitas grandes de las esquinas los ponen azules por unos segundos: mientras dure, podés comerlos vos a ellos.",
