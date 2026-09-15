@@ -7,7 +7,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
 import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
-import { crearGestoCaida } from '../../../src/juego/comun/useGestoCaida';
+import { useGestoCaida } from '../../../src/juego/comun/useGestoCaida';
 import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
 import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import {
@@ -267,6 +267,17 @@ export default function HueColumnsScreen() {
     }
   }, []);
 
+  // Es un hook (usa `useSharedValue` por dentro) -- tiene que llamarse acá,
+  // ANTES de cualquier `return` condicional de abajo, no después.
+  const gesto = useGestoCaida({
+    tileSize,
+    onIzquierda: izquierda,
+    onDerecha: derecha,
+    onRotar: rotar,
+    onCaidaDura: caidaInstantanea,
+    activo: fase === 'jugando',
+  });
+
   if (fase === 'listo') {
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
@@ -380,15 +391,6 @@ export default function HueColumnsScreen() {
   const estado = estadoRef.current;
   if (!estado) return null;
   const sombra = calcularSombra(estado);
-
-  const gesto = crearGestoCaida({
-    tileSize,
-    onIzquierda: izquierda,
-    onDerecha: derecha,
-    onRotar: rotar,
-    onCaidaDura: caidaInstantanea,
-    activo: fase === 'jugando',
-  });
 
   return (
     <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>

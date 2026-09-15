@@ -1,5 +1,5 @@
 import { Gesture } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 
 /**
  * El gesto único de HueTetris/HueColumns sobre el tablero mismo — pedido
@@ -20,8 +20,22 @@ import { runOnJS } from 'react-native-reanimated';
  * Un solo `Gesture.Pan()` para las tres cosas (no un `Tap()` + `Pan()`
  * separados): así no compiten por reconocer el mismo toque, y el criterio
  * de "fue toque o fue arrastre" queda en UNA sola decisión al soltar.
+ *
+ * Es un HOOK (no una función suelta) a propósito: los callbacks de un gesto
+ * corren como "worklets" de Reanimated en el hilo de UI, y necesitan estado
+ * mutable que sobreviva entre `.onStart`/`.onUpdate`/`.onEnd` de un mismo
+ * gesto. La versión anterior usaba variables `let` normales capturadas por
+ * cierre -- ANDABA MAL: crasheaba la app entera en Android apenas se tocaba
+ * el tablero (`com.facebook.jni.CppException: invalid assignment
+ * left-hand side`, confirmado con `adb logcat` en el celular). El babel
+ * plugin de Reanimated reescribe cada lectura/escritura de una variable de
+ * cierre dentro de un worklet como acceso a un objeto de clausura aparte, y
+ * con `+=`/`-=` sobre esas variables generaba JS inválido al reconstruirlo
+ * en el hilo de UI. `useSharedValue` es la forma soportada de tener estado
+ * mutable compartido entre worklets — por eso el nombre del archivo/export
+ * ya decía "use", aunque antes no lo era de verdad.
  */
-export function crearGestoCaida(opts: {
+export function useGestoCaida(opts: {
   tileSize: number;
   onIzquierda: () => void;
   onDerecha: () => void;
@@ -33,44 +47,40 @@ export function crearGestoCaida(opts: {
   const UMBRAL_CAIDA_PX = 34;
   const paso = Math.max(12, opts.tileSize);
 
-  // Estos "refs" son variables de módulo capturadas por cierre del gesto,
-  // no de React — v2 de gesture-handler permite mutar variables normales
-  // dentro de los callbacks del gesto sin problema (no son `SharedValue`,
-  // pero tampoco hace falta: sólo los lee el propio gesto).
-  let ultimoPasoX = 0;
-  let yaCayoDuro = false;
-  let huboMovimiento = false;
+  const ultimoPasoX = useSharedValue(0);
+  const yaCayoDuro = useSharedValue(false);
+  const huboMovimiento = useSharedValue(false);
 
   return Gesture.Pan()
     .enabled(opts.activo)
     .onStart(() => {
-      ultimoPasoX = 0;
-      yaCayoDuro = false;
-      huboMovimiento = false;
+      ultimoPasoX.value = 0;
+      yaCayoDuro.value = false;
+      huboMovimiento.value = false;
     })
     .onUpdate((e) => {
-      if (yaCayoDuro) return;
+      if (yaCayoDuro.value) return;
 
-      if (e.translationY - 0 >= UMBRAL_CAIDA_PX && Math.abs(e.translationY) > Math.abs(e.translationX)) {
-        yaCayoDuro = true;
-        huboMovimiento = true;
+      if (e.translationY >= UMBRAL_CAIDA_PX && Math.abs(e.translationY) > Math.abs(e.translationX)) {
+        yaCayoDuro.value = true;
+        huboMovimiento.value = true;
         runOnJS(opts.onCaidaDura)();
         return;
       }
 
-      while (e.translationX - ultimoPasoX >= paso) {
-        ultimoPasoX += paso;
-        huboMovimiento = true;
+      while (e.translationX - ultimoPasoX.value >= paso) {
+        ultimoPasoX.value = ultimoPasoX.value + paso;
+        huboMovimiento.value = true;
         runOnJS(opts.onDerecha)();
       }
-      while (e.translationX - ultimoPasoX <= -paso) {
-        ultimoPasoX -= paso;
-        huboMovimiento = true;
+      while (e.translationX - ultimoPasoX.value <= -paso) {
+        ultimoPasoX.value = ultimoPasoX.value - paso;
+        huboMovimiento.value = true;
         runOnJS(opts.onIzquierda)();
       }
     })
     .onEnd((e) => {
-      if (huboMovimiento) return;
+      if (huboMovimiento.value) return;
       const dist = Math.hypot(e.translationX, e.translationY);
       if (dist < UMBRAL_TAP_PX) {
         runOnJS(opts.onRotar)();
