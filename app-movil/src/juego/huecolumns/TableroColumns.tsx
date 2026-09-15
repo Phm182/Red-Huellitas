@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { aclarar, oscurecer } from '../comun/blockRetro';
 import { ALTO_OCULTO, ALTO_VISIBLE, ANCHO, Gema, TrioActivo, celdasTrio } from './motor';
@@ -36,7 +36,15 @@ type Props = {
   celdasFlash: string[];
 };
 
-export function TableroColumns({ tablero, actual, sombra, tileSize, celdasFlash }: Props) {
+// `forwardRef` a propósito: lo envuelve `<GestureDetector>` en la pantalla
+// (`useGestoCaida.ts`, mismo hook que HueTetris), y `GestureDetector`
+// necesita poder engancharle una ref a un componente NATIVO para atar el
+// handler de gestos -- ver la nota completa en `TableroTetris.tsx`, mismo
+// bug real (ni tap ni arrastre respondían, en el celular Y por ADB).
+export const TableroColumns = forwardRef<View, Props>(function TableroColumns(
+  { tablero, actual, sombra, tileSize, celdasFlash },
+  ref
+) {
   const ancho = ANCHO * tileSize;
   const alto = ALTO_VISIBLE * tileSize;
   const marco = Math.max(6, Math.round(tileSize * 0.5));
@@ -51,7 +59,7 @@ export function TableroColumns({ tablero, actual, sombra, tileSize, celdasFlash 
   }
 
   return (
-    <View style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
+    <View ref={ref} style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
       {[
         { top: 3, left: 3 },
         { top: 3, right: 3 },
@@ -97,7 +105,7 @@ export function TableroColumns({ tablero, actual, sombra, tileSize, celdasFlash 
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   marco: { position: 'relative', backgroundColor: '#2A5C52', borderWidth: 2, borderColor: '#173B34' },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { aclarar, oscurecer } from '../comun/blockRetro';
 import { ALTO_OCULTO, ALTO_VISIBLE, ANCHO, COLOR_PIEZA, PiezaActiva, TipoPieza, celdasPieza } from './motor';
@@ -42,8 +42,20 @@ type Props = {
  * Sólo se dibujan las `ALTO_VISIBLE` filas de abajo — las `ALTO_OCULTO` de
  * arriba son colchón interno del motor para que una pieza recién aparecida
  * nunca choque contra el techo antes de poder moverse.
+ *
+ * `forwardRef` a propósito: lo envuelve `<GestureDetector>` en la pantalla
+ * (`useGestoCaida.ts`), y `GestureDetector` necesita poder engancharle una
+ * ref a un componente NATIVO para atar el handler de gestos. Un componente
+ * de función común no acepta ref (queda `null`), así que el gesto nunca se
+ * ataba a nada -- ni tap ni arrastre respondían, en el celular real Y con
+ * `adb shell input` (que despacha por el mismo camino de hit-testing), sin
+ * ningún error ni warning visible en producción (los botones de al lado sí
+ * andaban porque son `Pressable` normales, sin este problema).
  */
-export function TableroTetris({ tablero, actual, sombra, tileSize, filasFlash }: Props) {
+export const TableroTetris = forwardRef<View, Props>(function TableroTetris(
+  { tablero, actual, sombra, tileSize, filasFlash },
+  ref
+) {
   const ancho = ANCHO * tileSize;
   const alto = ALTO_VISIBLE * tileSize;
   const marco = Math.max(6, Math.round(tileSize * 0.5));
@@ -59,7 +71,7 @@ export function TableroTetris({ tablero, actual, sombra, tileSize, filasFlash }:
   const flashSet = new Set(filasFlash);
 
   return (
-    <View style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
+    <View ref={ref} style={[styles.marco, { width: ancho + marco * 2, height: alto + marco * 2, borderRadius: marco * 0.6 }]}>
       {/* Remaches — 4 esquinas, decorativos, mismo look que la mesa de HuePool. */}
       {[
         { top: 3, left: 3 },
@@ -109,7 +121,7 @@ export function TableroTetris({ tablero, actual, sombra, tileSize, filasFlash }:
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   marco: {
