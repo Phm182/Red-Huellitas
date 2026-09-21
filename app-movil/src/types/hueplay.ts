@@ -9,6 +9,33 @@ export interface HuePlayProgreso {
   faltan: number;
   subioDeNivel?: boolean;
   puntosGanados?: number;
+  xpGanada?: number;
+  objetivosNuevos?: { codigo: string; xp: number }[];
+}
+
+export interface HuePlayObjetivoDiario {
+  codigo: string;
+  icono: string;
+  meta: number;
+  valor: number;
+  xp: number;
+  cumplido: boolean;
+}
+
+export interface HuePlayLogro {
+  familia: string;
+  icono: string;
+  valor: number;
+  escalones: { meta: number; xp: number; cumplido: boolean }[];
+}
+
+export interface HuePlayObjetivos {
+  disponible: boolean;
+  /** Nivel de cuenta; `puntos` es la XP. */
+  progreso: HuePlayProgreso;
+  diarios: HuePlayObjetivoDiario[];
+  logros: HuePlayLogro[];
+  nuevos?: { codigo: string; xp: number }[];
 }
 
 export interface HuePlayRankingItem {
@@ -24,6 +51,8 @@ export interface HuePlayRankingItem {
 
 export interface HuePlayPerfil {
   progreso: HuePlayProgreso;
+  /** true si el nivel de cuenta sube por objetivos (`progreso.puntos` es XP). */
+  porObjetivos?: boolean;
   partidasJugadas: number;
   desafiosGanados: number;
   desafiosPerdidos: number;

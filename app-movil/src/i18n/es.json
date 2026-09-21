@@ -1273,6 +1273,31 @@
     "incompleta": "Completá el día, el mes y el año."
   },
   "hueplay": {
+    "obj": {
+      "xpTotal": "{{xp}} XP de cuenta",
+      "faltanXp": "Te faltan {{n}} XP para el nivel {{nivel}}",
+      "hoy": "Objetivos de hoy",
+      "logros": "Logros",
+      "objetivos": "Objetivos",
+      "progresoLogro": "{{valor}} de {{meta}} · +{{xp}} XP",
+      "completo": "¡Completo!",
+      "xpYPuesto": "{{xp}} XP · puesto {{puesto}}",
+      "verObjetivos": "Ver objetivos",
+      "d": {
+            "d_partidas3": "Jugá 3 partidas hoy",
+            "d_juegos2": "Probá 2 juegos distintos hoy",
+            "d_partidas10": "Jugá 10 partidas hoy"
+      },
+      "f": {
+            "partidas": "Partidas jugadas",
+            "juegos": "Juegos distintos probados",
+            "victorias": "Duelos ganados",
+            "torneos": "Torneos ganados",
+            "dias": "Días distintos jugando",
+            "nivelmax": "Nivel en un juego",
+            "juegos_n5": "Juegos en nivel 5 o más"
+      }
+    },
     "bajada": "Jugá, sumá puntos y retá a quien quieras.",
     "nivel": "Nivel {{n}}",
     "nivelCorto": "Niv. {{n}}",

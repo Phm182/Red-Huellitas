@@ -50,8 +50,7 @@ import {
   FichaScrabblePropuesta,
   PoliticaAbandonoSala,
   TriviaResultado,
-  TriviaTanda,
-} from '../types/hueplay';
+  TriviaTanda, HuePlayObjetivos } from '../types/hueplay';
 
 /**
  * HuePlay: puntaje de la cuenta, ranking y duelos.
@@ -65,6 +64,8 @@ import {
  */
 export const hueplayApi = {
   perfil: () => apiGet<HuePlayPerfil>('ajax/hueplay/perfil.php', undefined, true),
+
+  objetivos: () => apiGet<HuePlayObjetivos>('ajax/hueplay/objetivos.php', undefined, true),
 
   /** Favoritos: no tienen listado propio, sólo sirven para ordenar "mis juegos" — el estado actualizado viaja en `perfil()`. */
   favoritoAgregar: (juegoCodigo: string) =>

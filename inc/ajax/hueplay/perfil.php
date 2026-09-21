@@ -14,7 +14,17 @@ require_once __DIR__ . '/../../funciones/juegos.php';
 $userId = rh_require_auth($conn);
 
 $perfil = rh_juego_perfil($conn, $userId);
+// El nivel de cuenta sube por objetivos: se cobra lo que ya esté cumplido (al
+// estrenar el sistema, retroactivo) antes de leer la XP.
+$porObjetivos = rh_obj_disponible($conn);
+if ($porObjetivos) {
+    rh_obj_evaluar($conn, $userId);
+    $perfil = rh_juego_perfil($conn, $userId);
+}
 $total = (int) $perfil['PuntosTotales'];
+$xp = (int) ($perfil['Xp'] ?? 0);
+$orden = $porObjetivos ? 'Xp' : 'PuntosTotales';
+$valorRanking = $porObjetivos ? $xp : $total;
 
 // Por juego: record, puntos acumulados y nivel propio. El nivel por juego es
 // lo que hace que probar un juego nuevo se sienta como progreso desde la
@@ -32,11 +42,11 @@ foreach (array_keys(RH_JUEGOS) as $codigo) {
 // `JuegoPartida`: el total ya está sumado ahí, y el índice `idx_ranking` lo
 // resuelve sin recorrer el historial entero de partidas.
 $res = $conn->query(
-    'SELECT p.UserId, p.PuntosTotales, p.Nivel, u.NombreCompleto, u.Username, u.AvatarPath
+    'SELECT p.UserId, p.PuntosTotales, p.' . $orden . ' AS Valor, p.Nivel, u.NombreCompleto, u.Username, u.AvatarPath
        FROM UsuarioJuegoPerfil p
        JOIN Usuario u ON u.UserId = p.UserId
-      WHERE u.Estado = \'A\' AND p.PuntosTotales > 0
-      ORDER BY p.PuntosTotales DESC
+      WHERE u.Estado = \'A\' AND p.' . $orden . ' > 0
+      ORDER BY p.' . $orden . ' DESC
       LIMIT 10'
 );
 
@@ -50,7 +60,7 @@ while ($f = $res->fetch_assoc()) {
         'nombreCompleto' => $f['NombreCompleto'],
         'username' => $f['Username'],
         'avatarPath' => $f['AvatarPath'],
-        'puntos' => (int) $f['PuntosTotales'],
+        'puntos' => (int) $f['Valor'],
         'nivel' => (int) $f['Nivel'],
         'soyYo' => (int) $f['UserId'] === $userId,
     ];
@@ -58,9 +68,9 @@ while ($f = $res->fetch_assoc()) {
 
 // Mi puesto real, que casi nunca está en el top 10.
 $stmt = $conn->prepare(
-    'SELECT COUNT(*) + 1 AS Puesto FROM UsuarioJuegoPerfil WHERE PuntosTotales > ?'
+    'SELECT COUNT(*) + 1 AS Puesto FROM UsuarioJuegoPerfil WHERE ' . $orden . ' > ?'
 );
-$stmt->bind_param('i', $total);
+$stmt->bind_param('i', $valorRanking);
 $stmt->execute();
 $miPuesto = (int) ($stmt->get_result()->fetch_assoc()['Puesto'] ?? 1);
 $stmt->close();
@@ -85,7 +95,8 @@ if ($res) {
 }
 
 json_success([
-    'progreso' => rh_juego_progreso($total),
+    'progreso' => $porObjetivos ? rh_cuenta_progreso($xp) : rh_juego_progreso($total),
+    'porObjetivos' => $porObjetivos,
     'partidasJugadas' => (int) $perfil['PartidasJugadas'],
     'desafiosGanados' => (int) $perfil['DesafiosGanados'],
     'desafiosPerdidos' => (int) $perfil['DesafiosPerdidos'],

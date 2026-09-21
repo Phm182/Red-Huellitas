@@ -8,6 +8,7 @@
  */
 
 require_once __DIR__ . '/notificaciones.php';
+require_once __DIR__ . '/objetivos.php';
 
 /**
  * Juegos habilitados.
@@ -112,8 +113,9 @@ function rh_juego_puntos_de(mysqli $conn, int $userId, string $codigo): int
 /**
  * Nivel dentro de un juego.
  *
- * Misma forma que el nivel de cuenta pero con la mitad de costo: el nivel L
- * necesita 25*(L-1)^2 puntos en ese juego, contra 50*(L-1)^2 del total.
+ * Curva geométrica: cada nivel cuesta 1,5 veces lo que costó el anterior
+ * (nivel 2 a los 150 puntos, 5 a los ~1.760, 10 a los ~11.500, 15 a los ~88.000),
+ * así que los primeros salen rápido y después cada uno exige mucho más.
  *
  * La relación entre los dos es a propósito. El nivel de cuenta suma TODOS los
  * juegos, así que siempre va por delante de cualquiera de los individuales;
@@ -123,10 +125,16 @@ function rh_juego_puntos_de(mysqli $conn, int $userId, string $codigo): int
  */
 function rh_juego_nivel_juego(int $puntos): int
 {
-    if ($puntos < 25) {
+    if ($puntos < 150) {
         return 1;
     }
-    return min((int) floor(sqrt($puntos / 25)) + 1, 99);
+    return min((int) floor(log($puntos / 300 + 1) / log(1.5)) + 1, 60);
+}
+
+/** Puntos con los que arranca el nivel L de un juego: 300*(1,5^(L-1) - 1). */
+function rh_juego_umbral_juego(int $nivel): int
+{
+    return (int) round(300 * (1.5 ** ($nivel - 1) - 1));
 }
 
 /** Progreso dentro de un juego, con la misma forma que `rh_juego_progreso()`. */
@@ -136,9 +144,9 @@ function rh_juego_progreso_juego(int $puntos): array
     return [
         'nivel' => $nivel,
         'puntos' => $puntos,
-        'nivelDesde' => 25 * ($nivel - 1) ** 2,
-        'nivelHasta' => 25 * $nivel ** 2,
-        'faltan' => max(0, 25 * $nivel ** 2 - $puntos),
+        'nivelDesde' => rh_juego_umbral_juego($nivel),
+        'nivelHasta' => rh_juego_umbral_juego($nivel + 1),
+        'faltan' => max(0, rh_juego_umbral_juego($nivel + 1) - $puntos),
     ];
 }
 
@@ -430,7 +438,12 @@ function rh_juego_registrar_partida(
     bool $cuentaPartida = true
 ): array {
     $antes = rh_juego_perfil($conn, $userId);
-    $nivelAntes = rh_juego_nivel((int) $antes['PuntosTotales']);
+    // Con la migración 075 el nivel de cuenta sale de la XP de los objetivos;
+    // sin ella, de los puntos como antes.
+    $porObjetivos = rh_obj_disponible($conn);
+    $nivelAntes = $porObjetivos
+        ? rh_cuenta_nivel((int) ($antes['Xp'] ?? 0))
+        : rh_juego_nivel((int) $antes['PuntosTotales']);
 
     $stmt = $conn->prepare(
         'INSERT INTO JuegoPartida (JuegoCodigo, UserId, Puntos, DuracionSegundos, DesafioId)
@@ -454,17 +467,24 @@ function rh_juego_registrar_partida(
     $stmt->execute();
     $stmt->close();
 
+    $objetivos = ['xpGanada' => 0, 'nuevos' => []];
+    if ($porObjetivos && $cuentaPartida) {
+        $objetivos = rh_obj_evaluar($conn, $userId);
+    }
+
     $despues = rh_juego_perfil($conn, $userId);
     $total = (int) $despues['PuntosTotales'];
-    $nivel = rh_juego_nivel($total);
+    $progreso = $porObjetivos ? rh_cuenta_progreso((int) ($despues['Xp'] ?? 0)) : rh_juego_progreso($total);
+    $nivel = $progreso['nivel'];
 
     $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET Nivel = ? WHERE UserId = ?');
     $stmt->bind_param('ii', $nivel, $userId);
     $stmt->execute();
     $stmt->close();
 
-    $progreso = rh_juego_progreso($total);
     $progreso['subioDeNivel'] = $nivel > $nivelAntes;
+    $progreso['xpGanada'] = $objetivos['xpGanada'];
+    $progreso['objetivosNuevos'] = $objetivos['nuevos'];
     $progreso['puntosGanados'] = $puntos;
 
     return $progreso;
@@ -637,6 +657,7 @@ function rh_juego_cerrar_desafio_turnos(
             $stmt->bind_param('i', $ganadorUserId);
             $stmt->execute();
             $stmt->close();
+            rh_obj_evaluar($conn, $ganadorUserId);
 
             rh_notificar($conn, [$ganadorUserId], 'juego_desafio_fin', '¡Ganaste el duelo!',
                 'Ganaste tu partida de ' . $nombreJuego, rh_hueplay_ruta_bandeja('historial'),
@@ -881,6 +902,7 @@ function rh_juego_resolver_desafio(mysqli $conn, array $desafio): array
         $stmt->bind_param('i', $ganador);
         $stmt->execute();
         $stmt->close();
+        rh_obj_evaluar($conn, $ganador);
 
         $stmt = $conn->prepare('UPDATE UsuarioJuegoPerfil SET DesafiosPerdidos = DesafiosPerdidos + 1 WHERE UserId = ?');
         $stmt->bind_param('i', $perdedor);

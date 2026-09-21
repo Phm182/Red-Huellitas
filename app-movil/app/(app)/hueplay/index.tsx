@@ -320,7 +320,9 @@ export default function HuePlayScreen() {
                 {t('hueplay.nivel', { n: p.nivel })}
               </Text>
               <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                {t('hueplay.puntosYPuesto', { puntos: p.puntos, puesto: perfil.miPuesto })}
+                {perfil.porObjetivos
+                  ? t('hueplay.obj.xpYPuesto', { xp: p.puntos, puesto: perfil.miPuesto })
+                  : t('hueplay.puntosYPuesto', { puntos: p.puntos, puesto: perfil.miPuesto })}
               </Text>
             </View>
           </View>
@@ -331,6 +333,19 @@ export default function HuePlayScreen() {
           <Text style={{ color: colors.textMuted, fontSize: 11 }}>
             {t('hueplay.faltanParaNivel', { n: p.faltan, nivel: p.nivel + 1 })}
           </Text>
+          <Pressable
+            onPress={() => {
+              hapticLeve();
+              router.push('/(app)/hueplay/objetivos' as never);
+            }}
+            style={[styles.botonObjetivos, { backgroundColor: colors.primarySoft }]}
+          >
+            <Ionicons name="flag-outline" size={16} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 13, flex: 1 }}>
+              {t('hueplay.obj.verObjetivos')}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </Pressable>
 
           <View style={styles.stats}>
             <Stat label={t('hueplay.partidas')} valor={perfil.partidasJugadas} colors={colors} />
@@ -619,6 +634,7 @@ const styles = StyleSheet.create({
   // Separado del selector Dinámica/Desplegada, que quedaba pegado al
   // carrusel sin aire.
   carruselWrap: { marginTop: 18, marginBottom: 6 },
+  botonObjetivos: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radii.lg, marginTop: 4 },
   nivelCard: { borderWidth: 1, borderRadius: radii.lg, padding: 16, marginBottom: 14, gap: 8 },
   nivelFila: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nivelBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

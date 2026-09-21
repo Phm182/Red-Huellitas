@@ -1259,6 +1259,31 @@
     "incompleta": "Fill in the day, month and year."
   },
   "hueplay": {
+    "obj": {
+      "xpTotal": "{{xp}} account XP",
+      "faltanXp": "{{n}} XP left for level {{nivel}}",
+      "hoy": "Today's goals",
+      "logros": "Achievements",
+      "objetivos": "Goals",
+      "progresoLogro": "{{valor}} of {{meta}} · +{{xp}} XP",
+      "completo": "Complete!",
+      "xpYPuesto": "{{xp}} XP · rank {{puesto}}",
+      "verObjetivos": "View goals",
+      "d": {
+            "d_partidas3": "Play 3 games today",
+            "d_juegos2": "Try 2 different games today",
+            "d_partidas10": "Play 10 games today"
+      },
+      "f": {
+            "partidas": "Games played",
+            "juegos": "Different games tried",
+            "victorias": "Duels won",
+            "torneos": "Tournaments won",
+            "dias": "Different days playing",
+            "nivelmax": "Level in a single game",
+            "juegos_n5": "Games at level 5+"
+      }
+    },
     "bajada": "Play, earn points and challenge anyone.",
     "nivel": "Level {{n}}",
     "nivelCorto": "Lv. {{n}}",
