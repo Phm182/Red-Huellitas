@@ -36,6 +36,8 @@ type Props = {
   /** 0.5 = cámara lenta, 1 = normal, 2 = cámara rápida. */
   velocidad?: number;
   onEnded?: () => void;
+  /** La foto ya se dibujó (para no mostrarla antes de tiempo al cambiar de historia). */
+  onCargada?: () => void;
   /** Zoom/paneo/rotación manual de la FOTO (gestos de dos dedos). Foto solamente. */
   fotoTransform?: { scale: number; x: number; y: number; rotation: number };
 };
@@ -60,6 +62,7 @@ export function StoryMediaFill({
   onPosicion,
   velocidad = 1,
   onEnded,
+  onCargada,
   fotoTransform,
 }: Props) {
   const webVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -291,6 +294,7 @@ export function StoryMediaFill({
               : null,
           ]}
           contentFit={fit}
+          onLoad={onCargada}
         />
       ) : Platform.OS === 'web' ? (
         <video

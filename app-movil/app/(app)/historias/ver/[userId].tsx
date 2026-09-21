@@ -245,13 +245,22 @@ function VisorHistoriasScreen({
   );
 
   indexRef.current = index;
+  // Id de la historia cuya foto ya se dibujó: la pantalla sólo vuelve a su lugar
+  // cuando la del vecino está pintada, si no se ve un parpadeo al reemplazar
+  // la copia que se mostraba al costado.
+  const [cargadaId, setCargadaId] = useState<number | null>(null);
   useEffect(() => {
-    if (continuoRef.current && !loading && historias[0]?.userId === Number(userId)) {
+    const primera = historias[index];
+    if (!continuoRef.current || loading || !primera || primera.userId !== Number(userId)) return;
+    if (primera.tipoMedia === 'foto' && cargadaId !== primera.historiaId) return;
+    // Un cuadro más de margen para que el dibujado llegue a pantalla.
+    const t = setTimeout(() => {
       slide.setValue(0);
       continuoRef.current = false;
       entradaRef.current = 0;
-    }
-  }, [historias, loading, userId, slide]);
+    }, 50);
+    return () => clearTimeout(t);
+  }, [historias, index, loading, userId, slide, cargadaId]);
   const actual = historias[index] ?? null;
   // Indexado por historiaId: al pasar a la siguiente Huellita no se puede
   // arrastrar la reacción de la anterior.
@@ -561,6 +570,7 @@ function VisorHistoriasScreen({
         muted={actual.sinAudio || silenciado}
         volume={volumen}
         contentFit={contentFit}
+        onCargada={() => setCargadaId(actual.historiaId)}
         pausado={enPausa}
         inicioSeg={actual.recorteInicioSeg}
         finSeg={actual.recorteFinSeg}
