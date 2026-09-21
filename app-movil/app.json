@@ -13,7 +13,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "16"
+      "buildNumber": "18"
     },
     "android": {
       "package": "com.redhuellitas.app",
@@ -135,9 +135,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "36791264-d5e8-4e54-a86a-85962eb7eeab"
+        "projectId": "c8b9ddc6-546c-4d83-8c72-fcbd7760966e"
       }
     },
-    "owner": "pab182"
+    "owner": "pabnac"
   }
 }

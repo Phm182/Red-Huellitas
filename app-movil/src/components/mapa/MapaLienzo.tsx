@@ -8,8 +8,10 @@ import {
   Map,
   UserLocation,
 } from '@maplibre/maplibre-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useBrujula } from '../../hooks/useBrujula';
 import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
@@ -127,6 +129,38 @@ function colorDominante(): any {
 }
 
 const COLOR_GRUPO = colorDominante();
+
+const IOS = Platform.OS === 'ios';
+
+/**
+ * Cómo se pinta en iOS lo que en Android es una expresión con predicados
+ * compuestos (`['all', ...]`, `['!', ...]`).
+ *
+ * Diagnóstico del crash de iOS (SIGSEGV en MapLibre.framework, build 18, log
+ * simbolizado contra el binario del build): la pila de llamadas es
+ * `mapViewDidFinishLoadingStyle` -> `MLRNSource addToMap` -> `MLRNLayer
+ * addStyles` -> `MLRNStyle setCircleColor:` -> `MLNCircleStyleLayer
+ * setCircleColor:` -> adentro del C++ de MapLibre, copiando un
+ * `std::unordered_map` desde un puntero inválido (`1`), con `NSCompoundPredicate`
+ * en los registros. En iOS toda expresión pasa por `NSExpression`/`NSPredicate`
+ * antes de llegar al motor; el primer `circle-color` que NO es un color plano es
+ * `COLOR_GRUPO`, un `case` con `['all', ...]` y 56 comparaciones. Los `case` con
+ * UNA sola comparación sí funcionan (los usa `clusterProperties`, que se carga
+ * antes de que reviente). Android no pasa por ese camino y anda bien.
+ *
+ * Mientras no se confirme el arreglo en iOS, ahí los grupos van de un color
+ * fijo (el anillo de puntitos igual muestra qué mezcla hay adentro).
+ */
+const COLOR_GRUPO_IOS = '#4CC9F0';
+
+const CLAVE_MAPA_CARGANDO = '@red_huellitas/mapa_cargando';
+const CLAVE_MAPA_SEGURO = '@red_huellitas/mapa_modo_seguro';
+const MODO_SEGURO_MS = 24 * 60 * 60 * 1000;
+const SOBREVIVIO_MS = 6000;
+
+function versionDeApp(): string {
+  return String(Constants.expoConfig?.ios?.buildNumber ?? Constants.expoConfig?.version ?? '?');
+}
 
 /**
  * A qué distancia del centro del grupo se dibuja el anillo de puntitos.
@@ -258,6 +292,56 @@ export function MapaLienzo({
    * anillo igual arranca en cuanto el estilo está listo.
    */
   const [estiloListo, setEstiloListo] = useState(false);
+
+  /**
+   * Red de seguridad para iOS: si el mapa se cerró de golpe mientras cargaba
+   * los pines, la próxima vez abre en "modo seguro" (mapa base sin pines) en
+   * vez de volver a crashear en bucle. Antes de montar los pines se deja una
+   * marca; si la app muere, la marca queda. Si sobrevive unos segundos o se
+   * sale del mapa normalmente, se borra. El modo seguro dura 24 h y sólo
+   * para esta versión de la app, así que un build nuevo vuelve a intentar.
+   * `null` = todavía leyendo el estado guardado.
+   */
+  const [modoSeguro, setModoSeguro] = useState<boolean | null>(IOS ? null : false);
+
+  useEffect(() => {
+    if (!IOS) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const version = versionDeApp();
+        const [cargando, seguro] = await Promise.all([
+          AsyncStorage.getItem(CLAVE_MAPA_CARGANDO),
+          AsyncStorage.getItem(CLAVE_MAPA_SEGURO),
+        ]);
+        const vigente = (v: string | null) => {
+          const [ver, ts] = (v ?? '').split('|');
+          return ver === version && Date.now() - Number(ts) < MODO_SEGURO_MS;
+        };
+        let esSeguro = vigente(seguro);
+        if (vigente(cargando)) {
+          esSeguro = true;
+          await AsyncStorage.setItem(CLAVE_MAPA_SEGURO, `${version}|${Date.now()}`);
+        }
+        if (!esSeguro) await AsyncStorage.setItem(CLAVE_MAPA_CARGANDO, `${version}|${Date.now()}`);
+        if (vivo) setModoSeguro(esSeguro);
+      } catch {
+        if (vivo) setModoSeguro(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+      AsyncStorage.removeItem(CLAVE_MAPA_CARGANDO).catch(() => {});
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!IOS || modoSeguro !== false || !estiloListo) return;
+    const id = setTimeout(() => {
+      AsyncStorage.removeItem(CLAVE_MAPA_CARGANDO).catch(() => {});
+    }, SOBREVIVIO_MS);
+    return () => clearTimeout(id);
+  }, [modoSeguro, estiloListo]);
 
   // La animación sólo corre si hay algo que animar Y el estilo ya cargó.
   const hayGrupos = puntos.length > 1;
@@ -473,8 +557,9 @@ export function MapaLienzo({
           }}
         />
 
-        <Images images={imagenes} />
+        {modoSeguro === false && !IOS ? <Images images={imagenes} /> : null}
 
+        {modoSeguro === false ? (
         <GeoJSONSource
           ref={fuente}
           key="rh-puntos"
@@ -586,7 +671,7 @@ export function MapaLienzo({
             type="circle"
             filter={['has', 'point_count']}
             paint={{
-              'circle-color': COLOR_GRUPO,
+              'circle-color': IOS ? COLOR_GRUPO_IOS : COLOR_GRUPO,
               'circle-opacity': 0.95,
               // Crece con la cantidad, pero por escalones: sin tope, un grupo
               // de 300 taparía media pantalla. El escalón más grande queda por
@@ -666,7 +751,11 @@ export function MapaLienzo({
               key={p.tipo}
               id={`rh-grupos-capa-${p.tipo}`}
               type="circle"
-              filter={['all', ['has', 'point_count'], ['>', ['get', `n_${p.tipo}`], 0]]}
+              filter={
+                IOS
+                  ? ['>', ['get', `n_${p.tipo}`], 0]
+                  : ['all', ['has', 'point_count'], ['>', ['get', `n_${p.tipo}`], 0]]
+              }
               paint={{
                 'circle-color': p.color,
                 'circle-radius': 4.5,
@@ -687,7 +776,7 @@ export function MapaLienzo({
             filter={['has', 'point_count']}
             beforeId="rh-grupos"
             paint={{
-              'circle-color': COLOR_GRUPO,
+              'circle-color': IOS ? COLOR_GRUPO_IOS : COLOR_GRUPO,
               'circle-radius': ['step', ['get', 'point_count'], 32, 10, 40, 50, 50],
               'circle-blur': 0.9,
               'circle-opacity': 0.6,
@@ -700,7 +789,7 @@ export function MapaLienzo({
             key="rh-sueltos-halo"
             id="rh-sueltos-halo"
             type="circle"
-            filter={['!', ['has', 'point_count']]}
+            filter={IOS ? ['has', 'tipo'] : ['!', ['has', 'point_count']]}
             paint={{
               'circle-color': ['get', 'color'],
               'circle-radius': 21,
@@ -712,29 +801,55 @@ export function MapaLienzo({
             key="rh-sueltos"
             id="rh-sueltos"
             type="circle"
-            filter={['!', ['has', 'point_count']]}
+            filter={IOS ? ['has', 'tipo'] : ['!', ['has', 'point_count']]}
             paint={{
               'circle-color': ['get', 'color'],
               // Con foto el disco es el marco; sin foto, el pin entero.
-              'circle-radius': ['case', ['==', ['get', 'foto'], ''], 9, 15],
+              'circle-radius': IOS ? 9 : ['case', ['==', ['get', 'foto'], ''], 9, 15],
               'circle-stroke-width': 2.5,
               'circle-stroke-color': 'rgba(255,255,255,.92)',
             }}
           />
-          <Layer
-            key="rh-sueltos-foto"
-            id="rh-sueltos-foto"
-            type="symbol"
-            filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'foto'], '']]}
-            layout={{
-              'icon-image': ['get', 'foto'],
-              // 52 px de foto reducidos al diámetro del disco.
-              'icon-size': 0.52,
-              'icon-allow-overlap': true,
-            }}
-          />
+          {/* Sin esta capa en iOS: las fotos-ícono están apagadas (`foto` siempre
+              vacío, así que nunca dibujaría nada) y su filtro usaba `['all', ...]`. */}
+          {!IOS ? (
+            <Layer
+              key="rh-sueltos-foto"
+              id="rh-sueltos-foto"
+              type="symbol"
+              filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'foto'], '']]}
+              layout={{
+                'icon-image': ['get', 'foto'],
+                // 52 px de foto reducidos al diámetro del disco.
+                'icon-size': 0.52,
+                'icon-allow-overlap': true,
+              }}
+            />
+          ) : null}
         </GeoJSONSource>
+        ) : null}
       </Map>
+
+      {modoSeguro === true ? (
+        <View pointerEvents="none" style={estilos.avisoSeguro}>
+          <Text style={estilos.avisoSeguroTexto}>
+            Modo seguro: el mapa se cerró la última vez, así que por ahora se muestra sin los pines.
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
+
+const estilos = StyleSheet.create({
+  avisoSeguro: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  avisoSeguroTexto: { color: '#fff', fontSize: 12, textAlign: 'center' },
+});
