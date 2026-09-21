@@ -328,6 +328,7 @@ function rh_chat_mensaje_de_historia(mysqli $conn, int $emisorId, array $histori
             $permiso = rh_chat_permitido($conn, $emisorId, $autorId);
         }
         if (!$permiso['ok']) {
+            error_log('rh_chat_mensaje_de_historia: chat no permitido ' . $emisorId . '->' . $autorId);
             return;
         }
         if ($conversacionId <= 0) {
@@ -335,7 +336,14 @@ function rh_chat_mensaje_de_historia(mysqli $conn, int $emisorId, array $histori
         }
 
         $historiaId = (int) $historia['HistoriaId'];
-        $mini = rh_chat_miniatura_historia((string) $historia['MediaPath'], (string) $historia['TipoMedia'], $historiaId);
+        // La miniatura nunca debe impedir que el mensaje llegue: si falla (foto
+        // enorme, poca memoria), se usa la ruta original.
+        try {
+            $mini = rh_chat_miniatura_historia((string) $historia['MediaPath'], (string) $historia['TipoMedia'], $historiaId);
+        } catch (Throwable $e) {
+            error_log('rh_chat_miniatura_historia: ' . $e->getMessage());
+            $mini = $historia['TipoMedia'] === 'foto' ? (string) $historia['MediaPath'] : null;
+        }
 
         $stmt = $conn->prepare(
             'INSERT INTO Mensaje (ConversacionId, UserIdEmisor, Texto, Tipo, HistoriaId, HistoriaMediaPath)

@@ -340,17 +340,31 @@ export default function ConversacionScreen() {
                       {titulo}
                     </Text>
                   </View>
-                  {item.historia?.mediaPath ? (
-                    <Image
-                      source={{ uri: rhMediaUrl(item.historia.mediaPath) }}
-                      style={styles.historiaMiniatura}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View style={[styles.historiaMiniatura, styles.historiaSinImagen]}>
-                      <Ionicons name="videocam-outline" size={26} color={colors.textMuted} />
-                    </View>
-                  )}
+                  <Pressable
+                    onPress={() => {
+                      // Como Instagram: tocar la miniatura abre esa historia. La
+                      // autora es quien la publicó: el otro si la respuesta es
+                      // mía, yo si me respondieron a mí.
+                      const autorId = mio ? otro?.userId : user?.userId;
+                      if (!autorId) return;
+                      router.push({
+                        pathname: '/(app)/historias/ver/[userId]',
+                        params: { userId: String(autorId), historiaId: String(item.historia?.historiaId ?? 0) },
+                      } as never);
+                    }}
+                  >
+                    {item.historia?.mediaPath ? (
+                      <Image
+                        source={{ uri: rhMediaUrl(item.historia.mediaPath) }}
+                        style={styles.historiaMiniatura}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={[styles.historiaMiniatura, styles.historiaSinImagen]}>
+                        <Ionicons name="videocam-outline" size={26} color={colors.textMuted} />
+                      </View>
+                    )}
+                  </Pressable>
                   {esReaccion ? (
                     <Text style={styles.historiaEmoji}>{EMOJI_REACCION[item.texto] ?? '🐾'}</Text>
                   ) : (

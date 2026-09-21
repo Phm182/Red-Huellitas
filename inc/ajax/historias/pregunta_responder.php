@@ -8,6 +8,8 @@
 require_once __DIR__ . '/../../funciones/bd.php';
 require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
+require_once __DIR__ . '/../../funciones/chat.php';
+require_once __DIR__ . '/../../funciones/menores.php';
 
 $userId = rh_require_auth($conn);
 
@@ -25,14 +27,15 @@ if (mb_strlen($texto) > 300) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT HistoriaPregunta.PreguntaId
+    "SELECT HistoriaPregunta.PreguntaId, Historia.HistoriaId, Historia.UserId, Historia.TipoMedia, Historia.MediaPath
      FROM HistoriaPregunta
      JOIN Historia ON Historia.HistoriaId = HistoriaPregunta.HistoriaId
      WHERE HistoriaPregunta.PreguntaId = ? AND Historia.Estado = 'A' AND Historia.ExpiraEn > NOW()"
 );
 $stmt->bind_param('i', $preguntaId);
 $stmt->execute();
-$existe = (bool) $stmt->get_result()->fetch_assoc();
+$historia = $stmt->get_result()->fetch_assoc();
+$existe = (bool) $historia;
 $stmt->close();
 
 if (!$existe) {
@@ -43,5 +46,8 @@ $stmt = $conn->prepare('INSERT INTO HistoriaPreguntaRespuesta (PreguntaId, UserI
 $stmt->bind_param('iis', $preguntaId, $userId, $texto);
 $stmt->execute();
 $stmt->close();
+
+// También queda en la charla con el autor, con la miniatura de la historia.
+rh_chat_mensaje_de_historia($conn, $userId, $historia, 'historia', $texto);
 
 json_success(null, 'Respuesta enviada', 201);

@@ -41,7 +41,7 @@ function safeGoBack() {
 
 export default function VisorHistoriasScreen() {
   const insets = useSafeAreaInsets();
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { userId, historiaId: historiaIdParam } = useLocalSearchParams<{ userId: string; historiaId?: string }>();
   const [historias, setHistorias] = useState<Historia[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
@@ -116,13 +116,17 @@ export default function VisorHistoriasScreen() {
           progresos.length = 0;
           res.data.historias.forEach(() => progresos.push(new Animated.Value(0)));
         }
-        setIndex(0);
+        // Si se llegó desde el chat, se abre directo la historia a la que se respondió.
+        const inicio = historiaIdParam
+          ? (res.success && res.data ? res.data.historias.findIndex((h) => h.historiaId === Number(historiaIdParam)) : -1)
+          : -1;
+        setIndex(inicio > 0 ? inicio : 0);
         setLoading(false);
       });
       return () => {
         activo = false;
       };
-    }, [userId])
+    }, [userId, historiaIdParam])
   );
 
   const actual = historias[index] ?? null;
