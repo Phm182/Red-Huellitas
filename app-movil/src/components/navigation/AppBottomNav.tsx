@@ -86,6 +86,7 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                 }}
                 delayLongPress={320}
                 style={styles.tab}
+                android_ripple={null}
                 accessibilityRole="button"
                 accessibilityState={{ selected: focused }}
                 accessibilityHint={t('nav.atajosHint')}
@@ -93,7 +94,7 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                 <View style={[styles.iconWrap, focused && { backgroundColor: colors.primarySoft }]}>
                   <Ionicons name={focused ? hub.iconActive : hub.icon} size={21} color={color} />
                 </View>
-                <Text style={[styles.label, { color }]} numberOfLines={1}>
+                <Text style={[styles.label, { color }, focused && { fontFamily: fonts.bodyBold ?? fonts.bodySemi }]} numberOfLines={1}>
                   {t(hub.labelKey)}
                 </Text>
               </Pressable>
@@ -138,9 +139,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   iconWrap: {
-    width: 38,
-    height: 26,
-    borderRadius: radii.sm,
+    width: 52,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
