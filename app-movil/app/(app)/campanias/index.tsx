@@ -107,7 +107,7 @@ export default function CampaniasListaScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AtajosBar
         items={[
-          { icon: 'ticket-outline', label: t('campanias.misInscripciones'), onPress: () => router.push('/(app)/campanias/mis-inscripciones') },
+          { icon: 'ticket-outline', label: t('common.atajos.inscripciones'), onPress: () => router.push('/(app)/campanias/mis-inscripciones') },
         ]}
       />
 

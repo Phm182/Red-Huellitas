@@ -168,7 +168,7 @@ export default function MatchScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AtajosBar
         items={[
-          { icon: 'chatbubbles', label: t('match.misMatches'), onPress: () => router.push('/(app)/match/matches') },
+          { icon: 'chatbubbles', label: t('common.atajos.matches'), onPress: () => router.push('/(app)/match/matches') },
         ]}
       />
 

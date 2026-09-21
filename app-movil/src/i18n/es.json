@@ -5,6 +5,7 @@
     "ayudaAproximada": "El punto se ve corrido hasta 500 m, para proteger tu dirección."
   },
   "common": {
+    "atajos": {"publicaciones": "Publicaciones", "postulaciones": "Postulaciones", "favoritos": "Favoritos", "inscripciones": "Inscripciones", "matches": "Matches"},
     "publicadoPor": "Publicado por @{{usuario}}",
     "continue": "Continuar",
     "cancel": "Cancelar",

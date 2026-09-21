@@ -18,6 +18,8 @@ export type Atajo = {
  */
 export function AtajosBar({ items }: { items: Atajo[] }) {
   const { colors } = useTheme();
+  // Con tres o más, cada tarjeta es angosta: ícono arriba y el texto entero abajo.
+  const columna = items.length >= 3;
   return (
     <View style={styles.fila}>
       {items.map((a) => (
@@ -29,6 +31,7 @@ export function AtajosBar({ items }: { items: Atajo[] }) {
           }}
           style={({ pressed }) => [
             styles.tarjeta,
+            columna && styles.tarjetaColumna,
             elevation.sm,
             {
               backgroundColor: colors.surface,
@@ -42,7 +45,12 @@ export function AtajosBar({ items }: { items: Atajo[] }) {
           <View style={[styles.circulo, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name={a.icon} size={18} color={colors.primary} />
           </View>
-          <Text style={[type.label, styles.texto, { color: colors.text }]} numberOfLines={2}>
+          <Text
+            style={[type.label, styles.texto, columna && { textAlign: 'center', flex: 0, alignSelf: 'stretch' }, { color: colors.text }]}
+            numberOfLines={columna ? 1 : 2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
             {a.label}
           </Text>
         </Pressable>
@@ -64,6 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
   },
+  tarjetaColumna: { flexDirection: 'column', justifyContent: 'center', gap: 6, paddingHorizontal: 6 },
   circulo: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   texto: { flex: 1, fontWeight: '700', fontSize: 13, lineHeight: 16 },
 });

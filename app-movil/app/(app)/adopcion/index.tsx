@@ -134,9 +134,9 @@ export default function AdopcionListaScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AtajosBar
         items={[
-          { icon: 'albums-outline', label: t('adopcion.misPublicaciones'), onPress: () => router.push('/(app)/adopcion/mis-publicaciones') },
-          { icon: 'paper-plane-outline', label: t('adopcion.misPostulaciones'), onPress: () => router.push('/(app)/adopcion/mis-postulaciones') },
-          { icon: 'heart', label: t('adopcion.misFavoritos'), onPress: () => router.push('/(app)/adopcion/favoritos') },
+          { icon: 'albums-outline', label: t('common.atajos.publicaciones'), onPress: () => router.push('/(app)/adopcion/mis-publicaciones') },
+          { icon: 'paper-plane-outline', label: t('common.atajos.postulaciones'), onPress: () => router.push('/(app)/adopcion/mis-postulaciones') },
+          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/adopcion/favoritos') },
         ]}
       />
 

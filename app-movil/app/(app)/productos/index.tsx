@@ -173,7 +173,7 @@ export default function ProductosListaScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AtajosBar
         items={[
-          { icon: 'heart', label: t('productos.misFavoritos'), onPress: () => router.push('/(app)/productos/favoritos') },
+          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/productos/favoritos') },
         ]}
       />
 
