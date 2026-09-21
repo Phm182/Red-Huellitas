@@ -201,6 +201,7 @@
     "minChars": "Escribí al menos 2 caracteres"
   },
   "perfil": {
+    "sinHuetube": "Todavía no subió videos a HueTube",
     "myProfile": "Mi perfil",
     "followers": "Seguidores",
     "following": "Seguidos",

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -19,7 +19,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeIn, FadeInDown, runOnJS } from 'react-native-reanimated';
 import { mascotasApi } from '../api/mascotasApi';
 import { perfilApi } from '../api/perfilApi';
 import { publicacionesApi } from '../api/publicacionesApi';
@@ -49,7 +50,8 @@ interface PerfilBodyProps {
   userId?: number;
 }
 
-type Pestania = 'publicaciones' | 'mascotas';
+type Pestania = 'publicaciones' | 'mascotas' | 'huetube';
+const PESTANIAS: Pestania[] = ['publicaciones', 'mascotas', 'huetube'];
 
 /** Grilla de 3 columnas a lo Instagram, con 2px de separación. */
 const SEPARACION = 2;
@@ -68,6 +70,27 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
   const [loading, setLoading] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
   const [pestania, setPestania] = useState<Pestania>('publicaciones');
+  const pestaniaRef = useRef<Pestania>('publicaciones');
+  pestaniaRef.current = pestania;
+  const cambiarPestania = useCallback((delta: number) => {
+    const i = PESTANIAS.indexOf(pestaniaRef.current) + delta;
+    if (i < 0 || i >= PESTANIAS.length) return;
+    hapticLeve();
+    setPestania(PESTANIAS[i]!);
+  }, []);
+  // Deslizar de costado cambia de solapa (gesto memoizado: recrearlo por
+  // render lo rompe a mitad de un toque).
+  const gestoPestanias = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-16, 16])
+        .failOffsetY([-30, 30])
+        .onEnd((e) => {
+          if (e.translationX < -40 || e.velocityX < -500) runOnJS(cambiarPestania)(1);
+          else if (e.translationX > 40 || e.velocityX > 500) runOnJS(cambiarPestania)(-1);
+        }),
+    [cambiarPestania]
+  );
   const [avatarAbierto, setAvatarAbierto] = useState(false);
   const [subiendoAvatar, setSubiendoAvatar] = useState(false);
   const [mensajeAvatar, setMensajeAvatar] = useState<{ titulo: string; cuerpo: string } | null>(null);
@@ -372,7 +395,8 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
     );
   }
 
-  const items = pestania === 'publicaciones' ? posts : mascotas;
+  const videos = posts.filter((p) => Boolean(p.videoPath));
+  const items = pestania === 'publicaciones' ? posts : pestania === 'huetube' ? videos : mascotas;
   const esPropio = Boolean(perfil.esUnoMismo || (user && user.userId === perfil.userId));
   const bust = esPropio ? (perfil.avatarBust ?? avatarBust) : (perfil.avatarBust ?? 0);
   const avatarUri =
@@ -516,8 +540,10 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
       ) : null}
 
       {/* Pestañas de la grilla */}
+      <GestureDetector gesture={gestoPestanias}>
+      <View collapsable={false}>
       <View style={[styles.tabs, { borderColor: colors.border }]}>
-        {(['publicaciones', 'mascotas'] as Pestania[]).map((p) => {
+        {PESTANIAS.map((p) => {
           const activa = pestania === p;
           return (
             <Pressable
@@ -529,7 +555,7 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
               }}
             >
               <Ionicons
-                name={p === 'publicaciones' ? 'grid-outline' : 'paw-outline'}
+                name={p === 'publicaciones' ? 'grid-outline' : p === 'huetube' ? 'play-circle-outline' : 'paw-outline'}
                 size={20}
                 color={activa ? colors.primary : colors.textMuted}
               />
@@ -540,14 +566,14 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
 
       {items.length === 0 ? (
         <EmptyState
-          icon={pestania === 'publicaciones' ? 'images-outline' : 'paw-outline'}
-          titulo={pestania === 'publicaciones' ? t('feed.emptyFeed') : t('mascotas.emptyState')}
+          icon={pestania === 'publicaciones' ? 'images-outline' : pestania === 'huetube' ? 'play-circle-outline' : 'paw-outline'}
+          titulo={pestania === 'publicaciones' ? t('feed.emptyFeed') : pestania === 'huetube' ? t('perfil.sinHuetube') : t('mascotas.emptyState')}
           fillScreen={false}
         />
       ) : (
         <Animated.View entering={FadeIn.duration(240)} style={styles.grid}>
-          {pestania === 'publicaciones'
-            ? posts.map((p) => (
+          {pestania === 'publicaciones' || pestania === 'huetube'
+            ? (pestania === 'huetube' ? videos : posts).map((p) => (
                 <Pressable
                   key={p.postId}
                   style={styles.celda}
@@ -606,6 +632,8 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
               ))}
         </Animated.View>
       )}
+      </View>
+      </GestureDetector>
     </ScrollView>
 
     <Modal

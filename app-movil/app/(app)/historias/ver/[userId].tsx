@@ -94,6 +94,12 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
 
   // El orden de usuarios sale del mismo feed que dibuja el carrusel, así que
   // el swipe recorre las historias en el orden que el usuario ya vio arriba.
+  // Al ir al perfil desde la cabecera el visor queda debajo: si el tiempo siguiera
+  // corriendo terminaría la historia y haría `back()` sobre el perfil.
+  const [enfocada, setEnfocada] = useState(true);
+  // Historia en la que se estaba al salir (p. ej. al perfil), para retomarla al volver.
+  const indexRef = useRef(0);
+  const guardado = useRef<{ userId: string; index: number } | null>(null);
   const [ordenUsuarios, setOrdenUsuarios] = useState<number[]>([]);
   const vecinos = useRef({ anterior: null as number | null, siguiente: null as number | null });
 
@@ -135,6 +141,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
   useFocusEffect(
     useCallback(() => {
       let activo = true;
+      setEnfocada(true);
       setLoading(true);
       historiasApi.ver(Number(userId)).then((res) => {
         if (!activo) return;
@@ -147,7 +154,10 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
         const inicio = historiaIdParam
           ? (res.success && res.data ? res.data.historias.findIndex((h) => h.historiaId === Number(historiaIdParam)) : -1)
           : -1;
-        setIndex(inicio > 0 ? inicio : 0);
+        const g = guardado.current;
+        guardado.current = null;
+        const retomar = g && g.userId === String(userId) && res.success && res.data ? Math.min(g.index, res.data.historias.length - 1) : 0;
+        setIndex(inicio > 0 ? inicio : Math.max(0, retomar));
         setLoading(false);
         if (entradaRef.current !== 0) {
           entradaRef.current = 0;
@@ -156,10 +166,13 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
       });
       return () => {
         activo = false;
+        guardado.current = { userId: String(userId), index: indexRef.current };
+        setEnfocada(false);
       };
     }, [userId, historiaIdParam])
   );
 
+  indexRef.current = index;
   const actual = historias[index] ?? null;
   // Indexado por historiaId: al pasar a la siguiente Huellita no se puede
   // arrastrar la reacción de la anterior.
@@ -252,7 +265,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
     }
   };
 
-  const enPausa = pausado || escribiendo;
+  const enPausa = pausado || escribiendo || !enfocada;
 
   // Al cambiar de historia: se marca vista y la barra vuelve a cero.
   useEffect(() => {

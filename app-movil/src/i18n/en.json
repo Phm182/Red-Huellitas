@@ -192,6 +192,7 @@
     "minChars": "Type at least 2 characters"
   },
   "perfil": {
+    "sinHuetube": "No HueTube videos yet",
     "myProfile": "My profile",
     "followers": "Followers",
     "following": "Following",
