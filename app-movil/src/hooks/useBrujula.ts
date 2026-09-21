@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Hacia dónde apunta el teléfono, en grados desde el norte.
@@ -22,10 +22,12 @@ import { useEffect, useState } from 'react';
  */
 export function useBrujula(activo: boolean): number | null {
   const [grados, setGrados] = useState<number | null>(null);
+  const suave = useRef<number | null>(null);
 
   useEffect(() => {
     if (!activo) {
       setGrados(null);
+      suave.current = null;
       return;
     }
 
@@ -38,12 +40,18 @@ export function useBrujula(activo: boolean): number | null {
           if (!vivo) return;
           const valor = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
           if (typeof valor !== 'number' || Number.isNaN(valor)) return;
-          // Sólo se re-renderiza con un cambio real: cada lectura movía todo el
-          // mapa y la flecha iba con retraso.
+          // Suavizado + zona muerta: el sensor oscila unos grados aunque el
+          // teléfono esté quieto y la flecha "temblaba". Se promedia con la
+          // lectura anterior (por el camino corto del círculo) y sólo se mueve
+          // la flecha cuando el cambio pasa de unos pocos grados.
+          const previo = suave.current;
+          const d = previo === null ? 0 : ((valor - previo + 540) % 360) - 180;
+          const nuevo = previo === null ? valor : (previo + d * 0.25 + 360) % 360;
+          suave.current = nuevo;
           setGrados((prev) => {
-            if (prev === null) return valor;
-            const d = Math.abs(((valor - prev + 540) % 360) - 180);
-            return d >= 2 ? valor : prev;
+            if (prev === null) return nuevo;
+            const dif = Math.abs(((nuevo - prev + 540) % 360) - 180);
+            return dif >= 4 ? nuevo : prev;
           });
         });
         if (vivo) suscripcion = s;

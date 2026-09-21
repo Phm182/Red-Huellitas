@@ -222,6 +222,8 @@ export default function MapaScreen() {
         // dibujado con la zona del perfil: se veía aparecer y, unos segundos
         // más tarde —cuando la búsqueda de ubicación se rendía—, desaparecer.
         setCentro(coords);
+        // Al abrir, la cámara va a donde está el dispositivo.
+        setIrA({ ...coords, nonce: Date.now() });
       }
     })();
 
@@ -527,23 +529,6 @@ export default function MapaScreen() {
 
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <Pressable
-              onPress={centrarEnMi}
-              style={styles.botonRedondo}
-              disabled={estadoGps === 'buscando'}
-              accessibilityRole="button"
-              accessibilityLabel={t('mapa.centrarEnMi')}
-            >
-              {estadoGps === 'buscando' ? (
-                <ActivityIndicator size="small" color="#4CC9F0" />
-              ) : (
-                <Ionicons
-                  name={estadoGps === 'siguiendo' || estadoGps === 'vaga' ? 'locate' : 'locate-outline'}
-                  size={18}
-                  color={miUbicacion ? '#4CC9F0' : '#fff'}
-                />
-              )}
-            </Pressable>
-            <Pressable
               onPress={refrescar}
               style={styles.botonRedondo}
               accessibilityRole="button"
@@ -581,8 +566,10 @@ export default function MapaScreen() {
       </View>
 
       {/* --- Abajo: sólo el radio, donde llega el pulgar --- */}
-      <View style={[styles.inferior, { bottom: APP_TAB_BAR_HEIGHT + insets.bottom + 10 }]} pointerEvents="box-none">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsFila}>
+      {/* Justo sobre el botón del planeta (sobresale ~30 px de la barra) con el mismo
+          aire que el chat (24), y el botón de centrar a la derecha de todo. */}
+      <View style={[styles.inferior, { bottom: hojaDesdeAbajo + 30 + 24 }]} pointerEvents="box-none">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.chipsFila}>
           {RADIOS.map((r) => (
             <Pressable
               key={r}
@@ -604,6 +591,23 @@ export default function MapaScreen() {
             </Pressable>
           ))}
         </ScrollView>
+            <Pressable
+              onPress={centrarEnMi}
+              style={[styles.botonRedondo, { marginRight: 12 }]}
+              disabled={estadoGps === 'buscando'}
+              accessibilityRole="button"
+              accessibilityLabel={t('mapa.centrarEnMi')}
+            >
+              {estadoGps === 'buscando' ? (
+                <ActivityIndicator size="small" color="#4CC9F0" />
+              ) : (
+                <Ionicons
+                  name={estadoGps === 'siguiendo' || estadoGps === 'vaga' ? 'locate' : 'locate-outline'}
+                  size={18}
+                  color={miUbicacion ? '#4CC9F0' : '#fff'}
+                />
+              )}
+            </Pressable>
       </View>
 
       {/* Qué estás mirando cuando no hay GPS. Sin esto, el mapa centrado en el
@@ -773,7 +777,7 @@ const styles = StyleSheet.create({
   },
   pastillaTexto: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
-  inferior: { position: 'absolute', left: 0, right: 0, gap: 8 },
+  inferior: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
   // `alignSelf` para que la píldora mida lo que mide su texto: estirada a todo
   // el ancho parecía una barra de estado y no un botón que se toca.
   todasWrap: { borderRadius: 20, overflow: 'hidden', alignSelf: 'flex-start' },

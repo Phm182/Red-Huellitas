@@ -1,6 +1,7 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useEffect, useRef } from 'react';
-import { Image, Platform, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 
 export type StoryContentFit = 'cover' | 'contain';
 
@@ -260,8 +261,12 @@ export function StoryMediaFill({
   return (
     <View style={[styles.frame, style]} pointerEvents="none">
       {tipo === 'foto' ? (
-        <Image
+        // expo-image comparte caché con las miniaturas/vecinas del visor: la foto
+        // ya bajada aparece al instante, sin parpadeo al cambiar de usuario.
+        <ExpoImage
           source={{ uri }}
+          cachePolicy="memory-disk"
+          transition={0}
           style={[
             styles.media,
             filterStyle,
@@ -285,7 +290,7 @@ export function StoryMediaFill({
                 }
               : null,
           ]}
-          resizeMode={fit}
+          contentFit={fit}
         />
       ) : Platform.OS === 'web' ? (
         <video

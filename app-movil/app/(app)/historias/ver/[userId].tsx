@@ -59,7 +59,7 @@ export default function VisorHistorias() {
   });
   const panel = (uri: string | null, lado: -1 | 1) => (
     <View style={[styles.panelVecino, { left: lado * SCREEN_W }]} pointerEvents="none">
-      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
+      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="contain" cachePolicy="memory-disk" transition={0} /> : null}
     </View>
   );
   return (
@@ -178,6 +178,10 @@ function VisorHistoriasScreen({
       historiasApi.ver(id).then((res) => {
         if (!activo || !res.success || !res.data) return;
         cacheRef.current[id] = res.data.historias;
+        // Las fotos del vecino se bajan ya, así aparece al instante al deslizar.
+        res.data.historias.forEach((h) => {
+          if (h.tipoMedia === 'foto') void Image.prefetch(rhMediaUrl(h.mediaPath), 'memory-disk');
+        });
         const primera = res.data.historias[0];
         const uri = primera && primera.tipoMedia === 'foto' ? rhMediaUrl(primera.mediaPath) : null;
         vecinasRef.current = { ...vecinasRef.current, [clave]: uri };
