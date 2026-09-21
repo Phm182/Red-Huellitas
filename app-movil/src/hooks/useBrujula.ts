@@ -37,7 +37,14 @@ export function useBrujula(activo: boolean): number | null {
         const s = await Location.watchHeadingAsync((h) => {
           if (!vivo) return;
           const valor = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
-          if (typeof valor === 'number' && !Number.isNaN(valor)) setGrados(valor);
+          if (typeof valor !== 'number' || Number.isNaN(valor)) return;
+          // Sólo se re-renderiza con un cambio real: cada lectura movía todo el
+          // mapa y la flecha iba con retraso.
+          setGrados((prev) => {
+            if (prev === null) return valor;
+            const d = Math.abs(((valor - prev + 540) % 360) - 180);
+            return d >= 2 ? valor : prev;
+          });
         });
         if (vivo) suscripcion = s;
         else s.remove();

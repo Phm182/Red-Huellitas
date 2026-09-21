@@ -12,6 +12,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  Keyboard,
   TextInput,
   View,
 } from 'react-native';
@@ -50,16 +51,40 @@ function safeGoBack() {
  */
 export default function VisorHistorias() {
   const slide = useRef(new Animated.Value(0)).current;
+  // Primera foto de los usuarios vecinos: se dibujan pegados a los costados de
+  // la pantalla para que, al arrastrar, el que sigue vaya apareciendo unido.
+  const [vecinas, setVecinas] = useState<{ anterior: string | null; siguiente: string | null }>({
+    anterior: null,
+    siguiente: null,
+  });
+  const panel = (uri: string | null, lado: -1 | 1) => (
+    <View style={[styles.panelVecino, { left: lado * SCREEN_W }]} pointerEvents="none">
+      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
+    </View>
+  );
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: '#000', overflow: 'hidden' }}>
       <Animated.View style={{ flex: 1, transform: [{ translateX: slide }] }}>
-        <VisorHistoriasScreen slide={slide} />
+        {panel(vecinas.anterior, -1)}
+        <VisorHistoriasScreen slide={slide} onVecinas={setVecinas} />
+        {panel(vecinas.siguiente, 1)}
       </Animated.View>
     </View>
   );
 }
 
-function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
+function VisorHistoriasScreen({
+  slide,
+  onVecinas,
+}: {
+  slide: Animated.Value;
+  onVecinas: (v: { anterior: string | null; siguiente: string | null }) => void;
+}) {
+  // Historias de los usuarios vecinos ya bajadas, para entrar a ellas sin espera.
+  const cacheRef = useRef<Record<number, Historia[]>>({});
+  // true mientras se pasa a un vecino ya cacheado: la pantalla vuelve a 0 cuando
+  // su contenido ya está dibujado, sin pasar por negro.
+  const continuoRef = useRef(false);
   const { user } = useAuth();
   const { colors } = useTheme();
   // El teclado desplaza la ventana ("pan") y lo que asoma detrás es el fondo de
@@ -100,6 +125,11 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
   const [escribiendo, setEscribiendo] = useState(false);
   const [respuesta, setRespuesta] = useState('');
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
+  // Al cerrarse el teclado (botón atrás, tocar afuera) la historia se reanuda.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => setEscribiendo(false));
+    return () => sub.remove();
+  }, []);
   const [aviso, setAviso] = useState<string | null>(null);
   const [votando, setVotando] = useState(false);
   const animacionRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -116,6 +146,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
   const guardado = useRef<{ userId: string; index: number } | null>(null);
   const [ordenUsuarios, setOrdenUsuarios] = useState<number[]>([]);
   const vecinos = useRef({ anterior: null as number | null, siguiente: null as number | null });
+  const vecinasRef = useRef<{ anterior: string | null; siguiente: string | null }>({ anterior: null, siguiente: null });
 
   useEffect(() => {
     let activo = true;
@@ -139,6 +170,25 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
       anterior: i > 0 ? ordenUsuarios[i - 1] : null,
       siguiente: i >= 0 && i < ordenUsuarios.length - 1 ? ordenUsuarios[i + 1] : null,
     };
+    vecinasRef.current = { anterior: null, siguiente: null };
+    onVecinas(vecinasRef.current);
+    let activo = true;
+    const traer = (id: number | null, clave: 'anterior' | 'siguiente') => {
+      if (id === null) return;
+      historiasApi.ver(id).then((res) => {
+        if (!activo || !res.success || !res.data) return;
+        cacheRef.current[id] = res.data.historias;
+        const primera = res.data.historias[0];
+        const uri = primera && primera.tipoMedia === 'foto' ? rhMediaUrl(primera.mediaPath) : null;
+        vecinasRef.current = { ...vecinasRef.current, [clave]: uri };
+        onVecinas(vecinasRef.current);
+      });
+    };
+    traer(vecinos.current.anterior, 'anterior');
+    traer(vecinos.current.siguiente, 'siguiente');
+    return () => {
+      activo = false;
+    };
   }, [ordenUsuarios, userId]);
 
   useEffect(() => {
@@ -156,8 +206,12 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
     useCallback(() => {
       let activo = true;
       setEnfocada(true);
-      setLoading(true);
-      historiasApi.ver(Number(userId)).then((res) => {
+      const cacheado = historiaIdParam ? undefined : cacheRef.current[Number(userId)];
+      if (!cacheado) setLoading(true);
+      const pedir = cacheado
+        ? Promise.resolve({ success: true, data: { historias: cacheado } })
+        : historiasApi.ver(Number(userId));
+      pedir.then((res) => {
         if (!activo) return;
         if (res.success && res.data) {
           setHistorias(res.data.historias);
@@ -173,7 +227,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
         const retomar = g && g.userId === String(userId) && res.success && res.data ? Math.min(g.index, res.data.historias.length - 1) : 0;
         setIndex(inicio > 0 ? inicio : Math.max(0, retomar));
         setLoading(false);
-        if (entradaRef.current !== 0) {
+        if (entradaRef.current !== 0 && !continuoRef.current) {
           entradaRef.current = 0;
           Animated.timing(slide, { toValue: 0, duration: 110, useNativeDriver: true }).start();
         }
@@ -187,6 +241,13 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
   );
 
   indexRef.current = index;
+  useEffect(() => {
+    if (continuoRef.current && !loading && historias[0]?.userId === Number(userId)) {
+      slide.setValue(0);
+      continuoRef.current = false;
+      entradaRef.current = 0;
+    }
+  }, [historias, loading, userId, slide]);
   const actual = historias[index] ?? null;
   // Indexado por historiaId: al pasar a la siguiente Huellita no se puede
   // arrastrar la reacción de la anterior.
@@ -376,9 +437,23 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
           // Adelante (dedo a la izquierda): sale hacia la izquierda y el próximo
           // entra por la derecha. Atrás: al revés.
           const dir: 1 | -1 = g.dx < 0 ? 1 : -1;
+          const yaLista = cacheRef.current[userIdDestino] !== undefined;
           Animated.timing(slide, { toValue: -dir * SCREEN_W, duration: 80, useNativeDriver: true }).start(() => {
             entradaRef.current = dir;
-            slide.setValue(dir * SCREEN_W);
+            if (yaLista) {
+              // El vecino ya estaba dibujado al costado: se deja la pantalla ahí
+              // y se vuelve a 0 recién cuando su contenido real está puesto.
+              continuoRef.current = true;
+              setTimeout(() => {
+                if (continuoRef.current) {
+                  slide.setValue(0);
+                  continuoRef.current = false;
+                  entradaRef.current = 0;
+                }
+              }, 700);
+            } else {
+              slide.setValue(dir * SCREEN_W);
+            }
             router.setParams({ userId: String(userIdDestino), historiaId: undefined } as never);
           });
         },
@@ -690,8 +765,8 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
               placeholderTextColor="rgba(255,255,255,0.6)"
               style={styles.responderInput}
               onFocus={() => setEscribiendo(true)}
-              // Al salir del campo sólo se reanuda si no dejó nada escrito.
-              onBlur={() => setEscribiendo(respuesta.trim().length > 0)}
+              // Al salir del campo o cerrar el teclado, la historia sigue.
+              onBlur={() => setEscribiendo(false)}
             />
             <Pressable
               onPress={onEnviarRespuesta}
@@ -727,6 +802,7 @@ const styles = StyleSheet.create({
         } as object)
       : null),
   },
+  panelVecino: { position: 'absolute', top: 0, bottom: 0, width: SCREEN_W, backgroundColor: '#000' },
   centered: { alignItems: 'center', justifyContent: 'center' },
   progressRow: { position: 'absolute', left: 8, right: 8, flexDirection: 'row', gap: 4, zIndex: 5 },
   progressTrack: { flex: 1, height: 3, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, overflow: 'hidden' },
