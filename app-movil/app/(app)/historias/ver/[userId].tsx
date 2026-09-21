@@ -57,6 +57,22 @@ export default function VisorHistorias() {
     anterior: null,
     siguiente: null,
   });
+  // Mientras se pasa a un vecino, las copias de los costados no pueden cambiar:
+  // la que se está viendo tiene que quedarse hasta que el contenido real esté
+  // puesto (si se actualizaran antes, se veía un fogonazo negro).
+  const congelado = useRef(false);
+  const pendiente = useRef<{ anterior: string | null; siguiente: string | null } | null>(null);
+  const actualizarVecinas = useCallback((v: { anterior: string | null; siguiente: string | null }) => {
+    if (congelado.current) pendiente.current = v;
+    else setVecinas(v);
+  }, []);
+  const congelar = useCallback((si: boolean) => {
+    congelado.current = si;
+    if (!si && pendiente.current) {
+      setVecinas(pendiente.current);
+      pendiente.current = null;
+    }
+  }, []);
   const panel = (uri: string | null, lado: -1 | 1) => (
     <View style={[styles.panelVecino, { left: lado * SCREEN_W }]} pointerEvents="none">
       {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="contain" cachePolicy="memory-disk" transition={0} /> : null}
@@ -66,7 +82,7 @@ export default function VisorHistorias() {
     <View style={{ flex: 1, backgroundColor: '#000', overflow: 'hidden' }}>
       <Animated.View style={{ flex: 1, transform: [{ translateX: slide }] }}>
         {panel(vecinas.anterior, -1)}
-        <VisorHistoriasScreen slide={slide} onVecinas={setVecinas} />
+        <VisorHistoriasScreen slide={slide} onVecinas={actualizarVecinas} congelar={congelar} />
         {panel(vecinas.siguiente, 1)}
       </Animated.View>
     </View>
@@ -76,9 +92,11 @@ export default function VisorHistorias() {
 function VisorHistoriasScreen({
   slide,
   onVecinas,
+  congelar,
 }: {
   slide: Animated.Value;
   onVecinas: (v: { anterior: string | null; siguiente: string | null }) => void;
+  congelar: (si: boolean) => void;
 }) {
   // Historias de los usuarios vecinos ya bajadas, para entrar a ellas sin espera.
   const cacheRef = useRef<Record<number, Historia[]>>({});
@@ -170,7 +188,15 @@ function VisorHistoriasScreen({
       anterior: i > 0 ? ordenUsuarios[i - 1] : null,
       siguiente: i >= 0 && i < ordenUsuarios.length - 1 ? ordenUsuarios[i + 1] : null,
     };
-    vecinasRef.current = { anterior: null, siguiente: null };
+    // Lo ya bajado se usa de inmediato; lo que falte llega con la petición.
+    const uriCache = (id: number | null) => {
+      const h = id !== null ? cacheRef.current[id]?.[0] : undefined;
+      return h && h.tipoMedia === 'foto' ? rhMediaUrl(h.mediaPath) : null;
+    };
+    vecinasRef.current = {
+      anterior: uriCache(vecinos.current.anterior),
+      siguiente: uriCache(vecinos.current.siguiente),
+    };
     onVecinas(vecinasRef.current);
     let activo = true;
     const traer = (id: number | null, clave: 'anterior' | 'siguiente') => {
@@ -258,6 +284,7 @@ function VisorHistoriasScreen({
       slide.setValue(0);
       continuoRef.current = false;
       entradaRef.current = 0;
+      congelar(false);
     }, 50);
     return () => clearTimeout(t);
   }, [historias, index, loading, userId, slide, cargadaId]);
@@ -457,11 +484,13 @@ function VisorHistoriasScreen({
               // El vecino ya estaba dibujado al costado: se deja la pantalla ahí
               // y se vuelve a 0 recién cuando su contenido real está puesto.
               continuoRef.current = true;
+              congelar(true);
               setTimeout(() => {
                 if (continuoRef.current) {
                   slide.setValue(0);
                   continuoRef.current = false;
                   entradaRef.current = 0;
+                  congelar(false);
                 }
               }, 700);
             } else {
