@@ -1,4 +1,5 @@
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -83,6 +84,7 @@ export default function TransitoDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={transito.autor} esAnimal={Boolean(transito.nombre || transito.especie)} mascotaId={transito.mascotaId} nombre={transito.nombre} fotoPublicacion={transito.fotos[0]?.path ?? null}/>
       {transito.fotos.length > 0 ? (
         <FlatList
           horizontal

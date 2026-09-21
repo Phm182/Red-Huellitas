@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -94,6 +95,7 @@ export default function PerdidoDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={perdido.autor} esAnimal mascotaId={perdido.mascotaId} nombre={perdido.nombre} fotoPublicacion={perdido.fotos[0]?.path ?? null}/>
       {perdido.fotos.length > 0 ? (
         <FlatList
           horizontal

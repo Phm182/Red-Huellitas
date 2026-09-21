@@ -5,6 +5,7 @@
     "ayudaAproximada": "The pin is shifted up to 500 m to protect your address."
   },
   "common": {
+    "publicadoPor": "Posted by @{{usuario}}",
     "continue": "Continue",
     "cancel": "Cancel",
     "save": "Save",

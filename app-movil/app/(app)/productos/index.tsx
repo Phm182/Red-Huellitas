@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -170,12 +171,11 @@ export default function ProductosListaScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={styles.atajos}>
-        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/productos/favoritos')}>
-          <Ionicons name="heart-outline" size={15} color={colors.primary} />
-          <Text style={[type.label, { color: colors.primary }]}>{t('productos.misFavoritos')}</Text>
-        </Pressable>
-      </View>
+      <AtajosBar
+        items={[
+          { icon: 'heart', label: t('productos.misFavoritos'), onPress: () => router.push('/(app)/productos/favoritos') },
+        ]}
+      />
 
       <View style={styles.filtros}>
         <FilterSelect

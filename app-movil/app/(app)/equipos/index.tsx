@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -86,65 +87,71 @@ export default function EquiposScreen() {
         onSelect={(v) => setTipoFiltro(v === '' ? null : v)}
       />
 
-      <FlatList
-        data={filtrados}
-        keyExtractor={(e) => String(e.equipoId)}
-        contentContainerStyle={[
-          styles.lista,
-          centeredContent,
-          filtrados.length === 0 && styles.vacia,
-        ]}
-        ListEmptyComponent={
-          <EmptyState
-            icon="people-outline"
-            titulo={buscando ? t('common.sinResultadosBusqueda') : t('equipos.emptyLista')}
-            descripcion={buscando ? undefined : t('equipos.emptyDesc')}
-          />
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => {
-              hapticLeve();
-              router.push({ pathname: '/(app)/equipos/[id]', params: { id: item.equipoId } });
-            }}
-            style={[styles.fila, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            {item.avatarPath ? (
-              <Image
-                source={{ uri: rhMediaUrl(item.avatarPath) }}
-                style={styles.avatar}
-                contentFit="cover"
-                transition={160}
-              />
-            ) : (
-              <View
-                style={[styles.avatar, styles.avatarVacio, { backgroundColor: item.tipo.color + '22' }]}
-              >
-                <Ionicons name={item.tipo.icono as never} size={20} color={item.tipo.color} />
-              </View>
-            )}
-
-            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-              <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
-                {item.nombre}
-              </Text>
-              <InsigniaEquipo tipo={item.tipo} verificado={item.verificado} size="sm" />
-              <View style={styles.metaFila}>
-                <ReputacionLinea
-                  reputacion={item.reputacion}
-                  sinDatosLabel={t('equipos.sinCalificaciones')}
+      <SwipeFiltro
+        valores={['', ...tipos.map((tp) => tp.codigo)]}
+        seleccionado={tipoFiltro ?? ''}
+        onSelect={(v) => setTipoFiltro(v === '' ? null : v)}
+      >
+        <FlatList
+          data={filtrados}
+          keyExtractor={(e) => String(e.equipoId)}
+          contentContainerStyle={[
+            styles.lista,
+            centeredContent,
+            filtrados.length === 0 && styles.vacia,
+          ]}
+          ListEmptyComponent={
+            <EmptyState
+              icon="people-outline"
+              titulo={buscando ? t('common.sinResultadosBusqueda') : t('equipos.emptyLista')}
+              descripcion={buscando ? undefined : t('equipos.emptyDesc')}
+            />
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                hapticLeve();
+                router.push({ pathname: '/(app)/equipos/[id]', params: { id: item.equipoId } });
+              }}
+              style={[styles.fila, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              {item.avatarPath ? (
+                <Image
+                  source={{ uri: rhMediaUrl(item.avatarPath) }}
+                  style={styles.avatar}
+                  contentFit="cover"
+                  transition={160}
                 />
-                <Text style={[type.caption, { color: colors.textMuted }]} numberOfLines={1}>
-                  · {t('equipos.miembrosCount', { count: item.totalMiembros })}
-                  {item.zonaDescripcion ? ` · ${item.zonaDescripcion}` : ''}
-                </Text>
-              </View>
-            </View>
+              ) : (
+                <View
+                  style={[styles.avatar, styles.avatarVacio, { backgroundColor: item.tipo.color + '22' }]}
+                >
+                  <Ionicons name={item.tipo.icono as never} size={20} color={item.tipo.color} />
+                </View>
+              )}
 
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </Pressable>
-        )}
-      />
+              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
+                  {item.nombre}
+                </Text>
+                <InsigniaEquipo tipo={item.tipo} verificado={item.verificado} size="sm" />
+                <View style={styles.metaFila}>
+                  <ReputacionLinea
+                    reputacion={item.reputacion}
+                    sinDatosLabel={t('equipos.sinCalificaciones')}
+                  />
+                  <Text style={[type.caption, { color: colors.textMuted }]} numberOfLines={1}>
+                    · {t('equipos.miembrosCount', { count: item.totalMiembros })}
+                    {item.zonaDescripcion ? ` · ${item.zonaDescripcion}` : ''}
+                  </Text>
+                </View>
+              </View>
+
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
+        />
+      </SwipeFiltro>
 
       <Fab
         icon="add"

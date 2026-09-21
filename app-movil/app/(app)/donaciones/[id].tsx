@@ -1,4 +1,5 @@
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -82,6 +83,7 @@ export default function DonacionDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={donacion.autor} />
       {donacion.fotos.length > 0 ? (
         <FlatList
           horizontal

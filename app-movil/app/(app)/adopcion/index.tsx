@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
+import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -130,87 +132,82 @@ export default function AdopcionListaScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={styles.atajos}>
-        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/adopcion/mis-publicaciones')}>
-          <Ionicons name="list-outline" size={15} color={colors.primary} />
-          <Text style={[type.label, { color: colors.primary }]}>{t('adopcion.misPublicaciones')}</Text>
-        </Pressable>
-        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/adopcion/mis-postulaciones')}>
-          <Ionicons name="document-text-outline" size={15} color={colors.primary} />
-          <Text style={[type.label, { color: colors.primary }]}>{t('adopcion.misPostulaciones')}</Text>
-        </Pressable>
-        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/adopcion/favoritos')}>
-          <Ionicons name="heart-outline" size={15} color={colors.primary} />
-          <Text style={[type.label, { color: colors.primary }]}>{t('adopcion.misFavoritos')}</Text>
-        </Pressable>
-      </View>
+      <AtajosBar
+        items={[
+          { icon: 'albums-outline', label: t('adopcion.misPublicaciones'), onPress: () => router.push('/(app)/adopcion/mis-publicaciones') },
+          { icon: 'paper-plane-outline', label: t('adopcion.misPostulaciones'), onPress: () => router.push('/(app)/adopcion/mis-postulaciones') },
+          { icon: 'heart', label: t('adopcion.misFavoritos'), onPress: () => router.push('/(app)/adopcion/favoritos') },
+        ]}
+      />
 
       <View style={styles.filtros}>
         <ChipRow opciones={opciones} seleccionado={especie} onSelect={setEspecie} />
       </View>
 
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={especie} onSelect={setEspecie}>
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
 
-      {loading ? (
-        <SkeletonList />
-      ) : (
-        <FlatList
-          contentContainerStyle={[styles.list, centeredContent]}
-          data={filtrados}
-          keyExtractor={(a) => String(a.adopcionId)}
-          refreshing={refrescando}
-          onRefresh={onRefrescar}
-          renderItem={({ item, index }) => {
-            const especieLabel = labelEspecie(item.especie, t);
-            const edad = labelEdad(item, t);
-            const subtitulo = [especieLabel, item.raza, edad].filter(Boolean).join(' · ');
+        {loading ? (
+          <SkeletonList />
+        ) : (
+          <FlatList
+            contentContainerStyle={[styles.list, centeredContent]}
+            data={filtrados}
+            keyExtractor={(a) => String(a.adopcionId)}
+            refreshing={refrescando}
+            onRefresh={onRefrescar}
+            renderItem={({ item, index }) => {
+              const especieLabel = labelEspecie(item.especie, t);
+              const edad = labelEdad(item, t);
+              const subtitulo = [especieLabel, item.raza, edad].filter(Boolean).join(' · ');
 
-            return (
-              <ListCard
-                index={index}
-                titulo={item.nombre}
-                subtitulo={subtitulo || null}
-                meta={item.zonaDescripcion}
-                fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
-                iconoFallback={ICONO_ESPECIE[item.especie]}
-                badge={
-                  item.estadoAdopcion !== 'disponible' ? (
-                    <Badge label={t(`adopcion.estado.${item.estadoAdopcion}`)} tono="warning" />
-                  ) : item.esFavorito ? (
-                    <Ionicons name="heart" size={18} color={colors.primary} />
-                  ) : undefined
-                }
-                onPress={() =>
-                  router.push({ pathname: '/(app)/adopcion/[id]', params: { id: item.adopcionId } })
-                }
-              />
-            );
-          }}
-          ListEmptyComponent={
-            <EmptyState
-              icon="home-outline"
-              titulo={buscando ? t('common.sinResultadosBusqueda') : t('adopcion.emptyLista')}
-              accionLabel={buscando ? undefined : t('adopcion.tituloNueva')}
-              onAccion={buscando ? undefined : () => router.push('/(app)/adopcion/nueva')}
-            />
-          }
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={
-            <>
-              {filtrados.length > 0 ? (
-                <ListEndAddButton
-                  label={t('adopcion.tituloNueva')}
-                  onPress={() => router.push('/(app)/adopcion/nueva')}
+              return (
+                <ListCard
+                  index={index}
+                  titulo={item.nombre}
+                  subtitulo={subtitulo || null}
+                  meta={item.zonaDescripcion}
+                  fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
+                  iconoFallback={ICONO_ESPECIE[item.especie]}
+                  badge={
+                    item.estadoAdopcion !== 'disponible' ? (
+                      <Badge label={t(`adopcion.estado.${item.estadoAdopcion}`)} tono="warning" />
+                    ) : item.esFavorito ? (
+                      <Ionicons name="heart" size={18} color={colors.primary} />
+                    ) : undefined
+                  }
+                  onPress={() =>
+                    router.push({ pathname: '/(app)/adopcion/[id]', params: { id: item.adopcionId } })
+                  }
                 />
-              ) : null}
-              {cargandoMas ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
-              ) : null}
-            </>
-          }
-        />
-      )}
+              );
+            }}
+            ListEmptyComponent={
+              <EmptyState
+                icon="home-outline"
+                titulo={buscando ? t('common.sinResultadosBusqueda') : t('adopcion.emptyLista')}
+                accionLabel={buscando ? undefined : t('adopcion.tituloNueva')}
+                onAccion={buscando ? undefined : () => router.push('/(app)/adopcion/nueva')}
+              />
+            }
+            onEndReached={cargarMas}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              <>
+                {filtrados.length > 0 ? (
+                  <ListEndAddButton
+                    label={t('adopcion.tituloNueva')}
+                    onPress={() => router.push('/(app)/adopcion/nueva')}
+                  />
+                ) : null}
+                {cargandoMas ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+                ) : null}
+              </>
+            }
+          />
+        )}
+      </SwipeFiltro>
     </View>
   );
 }

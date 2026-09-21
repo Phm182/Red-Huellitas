@@ -1,4 +1,5 @@
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -96,6 +97,7 @@ export default function ProductoDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={producto.autor} />
       {producto.fotos.length > 0 ? (
         <View style={{ marginBottom: 14 }}>
           <CarruselFotos paths={producto.fotos.map((f) => f.path)} />

@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
@@ -109,60 +110,62 @@ export default function PerdidosListaScreen() {
         <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
       </View>
 
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={tipo} onSelect={setTipo}>
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
 
-      {loading ? (
-        <SkeletonList />
-      ) : (
-        <FlatList
-          contentContainerStyle={[styles.list, centeredContent]}
-          data={filtrados}
-          keyExtractor={(p) => String(p.perdidoId)}
-          refreshing={refrescando}
-          onRefresh={onRefrescar}
-          renderItem={({ item, index }) => (
-            <ListCard
-              index={index}
-              titulo={item.nombre}
-              subtitulo={item.raza ?? item.especie}
-              fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
-              iconoFallback={ICONO_TIPO[item.tipo]}
-              badge={
-                <Badge
-                  label={t(`perdidos.tipo.${item.tipo}`)}
-                  tono={item.tipo === 'perdido' ? 'danger' : 'success'}
-                />
-              }
-              onPress={() =>
-                router.push({ pathname: '/(app)/perdidos/[id]', params: { id: item.perdidoId } })
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="search-outline"
-              titulo={buscando ? t('common.sinResultadosBusqueda') : t('perdidos.emptyLista')}
-              accionLabel={buscando ? undefined : t('perdidos.tituloNueva')}
-              onAccion={buscando ? undefined : () => router.push('/(app)/perdidos/nueva')}
-            />
-          }
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={
-            <>
-              {filtrados.length > 0 ? (
-                <ListEndAddButton
-                  label={t('perdidos.tituloNueva')}
-                  onPress={() => router.push('/(app)/perdidos/nueva')}
-                />
-              ) : null}
-              {cargandoMas ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
-              ) : null}
-            </>
-          }
-        />
-      )}
+        {loading ? (
+          <SkeletonList />
+        ) : (
+          <FlatList
+            contentContainerStyle={[styles.list, centeredContent]}
+            data={filtrados}
+            keyExtractor={(p) => String(p.perdidoId)}
+            refreshing={refrescando}
+            onRefresh={onRefrescar}
+            renderItem={({ item, index }) => (
+              <ListCard
+                index={index}
+                titulo={item.nombre}
+                subtitulo={item.raza ?? item.especie}
+                fotoUri={item.fotos[0] ? rhMediaUrl(item.fotos[0].path) : null}
+                iconoFallback={ICONO_TIPO[item.tipo]}
+                badge={
+                  <Badge
+                    label={t(`perdidos.tipo.${item.tipo}`)}
+                    tono={item.tipo === 'perdido' ? 'danger' : 'success'}
+                  />
+                }
+                onPress={() =>
+                  router.push({ pathname: '/(app)/perdidos/[id]', params: { id: item.perdidoId } })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyState
+                icon="search-outline"
+                titulo={buscando ? t('common.sinResultadosBusqueda') : t('perdidos.emptyLista')}
+                accionLabel={buscando ? undefined : t('perdidos.tituloNueva')}
+                onAccion={buscando ? undefined : () => router.push('/(app)/perdidos/nueva')}
+              />
+            }
+            onEndReached={cargarMas}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              <>
+                {filtrados.length > 0 ? (
+                  <ListEndAddButton
+                    label={t('perdidos.tituloNueva')}
+                    onPress={() => router.push('/(app)/perdidos/nueva')}
+                  />
+                ) : null}
+                {cargandoMas ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+                ) : null}
+              </>
+            }
+          />
+        )}
+      </SwipeFiltro>
     </View>
   );
 }

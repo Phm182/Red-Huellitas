@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -156,6 +157,7 @@ export default function CampaniaDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={campania.autor} />
       <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: 6 }}>
         {t(`campanias.tipo.${campania.tipo}`).toUpperCase()}
       </Text>

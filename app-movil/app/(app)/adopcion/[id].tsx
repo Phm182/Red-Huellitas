@@ -1,4 +1,5 @@
 import { especieI18nKey } from '../../../src/constants/especies';
+import { CabeceraPublicacion } from '../../../src/components/CabeceraPublicacion';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -68,6 +69,7 @@ export default function AdopcionDetalleScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }, centeredContent]}>
+      <CabeceraPublicacion autor={adopcion.autor} esAnimal nombre={adopcion.nombre} fotoPublicacion={adopcion.fotos[0]?.path ?? null}/>
       {adopcion.fotos.length > 0 ? (
         <FlatList
           horizontal

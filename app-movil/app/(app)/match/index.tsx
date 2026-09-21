@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -165,11 +166,11 @@ export default function MatchScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={styles.atajos}>
-        <Pressable onPress={() => router.push('/(app)/match/matches')}>
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('match.misMatches')}</Text>
-        </Pressable>
-      </View>
+      <AtajosBar
+        items={[
+          { icon: 'chatbubbles', label: t('match.misMatches'), onPress: () => router.push('/(app)/match/matches') },
+        ]}
+      />
 
       {disponibles.length > 1 ? (
         <View style={styles.filtros}>

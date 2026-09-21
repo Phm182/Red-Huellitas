@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
+import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -103,70 +105,71 @@ export default function CampaniasListaScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={styles.atajos}>
-        <Pressable style={styles.atajo} onPress={() => router.push('/(app)/campanias/mis-inscripciones')}>
-          <Ionicons name="calendar-outline" size={15} color={colors.primary} />
-          <Text style={[type.label, { color: colors.primary }]}>{t('campanias.misInscripciones')}</Text>
-        </Pressable>
-      </View>
+      <AtajosBar
+        items={[
+          { icon: 'ticket-outline', label: t('campanias.misInscripciones'), onPress: () => router.push('/(app)/campanias/mis-inscripciones') },
+        ]}
+      />
 
       <View style={styles.filtros}>
         <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
       </View>
 
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={tipo} onSelect={setTipo}>
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
 
-      {loading ? (
-        <SkeletonList />
-      ) : (
-        <FlatList
-          contentContainerStyle={[styles.list, centeredContent]}
-          data={filtrados}
-          keyExtractor={(c) => String(c.campaniaId)}
-          refreshing={refrescando}
-          onRefresh={onRefrescar}
-          renderItem={({ item, index }) => (
-            <ListCard
-              index={index}
-              titulo={item.titulo}
-              subtitulo={`${item.fechaDesde}${item.fechaHasta ? ` – ${item.fechaHasta}` : ''} · ${item.zonaDescripcion}`}
-              meta={
-                item.requiereInscripcion
-                  ? t('campanias.cupoDisponibleLabel', { cupo: item.cupoDisponible ?? '∞' })
-                  : null
-              }
-              iconoFallback={ICONO_TIPO[item.tipo]}
-              badge={<Badge label={t(`campanias.tipo.${item.tipo}`)} tono="accent" />}
-              onPress={() =>
-                router.push({ pathname: '/(app)/campanias/[id]', params: { id: item.campaniaId } })
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="megaphone-outline"
-              titulo={buscando ? t('common.sinResultadosBusqueda') : t('campanias.emptyLista')}
-              accionLabel={buscando ? undefined : t('campanias.tituloNueva')}
-              onAccion={buscando ? undefined : () => router.push('/(app)/campanias/nueva')}
-            />
-          }
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={
-            <>
-              {filtrados.length > 0 ? (
-                <ListEndAddButton
-                  label={t('campanias.tituloNueva')}
-                  onPress={() => router.push('/(app)/campanias/nueva')}
-                />
-              ) : null}
-              {cargandoMas ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
-              ) : null}
-            </>
-          }
-        />
-      )}
+        {loading ? (
+          <SkeletonList />
+        ) : (
+          <FlatList
+            contentContainerStyle={[styles.list, centeredContent]}
+            data={filtrados}
+            keyExtractor={(c) => String(c.campaniaId)}
+            refreshing={refrescando}
+            onRefresh={onRefrescar}
+            renderItem={({ item, index }) => (
+              <ListCard
+                index={index}
+                titulo={item.titulo}
+                subtitulo={`${item.fechaDesde}${item.fechaHasta ? ` – ${item.fechaHasta}` : ''} · ${item.zonaDescripcion}`}
+                meta={
+                  item.requiereInscripcion
+                    ? t('campanias.cupoDisponibleLabel', { cupo: item.cupoDisponible ?? '∞' })
+                    : null
+                }
+                iconoFallback={ICONO_TIPO[item.tipo]}
+                badge={<Badge label={t(`campanias.tipo.${item.tipo}`)} tono="accent" />}
+                onPress={() =>
+                  router.push({ pathname: '/(app)/campanias/[id]', params: { id: item.campaniaId } })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyState
+                icon="megaphone-outline"
+                titulo={buscando ? t('common.sinResultadosBusqueda') : t('campanias.emptyLista')}
+                accionLabel={buscando ? undefined : t('campanias.tituloNueva')}
+                onAccion={buscando ? undefined : () => router.push('/(app)/campanias/nueva')}
+              />
+            }
+            onEndReached={cargarMas}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              <>
+                {filtrados.length > 0 ? (
+                  <ListEndAddButton
+                    label={t('campanias.tituloNueva')}
+                    onPress={() => router.push('/(app)/campanias/nueva')}
+                  />
+                ) : null}
+                {cargandoMas ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+                ) : null}
+              </>
+            }
+          />
+        )}
+      </SwipeFiltro>
     </View>
   );
 }
