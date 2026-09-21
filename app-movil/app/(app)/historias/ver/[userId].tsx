@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as SystemUI from 'expo-system-ui';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../../src/auth/AuthProvider';
 import { historiasApi } from '../../../../src/api/historiasApi';
@@ -59,6 +61,18 @@ export default function VisorHistorias() {
 
 function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  // El teclado desplaza la ventana ("pan") y lo que asoma detrás es el fondo de
+  // la ventana, que es claro: por eso parpadeaba en blanco. Mientras se ven
+  // historias el fondo de la ventana es negro.
+  useFocusEffect(
+    useCallback(() => {
+      SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
+      return () => {
+        SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
+      };
+    }, [colors.background])
+  );
   // Hacia dónde entra el próximo usuario (+1 desde la derecha, -1 desde la izquierda).
   const entradaRef = useRef<0 | 1 | -1>(0);
   const [autores, setAutores] = useState<Record<number, UsuarioResumen>>({});

@@ -9,7 +9,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { useBrujula } from '../../hooks/useBrujula';
 import { MAPA_TIPO_POR_CLAVE, MAPA_TIPOS } from '../../types/mapa';
 import type { MapaPunto, MapaSesion } from '../../types/mapa';
@@ -281,6 +281,16 @@ export function MapaLienzo({
    * anillo igual arranca en cuanto el estilo está listo.
    */
   const [estiloListo, setEstiloListo] = useState(false);
+  const velo = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (estiloListo) {
+      Animated.timing(velo, { toValue: 0, duration: 220, useNativeDriver: true }).start();
+      return;
+    }
+    // Sin red el estilo no baja nunca: pasado un rato se levanta igual.
+    const t = setTimeout(() => Animated.timing(velo, { toValue: 0, duration: 220, useNativeDriver: true }).start(), 5000);
+    return () => clearTimeout(t);
+  }, [estiloListo, velo]);
 
   /**
    * Red de seguridad para iOS: si el mapa se cerró de golpe mientras cargaba
@@ -401,12 +411,12 @@ export function MapaLienzo({
   }, [irA?.nonce, irA?.lat, irA?.lng]);
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: oscuro ? '#0e0e0e' : '#f2f3f0' }]}>
       <Map
         style={StyleSheet.absoluteFill}
         mapStyle={oscuro ? ESTILO_OSCURO : ESTILO_CLARO}
         logo={false}
-        attributionPosition={{ bottom: 96, right: 8 }}
+        attribution={false}
         compass
         compassPosition={{ bottom: 150, right: 10 }}
         // Tocar el mapa donde no hay nada cierra la hoja. Los toques sobre un
@@ -762,6 +772,15 @@ export function MapaLienzo({
         </GeoJSONSource>
         ) : null}
       </Map>
+      {/* El mapa nativo se ve blanco hasta bajar el estilo: se tapa con el color
+          del fondo del mapa y se disuelve cuando ya está listo. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: oscuro ? '#0e0e0e' : '#f2f3f0', opacity: velo },
+        ]}
+      />
 
       {modoSeguro === true ? (
         <View pointerEvents="none" style={estilos.avisoSeguro}>
