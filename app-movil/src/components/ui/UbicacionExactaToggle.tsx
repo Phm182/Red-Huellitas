@@ -39,7 +39,8 @@ export function UbicacionExactaToggle({
 }
 
 const styles = StyleSheet.create({
-  caja: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 10, marginBottom: 12, gap: 6 },
+  // `paddingRight` grande: los botones flotantes (notificaciones, chat) tapan el borde derecho de la pantalla.
+  caja: { borderWidth: 1, borderRadius: 12, padding: 12, paddingRight: 64, marginTop: 10, marginBottom: 12, gap: 6 },
   fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   titulo: { flex: 1, fontSize: 14, fontWeight: '600' },
   ayuda: { fontSize: 12, lineHeight: 17 },

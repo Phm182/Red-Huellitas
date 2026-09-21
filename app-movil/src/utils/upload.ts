@@ -1,3 +1,4 @@
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 
 /**
@@ -14,8 +15,29 @@ export async function appendImageFile(form: FormData, field: string, uri: string
     const blob = await response.blob();
     form.append(field, blob, filename);
   } else {
-    form.append(field, { uri, name: filename, type: 'image/jpeg' } as unknown as Blob);
+    form.append(field, { uri: await aJpegSiHaceFalta(uri), name: filename, type: 'image/jpeg' } as unknown as Blob);
   }
+}
+
+/**
+ * El servidor sólo acepta JPG y PNG (mira el contenido real del archivo, no lo
+ * que dice el cliente). Las fotos sacadas con la cámara del iPhone son HEIC, y
+ * algunos flujos (historias, por ejemplo) le pasaban al servidor la URI cruda
+ * del selector: llegaba HEIC con la etiqueta "image/jpeg" y el servidor la
+ * rechazaba con "formato de imagen no permitido (solo JPG/PNG)". Una captura de
+ * pantalla (PNG) sí pasaba, por eso sólo fallaban las fotos de cámara.
+ *
+ * Si la URI no es claramente JPG/PNG, se convierte a JPEG acá, que es por donde
+ * pasan todas las subidas de imágenes. Lo que ya viene de `comprimirImagen`
+ * (siempre .jpg) no se vuelve a procesar.
+ */
+async function aJpegSiHaceFalta(uri: string): Promise<string> {
+  if (/\.(jpe?g|png)(\?.*)?$/i.test(uri)) return uri;
+  const r = await ImageManipulator.manipulateAsync(uri, [], {
+    compress: 0.85,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return r.uri;
 }
 
 /**
