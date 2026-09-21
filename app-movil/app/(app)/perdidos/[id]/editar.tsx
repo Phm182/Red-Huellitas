@@ -15,6 +15,7 @@ import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
 
 import { ESPECIES, especieI18nKey } from '../../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../../src/components/ui/UbicacionExactaToggle';
 
 /**
  * Editar un reporte propio de perdido/encontrado.
@@ -44,6 +45,7 @@ export default function EditarPerdidoScreen() {
 
   const [lugarDescripcion, setLugarDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -69,6 +71,7 @@ export default function EditarPerdidoScreen() {
           setFechaSuceso(p.fechaSuceso);
           setLugarDescripcion(p.ultimoLugarDescripcion);
           setCoords({ lat: p.ultimoLugarLat, lng: p.ultimoLugarLng });
+          setExacta(!!p.ubicacionExacta);
           setFotos(p.fotos.map((f) => rhMediaUrl(f.path)));
           setFotoIds(p.fotos.map((f) => f.perdidoFotoId));
         } else {
@@ -127,6 +130,7 @@ export default function EditarPerdidoScreen() {
           }),
       ultimoLugarDescripcion: lugarDescripcion.trim(),
       ultimoLugarLat: coords.lat,
+      ubicacionExacta: exacta,
       ultimoLugarLng: coords.lng,
       fechaSuceso,
     });
@@ -233,6 +237,7 @@ export default function EditarPerdidoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

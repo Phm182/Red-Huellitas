@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/mapa.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/perdido.php';
 require_once __DIR__ . '/../../funciones/edicion.php';
@@ -51,6 +52,8 @@ $lock = rh_perdido_motivo_bloqueo_edicion($perdido);
 if ($lock !== null) {
     json_error($lock, 409);
 }
+
+rh_mapa_guardar_exacta($conn, 'Perdido', 'PerdidoId', $perdidoId, $userId);
 
 $vinculado = $perdido['MascotaId'] !== null;
 

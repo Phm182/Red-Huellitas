@@ -93,6 +93,7 @@ function rh_producto_publico(mysqli $conn, array $p, int $viewerUserId, ?float $
         'especie' => $p['Especie'],
         'fotos' => rh_producto_fotos($conn, $productoId),
         'zonaDescripcion' => $p['ZonaDescripcion'],
+        'ubicacionExacta' => (bool) ($p['UbicacionExacta'] ?? 0),
         'zonaLat' => (float) $p['ZonaLat'],
         'zonaLng' => (float) $p['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,

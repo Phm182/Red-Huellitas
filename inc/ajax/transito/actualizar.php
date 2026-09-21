@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/mapa.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/transito.php';
 require_once __DIR__ . '/../../funciones/edicion.php';
@@ -52,6 +53,8 @@ $lock = rh_transito_motivo_bloqueo_edicion($transito);
 if ($lock !== null) {
     json_error($lock, 409);
 }
+
+rh_mapa_guardar_exacta($conn, 'Transito', 'TransitoId', $transitoId, $userId);
 
 $tipo = $transito['Tipo'];
 $vinculada = $transito['MascotaId'] !== null;

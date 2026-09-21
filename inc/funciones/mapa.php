@@ -32,7 +32,9 @@ require_once __DIR__ . '/uploads.php';
  * `publico = true` significa que el punto se muestra exacto. Es para lugares
  * con puerta a la calle —una veterinaria, un refugio, una campaña de
  * castración— donde la dirección precisa es justamente el dato que la gente
- * necesita. Todo lo demás sale difuminado (ver rh_geo_difuminar).
+ * necesita. Todo lo demás sale difuminado (ver rh_geo_difuminar), salvo que
+ * quien publicó haya elegido mostrarla exacta: `exactaCol` es la columna (0/1)
+ * de cada publicación donde se guarda esa elección.
  */
 function rh_mapa_fuentes(): array
 {
@@ -50,6 +52,7 @@ function rh_mapa_fuentes(): array
             'fotoFk' => 'AdopcionId',
             'ruta' => '/(app)/adopcion/%d',
             'publico' => false,
+            'exactaCol' => 'UbicacionExacta',
         ],
         'transito' => [
             'tabla' => 'Transito',
@@ -64,6 +67,7 @@ function rh_mapa_fuentes(): array
             'fotoFk' => 'TransitoId',
             'ruta' => '/(app)/transito/%d',
             'publico' => false,
+            'exactaCol' => 'UbicacionExacta',
         ],
         'perdidos' => [
             'tabla' => 'Perdido',
@@ -78,6 +82,7 @@ function rh_mapa_fuentes(): array
             'fotoFk' => 'PerdidoId',
             'ruta' => '/(app)/perdidos/%d',
             'publico' => false,
+            'exactaCol' => 'UbicacionExacta',
         ],
         'donaciones' => [
             'tabla' => 'Donacion',
@@ -92,6 +97,7 @@ function rh_mapa_fuentes(): array
             'fotoFk' => 'DonacionId',
             'ruta' => '/(app)/donaciones/%d',
             'publico' => false,
+            'exactaCol' => 'UbicacionExacta',
         ],
         'productos' => [
             'tabla' => 'Producto',
@@ -106,6 +112,7 @@ function rh_mapa_fuentes(): array
             'fotoFk' => 'ProductoId',
             'ruta' => '/(app)/productos/%d',
             'publico' => false,
+            'exactaCol' => 'UbicacionExacta',
         ],
         'veterinarias' => [
             'tabla' => 'Veterinaria',
@@ -166,6 +173,59 @@ function rh_mapa_tipos_validos(): array
 }
 
 /**
+ * Guarda la elección "mostrar ubicación exacta" de una publicación.
+ *
+ * Se hace aparte del INSERT/UPDATE principal a propósito: si el código se
+ * deploya antes que la migración 073, crear y editar publicaciones sigue
+ * andando (simplemente no guarda la elección). Sólo escribe si el cliente
+ * mandó `ubicacionExacta`, así una versión vieja de la app no pisa nada.
+ */
+function rh_mapa_guardar_exacta(mysqli $conn, string $tabla, string $pk, int $id, int $userId): void
+{
+    if (!array_key_exists('ubicacionExacta', $_POST)) {
+        return;
+    }
+    if (!rh_mapa_columna_existe($conn, $tabla, 'UbicacionExacta')) {
+        return;
+    }
+    $exacta = filter_var($_POST['ubicacionExacta'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+    $stmt = $conn->prepare("UPDATE $tabla SET UbicacionExacta = ? WHERE $pk = ? AND UserId = ?");
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param('iii', $exacta, $id, $userId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/**
+ * ¿Existe esa columna? Se cachea por request. Lo usa el mapa para leer la
+ * elección "ubicación exacta" sólo si la migración ya corrió: un deploy del
+ * código antes de la migración no puede dejar el mapa vacío.
+ */
+function rh_mapa_columna_existe(mysqli $conn, string $tabla, string $columna): bool
+{
+    static $cache = [];
+    $k = $tabla . '.' . $columna;
+    if (!isset($cache[$k])) {
+        $stmt = $conn->prepare(
+            'SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+        );
+        $n = 0;
+        if ($stmt) {
+            $stmt->bind_param('ss', $tabla, $columna);
+            $stmt->execute();
+            $stmt->bind_result($n);
+            $stmt->fetch();
+            $stmt->close();
+        }
+        $cache[$k] = $n > 0;
+    }
+    return $cache[$k];
+}
+
+/**
  * Busca los puntos de un tipo dentro del radio pedido.
  *
  * Prefiltra con la caja de coordenadas (que usa índice) y recién sobre eso
@@ -193,6 +253,12 @@ function rh_mapa_buscar_tipo(
         $foto = 'NULL';
     }
 
+    // Publicaciones de personas: la columna dice si quien publicó eligió
+    // mostrar la ubicación exacta. Lugares públicos no la tienen (0 fijo).
+    $exacta = (!empty($f['exactaCol']) && rh_mapa_columna_existe($conn, $f['tabla'], $f['exactaCol']))
+        ? "t.{$f['exactaCol']}"
+        : '0';
+
     $sql = "SELECT
                 t.{$f['pk']}      AS id,
                 {$f['titulo']}    AS titulo,
@@ -200,6 +266,7 @@ function rh_mapa_buscar_tipo(
                 t.{$f['zona']}    AS zona,
                 t.{$f['lat']}     AS lat,
                 t.{$f['lng']}     AS lng,
+                $exacta           AS exacta,
                 $foto             AS foto,
                 (6371 * ACOS(LEAST(1, COS(RADIANS(?)) * COS(RADIANS(t.{$f['lat']}))
                     * COS(RADIANS(t.{$f['lng']}) - RADIANS(?))
@@ -238,7 +305,8 @@ function rh_mapa_buscar_tipo(
 
         // Acá es donde se decide si se publica la dirección exacta o no.
         // Un solo lugar, para todos los módulos.
-        if ($f['publico']) {
+        $esExacta = $f['publico'] || (int) $row['exacta'] === 1;
+        if ($esExacta) {
             $latPub = $latReal;
             $lngPub = $lngReal;
         } else {
@@ -257,7 +325,7 @@ function rh_mapa_buscar_tipo(
             'lng' => round($lngPub, 6),
             'fotoPath' => $row['foto'],
             'distanciaKm' => round((float) $row['distanciaKm'], 2),
-            'ubicacionExacta' => (bool) $f['publico'],
+            'ubicacionExacta' => $esExacta,
             'ruta' => sprintf($f['ruta'], (int) $row['id']),
         ];
     }

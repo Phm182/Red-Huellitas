@@ -15,6 +15,7 @@ import { AppInput } from '../../../src/components/AppInput';
 const TIPOS: TipoDonacion[] = ['necesito', 'ofrezco'];
 const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo', 'ropa'];
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../src/components/ui/UbicacionExactaToggle';
 
 export default function NuevaDonacionScreen() {
   const { t } = useTranslation();
@@ -34,6 +35,7 @@ export default function NuevaDonacionScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -84,6 +86,7 @@ export default function NuevaDonacionScreen() {
       especie,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
       fotos,
     });
@@ -193,6 +196,7 @@ export default function NuevaDonacionScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

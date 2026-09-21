@@ -1,4 +1,9 @@
 {
+  "ubicacionExacta": {
+    "titulo": "Show the exact location on the map",
+    "ayudaExacta": "The pin shows at the exact spot you marked.",
+    "ayudaAproximada": "The pin is shifted up to 500 m to protect your address."
+  },
   "common": {
     "continue": "Continue",
     "cancel": "Cancel",
@@ -1614,6 +1619,8 @@
     },
     "nivelEnJuego": "{{juego}} · level {{n}}",
     "diario": {
+      "tiempo": "Time",
+      "reglaTiempo": "Daily challenge: you have 3 minutes. You score points for every line you clear until time runs out.",
       "titulo": "Daily challenge",
       "bajada": "The same board for everyone. One try a day.",
       "bajadaHub": "One board a day, the same for everyone",

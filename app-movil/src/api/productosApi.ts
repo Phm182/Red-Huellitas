@@ -17,6 +17,8 @@ export interface CrearProductoParams {
   especie?: Especie | null;
   zonaDescripcion: string;
   zonaLat: number;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada (false, default). */
+  ubicacionExacta?: boolean;
   zonaLng: number;
   fotos?: string[];
 }
@@ -29,6 +31,7 @@ async function construirFormProducto(params: CrearProductoParams): Promise<FormD
   form.append('precio', String(params.precio));
   form.append('zonaDescripcion', params.zonaDescripcion);
   form.append('zonaLat', String(params.zonaLat));
+  if (params.ubicacionExacta !== undefined) form.append('ubicacionExacta', params.ubicacionExacta ? '1' : '0');
   form.append('zonaLng', String(params.zonaLng));
   if (params.descripcion) {
     form.append('descripcion', params.descripcion);
@@ -71,6 +74,7 @@ export const productosApi = {
     form.append('precio', String(params.precio));
     form.append('zonaDescripcion', params.zonaDescripcion);
     form.append('zonaLat', String(params.zonaLat));
+    if (params.ubicacionExacta !== undefined) form.append('ubicacionExacta', params.ubicacionExacta ? '1' : '0');
     form.append('zonaLng', String(params.zonaLng));
     if (params.descripcion) form.append('descripcion', params.descripcion);
     if (params.cantidad) form.append('cantidad', String(params.cantidad));

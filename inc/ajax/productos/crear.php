@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/mapa.php';
 require_once __DIR__ . '/../../funciones/producto.php';
 
 $userId = rh_require_auth($conn);
@@ -86,6 +87,7 @@ $stmt->bind_param(
 );
 $stmt->execute();
 $productoId = (int) $stmt->insert_id;
+rh_mapa_guardar_exacta($conn, 'Producto', 'ProductoId', $productoId, $userId);
 $stmt->close();
 
 foreach ($fotos as $index => $foto) {

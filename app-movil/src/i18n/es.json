@@ -1,4 +1,9 @@
 {
+  "ubicacionExacta": {
+    "titulo": "Mostrar la ubicación exacta en el mapa",
+    "ayudaExacta": "El punto se ve en el lugar exacto que marcaste.",
+    "ayudaAproximada": "El punto se ve corrido hasta 500 m, para proteger tu dirección."
+  },
   "common": {
     "continue": "Continuar",
     "cancel": "Cancelar",
@@ -1636,6 +1641,8 @@
     },
     "nivelEnJuego": "{{juego}} · nivel {{n}}",
     "diario": {
+      "tiempo": "Tiempo",
+      "reglaTiempo": "Reto del día: tenés 3 minutos. Sumás puntos por cada línea que completes hasta que se acabe el tiempo.",
       "titulo": "Reto del día",
       "bajada": "El mismo tablero para todos. Un intento por día.",
       "bajadaHub": "Un tablero por día, igual para todos",

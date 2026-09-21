@@ -668,6 +668,8 @@ export interface Perdido {
   descripcion: string | null;
   fotos: PerdidoFoto[];
   ultimoLugarDescripcion: string;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada, corrida ~500 m (false). */
+  ubicacionExacta: boolean;
   ultimoLugarLat: number;
   ultimoLugarLng: number;
   fechaSuceso: string;
@@ -706,6 +708,8 @@ export interface Transito {
   duracionDias: number | null;
   fotos: TransitoFoto[];
   zonaDescripcion: string;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada, corrida ~500 m (false). */
+  ubicacionExacta: boolean;
   zonaLat: number;
   zonaLng: number;
   distanciaKm: number | null;
@@ -756,6 +760,8 @@ export interface Donacion {
   especie: Especie | null;
   fotos: DonacionFoto[];
   zonaDescripcion: string;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada, corrida ~500 m (false). */
+  ubicacionExacta: boolean;
   zonaLat: number;
   zonaLng: number;
   distanciaKm: number | null;
@@ -881,6 +887,8 @@ export interface Producto {
   especie: Especie | null;
   fotos: ProductoFoto[];
   zonaDescripcion: string;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada, corrida ~500 m (false). */
+  ubicacionExacta: boolean;
   zonaLat: number;
   zonaLng: number;
   distanciaKm: number | null;

@@ -15,6 +15,7 @@ import { rhMediaUrl } from '../../../../src/utils/media';
 
 const CATEGORIAS: CategoriaDonacion[] = ['alimento', 'insumo', 'ropa'];
 import { ESPECIES, especieI18nKey } from '../../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../../src/components/ui/UbicacionExactaToggle';
 
 /**
  * Editar una publicación propia de donación.
@@ -39,6 +40,7 @@ export default function EditarDonacionScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -59,6 +61,7 @@ export default function EditarDonacionScreen() {
           setDescripcion(d.descripcion);
           setZonaDescripcion(d.zonaDescripcion);
           setCoords({ lat: d.zonaLat, lng: d.zonaLng });
+          setExacta(!!d.ubicacionExacta);
           setFotos(d.fotos.map((f) => rhMediaUrl(f.path)));
           setFotoIds(d.fotos.map((f) => f.donacionFotoId));
         } else {
@@ -106,6 +109,7 @@ export default function EditarDonacionScreen() {
       especie,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
       fotos,
       fotosExistentesIds: fotoIds,
@@ -185,6 +189,7 @@ export default function EditarDonacionScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

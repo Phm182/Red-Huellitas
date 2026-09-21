@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/mapa.php';
 require_once __DIR__ . '/../../funciones/producto.php';
 require_once __DIR__ . '/../../funciones/edicion.php';
 
@@ -48,6 +49,8 @@ $lock = rh_producto_motivo_bloqueo_edicion($conn, $productoId);
 if ($lock !== null) {
     json_error($lock, 409);
 }
+
+rh_mapa_guardar_exacta($conn, 'Producto', 'ProductoId', $productoId, $userId);
 
 $categoriaId = (int) ($_POST['categoriaId'] ?? 0);
 $nombre = trim($_POST['nombre'] ?? '');

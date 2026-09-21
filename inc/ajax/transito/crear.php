@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../funciones/validacion.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/especies.php';
 require_once __DIR__ . '/../../funciones/uploads.php';
+require_once __DIR__ . '/../../funciones/mapa.php';
 require_once __DIR__ . '/../../funciones/mascotas.php';
 require_once __DIR__ . '/../../funciones/transito.php';
 
@@ -129,6 +130,7 @@ $stmt->bind_param(
 );
 $stmt->execute();
 $transitoId = (int) $stmt->insert_id;
+rh_mapa_guardar_exacta($conn, 'Transito', 'TransitoId', $transitoId, $userId);
 $stmt->close();
 
 foreach ($fotos as $index => $foto) {

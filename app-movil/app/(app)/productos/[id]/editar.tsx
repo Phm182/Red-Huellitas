@@ -14,6 +14,7 @@ import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
 
 import { ESPECIES, especieI18nKey } from '../../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../../src/components/ui/UbicacionExactaToggle';
 
 /**
  * Editar un producto o servicio propio.
@@ -42,6 +43,7 @@ export default function EditarProductoScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -71,6 +73,7 @@ export default function EditarProductoScreen() {
           setEspecie(p.especie);
           setZonaDescripcion(p.zonaDescripcion);
           setCoords({ lat: p.zonaLat, lng: p.zonaLng });
+          setExacta(!!p.ubicacionExacta);
           setFotos(p.fotos.map((f) => rhMediaUrl(f.path)));
           setFotoIds(p.fotos.map((f) => f.productoFotoId));
         } else {
@@ -128,6 +131,7 @@ export default function EditarProductoScreen() {
       especie,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
       fotos,
       fotosExistentesIds: fotoIds,
@@ -225,6 +229,7 @@ export default function EditarProductoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

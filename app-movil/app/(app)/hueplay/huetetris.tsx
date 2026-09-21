@@ -32,6 +32,7 @@ import { centeredContent } from '../../../src/theme/layout';
 import { fonts } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { hapticError, hapticExito, hapticLeve } from '../../../src/utils/haptics';
+import { LIMITE_DIARIO_SEGUNDOS, formatoTiempo } from '../../../src/juego/comun/diario';
 
 type Fase = 'listo' | 'jugando' | 'pausado' | 'enviando' | 'fin';
 
@@ -169,6 +170,11 @@ export default function HueTetrisScreen() {
       ultimoTsRef.current = ts;
 
       actualizar(estado, dt);
+      // Reto del día: la partida se corta a los 3 minutos con lo sumado hasta ahí.
+      if (esDiario && !estado.terminado && estado.duracionSegundos >= LIMITE_DIARIO_SEGUNDOS) {
+        estado.duracionSegundos = LIMITE_DIARIO_SEGUNDOS;
+        estado.terminado = true;
+      }
 
       if (estado.lineas > lineasVistasRef.current) {
         hapticLeve();
@@ -187,7 +193,7 @@ export default function HueTetrisScreen() {
       }
       rafRef.current = requestAnimationFrame(loop);
     },
-    [terminar]
+    [terminar, esDiario]
   );
 
   const arrancar = useCallback(() => {
@@ -309,6 +315,9 @@ export default function HueTetrisScreen() {
         </View>
         <Text style={[styles.titulo, { color: colors.text }]}>{t('hueplay.tetris.titulo')}</Text>
         <Text style={[styles.bajada, { color: colors.textMuted }]}>{t('hueplay.tetris.comoSeJuega')}</Text>
+        {esDiario ? (
+          <Text style={[styles.bajada, { color: colors.primary, fontWeight: '600' }]}>{t('hueplay.diario.reglaTiempo')}</Text>
+        ) : null}
         <Pressable onPress={arrancar} style={[styles.boton, { backgroundColor: colors.primary }]}>
           <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.empezar')}</Text>
         </Pressable>
@@ -460,6 +469,14 @@ export default function HueTetrisScreen() {
               ))}
             </View>
           </View>
+          {esDiario ? (
+            <View style={[styles.caja, { borderColor: colors.primary, backgroundColor: colors.surface }]}>
+              <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.diario.tiempo')}</Text>
+              <Text style={[styles.cajaValor, { color: colors.text }]}>
+                {formatoTiempo(LIMITE_DIARIO_SEGUNDOS - estado.duracionSegundos)}
+              </Text>
+            </View>
+          ) : null}
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.tetris.puntos')}</Text>
             <Text style={[styles.cajaValor, { color: colors.text }]}>{Math.round(estado.puntaje)}</Text>

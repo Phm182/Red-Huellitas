@@ -102,6 +102,7 @@ function rh_perdido_publico(mysqli $conn, array $p, int $viewerUserId): array
         'descripcion' => $descripcion,
         'fotos' => rh_perdido_fotos($conn, $p),
         'ultimoLugarDescripcion' => $p['UltimoLugarDescripcion'],
+        'ubicacionExacta' => (bool) ($p['UbicacionExacta'] ?? 0),
         'ultimoLugarLat' => (float) $p['UltimoLugarLat'],
         'ultimoLugarLng' => (float) $p['UltimoLugarLng'],
         'fechaSuceso' => $p['FechaSuceso'],

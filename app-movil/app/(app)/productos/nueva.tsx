@@ -14,6 +14,7 @@ import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoListado[] = ['producto', 'servicio'];
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../src/components/ui/UbicacionExactaToggle';
 
 export default function NuevoProductoScreen() {
   const { t } = useTranslation();
@@ -34,6 +35,7 @@ export default function NuevoProductoScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -104,6 +106,7 @@ export default function NuevoProductoScreen() {
       especie,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
       fotos,
     });
@@ -242,6 +245,7 @@ export default function NuevoProductoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

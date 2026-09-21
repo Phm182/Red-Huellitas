@@ -2,8 +2,6 @@ import {
   Camera,
   type CameraRef,
   GeoJSONSource,
-  type GeoJSONSourceRef,
-  Images,
   Layer,
   Map,
   UserLocation,
@@ -43,9 +41,10 @@ type Props = {
  * por uno que no podemos controlar. MapLibre dibuja los mismos vector tiles,
  * es libre y no pide token: se ve igual y no hay contador que vigilar.
  *
- * A diferencia de la versión web, acá el agrupado lo hace el propio motor
- * (`cluster` del GeoJSONSource): montar 200 marcadores de React sobre una vista
- * nativa tira los FPS al arrastrar, y el motor lo resuelve en la GPU.
+ * A diferencia de la versión web, acá los marcadores son capas del motor y no
+ * vistas de React: montar 200 marcadores de React sobre una vista nativa tira
+ * los FPS al arrastrar. El agrupado lo calcula `agrupar()` (ver más abajo),
+ * anclado a un punto real para que el marcador no se corra al alejar.
  *
  * El punto de "vos estás acá" lo dibuja `UserLocation`, que usa el proveedor de
  * ubicación del sistema y se refresca solo mientras el mapa está abierto. Es
@@ -69,89 +68,80 @@ const EDIFICIOS_DESDE_ZOOM = 13;
 const ZOOM_INICIAL = 13.6;
 
 /**
- * Hasta qué zoom se agrupan los puntos.
+ * Agrupado propio, anclado al punto.
  *
- * Va por DEBAJO de `ZOOM_INICIAL` a propósito: así al abrir el mapa ya se ven
- * los marcadores individuales, con su color por tipo y su foto. Si el umbral
- * queda por encima del zoom inicial, todo aparece agrupado y los grupos se
- * pintan de un color único, que es lo que hacía que todas las publicaciones se
- * vieran iguales.
+ * El agrupado nativo de MapLibre pone el grupo en el centroide de sus miembros,
+ * así que al alejar el mapa el marcador se corría de donde estaba el punto. Acá
+ * cada grupo se ancla a UNO de sus puntos (la "semilla") y se dibuja exactamente
+ * donde esa publicación está: el marcador no se mueve de su lugar, y cuando otro
+ * choca con él (dos marcadores a menos de `RADIO_AGRUPAR_PX` en pantalla) se
+ * suma al mismo grupo.
+ *
+ * Además evita expresiones de estilo: los conteos por tipo y el color dominante
+ * se calculan acá y viajan como propiedades planas. En iOS toda expresión pasa
+ * por NSExpression/NSPredicate, y una con predicados compuestos (`['all', ...]`)
+ * era lo que rompía el mapa (SIGSEGV en `MLNCircleStyleLayer setCircleColor:`).
  */
-const CLUSTER_HASTA_ZOOM = 12;
+const AGRUPAR_HASTA_ZOOM = 17;
+const RADIO_AGRUPAR_PX = 40;
 
-/**
- * Un contador por tipo dentro de cada grupo.
- *
- * MapLibre agrupa los puntos pero pierde de vista qué había adentro: por eso el
- * grupo se dibujaba de un color fijo. Con esto cada grupo lleva `n_adopcion`,
- * `n_perdidos`, etc., y se puede pintar según lo que realmente contiene.
- *
- * Va en la forma LARGA `[operador, mapa]`, con el `['accumulated']` explícito.
- * La forma corta `['+', <mapa>]` que acepta Mapbox GL JS en web el motor
- * nativo la ignora en silencio: no tira error, simplemente deja las
- * propiedades sin calcular. Y como todas quedaban en cero, `colorDominante()`
- * caía siempre en la primera rama —adopción— y por eso en el celular TODOS los
- * grupos se veían del mismo rosa, y el anillo de capas no aparecía nunca
- * porque su filtro pide `> 0`.
- */
-const CONTADORES_POR_TIPO = Object.fromEntries(
-  MAPA_TIPOS.map((m) => [
-    `n_${m.tipo}`,
-    [
-      ['+', ['accumulated'], ['get', `n_${m.tipo}`]],
-      ['case', ['==', ['get', 'tipo'], m.tipo], 1, 0],
-    ],
-  ])
-);
+type Grupo = { semilla: MapaPunto; miembros: MapaPunto[] };
 
-/**
- * Color del grupo: el del tipo más frecuente adentro.
- *
- * Es lo mismo que hace la web, que pinta el marcador con el color del tipo
- * dominante; así las dos plataformas se ven igual. La expresión se arma acá y
- * no a mano porque son 8 tipos y cada uno hay que compararlo contra los otros
- * 7: escrito a mano son 64 comparaciones que se desactualizan al agregar un
- * tipo nuevo.
- */
-function colorDominante(): any {
-  const ramas: any[] = ['case'];
-  for (const m of MAPA_TIPOS) {
-    const esElMayor: any[] = ['all'];
-    for (const otro of MAPA_TIPOS) {
-      if (otro.tipo === m.tipo) continue;
-      esElMayor.push(['>=', ['get', `n_${m.tipo}`], ['get', `n_${otro.tipo}`]]);
-    }
-    ramas.push(esElMayor, m.color);
-  }
-  // Sin datos de tipo (no debería pasar) queda el cian de antes.
-  ramas.push('#4CC9F0');
-  return ramas;
+function aPixeles(lat: number, lng: number, zoom: number) {
+  const escala = 256 * Math.pow(2, zoom);
+  const s = Math.sin((Math.max(-85, Math.min(85, lat)) * Math.PI) / 180);
+  return {
+    x: ((lng + 180) / 360) * escala,
+    y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * escala,
+  };
 }
 
-const COLOR_GRUPO = colorDominante();
+function agrupar(puntos: MapaPunto[], zoom: number): Grupo[] {
+  if (zoom >= AGRUPAR_HASTA_ZOOM) return puntos.map((p) => ({ semilla: p, miembros: [p] }));
+
+  // Orden estable: la semilla de un grupo no cambia de un cuadro al otro.
+  const orden = [...puntos].sort((a, b) =>
+    a.tipo === b.tipo ? a.id - b.id : a.tipo < b.tipo ? -1 : 1
+  );
+  const px = orden.map((p) => aPixeles(p.lat, p.lng, zoom));
+  const celda = RADIO_AGRUPAR_PX;
+  const grilla = new globalThis.Map<string, number[]>();
+  px.forEach((c, i) => {
+    const k = `${Math.floor(c.x / celda)}:${Math.floor(c.y / celda)}`;
+    const lista = grilla.get(k);
+    if (lista) lista.push(i);
+    else grilla.set(k, [i]);
+  });
+
+  const usado: boolean[] = new Array(orden.length).fill(false);
+  const grupos: Grupo[] = [];
+  for (let i = 0; i < orden.length; i++) {
+    if (usado[i]) continue;
+    usado[i] = true;
+    const miembros = [orden[i]!];
+    const cx = Math.floor(px[i]!.x / celda);
+    const cy = Math.floor(px[i]!.y / celda);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (const j of grilla.get(`${cx + dx}:${cy + dy}`) ?? []) {
+          if (usado[j]) continue;
+          if (Math.hypot(px[j]!.x - px[i]!.x, px[j]!.y - px[i]!.y) <= celda) {
+            usado[j] = true;
+            miembros.push(orden[j]!);
+          }
+        }
+      }
+    }
+    grupos.push({ semilla: orden[i]!, miembros });
+  }
+  return grupos;
+}
+
+function abreviar(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
 
 const IOS = Platform.OS === 'ios';
-
-/**
- * Cómo se pinta en iOS lo que en Android es una expresión con predicados
- * compuestos (`['all', ...]`, `['!', ...]`).
- *
- * Diagnóstico del crash de iOS (SIGSEGV en MapLibre.framework, build 18, log
- * simbolizado contra el binario del build): la pila de llamadas es
- * `mapViewDidFinishLoadingStyle` -> `MLRNSource addToMap` -> `MLRNLayer
- * addStyles` -> `MLRNStyle setCircleColor:` -> `MLNCircleStyleLayer
- * setCircleColor:` -> adentro del C++ de MapLibre, copiando un
- * `std::unordered_map` desde un puntero inválido (`1`), con `NSCompoundPredicate`
- * en los registros. En iOS toda expresión pasa por `NSExpression`/`NSPredicate`
- * antes de llegar al motor; el primer `circle-color` que NO es un color plano es
- * `COLOR_GRUPO`, un `case` con `['all', ...]` y 56 comparaciones. Los `case` con
- * UNA sola comparación sí funcionan (los usa `clusterProperties`, que se carga
- * antes de que reviente). Android no pasa por ese camino y anda bien.
- *
- * Mientras no se confirme el arreglo en iOS, ahí los grupos van de un color
- * fijo (el anillo de puntitos igual muestra qué mezcla hay adentro).
- */
-const COLOR_GRUPO_IOS = '#4CC9F0';
 
 const CLAVE_MAPA_CARGANDO = '@red_huellitas/mapa_cargando';
 const CLAVE_MAPA_SEGURO = '@red_huellitas/mapa_modo_seguro';
@@ -271,7 +261,6 @@ export function MapaLienzo({
   onMover,
 }: Props) {
   const camara = useRef<CameraRef>(null);
-  const fuente = useRef<GeoJSONSourceRef>(null);
 
   /**
    * Hacia dónde mira el teléfono. Va por la brújula y no por el GPS: el rumbo
@@ -343,65 +332,67 @@ export function MapaLienzo({
     return () => clearTimeout(id);
   }, [modoSeguro, estiloListo]);
 
+  /**
+   * Zoom con el que se agrupa, en saltos de 0,5: reagrupar en cada cuadro del
+   * gesto de zoom sería recalcular todo el tiempo y el mapa se sentiría lento.
+   */
+  const [zoomAgrupar, setZoomAgrupar] = useState(Math.round(ZOOM_INICIAL * 2) / 2);
+
+  const agrupado = useMemo(() => {
+    const indice = new globalThis.Map<string, MapaPunto[]>();
+    const features = agrupar(puntos, zoomAgrupar).map((g, n) => {
+      const geometry = { type: 'Point' as const, coordinates: [g.semilla.lng, g.semilla.lat] };
+
+      if (g.miembros.length === 1) {
+        const p = g.semilla;
+        return {
+          type: 'Feature' as const,
+          id: `${p.tipo}-${p.id}`,
+          properties: {
+            // El punto entero viaja serializado: al tocar un pin hay que
+            // devolver el objeto completo, y las propiedades de un feature
+            // nativo sólo aceptan valores planos.
+            punto: JSON.stringify(p),
+            // Sólo los puntos sueltos tienen `tipo`: es lo que los distingue
+            // de los grupos en los filtros de las capas.
+            tipo: p.tipo,
+            color: MAPA_TIPO_POR_CLAVE[p.tipo]?.color ?? '#4CC9F0',
+          },
+          geometry,
+        };
+      }
+
+      const cuentas: Record<string, number> = {};
+      for (const m of g.miembros) cuentas[m.tipo] = (cuentas[m.tipo] ?? 0) + 1;
+      let dominante = MAPA_TIPOS[0]!;
+      let mayor = -1;
+      for (const t of MAPA_TIPOS) {
+        const c = cuentas[t.tipo] ?? 0;
+        if (c > mayor) {
+          mayor = c;
+          dominante = t;
+        }
+      }
+      const id = `g${n}`;
+      indice.set(id, g.miembros);
+      const properties: Record<string, string | number> = {
+        cluster_id: id,
+        point_count: g.miembros.length,
+        point_count_abbreviated: abreviar(g.miembros.length),
+        colorGrupo: dominante.color,
+      };
+      // `n_<tipo>` sólo existe si ese tipo está en el grupo: el anillo de
+      // puntitos filtra con un `has` simple, sin expresiones.
+      for (const [tipo, c] of Object.entries(cuentas)) properties[`n_${tipo}`] = c;
+      return { type: 'Feature' as const, id, properties, geometry };
+    });
+    return { coleccion: { type: 'FeatureCollection' as const, features }, indice };
+  }, [puntos, zoomAgrupar]);
+
   // La animación sólo corre si hay algo que animar Y el estilo ya cargó.
-  const hayGrupos = puntos.length > 1;
+  const hayGrupos = agrupado.indice.size > 0;
   const { giroRad, brilloOffset, brilloOpacidad } = useRelojGrupo(hayGrupos && estiloListo);
   const anillo = anilloDeCapas(giroRad);
-
-  /**
-   * Las fotos de las publicaciones, cargadas como imágenes del estilo.
-   *
-   * Es lo que hace que el mapa nativo se vea como el de la web: un círculo de
-   * color dice "acá hay algo", una carita dice *qué* hay. MapLibre las baja y
-   * las cachea solo; nosotros sólo declaramos el diccionario.
-   *
-   * DESACTIVADO A PROPÓSITO (temporal): el crash real de iOS reportado esta
-   * semana (SIGSEGV en MapLibre.framework, siempre a los pocos segundos de
-   * abrir el mapa) sobrevivió CUATRO versiones distintas del motor nativo
-   * (6.26.0, 6.26.1, 6.28.0) con exactamente la misma firma cada vez —
-   * mismo tipo de excepción, mismo `far`, misma cantidad de cuadros en la
-   * pila. Eso descarta que sea un bug puntual de la librería que un cambio
-   * de versión vaya a arreglar: el patrón encaja con el manejo de imágenes/
-   * sprites del estilo (`ImageManager`), que es justo lo que usa este
-   * diccionario. Hasta tener un fix real, se apaga la carga de fotos como
-   * íconos del mapa nativo — los puntos se siguen viendo (círculo de color
-   * por tipo, ver `coleccion` más abajo), sólo sin la miniatura de la foto.
-   * Revertir cuando haya evidencia de que el problema real es otro.
-   */
-  const imagenes = useMemo<Record<string, string>>(() => ({}), []);
-
-  const coleccion = useMemo(
-    () => ({
-      type: 'FeatureCollection' as const,
-      features: puntos.map((p) => ({
-        type: 'Feature' as const,
-        id: `${p.tipo}-${p.id}`,
-        properties: {
-          // El punto entero viaja serializado: al tocar un pin hay que
-          // devolver el objeto completo, y las propiedades de un feature
-          // nativo sólo aceptan valores planos.
-          punto: JSON.stringify(p),
-          // El tipo, aparte y como valor plano. Va suelto porque
-          // `CONTADORES_POR_TIPO` lo lee con `['get', 'tipo']` al agrupar, y
-          // dentro del JSON de `punto` una expresión del estilo no puede
-          // entrar. Faltaba: los contadores daban cero para TODOS los tipos,
-          // los grupos salían siempre del color del primero de la lista y el
-          // anillo de capas no aparecía nunca.
-          tipo: p.tipo,
-          color: MAPA_TIPO_POR_CLAVE[p.tipo]?.color ?? '#4CC9F0',
-          // Cadena vacía y no null: las expresiones del estilo comparan
-          // contra '' para decidir si hay foto.
-          // Siempre vacío mientras las fotos-ícono estén desactivadas (ver
-          // el comentario de `imagenes` más arriba) -- si acá dijera que
-          // hay foto pero `imagenes` no la trae cargada, el ícono quedaría
-          // pidiendo una imagen inexistente al estilo.
-          foto: '',
-        },
-        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
-      })),
-    }),
-    [puntos]
-  );
 
   // Volar al punto pedido: el botón de centrarme y los "Ver en mapa".
   useEffect(() => {
@@ -426,6 +417,8 @@ export function MapaLienzo({
         onRegionDidChange={(e) => {
           const c = e.nativeEvent?.center;
           if (c) onMover?.({ lat: c[1], lng: c[0] });
+          const z = e.nativeEvent?.zoom;
+          if (typeof z === 'number') setZoomAgrupar(Math.round(z * 2) / 2);
         }}
         onDidFinishLoadingStyle={() => setEstiloListo(true)}
       >
@@ -557,28 +550,12 @@ export function MapaLienzo({
           }}
         />
 
-        {modoSeguro === false && !IOS ? <Images images={imagenes} /> : null}
-
         {modoSeguro === false ? (
         <GeoJSONSource
-          ref={fuente}
           key="rh-puntos"
           id="rh-puntos"
-          data={coleccion}
-          cluster
-          clusterRadius={58}
-          // Hasta qué zoom se agrupa. Estaba en 17, que es altísimo: el mapa
-          // abre en 13.6, así que TODO se veía agrupado y los grupos se pintan
-          // de un color fijo. De ahí el "todos los puntos son iguales" — los
-          // marcadores con color por tipo y foto existen, pero recién se
-          // separaban acercando muchísimo.
-          //
-          // Con 12 (por debajo del zoom inicial) al entrar ya se ven los puntos
-          // individuales, y el agrupado queda para cuando alejás de verdad, que
-          // es cuando sirve.
-          clusterMaxZoom={CLUSTER_HASTA_ZOOM}
-          clusterProperties={CONTADORES_POR_TIPO}
-          onPress={async (e: any) => {
+          data={agrupado.coleccion}
+          onPress={(e: any) => {
             // Los datos del toque vienen en `nativeEvent`, no sueltos en el
             // evento: es un NativeSyntheticEvent, como cualquier evento que
             // cruza el puente. Leyéndolo mal `f` daba siempre undefined y el
@@ -596,37 +573,14 @@ export function MapaLienzo({
             // que en web, para que la hoja inferior las liste.
             const clusterId = f.properties?.cluster_id;
             if (clusterId != null) {
-              // Todo esto va en try/catch porque `getClusterLeaves` es nativo y
-              // puede fallar. Sin el catch, un error acá se comía el toque en
-              // silencio y parecía que tocar el mapa no hacía nada.
-              try {
-                const crudo: any = await fuente.current?.getClusterLeaves(clusterId, 200, 0);
-                // El tipo dice `Feature[]`, pero la doc del método habla de una
-                // FeatureCollection: según la plataforma vuelve una cosa o la
-                // otra. Se aceptan las dos en vez de confiar en el tipo, que ya
-                // demostró no coincidir con lo que manda el nativo.
-                const hojas: any[] = Array.isArray(crudo) ? crudo : (crudo?.features ?? []);
-                const dentro = hojas
-                  .map((h) => {
-                    try {
-                      return JSON.parse((h.properties as any).punto) as MapaPunto;
-                    } catch {
-                      return null;
-                    }
-                  })
-                  .filter((p): p is MapaPunto => p !== null);
-
-                if (dentro.length > 0) {
-                  onSeleccion(dentro);
-                  return;
-                }
-              } catch {
-                /* cae al acercar, abajo */
+              const dentro = agrupado.indice.get(String(clusterId));
+              if (dentro && dentro.length > 0) {
+                onSeleccion(dentro);
+                return;
               }
 
-              // Si no se pudo abrir el grupo, al menos acercar: al separarse
-              // quedan los puntos sueltos, que sí se pueden tocar de a uno.
-              // Es mejor que un toque que no hace absolutamente nada.
+              // Si por algo no está, al menos acercar: al separarse quedan los
+              // puntos sueltos, que sí se pueden tocar de a uno.
               const c = f.geometry?.coordinates;
               if (Array.isArray(c) && c.length === 2) {
                 camara.current?.flyTo({ center: [c[0], c[1]], zoom: 16, duration: 600 });
@@ -671,7 +625,7 @@ export function MapaLienzo({
             type="circle"
             filter={['has', 'point_count']}
             paint={{
-              'circle-color': IOS ? COLOR_GRUPO_IOS : COLOR_GRUPO,
+              'circle-color': ['get', 'colorGrupo'],
               'circle-opacity': 0.95,
               // Crece con la cantidad, pero por escalones: sin tope, un grupo
               // de 300 taparía media pantalla. El escalón más grande queda por
@@ -751,11 +705,7 @@ export function MapaLienzo({
               key={p.tipo}
               id={`rh-grupos-capa-${p.tipo}`}
               type="circle"
-              filter={
-                IOS
-                  ? ['>', ['get', `n_${p.tipo}`], 0]
-                  : ['all', ['has', 'point_count'], ['>', ['get', `n_${p.tipo}`], 0]]
-              }
+              filter={['has', `n_${p.tipo}`]}
               paint={{
                 'circle-color': p.color,
                 'circle-radius': 4.5,
@@ -776,20 +726,20 @@ export function MapaLienzo({
             filter={['has', 'point_count']}
             beforeId="rh-grupos"
             paint={{
-              'circle-color': IOS ? COLOR_GRUPO_IOS : COLOR_GRUPO,
+              'circle-color': ['get', 'colorGrupo'],
               'circle-radius': ['step', ['get', 'point_count'], 32, 10, 40, 50, 50],
               'circle-blur': 0.9,
               'circle-opacity': 0.6,
             }}
           />
-          {/* Tres capas por punto, como en la web: el resplandor de color, el
-              disco, y encima la foto. Separadas porque el halo tiene que
-              quedar debajo de la foto de los vecinos, no sólo de la propia. */}
+          {/* Dos capas por punto, como en la web: el resplandor de color y el
+              disco. Separadas porque el halo tiene que quedar debajo del disco
+              de los vecinos, no sólo del propio. */}
           <Layer
             key="rh-sueltos-halo"
             id="rh-sueltos-halo"
             type="circle"
-            filter={IOS ? ['has', 'tipo'] : ['!', ['has', 'point_count']]}
+            filter={['has', 'tipo']}
             paint={{
               'circle-color': ['get', 'color'],
               'circle-radius': 21,
@@ -801,31 +751,14 @@ export function MapaLienzo({
             key="rh-sueltos"
             id="rh-sueltos"
             type="circle"
-            filter={IOS ? ['has', 'tipo'] : ['!', ['has', 'point_count']]}
+            filter={['has', 'tipo']}
             paint={{
               'circle-color': ['get', 'color'],
-              // Con foto el disco es el marco; sin foto, el pin entero.
-              'circle-radius': IOS ? 9 : ['case', ['==', ['get', 'foto'], ''], 9, 15],
+              'circle-radius': 9,
               'circle-stroke-width': 2.5,
               'circle-stroke-color': 'rgba(255,255,255,.92)',
             }}
           />
-          {/* Sin esta capa en iOS: las fotos-ícono están apagadas (`foto` siempre
-              vacío, así que nunca dibujaría nada) y su filtro usaba `['all', ...]`. */}
-          {!IOS ? (
-            <Layer
-              key="rh-sueltos-foto"
-              id="rh-sueltos-foto"
-              type="symbol"
-              filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'foto'], '']]}
-              layout={{
-                'icon-image': ['get', 'foto'],
-                // 52 px de foto reducidos al diámetro del disco.
-                'icon-size': 0.52,
-                'icon-allow-overlap': true,
-              }}
-            />
-          ) : null}
         </GeoJSONSource>
         ) : null}
       </Map>

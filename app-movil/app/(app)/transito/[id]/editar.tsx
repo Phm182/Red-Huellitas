@@ -15,6 +15,7 @@ import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { rhMediaUrl } from '../../../../src/utils/media';
 
 import { ESPECIES, especieI18nKey } from '../../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../../src/components/ui/UbicacionExactaToggle';
 
 /**
  * Editar una publicación propia de tránsito.
@@ -45,6 +46,7 @@ export default function EditarTransitoScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -71,6 +73,7 @@ export default function EditarTransitoScreen() {
           setDuracionDias(tr.duracionDias != null ? String(tr.duracionDias) : '');
           setZonaDescripcion(tr.zonaDescripcion);
           setCoords({ lat: tr.zonaLat, lng: tr.zonaLng });
+          setExacta(!!tr.ubicacionExacta);
           setFotos(tr.fotos.map((f) => rhMediaUrl(f.path)));
           setFotoIds(tr.fotos.map((f) => f.transitoFotoId));
         } else {
@@ -130,6 +133,7 @@ export default function EditarTransitoScreen() {
       duracionDias: duracionDias ? parseInt(duracionDias, 10) : null,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
     });
     setSubmitting(false);
@@ -244,6 +248,7 @@ export default function EditarTransitoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

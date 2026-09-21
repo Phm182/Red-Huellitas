@@ -15,6 +15,7 @@ import { centeredContent } from '../../../src/theme/layout';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { SkeletonList } from '../../../src/components/ui/Skeleton';
 import { AppInput } from '../../../src/components/AppInput';
+import { UbicacionExactaToggle } from '../../../src/components/ui/UbicacionExactaToggle';
 
 const TIPOS: TipoPerdido[] = ['perdido', 'encontrado'];
 
@@ -41,6 +42,7 @@ export default function NuevoPerdidoScreen() {
   const [ultimoLugarDescripcion, setUltimoLugarDescripcion] = useState('');
   const [fechaSuceso, setFechaSuceso] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -125,6 +127,7 @@ export default function NuevoPerdidoScreen() {
           }),
       ultimoLugarDescripcion: ultimoLugarDescripcion.trim(),
       ultimoLugarLat: coords.lat,
+      ubicacionExacta: exacta,
       ultimoLugarLng: coords.lng,
       fechaSuceso,
     });
@@ -281,6 +284,7 @@ export default function NuevoPerdidoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       <Text style={[styles.label, { color: colors.text }]}>{t('perdidos.fechaSucesoLabel')}</Text>
       <AppInput

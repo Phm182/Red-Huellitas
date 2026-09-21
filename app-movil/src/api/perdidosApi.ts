@@ -18,6 +18,8 @@ export interface CrearPerdidoParams {
   descripcion?: string;
   ultimoLugarDescripcion: string;
   ultimoLugarLat: number;
+  /** El mapa muestra la ubicación exacta (true) o una aproximada (false, default). */
+  ubicacionExacta?: boolean;
   ultimoLugarLng: number;
   fechaSuceso: string;
   fotos?: string[];
@@ -28,6 +30,7 @@ async function construirFormPerdido(params: CrearPerdidoParams): Promise<FormDat
   form.append('tipo', params.tipo);
   form.append('ultimoLugarDescripcion', params.ultimoLugarDescripcion);
   form.append('ultimoLugarLat', String(params.ultimoLugarLat));
+  if (params.ubicacionExacta !== undefined) form.append('ubicacionExacta', params.ubicacionExacta ? '1' : '0');
   form.append('ultimoLugarLng', String(params.ultimoLugarLng));
   form.append('fechaSuceso', params.fechaSuceso);
 
@@ -81,6 +84,7 @@ export const perdidosApi = {
     form.append('perdidoId', String(perdidoId));
     form.append('ultimoLugarDescripcion', params.ultimoLugarDescripcion);
     form.append('ultimoLugarLat', String(params.ultimoLugarLat));
+    if (params.ubicacionExacta !== undefined) form.append('ubicacionExacta', params.ubicacionExacta ? '1' : '0');
     form.append('ultimoLugarLng', String(params.ultimoLugarLng));
     form.append('fechaSuceso', params.fechaSuceso);
     if (params.nombre) form.append('nombre', params.nombre);

@@ -16,6 +16,7 @@ import { AppInput } from '../../../src/components/AppInput';
 
 const TIPOS: TipoTransito[] = ['necesito', 'ofrezco'];
 import { ESPECIES, especieI18nKey } from '../../../src/constants/especies';
+import { UbicacionExactaToggle } from '../../../src/components/ui/UbicacionExactaToggle';
 
 export default function NuevoTransitoScreen() {
   const { t } = useTranslation();
@@ -43,6 +44,7 @@ export default function NuevoTransitoScreen() {
 
   const [zonaDescripcion, setZonaDescripcion] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exacta, setExacta] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -131,6 +133,7 @@ export default function NuevoTransitoScreen() {
       duracionDias: duracionDias ? parseInt(duracionDias, 10) : null,
       zonaDescripcion: zonaDescripcion.trim(),
       zonaLat: coords.lat,
+      ubicacionExacta: exacta,
       zonaLng: coords.lng,
     });
     setSubmitting(false);
@@ -302,6 +305,7 @@ export default function NuevoTransitoScreen() {
         )}
       </Pressable>
       {locationError ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{locationError}</Text> : null}
+      <UbicacionExactaToggle value={exacta} onChange={setExacta} />
 
       {error ? <Text style={{ color: colors.danger, marginBottom: 12 }}>{error}</Text> : null}
 

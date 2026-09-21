@@ -115,6 +115,7 @@ function rh_transito_publico(mysqli $conn, array $t, int $viewerUserId, ?float $
         'duracionDias' => $t['DuracionDias'] !== null ? (int) $t['DuracionDias'] : null,
         'fotos' => rh_transito_fotos($conn, $t),
         'zonaDescripcion' => $t['ZonaDescripcion'],
+        'ubicacionExacta' => (bool) ($t['UbicacionExacta'] ?? 0),
         'zonaLat' => (float) $t['ZonaLat'],
         'zonaLng' => (float) $t['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,

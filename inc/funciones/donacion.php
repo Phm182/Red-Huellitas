@@ -69,6 +69,7 @@ function rh_donacion_publico(mysqli $conn, array $d, int $viewerUserId, ?float $
         'especie' => $d['Especie'],
         'fotos' => rh_donacion_fotos($conn, $donacionId),
         'zonaDescripcion' => $d['ZonaDescripcion'],
+        'ubicacionExacta' => (bool) ($d['UbicacionExacta'] ?? 0),
         'zonaLat' => (float) $d['ZonaLat'],
         'zonaLng' => (float) $d['ZonaLng'],
         'distanciaKm' => $distanciaKm !== null ? round($distanciaKm, 1) : null,
