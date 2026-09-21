@@ -167,7 +167,7 @@ function FotoDraggable({
 
   return (
     <GestureDetector gesture={gesto}>
-      <Animated.View entering={ZoomIn.springify().damping(16)} style={[styles.slot, animStyle]}>
+      <Animated.View entering={ZoomIn.duration(220)} style={[styles.slot, animStyle]}>
         <Image source={{ uri }} style={styles.thumb} contentFit="cover" transition={180} />
         {esPortada ? (
           <View style={[styles.portada, { backgroundColor: colors.overlay }]}>

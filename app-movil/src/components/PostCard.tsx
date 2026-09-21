@@ -103,7 +103,7 @@ export function PostCard({ post, onEliminado, index = 0 }: PostCardProps) {
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 6) * 45).springify().damping(18)}
+      entering={FadeInDown.delay(Math.min(index, 6) * 45).duration(220)}
       style={[
         styles.card,
         elevation.sm,

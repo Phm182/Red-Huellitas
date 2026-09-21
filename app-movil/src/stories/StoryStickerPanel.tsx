@@ -57,7 +57,7 @@ export function StoryStickerPanel({
   ];
 
   return (
-    <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.panel}>
+    <Animated.View entering={FadeInDown.duration(220)} style={styles.panel}>
       <View style={styles.encabezado}>
         <View style={styles.tabs}>
           {pestanias.map((p) => {

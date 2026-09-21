@@ -1037,6 +1037,12 @@
   },
   "chat": {
     "titulo": "Mensajes",
+    "historiaRespondiste": "Respondiste a una historia",
+    "historiaRespondio": "Respondió a tu historia",
+    "historiaReaccionaste": "Reaccionaste a una historia",
+    "historiaReacciono": "Reaccionó a tu historia",
+    "historiaListaTexto": "Historia: {{texto}}",
+    "historiaListaReaccion": "Reacción a una historia",
     "nuevaConversacion": "Nueva conversación",
     "buscarPersona": "Buscar a quién escribirle",
     "buscarPersonaAyuda": "Escribí el nombre o el usuario de la persona (mínimo 2 letras).",

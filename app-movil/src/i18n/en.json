@@ -1023,6 +1023,12 @@
   },
   "chat": {
     "titulo": "Messages",
+    "historiaRespondiste": "You replied to a story",
+    "historiaRespondio": "Replied to your story",
+    "historiaReaccionaste": "You reacted to a story",
+    "historiaReacciono": "Reacted to your story",
+    "historiaListaTexto": "Story: {{texto}}",
+    "historiaListaReaccion": "Reaction to a story",
     "nuevaConversacion": "New conversation",
     "buscarPersona": "Search who to message",
     "buscarPersonaAyuda": "Type the person's name or username (at least 2 letters).",

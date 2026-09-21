@@ -57,12 +57,18 @@ export default function VisorHistoriasScreen() {
   const [mostrarVolumen, setMostrarVolumen] = useState(false);
   // Lo que el que mira eligió con el botón de la esquina (null = el ajuste base de la historia).
   const [fitManual, setFitManual] = useState<'cover' | 'contain' | null>(null);
+  // Pausa por mantener apretado (se suelta al levantar el dedo)...
   const [pausado, setPausado] = useState(false);
+  // ...y pausa mientras se escribe una respuesta (dura mientras el campo tenga el
+  // foco o quede algo escrito). La reproducción se frena si CUALQUIERA de las dos.
+  const [escribiendo, setEscribiendo] = useState(false);
   const [respuesta, setRespuesta] = useState('');
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [votando, setVotando] = useState(false);
   const animacionRef = useRef<Animated.CompositeAnimation | null>(null);
+  // Cuánto de la barra actual ya se recorrió (0..1), para retomar desde ahí.
+  const avanceRef = useRef(0);
 
   // El orden de usuarios sale del mismo feed que dibuja el carrusel, así que
   // el swipe recorre las historias en el orden que el usuario ya vio arriba.
@@ -211,6 +217,9 @@ export default function VisorHistoriasScreen() {
     }
   };
 
+  const enPausa = pausado || escribiendo;
+
+  // Al cambiar de historia: se marca vista y la barra vuelve a cero.
   useEffect(() => {
     if (!actual) return;
     historiasApi.marcarVista(actual.historiaId);
@@ -219,46 +228,43 @@ export default function VisorHistoriasScreen() {
       if (i < index) valor.setValue(1);
       else if (i > index) valor.setValue(0);
     });
-
-    if (actual.tipoMedia === 'foto') {
-      progresos[index]?.setValue(0);
-      const animacion = Animated.timing(progresos[index], {
-        toValue: 1,
-        duration: DURACION_FOTO_MS,
-        useNativeDriver: false,
-      });
-      animacion.start(({ finished }) => {
-        if (finished) avanzar();
-      });
-      return () => animacion.stop();
-    }
-    return undefined;
-  }, [actual, index, avanzar]);
-
-  useEffect(() => {
-    if (actual?.tipoMedia !== 'video') return;
     progresos[index]?.setValue(0);
-    const duracionMs = (duracionEfectiva ?? 15) * 1000;
+    avanceRef.current = 0;
+  }, [actual, index]);
+
+  // Sigue el avance real de la barra actual, así una pausa sabe desde dónde retomar.
+  useEffect(() => {
+    const valor = progresos[index];
+    if (!valor) return;
+    const id = valor.addListener(({ value }) => {
+      avanceRef.current = value;
+    });
+    return () => valor.removeListener(id);
+  }, [index, progresos.length]);
+
+  // El reloj de la historia. Se frena mientras `enPausa` (dedo apretado o
+  // escribiendo una respuesta) y RETOMA desde donde quedó: antes la pausa sólo
+  // detenía la animación de los videos y para siempre, y en las fotos ni eso,
+  // así que escribir una respuesta dejaba correr el tiempo y te sacaba de la
+  // historia a mitad de frase.
+  useEffect(() => {
+    if (!actual || enPausa) return;
+    const esFoto = actual.tipoMedia === 'foto';
+    const totalMs = esFoto ? DURACION_FOTO_MS : (duracionEfectiva ?? 15) * 1000;
+    const restanteMs = Math.max(50, totalMs * (1 - avanceRef.current));
     const animacion = Animated.timing(progresos[index], {
       toValue: 1,
-      duration: duracionMs,
+      duration: restanteMs,
       useNativeDriver: false,
     });
     animacionRef.current = animacion;
     animacion.start(({ finished }) => {
-      // Con recorte el video sigue corriendo más allá del final elegido, así
-      // que el avance lo dispara el temporizador y no el `onEnded` del media.
-      if (finished && actual.recorteFinSeg !== null) avanzar();
+      // Video con recorte: el avance lo dispara el temporizador y no el `onEnded`
+      // del media (el video sigue corriendo más allá del final elegido).
+      if (finished && (esFoto || actual.recorteFinSeg !== null)) avanzar();
     });
     return () => animacion.stop();
-  }, [actual, index, duracionEfectiva, avanzar]);
-
-  // Mantener el dedo apretado pausa: es el gesto básico de las historias y no
-  // estaba. Congela la barra donde va y frena el media.
-  useEffect(() => {
-    if (!pausado) return;
-    animacionRef.current?.stop();
-  }, [pausado]);
+  }, [actual, index, duracionEfectiva, avanzar, enPausa]);
 
   /**
    * Swipe: horizontal salta de usuario, vertical hacia abajo cierra.
@@ -338,6 +344,7 @@ export default function VisorHistoriasScreen() {
       : await historiasApi.responder(actual.historiaId, texto);
     setEnviandoRespuesta(false);
     setRespuesta('');
+    setEscribiendo(false);
     setAviso(res.message);
     setTimeout(() => setAviso(null), 2200);
   };
@@ -382,7 +389,7 @@ export default function VisorHistoriasScreen() {
         muted={actual.sinAudio || silenciado}
         volume={volumen}
         contentFit={contentFit}
-        pausado={pausado}
+        pausado={enPausa}
         inicioSeg={actual.recorteInicioSeg}
         finSeg={actual.recorteFinSeg}
         velocidad={actual.velocidad}
@@ -558,12 +565,16 @@ export default function VisorHistoriasScreen() {
           <View style={styles.responderFila}>
             <TextInput
               value={respuesta}
-              onChangeText={setRespuesta}
+              onChangeText={(v) => {
+                setRespuesta(v);
+                setEscribiendo(true);
+              }}
               placeholder={actual.pregunta ? 'Respondé la pregunta…' : 'Enviar mensaje…'}
               placeholderTextColor="rgba(255,255,255,0.6)"
               style={styles.responderInput}
-              onFocus={() => setPausado(true)}
-              onBlur={() => setPausado(false)}
+              onFocus={() => setEscribiendo(true)}
+              // Al salir del campo sólo se reanuda si no dejó nada escrito.
+              onBlur={() => setEscribiendo(respuesta.trim().length > 0)}
             />
             <Pressable
               onPress={onEnviarRespuesta}

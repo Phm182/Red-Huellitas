@@ -221,11 +221,141 @@ function rh_chat_estado_participante(mysqli $conn, int $conversacionId, int $use
 
 function rh_mensaje_serializar(array $m): array
 {
-    return [
+    $salida = [
         'mensajeId' => (int) $m['MensajeId'],
         'userIdEmisor' => (int) $m['UserIdEmisor'],
         'texto' => $m['Texto'],
         'tipo' => $m['Tipo'],
         'createdAt' => $m['CreatedAt'],
     ];
+    // Respuesta o reacción a una historia: viaja con qué historia era.
+    if (!empty($m['HistoriaId']) || !empty($m['HistoriaMediaPath'])) {
+        $salida['historia'] = [
+            'historiaId' => (int) ($m['HistoriaId'] ?? 0),
+            'mediaPath' => $m['HistoriaMediaPath'] ?? null,
+        ];
+    }
+    return $salida;
+}
+
+/** ¿Ya corrió la migración 074 (mensajes de historia)? Se cachea por request. */
+function rh_chat_soporta_historias(mysqli $conn): bool
+{
+    static $ok = null;
+    if ($ok === null) {
+        $r = $conn->query(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Mensaje' AND COLUMN_NAME = 'HistoriaMediaPath'"
+        );
+        $ok = $r && (int) ($r->fetch_row()[0] ?? 0) > 0;
+    }
+    return $ok;
+}
+
+/**
+ * Miniatura de una historia para mostrar en el chat.
+ *
+ * Una foto se copia achicada (360 px) a `uploads/historias_chat/`: la historia
+ * vence a las 24 hs y `limpiar_historias.php` borra el archivo original una
+ * semana después, pero el mensaje del chat tiene que seguir mostrando algo. Un
+ * video no tiene cuadro para extraer en el servidor: devuelve null y la app
+ * dibuja un ícono de video.
+ */
+function rh_chat_miniatura_historia(string $mediaPath, string $tipoMedia, int $historiaId): ?string
+{
+    if ($tipoMedia !== 'foto') {
+        return null;
+    }
+    $origen = __DIR__ . '/../../uploads/' . $mediaPath;
+    if (!is_file($origen)) {
+        return null;
+    }
+
+    $relativa = 'historias_chat/' . $historiaId . '.jpg';
+    $dir = __DIR__ . '/../../uploads/historias_chat';
+    $destino = $dir . '/' . $historiaId . '.jpg';
+    if (is_file($destino)) {
+        return $relativa;
+    }
+    require_once __DIR__ . '/uploads.php';
+    if (!function_exists('imagecreatefromstring') || !rh_asegurar_directorio($dir)) {
+        return $mediaPath;
+    }
+
+    $bin = @file_get_contents($origen);
+    $img = $bin !== false ? @imagecreatefromstring($bin) : false;
+    if (!$img) {
+        return $mediaPath;
+    }
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $nw = min(360, $w);
+    $nh = max(1, (int) round($h * $nw / max(1, $w)));
+    $mini = imagecreatetruecolor($nw, $nh);
+    imagecopyresampled($mini, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
+    imagejpeg($mini, $destino, 78);
+    imagedestroy($img);
+    imagedestroy($mini);
+
+    return is_file($destino) ? $relativa : $mediaPath;
+}
+
+/**
+ * Deja en la charla con el autor de una historia la respuesta o reacción de
+ * quien la vio, con la miniatura de la historia.
+ *
+ * $tipo: 'historia' (respuesta de texto) o 'historia_reaccion' (Texto = clave).
+ * $historia: fila con HistoriaId, UserId (el autor), TipoMedia y MediaPath.
+ *
+ * Nunca rompe lo que lo llamó: si la migración no corrió, si el chat entre los
+ * dos no está permitido (menores) o algo falla, simplemente no deja el mensaje.
+ */
+function rh_chat_mensaje_de_historia(mysqli $conn, int $emisorId, array $historia, string $tipo, string $texto): void
+{
+    try {
+        if (!rh_chat_soporta_historias($conn)) {
+            return;
+        }
+        $autorId = (int) $historia['UserId'];
+        if ($autorId === $emisorId || !in_array($tipo, ['historia', 'historia_reaccion'], true)) {
+            return;
+        }
+
+        $conversacionId = rh_chat_buscar($conn, $emisorId, $autorId);
+        if ($conversacionId > 0) {
+            $permiso = rh_chat_permitido($conn, $emisorId, $autorId, $conversacionId);
+        } else {
+            $permiso = rh_chat_permitido($conn, $emisorId, $autorId);
+        }
+        if (!$permiso['ok']) {
+            return;
+        }
+        if ($conversacionId <= 0) {
+            $conversacionId = rh_chat_obtener_o_crear($conn, $emisorId, $autorId);
+        }
+
+        $historiaId = (int) $historia['HistoriaId'];
+        $mini = rh_chat_miniatura_historia((string) $historia['MediaPath'], (string) $historia['TipoMedia'], $historiaId);
+
+        $stmt = $conn->prepare(
+            'INSERT INTO Mensaje (ConversacionId, UserIdEmisor, Texto, Tipo, HistoriaId, HistoriaMediaPath)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->bind_param('iissis', $conversacionId, $emisorId, $texto, $tipo, $historiaId, $mini);
+        $stmt->execute();
+        $mensajeId = (int) $stmt->insert_id;
+        $stmt->close();
+
+        $conn->query('UPDATE Conversacion SET UltimoMensajeEn = NOW() WHERE ConversacionId = ' . $conversacionId);
+
+        // Quien manda da por leído lo suyo.
+        $stmt = $conn->prepare(
+            'UPDATE ConversacionParticipante SET UltimaLecturaMensajeId = ? WHERE ConversacionId = ? AND UserId = ?'
+        );
+        $stmt->bind_param('iii', $mensajeId, $conversacionId, $emisorId);
+        $stmt->execute();
+        $stmt->close();
+    } catch (Throwable $e) {
+        error_log('rh_chat_mensaje_de_historia: ' . $e->getMessage());
+    }
 }

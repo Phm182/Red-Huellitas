@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { radii } from '../../theme/elevation';
 import { type } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -38,7 +38,7 @@ export function FilterChip({ label, activo, onPress, icon }: FilterChipProps) {
         scale.value = withSpring(0.94, { damping: 18, stiffness: 340 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 240 });
+        scale.value = withTiming(1, { duration: 110 });
       }}
       style={[
         styles.chip,

@@ -83,7 +83,7 @@ export default function HistoriaVistasScreen() {
         />
       }
       renderItem={({ item, index }) => (
-        <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).springify()}>
+        <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(220)}>
           <Pressable
             style={styles.fila}
             onPress={() => item.username && router.push(`/(app)/usuario/${item.username}`)}

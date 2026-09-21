@@ -115,15 +115,21 @@ export interface ChatMensaje {
    * En un sticker, `texto` es el id del dibujo (ver src/chat/stickers.tsx),
    * no un mensaje escrito.
    */
-  tipo: 'texto' | 'zumbido' | 'sticker';
+  tipo: 'texto' | 'zumbido' | 'sticker' | 'historia' | 'historia_reaccion';
   createdAt: string;
+  /**
+   * Sólo en 'historia' (respuesta de texto, `texto` = lo escrito) y
+   * 'historia_reaccion' (`texto` = clave de la reacción): a qué historia se
+   * respondió y su miniatura (null en un video, o si ya no está).
+   */
+  historia?: { historiaId: number; mediaPath: string | null };
 }
 
 export interface ChatConversacion {
   conversacionId: number;
   ultimoMensajeEn: string | null;
   ultimoTexto: string | null;
-  ultimoTipo: 'texto' | 'zumbido' | 'sticker' | null;
+  ultimoTipo: 'texto' | 'zumbido' | 'sticker' | 'historia' | 'historia_reaccion' | null;
   noLeidos: number;
   otro: ChatOtro;
 }

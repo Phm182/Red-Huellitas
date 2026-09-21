@@ -167,7 +167,7 @@ export default function ConfiguracionScreen() {
   return (
     <Atmosphere>
       <ScrollView contentContainerStyle={[styles.contenedor, centeredContent]} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.springify()} style={{ marginBottom: 20 }}>
+        <Animated.View entering={FadeInDown.duration(220)} style={{ marginBottom: 20 }}>
           <LinearGradient
             colors={[colors.primarySoft, colors.accentSoft]}
             start={{ x: 0, y: 0 }}

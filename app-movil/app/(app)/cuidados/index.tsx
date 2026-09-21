@@ -141,7 +141,7 @@ export default function CuidadosScreen() {
                 .map((c, i) => {
                   const expandida = abierto === c.cuidadoId;
                   return (
-                    <Animated.View key={c.cuidadoId} entering={FadeInDown.delay(30 + i * 25).springify()}>
+                    <Animated.View key={c.cuidadoId} entering={FadeInDown.delay(30 + i * 25).duration(220)}>
                       <Pressable
                         onPress={() => {
                           hapticLeve();

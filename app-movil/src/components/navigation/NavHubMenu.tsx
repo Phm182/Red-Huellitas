@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { Hub } from '../../navigation/hubs';
 import { pushUnica } from '../../navigation/pushUnica';
 import { elevation, radii } from '../../theme/elevation';
@@ -46,16 +46,29 @@ export function NavHubMenu({ hub, anclaX, desdeAbajo, onCerrar }: Props) {
     return () => document.removeEventListener('keydown', onKey);
   }, [hub, onCerrar]);
 
+  // Sin el <Modal> nativo, el botón atrás de Android ya no lo cierra solo.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !hub) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onCerrar();
+      return true;
+    });
+    return () => sub.remove();
+  }, [hub, onCerrar]);
+
   if (!hub) return null;
 
   const izquierda = Math.max(12, anclaX - ANCHO / 2);
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onCerrar}>
+    // Una capa por encima de todo dentro de la misma pantalla, NO un <Modal>: el
+    // Modal nativo tarda en soltar la pantalla de atrás cuando se cierra (quedaba
+    // como "tildada" un rato sin responder al toque). Con la capa propia, al
+    // cerrar deja de existir en el mismo cuadro, sin animación de salida.
+    <View style={styles.capa} pointerEvents="box-none">
       <Pressable style={styles.telon} onPress={onCerrar} accessibilityLabel={t('common.close')}>
         <Animated.View
-          entering={FadeInDown.springify().damping(18)}
-          exiting={FadeOut.duration(120)}
+          entering={FadeInDown.duration(140)}
           style={[
             styles.tarjeta,
             elevation.lg,
@@ -95,11 +108,18 @@ export function NavHubMenu({ hub, anclaX, desdeAbajo, onCerrar }: Props) {
           ))}
         </Animated.View>
       </Pressable>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  capa: {
+    ...(Platform.OS === 'web'
+      ? ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } as object)
+      : StyleSheet.absoluteFill),
+    zIndex: 1000,
+    elevation: 1000,
+  },
   telon: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
   tarjeta: {
     position: 'absolute',

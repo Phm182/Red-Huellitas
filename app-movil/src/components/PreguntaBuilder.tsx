@@ -69,8 +69,8 @@ export function PreguntaBuilder({ preguntas, onChange }: PreguntaBuilderProps) {
       {preguntas.map((pregunta, index) => (
         <Animated.View
           key={index}
-          entering={FadeInDown.springify().damping(16)}
-          layout={Layout.springify()}
+          entering={FadeInDown.duration(220)}
+          layout={Layout.duration(220)}
           style={[styles.preguntaCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
         >
           <View style={styles.cardEncabezado}>

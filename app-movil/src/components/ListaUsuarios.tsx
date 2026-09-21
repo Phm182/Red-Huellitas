@@ -64,7 +64,7 @@ export function ListaUsuarios({ cargar, emptyLabel }: ListaUsuariosProps) {
       keyExtractor={(u) => String(u.userId)}
       ListEmptyComponent={<EmptyState icon="people-outline" titulo={emptyLabel} />}
       renderItem={({ item, index }) => (
-        <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).springify()}>
+        <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(220)}>
           <Pressable
             style={({ pressed }) => [
               styles.row,

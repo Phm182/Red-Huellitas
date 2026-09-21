@@ -154,7 +154,7 @@ export default function CadenasScreen() {
           ) : null
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 50).springify()}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 50).duration(220)}>
             <Pressable
               style={[
                 styles.card,

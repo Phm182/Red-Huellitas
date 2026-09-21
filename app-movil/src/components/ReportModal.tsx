@@ -45,7 +45,7 @@ export function ReportModal() {
   if (enviado) {
     return (
       <View style={[styles.container, styles.centrado, { backgroundColor: colors.background }]}>
-        <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.exito}>
+        <Animated.View entering={ZoomIn.duration(220)} style={styles.exito}>
           <View style={[styles.exitoIcono, { backgroundColor: colors.accentSoft }]}>
             <Ionicons name="checkmark" size={34} color={colors.success} />
           </View>

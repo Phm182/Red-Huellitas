@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { elevation, radii } from '../../theme/elevation';
 import { useTheme } from '../../theme/ThemeProvider';
 import { hapticLeve } from '../../utils/haptics';
@@ -44,7 +44,7 @@ export function Fab({
         scale.value = withSpring(0.9, { damping: 18, stiffness: 340 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 220 });
+        scale.value = withTiming(1, { duration: 110 });
       }}
       style={[styles.fab, elevation.md, { backgroundColor: colors.accent }, animStyle, style]}
     >

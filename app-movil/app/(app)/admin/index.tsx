@@ -31,7 +31,7 @@ function TarjetaBandeja({ icon, titulo, descripcion, pendientes, onPress, index 
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
+    <Animated.View entering={FadeInDown.delay(index * 70).duration(220)}>
       <AnimatedPressable
         onPress={() => {
           hapticLeve();

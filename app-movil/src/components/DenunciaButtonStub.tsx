@@ -144,7 +144,7 @@ export function DenunciaButtonStub({
           <Pressable style={[styles.overlay, { backgroundColor: colors.overlay }]} onPress={cerrar}>
             <Pressable onPress={() => {}} style={styles.cardWrap}>
               <Animated.View
-                entering={FadeInDown.springify().damping(18)}
+                entering={FadeInDown.duration(220)}
                 style={[
                   styles.card,
                   elevation.lg,

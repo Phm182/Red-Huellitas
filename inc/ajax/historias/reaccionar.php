@@ -13,6 +13,8 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/privacidad.php';
 require_once __DIR__ . '/../../funciones/notificaciones.php';
+require_once __DIR__ . '/../../funciones/chat.php';
+require_once __DIR__ . '/../../funciones/menores.php';
 
 const RH_REACCIONES_HISTORIA = ['huella', 'amor', 'divertido', 'asombro', 'triste', 'abrazo', 'guau', 'michi'];
 
@@ -32,7 +34,7 @@ if (!in_array($tipo, RH_REACCIONES_HISTORIA, true)) {
 // reacciona: sin el chequeo de privacidad se podría reaccionar a la historia
 // de una cuenta privada que no seguís, y el dueño recibiría la notificación.
 $stmt = $conn->prepare(
-    "SELECT h.HistoriaId, h.UserId
+    "SELECT h.HistoriaId, h.UserId, h.TipoMedia, h.MediaPath
        FROM Historia h
       WHERE h.HistoriaId = ? AND h.Estado = 'A' AND h.ExpiraEn > NOW()"
 );
@@ -74,6 +76,13 @@ if ($quitada) {
     $stmt->bind_param('iis', $historiaId, $userId, $tipo);
     $stmt->execute();
     $stmt->close();
+
+    // La reacción también queda en la charla con el autor (con la miniatura de la
+    // historia), para poder responderle desde ahí. Sólo al poner o cambiar la
+    // reacción; al sacarla no se agrega nada.
+    if ($autorId !== $userId) {
+        rh_chat_mensaje_de_historia($conn, $userId, $historia, 'historia_reaccion', $tipo);
+    }
 
     // Sólo se avisa la primera vez y nunca a uno mismo: cambiar de reacción no
     // tiene por qué volver a notificar.

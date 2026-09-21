@@ -10,6 +10,8 @@ require_once __DIR__ . '/../../funciones/respuesta.php';
 require_once __DIR__ . '/../../funciones/auth.php';
 require_once __DIR__ . '/../../funciones/push.php';
 require_once __DIR__ . '/../../funciones/notificaciones.php';
+require_once __DIR__ . '/../../funciones/chat.php';
+require_once __DIR__ . '/../../funciones/menores.php';
 
 $userId = rh_require_auth($conn);
 
@@ -27,7 +29,8 @@ if (mb_strlen($texto) > 500) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT Historia.UserId, Usuario.ExpoPushToken, autor.NombreCompleto AS QuienResponde
+    "SELECT Historia.HistoriaId, Historia.UserId, Historia.TipoMedia, Historia.MediaPath,
+            Usuario.ExpoPushToken, autor.NombreCompleto AS QuienResponde
      FROM Historia
      JOIN Usuario ON Usuario.UserId = Historia.UserId
      JOIN Usuario autor ON autor.UserId = ?
@@ -49,6 +52,10 @@ $stmt = $conn->prepare('INSERT INTO HistoriaRespuesta (HistoriaId, UserId, Texto
 $stmt->bind_param('iis', $historiaId, $userId, $texto);
 $stmt->execute();
 $stmt->close();
+
+// La respuesta también queda en la charla con el autor, con la miniatura de la
+// historia, para poder seguir la conversación desde el chat.
+rh_chat_mensaje_de_historia($conn, $userId, $historia, 'historia', $texto);
 
 if (!empty($historia['ExpoPushToken'])) {
     try {

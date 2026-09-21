@@ -40,7 +40,7 @@ export function NoticiaExternaCard({ noticia, index = 0 }: NoticiaExternaCardPro
   };
 
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).springify()}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).duration(220)}>
       <AnimatedPressable
         onPressIn={(e) => {
           startX.current = e.nativeEvent.pageX;

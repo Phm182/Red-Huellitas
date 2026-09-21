@@ -36,7 +36,7 @@ export function HubScreen({ hubKey, descripcion }: Props) {
   return (
     <Atmosphere>
       <ScrollView contentContainerStyle={[styles.contenedor, centeredContent]} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.encabezado}>
+        <Animated.View entering={FadeInDown.duration(220)} style={styles.encabezado}>
           <View style={[styles.icono, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name={hub.iconActive} size={26} color={colors.primary} />
           </View>
@@ -50,7 +50,7 @@ export function HubScreen({ hubKey, descripcion }: Props) {
           {hub.items.map((item, i) => (
             <Animated.View
               key={item.key}
-              entering={FadeInDown.delay(40 + i * 35).springify()}
+              entering={FadeInDown.delay(40 + i * 35).duration(220)}
               style={styles.celda}
             >
               <Pressable

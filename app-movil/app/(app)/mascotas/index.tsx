@@ -117,7 +117,7 @@ export default function MisMascotasScreen() {
           ) : null
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).springify()} style={{ flex: 1 }}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 45).duration(220)} style={{ flex: 1 }}>
             <Pressable
               style={[
                 styles.card,

@@ -44,7 +44,7 @@ export function LanguagePicker() {
                 hoja no debería cerrarla. */}
             <Pressable onPress={() => {}}>
               <Animated.View
-                entering={FadeInDown.springify().damping(18)}
+                entering={FadeInDown.duration(220)}
                 style={[
                   styles.card,
                   elevation.lg,

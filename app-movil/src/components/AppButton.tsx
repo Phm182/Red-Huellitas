@@ -7,7 +7,7 @@ import {
   TextStyle,
   ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { elevation, radii } from '../theme/elevation';
 import { type } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
@@ -64,7 +64,7 @@ export function AppButton({
         scale.value = withSpring(0.97, { damping: 18, stiffness: 320 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+        scale.value = withTiming(1, { duration: 110 });
       }}
       style={[
         styles.btn,

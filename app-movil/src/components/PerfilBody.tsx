@@ -392,7 +392,7 @@ export function PerfilBody({ username, userId }: PerfilBodyProps) {
         <RefreshControl refreshing={refrescando} onRefresh={onRefrescar} tintColor={colors.primary} />
       }
     >
-      <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(220)} style={styles.header}>
         <Pressable
           onPress={onPressAvatar}
           disabled={subiendoAvatar}

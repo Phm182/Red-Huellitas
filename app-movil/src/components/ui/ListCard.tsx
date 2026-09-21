@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { elevation, radii } from '../../theme/elevation';
 import { type } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -108,7 +108,7 @@ export function ListCard({
     style,
   ];
 
-  const entrada = FadeInDown.delay(Math.min(index, 8) * 45).springify();
+  const entrada = FadeInDown.delay(Math.min(index, 8) * 45).duration(220);
 
   const lightboxNode = fotoUri ? (
     <MediaLightbox
@@ -147,7 +147,7 @@ export function ListCard({
             const dx = Math.abs(e.nativeEvent.pageX - startX.current);
             const dy = Math.abs(e.nativeEvent.pageY - startY.current);
             if (dx > MAX_MOVE || dy > MAX_MOVE) moved.current = true;
-            scale.value = withSpring(1, { damping: 14, stiffness: 240 });
+            scale.value = withTiming(1, { duration: 110 });
           }}
           style={[estiloTarjeta, animStyle]}
         >

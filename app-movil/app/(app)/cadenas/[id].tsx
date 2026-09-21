@@ -62,7 +62,7 @@ export default function CadenaDetalleScreen() {
       contentContainerStyle={[styles.contenedor, centeredContent]}
     >
       <Animated.View
-        entering={FadeInDown.springify().damping(18)}
+        entering={FadeInDown.duration(220)}
         style={[styles.hero, elevation.sm, { backgroundColor: colors.surface, borderColor: colors.border }]}
       >
         <View style={[styles.icono, { backgroundColor: colors.primarySoft }]}>
