@@ -9,12 +9,13 @@ require_once __DIR__ . '/../../funciones/notificaciones.php';
 $userId = rh_require_auth($conn);
 
 $conversacionId = (int) ($_POST['conversacionId'] ?? 0);
+$otroUserId = (int) ($_POST['userId'] ?? 0);
 $texto = trim($_POST['texto'] ?? '');
 $tipoPedido = $_POST['tipo'] ?? 'texto';
 $tipo = in_array($tipoPedido, ['zumbido', 'sticker'], true) ? $tipoPedido : 'texto';
 
-if ($conversacionId <= 0) {
-    json_error('Falta conversacionId');
+if ($conversacionId <= 0 && $otroUserId <= 0) {
+    json_error('Falta conversacionId o userId');
 }
 if ($tipo === 'texto' && $texto === '') {
     json_error('El mensaje está vacío');
@@ -31,6 +32,38 @@ if ($tipo === 'sticker' && !rh_sticker_valido($texto)) {
 // dibuja el sacudón. Guardar algo permite que quede en el historial.
 if ($tipo === 'zumbido') {
     $texto = '¡Zumbido!';
+}
+
+// Primer mensaje a alguien con quien todavía no hay charla: recién ahora nace
+// la conversación (abrir.php no la crea, así que entrar a la pantalla y no
+// escribir nada no deja rastro en el listado de nadie).
+if ($conversacionId <= 0) {
+    if ($otroUserId === $userId) {
+        json_error('No podés chatear con vos mismo');
+    }
+    $stmt = $conn->prepare("SELECT UserId FROM Usuario WHERE UserId = ? AND Estado = 'A'");
+    $stmt->bind_param('i', $otroUserId);
+    $stmt->execute();
+    $existeOtro = (bool) $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$existeOtro) {
+        json_error('El usuario no existe', 404);
+    }
+
+    $permisoNuevo = rh_chat_permitido($conn, $userId, $otroUserId);
+    if (!$permisoNuevo['ok'] && $permisoNuevo['motivo'] !== 'esperando_autorizacion') {
+        json_error(rh_chat_motivo_texto($permisoNuevo['motivo']), 403);
+    }
+
+    $conversacionId = rh_chat_obtener_o_crear($conn, $userId, $otroUserId);
+
+    // Igual que abrir.php: si hay un menor con tutor, queda la autorización
+    // pendiente para que el adulto la vea.
+    foreach ([$userId, $otroUserId] as $uid) {
+        if (rh_es_menor($conn, $uid) && rh_tutor_de($conn, $uid) !== null) {
+            rh_autorizacion_asegurar($conn, $conversacionId, $uid);
+        }
+    }
 }
 
 $estado = rh_chat_estado_participante($conn, $conversacionId, $userId);

@@ -1,6 +1,7 @@
 <?php
 /**
- * Abre (o crea) la conversación con un usuario y devuelve sus mensajes.
+ * Abre la conversación con un usuario y devuelve sus mensajes. Si todavía no
+ * existe no la crea (nace con el primer mensaje, en enviar.php).
  *
  * También lo usa el polling: con `desdeMensajeId` devuelve sólo lo nuevo, que
  * es lo que hace que consultar cada 4 segundos sea barato.
@@ -33,14 +34,27 @@ if ($conversacionId <= 0) {
     }
     $stmt->close();
 
-    // Protección de menores ANTES de crear nada: si el vínculo no está
-    // permitido, no queremos ni siquiera dejar la conversación creada.
+    // Protección de menores: si el vínculo no está permitido, ni se abre.
     $permiso = rh_chat_permitido($conn, $userId, $otroUserId);
     if (!$permiso['ok'] && $permiso['motivo'] !== 'esperando_autorizacion') {
         json_error(rh_chat_motivo_texto($permiso['motivo']), 403);
     }
 
-    $conversacionId = rh_chat_obtener_o_crear($conn, $userId, $otroUserId);
+    $conversacionId = rh_chat_buscar($conn, $userId, $otroUserId);
+    if ($conversacionId <= 0) {
+        // Todavía no hay charla: se abre la pantalla vacía y la conversación se
+        // crea recién cuando se manda el primer mensaje (enviar.php).
+        json_success([
+            'conversacionId' => 0,
+            'estado' => 'activa',
+            'otro' => rh_chat_usuario_como_otro($conn, $otroUserId),
+            'mensajes' => [],
+            'bloqueo' => $permiso['ok'] ? null : [
+                'motivo' => $permiso['motivo'],
+                'texto' => rh_chat_motivo_texto($permiso['motivo']),
+            ],
+        ]);
+    }
 }
 
 $estado = rh_chat_estado_participante($conn, $conversacionId, $userId);

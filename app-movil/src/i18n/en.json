@@ -1023,6 +1023,10 @@
   },
   "chat": {
     "titulo": "Messages",
+    "nuevaConversacion": "New conversation",
+    "buscarPersona": "Search who to message",
+    "buscarPersonaAyuda": "Type the person's name or username (at least 2 letters).",
+    "errorEnviar": "The message could not be sent",
     "vacio": "No messages yet",
     "vacioDesc": "When someone writes to you, the chat will show up here.",
     "solicitudes": "Requests",

@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,7 +25,7 @@ import Animated, {
 import { chatApi } from '../../../src/api/chatApi';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { Atmosphere } from '../../../src/components/Atmosphere';
-import { ChatMensaje } from '../../../src/types';
+import { ChatMensaje, ChatOtro } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
 import { fonts, type } from '../../../src/theme/typography';
 import { useTheme } from '../../../src/theme/ThemeProvider';
@@ -31,9 +33,18 @@ import { convertirEmoticones } from '../../../src/utils/emoticones';
 import { StickerPicker } from '../../../src/chat/StickerPicker';
 import { StickerImagen, StickerId } from '../../../src/chat/stickers';
 import { hapticExito, hapticLeve, hapticMedio } from '../../../src/utils/haptics';
+import { rhAvatarUrl } from '../../../src/utils/media';
 
 /** Cada cuánto se pregunta por mensajes nuevos con la charla abierta. */
 const POLL_MS = 4000;
+
+/**
+ * Aire debajo de la barra de escribir para que quede por encima del botón del
+ * planeta (Mapa), que sobresale de la barra de pestañas y tapaba el campo de
+ * texto. Es el mismo aire que lleva la hoja del mapa. Con el teclado abierto
+ * no hace falta: el planeta queda tapado por el teclado.
+ */
+const AIRE_PLANETA = 24;
 
 export default function ConversacionScreen() {
   const { t } = useTranslation();
@@ -53,12 +64,14 @@ export default function ConversacionScreen() {
   const [convId, setConvId] = useState(Number.isFinite(convIdParam) ? convIdParam : 0);
 
   const [mensajes, setMensajes] = useState<ChatMensaje[]>([]);
-  const [otro, setOtro] = useState<{ nombreCompleto: string; mensajePersonal: string | null } | null>(null);
+  const [otro, setOtro] = useState<ChatOtro | null>(null);
   const [estado, setEstado] = useState<string>('activa');
   const [texto, setTexto] = useState('');
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [pickerAbierto, setPickerAbierto] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
+  const [tecladoAbierto, setTecladoAbierto] = useState(false);
 
   const listaRef = useRef<FlatList<ChatMensaje>>(null);
   const ultimoIdRef = useRef(0);
@@ -69,6 +82,17 @@ export default function ConversacionScreen() {
   const estiloSacudida = useAnimatedStyle(() => ({
     transform: [{ translateX: sacudir.value }],
   }));
+
+  useEffect(() => {
+    const ios = Platform.OS === 'ios';
+    const a = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', () => setTecladoAbierto(true));
+    const b = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setTecladoAbierto(false));
+    return () => {
+      a.remove();
+      b.remove();
+    };
+  }, []);
+  const aireBajo = tecladoAbierto ? 0 : AIRE_PLANETA;
 
   const dispararZumbido = useCallback(() => {
     hapticMedio();
@@ -123,7 +147,7 @@ export default function ConversacionScreen() {
             : 0;
           setMensajes(res.data.mensajes);
           ultimoIdRef.current = zumbidoVistoRef.current;
-          void chatApi.marcarLeida(res.data.conversacionId);
+          if (res.data.conversacionId > 0) void chatApi.marcarLeida(res.data.conversacionId);
         }
         setLoading(false);
       });
@@ -159,8 +183,11 @@ export default function ConversacionScreen() {
     if (tipo === 'texto' && !limpio) return;
     if (tipo === 'sticker' && !stickerId) return;
     if (enviando) return;
+    // Sin conversación todavía: hace falta saber a quién se le escribe.
+    if (convId <= 0 && !userIdParam) return;
 
     setEnviando(true);
+    setErrorEnvio(null);
     if (tipo === 'zumbido') {
       dispararZumbido();
     } else {
@@ -168,10 +195,13 @@ export default function ConversacionScreen() {
     }
     // En un sticker lo que viaja en `texto` es el id del dibujo.
     const cuerpo = tipo === 'zumbido' ? '' : tipo === 'sticker' ? stickerId! : limpio;
-    const res = await chatApi.enviar(convId, cuerpo, tipo);
+    const res = await chatApi.enviar(convId > 0 ? convId : 0, cuerpo, tipo, convId > 0 ? undefined : (userIdParam ?? undefined));
     setEnviando(false);
 
     if (res.success && res.data) {
+      // El primer mensaje crea la conversación: de acá en adelante hay id real
+      // (y arranca el polling).
+      if (convId <= 0 && res.data.conversacionId > 0) setConvId(res.data.conversacionId);
       setTexto('');
       setMensajes((prev) => [
         ...prev,
@@ -186,7 +216,15 @@ export default function ConversacionScreen() {
       ultimoIdRef.current = res.data.mensajeId;
       zumbidoVistoRef.current = res.data.mensajeId;
       setTimeout(() => listaRef.current?.scrollToEnd({ animated: true }), 60);
+    } else {
+      setErrorEnvio(res.message ?? t('chat.errorEnviar'));
     }
+  };
+
+  const irAlPerfil = () => {
+    if (!otro?.username) return;
+    hapticLeve();
+    router.push(`/(app)/usuario/${otro.username}` as never);
   };
 
   const resolver = async (accion: 'aceptar' | 'rechazar') => {
@@ -212,16 +250,37 @@ export default function ConversacionScreen() {
     <Atmosphere>
       <Animated.View style={[{ flex: 1 }, estiloSacudida]}>
         {otro ? (
-          <View style={[styles.cabecera, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
-              {otro.nombreCompleto}
-            </Text>
-            {otro.mensajePersonal ? (
-              <Text style={[type.caption, { color: colors.accent }]} numberOfLines={1}>
-                {otro.mensajePersonal}
-              </Text>
-            ) : null}
-          </View>
+          <Pressable
+            onPress={irAlPerfil}
+            disabled={!otro.username}
+            style={[styles.cabecera, { borderBottomColor: colors.border }]}
+            accessibilityRole="button"
+            accessibilityLabel={otro.nombreCompleto}
+          >
+            <View style={styles.cabeceraFila}>
+              {otro.avatarPath ? (
+                <Image
+                  source={{ uri: rhAvatarUrl(otro.avatarPath, otro.avatarBust ?? undefined) }}
+                  style={styles.cabeceraAvatar}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.cabeceraAvatar, styles.cabeceraAvatarVacio, { backgroundColor: colors.primarySoft }]}>
+                  <Ionicons name="person" size={18} color={colors.primary} />
+                </View>
+              )}
+              <View style={{ flexShrink: 1 }}>
+                <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
+                  {otro.nombreCompleto}
+                </Text>
+                {otro.mensajePersonal ? (
+                  <Text style={[type.caption, { color: colors.accent }]} numberOfLines={1}>
+                    {otro.mensajePersonal}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          </Pressable>
         ) : null}
 
         <FlatList
@@ -267,7 +326,12 @@ export default function ConversacionScreen() {
         />
 
         {estado === 'solicitud' ? (
-          <View style={[styles.solicitud, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+          <View
+            style={[
+              styles.solicitud,
+              { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: 14 + aireBajo },
+            ]}
+          >
             <Text style={[type.bodySm, { color: colors.textMuted, textAlign: 'center' }]}>
               {otro?.nombreCompleto} {t('chat.solicitudDe')}
             </Text>
@@ -284,7 +348,13 @@ export default function ConversacionScreen() {
             </View>
           </View>
         ) : (
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ backgroundColor: colors.surface, paddingBottom: aireBajo }}
+          >
+            {errorEnvio ? (
+              <Text style={[type.caption, { color: colors.danger, textAlign: 'center', paddingTop: 6 }]}>{errorEnvio}</Text>
+            ) : null}
             <View style={[styles.barra, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
               <Pressable onPress={() => enviar('zumbido')} style={styles.zumbidoBtn} hitSlop={6}>
                 <Ionicons name="flash" size={20} color={colors.accent} />
@@ -340,7 +410,16 @@ export default function ConversacionScreen() {
 
 const styles = StyleSheet.create({
   centrado: { alignItems: 'center', justifyContent: 'center' },
-  cabecera: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  cabecera: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cabeceraFila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, maxWidth: '100%' },
+  cabeceraAvatar: { width: 38, height: 38, borderRadius: 19 },
+  cabeceraAvatarVacio: { alignItems: 'center', justifyContent: 'center' },
   nombre: { fontFamily: fonts.bodySemi, fontSize: 16 },
   lista: { padding: 12, gap: 8, paddingBottom: 20 },
   stickerFila: { marginVertical: 4, paddingHorizontal: 4 },

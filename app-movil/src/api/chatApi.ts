@@ -10,20 +10,26 @@ export const chatApi = {
     ),
 
   /**
-   * Abre por conversación o por usuario (busca-o-crea).
+   * Abre por conversación o por usuario. Por usuario NO crea la charla si
+   * todavía no existe: devuelve `conversacionId` 0 y se crea al mandar el primer mensaje.
    * `desdeMensajeId` es lo que usa el polling para traer sólo lo nuevo.
    */
   abrir: (params: { conversacionId?: number; userId?: number; desdeMensajeId?: number }) =>
     apiGet<ChatDetalle>('ajax/chat/abrir.php', { ...params }, true),
 
+  /**
+   * Con `conversacionId` en 0 hay que pasar `userId`: es el primer mensaje a
+   * esa persona y recién ahí el servidor crea la conversación.
+   */
   enviar: (
     conversacionId: number,
     texto: string,
-    tipo: 'texto' | 'zumbido' | 'sticker' = 'texto'
+    tipo: 'texto' | 'zumbido' | 'sticker' = 'texto',
+    userId?: number
   ) =>
     apiPost<{ mensajeId: number; conversacionId: number; tipo: string }>(
       'ajax/chat/enviar.php',
-      { conversacionId, texto, tipo },
+      { conversacionId, texto, tipo, ...(userId ? { userId } : {}) },
       true
     ),
 

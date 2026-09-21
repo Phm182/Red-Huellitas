@@ -25,6 +25,7 @@ $stmt = $conn->prepare(
      JOIN ConversacionParticipante otro ON otro.ConversacionId = c.ConversacionId AND otro.UserId <> cp.UserId
      JOIN Usuario u ON u.UserId = otro.UserId
      WHERE cp.UserId = ? AND cp.Estado = ? AND u.Estado = 'A'
+       AND EXISTS (SELECT 1 FROM Mensaje mx WHERE mx.ConversacionId = c.ConversacionId)
      ORDER BY c.UltimoMensajeEn DESC, c.ConversacionId DESC
      LIMIT 50"
 );

@@ -100,13 +100,13 @@ function rh_chat_hay_relacion(mysqli $conn, int $a, int $b): bool
 }
 
 /**
- * Busca la conversación entre dos usuarios o la crea.
+ * Busca la conversación existente entre dos usuarios. Devuelve 0 si no hay.
  *
- * Buscar-o-crear en vez de crear siempre: sin esto, abrir el chat dos veces
- * dejaría dos hilos con la misma persona y los mensajes repartidos entre
- * ambos.
+ * Abrir un chat NO crea nada: la conversación nace recién con el primer
+ * mensaje (ver `enviar.php`). Si se creara al abrir, con sólo entrar a la
+ * pantalla —sin escribir— ya aparecería en el listado de charlas de los dos.
  */
-function rh_chat_obtener_o_crear(mysqli $conn, int $yo, int $otro): int
+function rh_chat_buscar(mysqli $conn, int $yo, int $otro): int
 {
     $stmt = $conn->prepare(
         'SELECT a.ConversacionId
@@ -119,8 +119,21 @@ function rh_chat_obtener_o_crear(mysqli $conn, int $yo, int $otro): int
     $stmt->execute();
     $fila = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    if ($fila) {
-        return (int) $fila['ConversacionId'];
+    return $fila ? (int) $fila['ConversacionId'] : 0;
+}
+
+/**
+ * Busca la conversación entre dos usuarios o la crea.
+ *
+ * Buscar-o-crear en vez de crear siempre: sin esto, escribir dos veces a la
+ * misma persona dejaría dos hilos y los mensajes repartidos entre ambos. Sólo
+ * lo llama `enviar.php`, al mandarse el primer mensaje.
+ */
+function rh_chat_obtener_o_crear(mysqli $conn, int $yo, int $otro): int
+{
+    $existente = rh_chat_buscar($conn, $yo, $otro);
+    if ($existente > 0) {
+        return $existente;
     }
 
     $conn->query('INSERT INTO Conversacion () VALUES ()');
@@ -141,6 +154,29 @@ function rh_chat_obtener_o_crear(mysqli $conn, int $yo, int $otro): int
     $stmt->close();
 
     return $conversacionId;
+}
+
+/** Los datos de un usuario con la misma forma que `otro` en una conversación. */
+function rh_chat_usuario_como_otro(mysqli $conn, int $userId): ?array
+{
+    $stmt = $conn->prepare(
+        'SELECT UserId, Username, NombreCompleto, AvatarPath, MensajePersonal FROM Usuario WHERE UserId = ?'
+    );
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $fila = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$fila) {
+        return null;
+    }
+    return [
+        'userId' => (int) $fila['UserId'],
+        'username' => $fila['Username'],
+        'nombreCompleto' => $fila['NombreCompleto'],
+        'avatarPath' => $fila['AvatarPath'],
+        'avatarBust' => rh_avatar_bust($fila['AvatarPath'] ?? null),
+        'mensajePersonal' => $fila['MensajePersonal'],
+    ];
 }
 
 /** El otro participante de una conversación de a dos. */

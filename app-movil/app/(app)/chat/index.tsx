@@ -9,6 +9,7 @@ import { equiposApi } from '../../../src/api/equiposApi';
 import { Equipo } from '../../../src/types/equipo';
 import { Atmosphere } from '../../../src/components/Atmosphere';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SwipeableSolapas } from '../../../src/components/ui/SwipeableSolapas';
 import { ListSearchBar } from '../../../src/components/ui/ListSearchBar';
 import { ChatConversacion } from '../../../src/types';
 import { radii } from '../../../src/theme/elevation';
@@ -26,6 +27,12 @@ import { rhAvatarUrl } from '../../../src/utils/media';
  * nombre entre todos los usuarios de la app.
  */
 type Solapa = 'activa' | 'solicitud' | 'equipos';
+
+const SOLAPAS_DEF: { key: Solapa; label: string }[] = [
+  { key: 'activa', label: '' },
+  { key: 'solicitud', label: '' },
+  { key: 'equipos', label: '' },
+];
 
 function hora(iso: string | null): string {
   if (!iso) return '';
@@ -140,7 +147,29 @@ export default function ChatScreen() {
         })}
       </View>
 
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <SwipeableSolapas
+        mostrarTabs={false}
+        tabs={SOLAPAS_DEF}
+        activa={solapa}
+        onChange={(k) => {
+          setSolapa(k);
+          setBusqueda('');
+        }}
+      >
+      <View style={styles.filaBuscar}>
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} style={{ flex: 1 }} />
+        <Pressable
+          onPress={() => {
+            hapticLeve();
+            router.push('/(app)/chat/nueva' as never);
+          }}
+          style={[styles.nueva, { backgroundColor: colors.primary }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('chat.nuevaConversacion')}
+        >
+          <Ionicons name="create-outline" size={20} color={colors.primaryText} />
+        </Pressable>
+      </View>
 
       {loading ? (
         <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 40 }} />
@@ -177,7 +206,7 @@ export default function ChatScreen() {
                     key={m.equipoMiembroId}
                     onPress={() => {
                       hapticLeve();
-                      // `abrir.php` busca-o-crea, así que alcanza con el userId.
+                      // Alcanza con el userId: la charla se crea al mandar el primer mensaje.
                       router.push({
                         pathname: '/(app)/chat/[conversacionId]',
                         params: { conversacionId: 'nuevo', userId: m.usuario.userId },
@@ -281,6 +310,7 @@ export default function ChatScreen() {
           )}
         />
       )}
+      </SwipeableSolapas>
     </Atmosphere>
   );
 }
@@ -298,6 +328,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   solapaLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
+  filaBuscar: { flexDirection: 'row', alignItems: 'center', paddingRight: 12 },
+  nueva: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   equipoTitulo: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 2 },
   lista: { padding: 12, gap: 8, paddingBottom: 28, flexGrow: 1 },
   vacia: { justifyContent: 'center' },

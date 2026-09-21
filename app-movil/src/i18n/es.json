@@ -1037,6 +1037,10 @@
   },
   "chat": {
     "titulo": "Mensajes",
+    "nuevaConversacion": "Nueva conversación",
+    "buscarPersona": "Buscar a quién escribirle",
+    "buscarPersonaAyuda": "Escribí el nombre o el usuario de la persona (mínimo 2 letras).",
+    "errorEnviar": "No se pudo enviar el mensaje",
     "vacio": "Todavía no tenés mensajes",
     "vacioDesc": "Cuando alguien te escriba, la charla va a aparecer acá.",
     "solicitudes": "Solicitudes",

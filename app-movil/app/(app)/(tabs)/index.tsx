@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -31,7 +31,7 @@ const SOLAPAS: { key: Solapa; labelKey: string; icon: keyof typeof Ionicons.glyp
 /** Alto del bloque fijo (Huellitas + solapas), para que Huetube calcule bien. */
 export const HUELLIGRAM_HEADER_HEIGHT = 154;
 
-const UMBRAL = 0.28;
+const UMBRAL = 0.2;
 
 /**
  * Huelligram: Huellitas arriba y tres solapas con swipe horizontal animado.
@@ -48,6 +48,9 @@ export default function HuelligramScreen() {
   const [montadas, setMontadas] = useState<Record<number, boolean>>({ 0: true, 1: true, 2: true });
   const [ancho, setAncho] = useState(() => Math.min(windowWidth, MAX_CONTENT_WIDTH));
   const indiceRef = useRef(0);
+  // Copia para los worklets del gesto: un `useRef` de JS leído desde un worklet
+  // queda congelado con el valor que tenía al crearse el gesto.
+  const indiceSV = useSharedValue(0);
   const offset = useSharedValue(0);
   const arrastre = useSharedValue(0);
   const anchoSV = useSharedValue(Math.min(windowWidth, MAX_CONTENT_WIDTH));
@@ -68,6 +71,7 @@ export default function HuelligramScreen() {
       const clamped = Math.max(0, Math.min(SOLAPAS.length - 1, i));
       const cambio = clamped !== indiceRef.current;
       indiceRef.current = clamped;
+      indiceSV.value = clamped;
       setIndice(clamped);
       setMontadas((prev) => {
         const next = { ...prev, [clamped]: true };
@@ -86,7 +90,7 @@ export default function HuelligramScreen() {
         router.setParams({ solapa: key });
       }
     },
-    [offset, params.solapa, anchoSV]
+    [offset, params.solapa, anchoSV, indiceSV]
   );
 
   useEffect(() => {
@@ -105,42 +109,54 @@ export default function HuelligramScreen() {
     [aplicarIndice]
   );
 
-  const gesto = Gesture.Pan()
-    .activeOffsetX([-48, 48])
-    .failOffsetY([-10, 10])
-    .onUpdate((e) => {
-      const i = indiceRef.current;
-      const w = anchoSV.value;
-      const base = -i * w;
-      const next = base + e.translationX;
-      const min = -(SOLAPAS.length - 1) * w;
-      if (next > 0) {
-        arrastre.value = next * 0.35 - base;
-      } else if (next < min) {
-        arrastre.value = min + (next - min) * 0.35 - base;
-      } else {
-        arrastre.value = e.translationX;
-      }
-    })
-    .onEnd((e) => {
-      const i = indiceRef.current;
-      const w = anchoSV.value;
-      const recorrido = e.translationX / w;
-      let destino = i;
-      if (recorrido < -UMBRAL || e.velocityX < -700) {
-        destino = i + 1;
-      } else if (recorrido > UMBRAL || e.velocityX > 700) {
-        destino = i - 1;
-      }
-      destino = Math.max(0, Math.min(SOLAPAS.length - 1, destino));
-      const visual = -i * w + arrastre.value;
-      arrastre.value = 0;
-      offset.value = visual;
-      offset.value = withSpring(-destino * w, { damping: 22, stiffness: 220, mass: 0.9 });
-      if (destino !== i) {
-        runOnJS(alCambiarPorGesto)(destino);
-      }
-    });
+  // Arranque temprano y tolerancia vertical amplia: con 48 px de arranque y sólo
+  // 10 px de desvío permitido, casi todo swipe natural se cancelaba antes de
+  // empezar ("a veces cambia, a veces no"). El feed de adentro sigue
+  // scrolleando normal: sólo se pierde el gesto si el dedo va claramente vertical.
+  const alCambiarRef = useRef(alCambiarPorGesto);
+  alCambiarRef.current = alCambiarPorGesto;
+  const alCambiarEstable = useCallback((destino: number) => alCambiarRef.current(destino), []);
+
+  const gesto = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-16, 16])
+        .failOffsetY([-30, 30])
+        .onUpdate((e) => {
+          const i = indiceSV.value;
+          const w = anchoSV.value;
+          const base = -i * w;
+          const next = base + e.translationX;
+          const min = -(SOLAPAS.length - 1) * w;
+          if (next > 0) {
+            arrastre.value = next * 0.35 - base;
+          } else if (next < min) {
+            arrastre.value = min + (next - min) * 0.35 - base;
+          } else {
+            arrastre.value = e.translationX;
+          }
+        })
+        .onEnd((e) => {
+          const i = indiceSV.value;
+          const w = anchoSV.value;
+          const recorrido = e.translationX / w;
+          let destino = i;
+          if (recorrido < -UMBRAL || e.velocityX < -500) {
+            destino = i + 1;
+          } else if (recorrido > UMBRAL || e.velocityX > 500) {
+            destino = i - 1;
+          }
+          destino = Math.max(0, Math.min(SOLAPAS.length - 1, destino));
+          const visual = -i * w + arrastre.value;
+          arrastre.value = 0;
+          offset.value = visual;
+          offset.value = withSpring(-destino * w, { damping: 22, stiffness: 220, mass: 0.9 });
+          if (destino !== i) {
+            runOnJS(alCambiarEstable)(destino);
+          }
+        }),
+    [indiceSV, anchoSV, arrastre, offset, alCambiarEstable]
+  );
 
   const estiloTrack = useAnimatedStyle(() => ({
     transform: [{ translateX: offset.value + arrastre.value }],
