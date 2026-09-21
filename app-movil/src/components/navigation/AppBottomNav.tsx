@@ -91,7 +91,10 @@ export function AppBottomNav({ columnWidth, columnLeft }: Props) {
                 accessibilityState={{ selected: focused }}
                 accessibilityHint={t('nav.atajosHint')}
               >
-                <View style={[styles.iconWrap, focused && { backgroundColor: colors.primarySoft }]}>
+                <View style={styles.iconWrap}>
+                  {focused ? (
+                    <View style={[StyleSheet.absoluteFill, styles.pildora, { backgroundColor: colors.primarySoft }]} />
+                  ) : null}
                   <Ionicons name={focused ? hub.iconActive : hub.icon} size={21} color={color} />
                 </View>
                 <Text style={[styles.label, { color }, focused && { fontFamily: fonts.bodyBold ?? fonts.bodySemi }]} numberOfLines={1}>
@@ -139,12 +142,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   iconWrap: {
-    width: 52,
+    width: 46,
     height: 30,
-    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  pildora: { borderRadius: 16, borderCurve: 'continuous' },
   label: {
     fontFamily: fonts.bodySemi,
     fontSize: 10,
