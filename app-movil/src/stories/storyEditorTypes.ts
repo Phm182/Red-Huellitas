@@ -105,6 +105,12 @@ export type StoryOverlay = {
    */
   stickers?: StoryStickerItem[];
   interactivo?: StoryInteractivo | null;
+  /**
+   * Cómo quiere el autor que se vea la foto: 'contain' entera (con barras) o 'cover'
+   * llenando la pantalla. Sólo viaja si el autor lo eligió a propósito; sin este
+   * campo el visor muestra la foto entera, tal cual se subió.
+   */
+  contentFit?: 'cover' | 'contain';
 };
 
 /**

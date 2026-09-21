@@ -317,6 +317,8 @@ export interface Historia {
   duracionSegundos: number | null;
   overlay?: {
     filter?: string;
+    /** Ajuste que eligió el autor para la foto; sin él, el visor la muestra entera. */
+    contentFit?: 'cover' | 'contain';
     texts?: Array<{
       id: string;
       text: string;

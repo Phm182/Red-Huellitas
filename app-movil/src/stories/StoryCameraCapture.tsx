@@ -196,10 +196,9 @@ export function StoryCameraCapture({ onCaptured, onClose }: Props) {
   };
 
   const onGallery = async () => {
-    if (!isWeb) {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
-    }
+    // Sin pedir permiso de biblioteca: el selector del sistema (PHPicker en iOS,
+    // Photo Picker en Android) no lo necesita, y pedirlo en cada toque era una
+    // llamada nativa de más que hacía tardar en abrirse la galería.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
       videoMaxDuration: 60,

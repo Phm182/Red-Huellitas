@@ -85,13 +85,14 @@ export default function MapaScreen() {
   const alturaBarra = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
   const hojaDesdeAbajo = Platform.OS === 'web' ? alturaBarra : 0;
   /**
-   * Aire extra debajo del ÚLTIMO ítem de la hoja. En nativo la hoja llega hasta
-   * el borde de la pantalla y pasa por detrás de la barra de pestañas, y el
-   * botón redondo del planeta (Mapa) sobresale por arriba de la barra: sin esto
-   * el último ítem quedaba con su texto tapado por el planeta. Sólo el último:
-   * el resto de la lista queda con su espaciado normal.
+   * Aire extra debajo del ÚLTIMO ítem de la hoja. La hoja termina justo en el
+   * borde de la barra de pestañas, y el botón redondo del planeta (Mapa)
+   * sobresale ~30 px por arriba de esa barra: el último ítem quedaba con su
+   * texto parcialmente tapado. Alcanza con subirlo lo que sobresale el planeta
+   * (menos el espacio que el ítem ya tiene abajo): sólo el último, el resto de
+   * la lista queda con su espaciado normal.
    */
-  const aireUltimoItem = (Platform.OS === 'web' ? 0 : alturaBarra) + 40;
+  const aireUltimoItem = 24;
 
   // Deep link: /(app)/mapa?lat=..&lng=..&zoom=.. abre centrado en ese punto.
   // Lo usan los botones "Ver en mapa" de veterinarias, refugios y campañas.

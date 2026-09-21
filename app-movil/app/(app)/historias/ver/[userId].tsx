@@ -55,7 +55,8 @@ export default function VisorHistoriasScreen() {
   const [silenciado, setSilenciado] = useState(false);
   const [volumen, setVolumen] = useState(0.85);
   const [mostrarVolumen, setMostrarVolumen] = useState(false);
-  const [contentFit, setContentFit] = useState<'cover' | 'contain'>('cover');
+  // Lo que el que mira eligió con el botón de la esquina (null = el ajuste base de la historia).
+  const [fitManual, setFitManual] = useState<'cover' | 'contain' | null>(null);
   const [pausado, setPausado] = useState(false);
   const [respuesta, setRespuesta] = useState('');
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
@@ -138,6 +139,17 @@ export default function VisorHistoriasScreen() {
     }));
   };
 
+  // Cómo se ve cada historia: tal cual la subió el autor. Si el autor eligió un
+  // ajuste a propósito se respeta; si no, la foto se muestra ENTERA (antes se
+  // agrandaba para llenar la pantalla vertical y se le cortaban los costados).
+  // El video sigue llenando la pantalla. El botón de la esquina permite alternar.
+  const fitBase: 'cover' | 'contain' =
+    actual?.overlay?.contentFit ?? (actual?.tipoMedia === 'video' ? 'cover' : 'contain');
+  const contentFit = fitManual ?? fitBase;
+  useEffect(() => {
+    setFitManual(null);
+  }, [actual?.historiaId]);
+
   const overlay: StoryOverlay = useMemo(() => {
     if (!actual?.overlay) return emptyOverlay();
     return {
@@ -189,14 +201,12 @@ export default function VisorHistoriasScreen() {
     if (index >= historias.length - 1) {
       safeGoBack();
     } else {
-      setContentFit('cover');
       setIndex((i) => i + 1);
     }
   }, [index, historias.length]);
 
   const retroceder = () => {
     if (index > 0) {
-      setContentFit('cover');
       setIndex((i) => i - 1);
     }
   };
@@ -402,7 +412,7 @@ export default function VisorHistoriasScreen() {
         {actual.tipoMedia === 'video' || actual.tipoMedia === 'foto' ? (
           <Pressable
             style={[styles.iconBtn, contentFit === 'contain' && styles.iconBtnOn]}
-            onPress={() => setContentFit((f) => (f === 'cover' ? 'contain' : 'cover'))}
+            onPress={() => setFitManual(contentFit === 'cover' ? 'contain' : 'cover')}
           >
             <Ionicons name={contentFit === 'contain' ? 'expand' : 'scan'} size={18} color="#fff" />
           </Pressable>

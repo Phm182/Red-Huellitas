@@ -136,6 +136,17 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
   const [volumen, setVolumen] = useState(0.85);
   const [mostrarVolumen, setMostrarVolumen] = useState(false);
   const [contentFit, setContentFit] = useState<StoryContentFit>('cover');
+  // ¿El autor eligió el ajuste a propósito (botón o toque sobre la foto)? Sólo
+  // en ese caso se manda al visor; si no, el visor muestra la foto entera.
+  const fitElegidoRef = useRef(false);
+  const primerFitRef = useRef(true);
+  useEffect(() => {
+    if (primerFitRef.current) {
+      primerFitRef.current = false;
+      return;
+    }
+    fitElegidoRef.current = true;
+  }, [contentFit]);
   const [mostrarTrim, setMostrarTrim] = useState(false);
   // Cabezal de reproducción: `scrub` es el segundo que se está tocando ahora
   // (null si nadie arrastra) y `posicionBuscada` el último salto pedido. Van
@@ -545,7 +556,7 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
     // historia común no arrastra campos que no le corresponden.
     const recorteTocado = duracion > 0 && (recorteInicio > 0 || recorteFin < duracion);
     onPublish({
-      overlay,
+      overlay: fitElegidoRef.current && media.tipo === 'foto' ? { ...overlay, contentFit } : overlay,
       recorte: recorteTocado ? { inicioSeg: recorteInicio, finSeg: recorteFin } : null,
       sinAudio,
       velocidad: media.tipo === 'video' ? velocidad : 1,
@@ -569,10 +580,9 @@ export function StoryEditor({ media, onBack, onMediaChange, onPublish, publishin
 
   const pickFromGallery = async () => {
     if (cambiandoMedia) return;
-    if (Platform.OS !== 'web') {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
-    }
+    // Sin pedir permiso de biblioteca: el selector del sistema (PHPicker en iOS,
+    // Photo Picker en Android) no lo necesita, y pedirlo en cada toque era una
+    // llamada nativa de más que hacía tardar en abrirse la galería.
     setCambiandoMedia(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
