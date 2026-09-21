@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../../../src/auth/AuthProvider';
 import { historiasApi } from '../../../../src/api/historiasApi';
 import { DenunciaButtonStub } from '../../../../src/components/DenunciaButtonStub';
 import { StoryInteractivoCard } from '../../../../src/stories/StoryInteractivoCard';
@@ -22,8 +24,8 @@ import { StoryVolumeSlider } from '../../../../src/stories/StoryVolumeSlider';
 import { compartirPost } from '../../../../src/utils/compartir';
 import { StoryOverlayLayer, storyFilterCss } from '../../../../src/stories/StoryOverlayLayer';
 import { emptyOverlay, StoryOverlay } from '../../../../src/stories/storyEditorTypes';
-import { Historia } from '../../../../src/types';
-import { rhMediaUrl } from '../../../../src/utils/media';
+import { Historia, UsuarioResumen } from '../../../../src/types';
+import { rhAvatarUrl, rhMediaUrl } from '../../../../src/utils/media';
 import { ReaccionesBarra, ReaccionHistoria } from '../../../../src/historias/ReaccionesBarra';
 
 const DURACION_FOTO_MS = 5000;
@@ -39,7 +41,27 @@ function safeGoBack() {
   else router.replace('/(app)/(tabs)');
 }
 
-export default function VisorHistoriasScreen() {
+/**
+ * Envoltorio que desliza toda la pantalla al saltar de un usuario a otro: sale
+ * hacia el lado del gesto y el siguiente entra desde el lado contrario, así la
+ * animación acompaña si se va hacia adelante o hacia atrás.
+ */
+export default function VisorHistorias() {
+  const slide = useRef(new Animated.Value(0)).current;
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: slide }] }}>
+        <VisorHistoriasScreen slide={slide} />
+      </Animated.View>
+    </View>
+  );
+}
+
+function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
+  const { user } = useAuth();
+  // Hacia dónde entra el próximo usuario (+1 desde la derecha, -1 desde la izquierda).
+  const entradaRef = useRef<0 | 1 | -1>(0);
+  const [autores, setAutores] = useState<Record<number, UsuarioResumen>>({});
   const insets = useSafeAreaInsets();
   const { userId, historiaId: historiaIdParam } = useLocalSearchParams<{ userId: string; historiaId?: string }>();
   const [historias, setHistorias] = useState<Historia[]>([]);
@@ -80,6 +102,11 @@ export default function VisorHistoriasScreen() {
     historiasApi.feed().then((res) => {
       if (!activo || !res.success || !res.data) return;
       setOrdenUsuarios(res.data.usuarios.map((u) => u.autor.userId));
+      const mapa: Record<number, UsuarioResumen> = {};
+      res.data.usuarios.forEach((u) => {
+        mapa[u.autor.userId] = u.autor;
+      });
+      setAutores(mapa);
     });
     return () => {
       activo = false;
@@ -122,6 +149,10 @@ export default function VisorHistoriasScreen() {
           : -1;
         setIndex(inicio > 0 ? inicio : 0);
         setLoading(false);
+        if (entradaRef.current !== 0) {
+          entradaRef.current = 0;
+          Animated.timing(slide, { toValue: 0, duration: 190, useNativeDriver: true }).start();
+        }
       });
       return () => {
         activo = false;
@@ -283,6 +314,15 @@ export default function VisorHistoriasScreen() {
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_e, g) =>
           Math.abs(g.dx) > UMBRAL_GESTO || g.dy > UMBRAL_GESTO,
+        onPanResponderMove: (_e, g) => {
+          // La pantalla acompaña al dedo mientras se arrastra de lado.
+          if (Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > UMBRAL_GESTO) {
+            const v = vecinos.current;
+            if ((g.dx < 0 && v.siguiente !== null) || (g.dx > 0 && v.anterior !== null)) {
+              slide.setValue(g.dx);
+            }
+          }
+        },
         onPanResponderRelease: (_e, g) => {
           setPausado(false);
           const horizontal = Math.abs(g.dx) > Math.abs(g.dy);
@@ -292,6 +332,10 @@ export default function VisorHistoriasScreen() {
             return;
           }
           if (!horizontal) return;
+          if (Math.abs(g.dx) <= UMBRAL_SWIPE) {
+            Animated.timing(slide, { toValue: 0, duration: 120, useNativeDriver: true }).start();
+            return;
+          }
 
           const destino = g.dx < -UMBRAL_SWIPE ? vecinos.current.siguiente : null;
           const previo = g.dx > UMBRAL_SWIPE ? vecinos.current.anterior : null;
@@ -302,12 +346,19 @@ export default function VisorHistoriasScreen() {
             if (g.dx < -UMBRAL_SWIPE) safeGoBack();
             return;
           }
-          router.replace({
-            pathname: '/(app)/historias/ver/[userId]',
-            params: { userId: String(userIdDestino) },
+          // Adelante (dedo a la izquierda): sale hacia la izquierda y el próximo
+          // entra por la derecha. Atrás: al revés.
+          const dir: 1 | -1 = g.dx < 0 ? 1 : -1;
+          Animated.timing(slide, { toValue: -dir * SCREEN_W, duration: 150, useNativeDriver: true }).start(() => {
+            entradaRef.current = dir;
+            slide.setValue(dir * SCREEN_W);
+            router.setParams({ userId: String(userIdDestino), historiaId: undefined } as never);
           });
         },
-        onPanResponderTerminate: () => setPausado(false),
+        onPanResponderTerminate: () => {
+          setPausado(false);
+          Animated.timing(slide, { toValue: 0, duration: 120, useNativeDriver: true }).start();
+        },
       }),
     []
   );
@@ -371,6 +422,17 @@ export default function VisorHistoriasScreen() {
     );
   }
 
+  const autorActual: UsuarioResumen | null =
+    autores[Number(userId)] ??
+    (user && user.userId === Number(userId)
+      ? {
+          userId: user.userId,
+          username: (user as { username?: string | null }).username ?? null,
+          nombreCompleto: (user as { nombreCompleto?: string }).nombreCompleto ?? '',
+          avatarPath: (user as { avatarPath?: string | null }).avatarPath ?? null,
+        }
+      : null);
+
   const cssFilter = storyFilterCss(overlay.filter);
   const mediaUri = rhMediaUrl(actual.mediaPath);
 
@@ -418,6 +480,30 @@ export default function VisorHistoriasScreen() {
           </View>
         ))}
       </View>
+
+      {autorActual ? (
+        <Pressable
+          style={[styles.autorFila, { top: insets.top + 16 }]}
+          disabled={!autorActual.username}
+          onPress={() => router.push(`/(app)/usuario/${autorActual.username}` as never)}
+          accessibilityLabel={autorActual.nombreCompleto}
+        >
+          {autorActual.avatarPath ? (
+            <Image
+              source={{ uri: rhAvatarUrl(autorActual.avatarPath, (autorActual as { avatarBust?: number | null }).avatarBust ?? undefined) }}
+              style={styles.autorAvatar}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.autorAvatar, styles.autorAvatarVacio]}>
+              <Ionicons name="person" size={16} color="#fff" />
+            </View>
+          )}
+          <Text style={styles.autorNombre} numberOfLines={1}>
+            {autorActual.username ?? autorActual.nombreCompleto}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <View style={[styles.topActions, { top: insets.top + 16 }]} pointerEvents="box-none">
         {actual.tipoMedia === 'video' || actual.tipoMedia === 'foto' ? (
@@ -624,6 +710,23 @@ const styles = StyleSheet.create({
   // botones con las zonas de avance.
   tapZones: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, flexDirection: 'row', zIndex: 4 },
   tapZone: { flex: 1 },
+  autorFila: {
+    position: 'absolute',
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: '55%',
+    zIndex: 7,
+    paddingVertical: 4,
+    paddingRight: 10,
+    paddingLeft: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  autorAvatar: { width: 32, height: 32, borderRadius: 16 },
+  autorAvatarVacio: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.25)' },
+  autorNombre: { color: '#fff', fontWeight: '700', fontSize: 14, flexShrink: 1 },
   topActions: { position: 'absolute', right: 12, flexDirection: 'row', gap: 4, zIndex: 6 },
   iconBtn: {
     width: 38,
