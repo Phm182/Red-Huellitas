@@ -331,12 +331,11 @@ export default function ConversacionScreen() {
                   style={[
                     styles.historiaBurbuja,
                     mio ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
-                    { backgroundColor: fondo, borderColor: mio ? colors.primary : colors.border },
                   ]}
                 >
                   <View style={styles.historiaEncabezado}>
-                    <Ionicons name="albums-outline" size={12} color={textoColor} />
-                    <Text style={[type.caption, { color: textoColor, opacity: 0.85 }]} numberOfLines={1}>
+                    <Ionicons name="albums-outline" size={12} color={colors.textMuted} />
+                    <Text style={[type.caption, { color: colors.textMuted }]} numberOfLines={1}>
                       {titulo}
                     </Text>
                   </View>
@@ -368,7 +367,9 @@ export default function ConversacionScreen() {
                   {esReaccion ? (
                     <Text style={styles.historiaEmoji}>{EMOJI_REACCION[item.texto] ?? '🐾'}</Text>
                   ) : (
-                    <Text style={{ color: textoColor, fontSize: 15 }}>{item.texto}</Text>
+                    <View style={[styles.historiaTexto, { backgroundColor: fondo }]}>
+                      <Text style={{ color: textoColor, fontSize: 15 }}>{item.texto}</Text>
+                    </View>
                   )}
                 </View>
               );
@@ -498,9 +499,10 @@ const styles = StyleSheet.create({
   stickerFila: { marginVertical: 4, paddingHorizontal: 4 },
   burbuja: { maxWidth: '78%', borderRadius: radii.lg, paddingHorizontal: 14, paddingVertical: 10 },
   zumbidoFila: { alignSelf: 'center', paddingVertical: 6 },
-  historiaBurbuja: { maxWidth: '72%', borderRadius: radii.lg, borderWidth: 1, padding: 8, gap: 6 },
+  historiaBurbuja: { maxWidth: '72%', gap: 4 },
+  historiaTexto: { alignSelf: 'stretch', borderRadius: radii.lg, paddingHorizontal: 12, paddingVertical: 8 },
   historiaEncabezado: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  historiaMiniatura: { width: 132, height: 176, borderRadius: 10 },
+  historiaMiniatura: { width: 150, height: 200, borderRadius: radii.lg },
   historiaSinImagen: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(128,128,128,0.18)' },
   historiaEmoji: { fontSize: 34, textAlign: 'center' },
   barra: {
