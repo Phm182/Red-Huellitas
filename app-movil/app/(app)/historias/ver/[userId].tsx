@@ -175,7 +175,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
         setLoading(false);
         if (entradaRef.current !== 0) {
           entradaRef.current = 0;
-          Animated.timing(slide, { toValue: 0, duration: 190, useNativeDriver: true }).start();
+          Animated.timing(slide, { toValue: 0, duration: 110, useNativeDriver: true }).start();
         }
       });
       return () => {
@@ -376,7 +376,7 @@ function VisorHistoriasScreen({ slide }: { slide: Animated.Value }) {
           // Adelante (dedo a la izquierda): sale hacia la izquierda y el próximo
           // entra por la derecha. Atrás: al revés.
           const dir: 1 | -1 = g.dx < 0 ? 1 : -1;
-          Animated.timing(slide, { toValue: -dir * SCREEN_W, duration: 150, useNativeDriver: true }).start(() => {
+          Animated.timing(slide, { toValue: -dir * SCREEN_W, duration: 80, useNativeDriver: true }).start(() => {
             entradaRef.current = dir;
             slide.setValue(dir * SCREEN_W);
             router.setParams({ userId: String(userIdDestino), historiaId: undefined } as never);
