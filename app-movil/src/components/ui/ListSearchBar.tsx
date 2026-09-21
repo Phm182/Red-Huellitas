@@ -5,6 +5,7 @@ import { StyleSheet, TextInput, View, ViewStyle } from 'react-native';
 import { radii } from '../../theme/elevation';
 import { fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
+import { BotonFiltros } from './Filtros';
 
 type Props = {
   value: string;
@@ -15,17 +16,31 @@ type Props = {
   style?: ViewStyle;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Si se pasa, aparece el botón "Filtros" a la derecha, en la misma fila. */
+  onFiltros?: () => void;
+  filtrosActivos?: number;
 };
 
 /** Buscador compacto para filtrar listas por texto. */
-export function ListSearchBar({ value, onChangeText, placeholder, embedded, style, onFocus, onBlur }: Props) {
+export function ListSearchBar({
+  value,
+  onChangeText,
+  placeholder,
+  embedded,
+  style,
+  onFocus,
+  onBlur,
+  onFiltros,
+  filtrosActivos = 0,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
-  return (
+  const barra = (
     <View
       style={[
         styles.wrap,
+        onFiltros && styles.enFila,
         embedded && styles.embedded,
         { backgroundColor: colors.surface, borderColor: colors.border },
         style,
@@ -57,6 +72,13 @@ export function ListSearchBar({ value, onChangeText, placeholder, embedded, styl
       ) : null}
     </View>
   );
+  if (!onFiltros) return barra;
+  return (
+    <View style={styles.fila}>
+      {barra}
+      <BotonFiltros onPress={onFiltros} activos={filtrosActivos} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -75,6 +97,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
     maxWidth: '100%',
   },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 8, marginTop: 4 },
+  enFila: { flex: 1, marginHorizontal: 0, marginBottom: 0, marginTop: 0 },
   embedded: {
     marginHorizontal: 0,
     marginTop: 0,

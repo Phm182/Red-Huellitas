@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosCampanias } from '../../../src/components/ui/filtrosListas';
 import { AtajosBar } from '../../../src/components/ui/AtajosBar';
 import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { router, useFocusEffect } from 'expo-router';
@@ -88,7 +90,8 @@ export default function CampaniasListaScreen() {
     })),
   ];
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosCampanias(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(campanias, busqueda, (c) => [
         c.titulo,
@@ -100,23 +103,19 @@ export default function CampaniasListaScreen() {
       ]),
     [campanias, busqueda, t]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <AtajosBar
-        items={[
-          { icon: 'ticket-outline', label: t('common.atajos.inscripciones'), onPress: () => router.push('/(app)/campanias/mis-inscripciones') },
-        ]}
-      />
 
       <View style={styles.filtros}>
         <ChipRow opciones={opciones} seleccionado={tipo} onSelect={setTipo} />
       </View>
 
       <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={tipo} onSelect={setTipo}>
-        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
         {loading ? (
           <SkeletonList />
@@ -170,6 +169,13 @@ export default function CampaniasListaScreen() {
           />
         )}
       </SwipeFiltro>
+      <AtajosBar
+        items={[
+          { icon: 'ticket-outline', label: t('common.atajos.inscripciones'), onPress: () => router.push('/(app)/campanias/mis-inscripciones') },
+        ]}
+        crear={{ onPress: () => router.push('/(app)/campanias/nueva') }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }

@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosProductos } from '../../../src/components/ui/filtrosListas';
 import { AtajosBar } from '../../../src/components/ui/AtajosBar';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -153,7 +155,8 @@ export default function ProductosListaScreen() {
     }
   }, []);
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosProductos(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(listados, busqueda, (item) => [
         item.nombre,
@@ -166,16 +169,12 @@ export default function ProductosListaScreen() {
       ]),
     [listados, busqueda, t]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <AtajosBar
-        items={[
-          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/productos/favoritos') },
-        ]}
-      />
 
       <View style={styles.filtros}>
         <FilterSelect
@@ -211,7 +210,7 @@ export default function ProductosListaScreen() {
         />
       </View>
 
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
       {loading ? (
         <SkeletonList />
@@ -278,6 +277,13 @@ export default function ProductosListaScreen() {
           }
         />
       )}
+      <AtajosBar
+        items={[
+          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/productos/favoritos') },
+        ]}
+        crear={{ onPress: () => router.push('/(app)/productos/nueva') }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }

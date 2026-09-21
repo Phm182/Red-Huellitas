@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosEquipos } from '../../../src/components/ui/filtrosListas';
 import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
@@ -67,16 +69,18 @@ export default function EquiposScreen() {
   }
 
   const porTipo = tipoFiltro ? equipos.filter((e) => e.tipo.codigo === tipoFiltro) : equipos;
-  const filtrados = filtrarPorTexto(porTipo, busqueda, (e) => [
+  const f = useFiltros(filtrosEquipos(t));
+  const filtradosBase = filtrarPorTexto(porTipo, busqueda, (e) => [
     e.nombre,
     e.zonaDescripcion,
     e.tipo.nombre,
   ]);
+  const filtrados = f.aplicar(filtradosBase);
   const buscando = busqueda.trim().length > 0;
 
   return (
     <Atmosphere>
-      <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+      <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
       <ChipRow
         opciones={[
@@ -161,6 +165,7 @@ export default function EquiposScreen() {
         }}
         accessibilityLabel={t('equipos.crear')}
       />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </Atmosphere>
   );
 }

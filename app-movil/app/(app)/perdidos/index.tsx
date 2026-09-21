@@ -1,4 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosPerdidos } from '../../../src/components/ui/filtrosListas';
 import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +89,8 @@ export default function PerdidosListaScreen() {
     })),
   ];
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosPerdidos(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(reportes, busqueda, (p) => [
         p.nombre,
@@ -101,6 +105,7 @@ export default function PerdidosListaScreen() {
       ]),
     [reportes, busqueda, t]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
 
@@ -111,7 +116,7 @@ export default function PerdidosListaScreen() {
       </View>
 
       <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={tipo} onSelect={setTipo}>
-        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
         {loading ? (
           <SkeletonList />
@@ -166,6 +171,10 @@ export default function PerdidosListaScreen() {
           />
         )}
       </SwipeFiltro>
+      <AtajosBar
+        crear={{ onPress: () => router.push('/(app)/perdidos/nueva') }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }

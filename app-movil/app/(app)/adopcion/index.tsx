@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosAdopcion } from '../../../src/components/ui/filtrosListas';
 import { AtajosBar } from '../../../src/components/ui/AtajosBar';
 import { SwipeFiltro } from '../../../src/components/ui/SwipeFiltro';
 import { router, useFocusEffect } from 'expo-router';
@@ -112,7 +114,8 @@ export default function AdopcionListaScreen() {
     })),
   ];
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosAdopcion(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(listados, busqueda, (a) => [
         a.nombre,
@@ -127,25 +130,19 @@ export default function AdopcionListaScreen() {
       ]),
     [listados, busqueda, t]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <AtajosBar
-        items={[
-          { icon: 'albums-outline', label: t('common.atajos.publicaciones'), onPress: () => router.push('/(app)/adopcion/mis-publicaciones') },
-          { icon: 'paper-plane-outline', label: t('common.atajos.postulaciones'), onPress: () => router.push('/(app)/adopcion/mis-postulaciones') },
-          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/adopcion/favoritos') },
-        ]}
-      />
 
       <View style={styles.filtros}>
         <ChipRow opciones={opciones} seleccionado={especie} onSelect={setEspecie} />
       </View>
 
       <SwipeFiltro valores={opciones.map((o) => o.valor)} seleccionado={especie} onSelect={setEspecie}>
-        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
         {loading ? (
           <SkeletonList />
@@ -208,6 +205,15 @@ export default function AdopcionListaScreen() {
           />
         )}
       </SwipeFiltro>
+      <AtajosBar
+        items={[
+          { icon: 'albums-outline', label: t('common.atajos.publicaciones'), onPress: () => router.push('/(app)/adopcion/mis-publicaciones') },
+          { icon: 'paper-plane-outline', label: t('common.atajos.postulaciones'), onPress: () => router.push('/(app)/adopcion/mis-postulaciones') },
+          { icon: 'heart', label: t('common.atajos.favoritos'), onPress: () => router.push('/(app)/adopcion/favoritos') },
+        ]}
+        crear={{ onPress: () => router.push('/(app)/adopcion/nueva') }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }

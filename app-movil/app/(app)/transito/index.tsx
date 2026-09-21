@@ -1,4 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosTransito } from '../../../src/components/ui/filtrosListas';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
@@ -83,7 +86,8 @@ export default function TransitoListaScreen() {
     { valor: null, label: t('transito.todas'), icon: 'globe-outline' },
   ];
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosTransito(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(listados, busqueda, (item) => [
         item.nombre,
@@ -97,6 +101,7 @@ export default function TransitoListaScreen() {
       ]),
     [listados, busqueda]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
   const crearTipo = solapa === 'buscar' ? 'necesito' : 'ofrezco';
@@ -125,7 +130,7 @@ export default function TransitoListaScreen() {
           />
         </View>
 
-        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
         {loading ? (
           <SkeletonList />
@@ -197,6 +202,10 @@ export default function TransitoListaScreen() {
           />
         )}
       </SwipeableSolapas>
+      <AtajosBar
+        crear={{ onPress: () => router.push({ pathname: '/(app)/transito/nueva', params: { tipo: crearTipo } }) }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }

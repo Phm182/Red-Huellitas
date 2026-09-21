@@ -1,4 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
+import { AtajosBar } from '../../../src/components/ui/AtajosBar';
+import { FiltrosSheet, useFiltros } from '../../../src/components/ui/Filtros';
+import { filtrosDonaciones } from '../../../src/components/ui/filtrosListas';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
@@ -121,7 +124,8 @@ export default function DonacionesListaScreen() {
     { valor: null, label: t('donaciones.todas'), icon: 'globe-outline' },
   ];
 
-  const filtrados = useMemo(
+  const f = useFiltros(filtrosDonaciones(t));
+  const filtradosBase = useMemo(
     () =>
       filtrarPorTexto(listados, busqueda, (item) => [
         item.descripcion,
@@ -133,6 +137,7 @@ export default function DonacionesListaScreen() {
       ]),
     [listados, busqueda, t]
   );
+  const filtrados = f.aplicar(filtradosBase);
 
   const buscando = busqueda.trim().length > 0;
   const crearTipo = solapa === 'necesito' ? 'necesito' : 'ofrezco';
@@ -167,7 +172,7 @@ export default function DonacionesListaScreen() {
           />
         </View>
 
-        <ListSearchBar value={busqueda} onChangeText={setBusqueda} />
+        <ListSearchBar value={busqueda} onChangeText={setBusqueda} onFiltros={f.abrir} filtrosActivos={f.activos} />
 
         {loading ? (
           <SkeletonList />
@@ -241,6 +246,10 @@ export default function DonacionesListaScreen() {
           />
         )}
       </SwipeableSolapas>
+      <AtajosBar
+        crear={{ onPress: () => router.push({ pathname: '/(app)/donaciones/nueva', params: { tipo: crearTipo } }) }}
+      />
+      <FiltrosSheet f={f} resultados={filtrados.length} />
     </View>
   );
 }
