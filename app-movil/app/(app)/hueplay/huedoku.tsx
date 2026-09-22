@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -66,6 +68,17 @@ export default function HueDokuScreen() {
     diario?: DiarioResultado;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Récord por variante: HueDoku no arranca desde un botón "Empezar" aparte,
+  // cada dificultad se toca y arranca directo, así que se piden los 3 de una
+  // (la hoja de hooks tiene que ser siempre la misma, con código fijo).
+  const record6 = useRecordJuego('huedoku6');
+  const record9facil = useRecordJuego('huedoku9facil');
+  const record9dificil = useRecordJuego('huedoku9dificil');
+  const recordPorVariante: Record<VarianteDoku, number | null> = {
+    '6': record6,
+    '9facil': record9facil,
+    '9dificil': record9dificil,
+  };
 
   const vivoRef = useRef(true);
   const puzzleRef = useRef<Puzzle | null>(null);
@@ -240,12 +253,15 @@ export default function HueDokuScreen() {
         ) : null}
 
         {varianteFija ? (
-          <Pressable
-            onPress={() => arrancar(varianteFija)}
-            style={[styles.boton, { backgroundColor: colors.primary }]}
-          >
-            <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.empezar')}</Text>
-          </Pressable>
+          <>
+            <RecordBadge record={recordPorVariante[varianteFija]} />
+            <Pressable
+              onPress={() => arrancar(varianteFija)}
+              style={[styles.boton, { backgroundColor: colors.primary }]}
+            >
+              <Text style={[styles.botonTexto, { color: colors.primaryText }]}>{t('hueplay.match.empezar')}</Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Text style={[styles.label, { color: colors.text }]}>{t('hueplay.doku.elegirDificultad')}</Text>
@@ -254,10 +270,13 @@ export default function HueDokuScreen() {
                 <Pressable
                   key={v}
                   onPress={() => arrancar(v)}
-                  style={[styles.chip, { borderColor: colors.primary }]}
+                  style={[styles.chip, { borderColor: colors.primary, alignItems: 'center' }]}
                 >
                   <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 14 }}>
                     {t(`hueplay.doku.variante${v}`)}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 1 }}>
+                    {recordPorVariante[v] === null ? '…' : t('hueplay.tuRecord', { n: recordPorVariante[v] })}
                   </Text>
                 </Pressable>
               ))}

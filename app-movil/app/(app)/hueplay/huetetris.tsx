@@ -1,4 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +70,7 @@ export default function HueTetrisScreen() {
   const esRetoAjeno = desafioId !== null || esDiario;
 
   const [fase, setFase] = useState<Fase>('listo');
+  const record = useRecordJuego(JUEGO);
   const [ayudaVisible, setAyudaVisible] = useState(false);
   const [, setTick] = useState(0);
   // Animación de caída rápida y de limpieza de líneas (ver `secuenciaAnim.ts`):
@@ -381,6 +384,7 @@ export default function HueTetrisScreen() {
   if (fase === 'listo') {
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
+        <RecordBadge record={record} />
         <View style={[styles.iconoIntro, { backgroundColor: colors.primarySoft }]}>
           <MaterialCommunityIcons name="view-grid" size={40} color={colors.primary} />
         </View>

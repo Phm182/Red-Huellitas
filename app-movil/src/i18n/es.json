@@ -1390,7 +1390,7 @@
       "pts": "Pts",
       "arrancaSolo": "Arranca solo al completarse el cupo."
     },
-    "tuRecord": "Tu récord: {{n}}",
+    "tuRecord": "Tu récord: {{n}} puntos",
     "retarA": "Retar a alguien",
     "retar": "Retar",
     "configurarDuelo": "Configurar duelo",

@@ -1,4 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -106,6 +108,7 @@ export default function HuePacManScreen() {
   const esRetoAjeno = desafioId !== null || esDiario;
 
   const [fase, setFase] = useState<Fase>('listo');
+  const record = useRecordJuego(JUEGO);
   const [laberintoId, setLaberintoId] = useState<LaberintoId>('clasico');
   // Dimensiones del laberinto de la partida en curso — el clásico y el
   // aleatorio no miden lo mismo, y el tamaño de tile / del tablero se calcula
@@ -359,6 +362,7 @@ export default function HuePacManScreen() {
   if (fase === 'listo') {
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
+        <RecordBadge record={record} />
         <View style={[styles.iconoIntro, { backgroundColor: colors.primarySoft }]}>
           <MaterialCommunityIcons name="pac-man" size={40} color={colors.primary} />
         </View>

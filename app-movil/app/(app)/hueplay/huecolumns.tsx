@@ -1,4 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +60,7 @@ export default function HueColumnsScreen() {
   const esRetoAjeno = desafioId !== null || esDiario;
 
   const [fase, setFase] = useState<Fase>('listo');
+  const record = useRecordJuego(JUEGO);
   const [ayudaVisible, setAyudaVisible] = useState(false);
   const [, setTick] = useState(0);
   // Caída rápida y cascada de combos animadas paso a paso (`secuenciaAnim.ts`).
@@ -349,6 +352,7 @@ export default function HueColumnsScreen() {
   if (fase === 'listo') {
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
+        <RecordBadge record={record} />
         <View style={[styles.iconoIntro, { backgroundColor: colors.primarySoft }]}>
           <MaterialCommunityIcons name="diamond-stone" size={40} color={colors.primary} />
         </View>

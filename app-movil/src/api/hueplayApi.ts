@@ -73,6 +73,8 @@ export const hueplayApi = {
   favoritoQuitar: (juegoCodigo: string) =>
     apiPost<null>('ajax/hueplay/favorito_quitar.php', { juegoCodigo }, true),
 
+  record: (juegoCodigo: string) => apiGet<{ record: number }>('ajax/hueplay/record.php', { juegoCodigo }, true),
+
   guardarPartida: (juegoCodigo: string, puntos: number, duracionSegundos: number) =>
     apiPost<HuePlayProgreso & { record: number; esRecord: boolean }>(
       'ajax/hueplay/partida_guardar.php',

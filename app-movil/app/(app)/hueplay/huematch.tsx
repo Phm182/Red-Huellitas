@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +65,7 @@ export default function HueMatchScreen() {
   );
 
   const [fase, setFase] = useState<Fase>('listo');
+  const record = useRecordJuego(JUEGO);
   const [tablero, setTablero] = useState<Tablero>([]);
   const colasRef = useRef<Colas>([]);
   const [seleccionada, setSeleccionada] = useState<Celda | null>(null);
@@ -355,6 +358,7 @@ export default function HueMatchScreen() {
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={[styles.intro, centeredContent]}
       >
+        <RecordBadge record={record} />
         <View style={styles.introFichas}>
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <Ficha key={i} tipo={i} size={40} />

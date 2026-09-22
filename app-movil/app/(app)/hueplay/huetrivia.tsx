@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -139,12 +141,15 @@ export default function HueTriviaScreen() {
     );
   }
 
+  const record = useRecordJuego('huetrivia');
+
   if (fase === 'listo') {
     return (
       <ScrollView
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={[styles.intro, centeredContent]}
       >
+        <RecordBadge record={record} />
         <Ionicons name="help-circle" size={64} color="#4CC3A5" />
         <Text style={[styles.titulo, { color: colors.text }]}>HueTrivia</Text>
         <Text style={[styles.bajada, { color: colors.textMuted }]}>

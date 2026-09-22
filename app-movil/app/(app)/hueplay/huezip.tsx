@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
+import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +52,7 @@ export default function HueZipScreen() {
   );
 
   const [fase, setFase] = useState<Fase>('listo');
+  const record = useRecordJuego(JUEGO);
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [progreso, setProgreso] = useState<ProgresoZip>(progresoInicial());
   const [rechazada, setRechazada] = useState<Celda | null>(null);
@@ -239,6 +242,7 @@ export default function HueZipScreen() {
   if (fase === 'listo') {
     return (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.intro, centeredContent]}>
+        <RecordBadge record={record} />
         <View style={[styles.iconoIntro, { backgroundColor: colors.primarySoft }]}>
           <Ionicons name="trail-sign" size={40} color={colors.primary} />
         </View>

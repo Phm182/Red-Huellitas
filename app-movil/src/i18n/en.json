@@ -1375,7 +1375,7 @@
       "pts": "Pts",
       "arrancaSolo": "Starts on its own once it fills up."
     },
-    "tuRecord": "Your best: {{n}}",
+    "tuRecord": "Your record: {{n}} points",
     "retarA": "Challenge someone",
     "retar": "Challenge",
     "configurarDuelo": "Set up match",
