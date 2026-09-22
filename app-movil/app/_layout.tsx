@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import '../src/i18n/i18n';
 import { AuthProvider } from '../src/auth/AuthProvider';
+import { AvisoObjetivos } from '../src/components/AvisoObjetivos';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { FontBootstrap } from '../src/theme/FontBootstrap';
 import { ocultarBarrasDeScroll } from '../src/theme/hideScrollbars';
@@ -50,6 +51,7 @@ export default function RootLayout() {
           <FontBootstrap>
             <AuthProvider>
               <StackWithTheme />
+              <AvisoObjetivos />
             </AuthProvider>
           </FontBootstrap>
         </ThemeProvider>

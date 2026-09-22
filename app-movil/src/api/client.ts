@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { avisarObjetivos, ObjetivoNuevo } from '../utils/avisoObjetivos';
 import { ApiResponse } from '../types';
 
 /**
@@ -122,6 +123,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
     // Igual que arriba: acá sí hubo respuesta del servidor (tenemos response.status
     // real), sólo que el body no se pudo parsear. Tampoco es un 401 de verdad.
     return { success: false, message: hint, data: null, status: response.status };
+  }
+
+  // HuePlay: si la respuesta trae objetivos recién cumplidos (partida, duelo,
+  // reto del día…), se avisa desde acá y el cartel global los muestra.
+  try {
+    const d = json.data as { objetivosNuevos?: unknown; progreso?: { objetivosNuevos?: unknown } } | null;
+    const nuevos = d?.objetivosNuevos ?? d?.progreso?.objetivosNuevos;
+    if (Array.isArray(nuevos) && nuevos.length > 0) avisarObjetivos(nuevos as ObjetivoNuevo[]);
+  } catch {
+    // el aviso es un extra: nunca rompe la respuesta
   }
 
   return { ...json, status: response.status };

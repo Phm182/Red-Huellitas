@@ -7,6 +7,7 @@
  * Reusa `prng()` de `huematch/motor.ts`, igual que HueTetris.
  */
 import { prng } from '../huematch/motor';
+import type { PasoAnim } from '../comun/secuenciaAnim';
 
 export const ANCHO = 6;
 export const ALTO_VISIBLE = 13;
@@ -45,6 +46,8 @@ export type EstadoColumns = {
   limpiadasAhora: string[];
   /** true un instante mientras el motor está resolviendo la cascada de matches — el jugador no controla nada en ese rato. */
   resolviendo: boolean;
+  /** Los pasos de la última cascada, para reproducirla animada (la pantalla los consume y lo pone en null). */
+  cierre?: PasoAnim<ColorGema>[] | null;
 };
 
 const generadores = new WeakMap<EstadoColumns, () => number>();
@@ -80,6 +83,7 @@ export function crearEstadoInicial(semilla: number): EstadoColumns {
     tiempoCaidaAcumulado: 0,
     limpiadasAhora: [],
     resolviendo: false,
+    cierre: null,
   };
   generadores.set(estado, rnd);
   return estado;
@@ -151,17 +155,25 @@ function encontrarMatches(tablero: Gema[][]): Set<string> {
   return marcadas;
 }
 
-function aplicarGravedad(tablero: Gema[][]): void {
+/** Hace caer todo lo que quedó flotando y devuelve, por celda final, cuántas filas cayó (para animarlo). */
+function aplicarGravedad(tablero: Gema[][]): number[][] {
+  const caidas = Array.from({ length: ALTO_TOTAL }, () => Array<number>(ANCHO).fill(0));
   for (let x = 0; x < ANCHO; x++) {
     const columna: Gema[] = [];
+    const origen: number[] = [];
     for (let y = 0; y < ALTO_TOTAL; y++) {
-      if (tablero[y]![x] !== null) columna.push(tablero[y]![x]);
+      if (tablero[y]![x] !== null) {
+        columna.push(tablero[y]![x]);
+        origen.push(y);
+      }
     }
     const relleno = ALTO_TOTAL - columna.length;
     for (let y = 0; y < ALTO_TOTAL; y++) {
       tablero[y]![x] = y < relleno ? null : columna[y - relleno]!;
+      if (y >= relleno) caidas[y]![x] = y - origen[y - relleno]!;
     }
   }
+  return caidas;
 }
 
 /** Puntos por gema limpiada, escalados por el combo (cascada) y el nivel — más combo, más vale cada gema. */
@@ -183,10 +195,12 @@ function fijarTrio(estado: EstadoColumns): void {
 
   let combo = 0;
   const limpiadasTotal: string[] = [];
+  const pasos: PasoAnim<ColorGema>[] = [];
   while (true) {
     const matches = encontrarMatches(estado.tablero);
     if (matches.size === 0) break;
     combo++;
+    const antes = estado.tablero.map((fila) => [...fila]);
     for (const clave of matches) {
       const [y, x] = clave.split(',').map(Number);
       estado.tablero[y!]![x!] = null;
@@ -194,10 +208,18 @@ function fijarTrio(estado: EstadoColumns): void {
     }
     estado.puntaje += Math.round(puntosPorMatch(matches.size, combo - 1, estado.nivel));
     estado.gemasLimpiadas += matches.size;
-    aplicarGravedad(estado.tablero);
+    const caidas = aplicarGravedad(estado.tablero);
+    pasos.push({
+      tablero: antes,
+      despues: estado.tablero.map((fila) => [...fila]),
+      limpiar: [...matches],
+      caidas,
+      combo,
+    });
   }
   estado.combo = combo;
   estado.limpiadasAhora = limpiadasTotal;
+  estado.cierre = pasos.length > 0 ? pasos : null;
 
   const rnd = generadores.get(estado)!;
   const nuevoOrden = estado.siguiente;
@@ -251,6 +273,7 @@ export function actualizar(estado: EstadoColumns, dt: number): void {
 export function restaurarEstado(estado: EstadoColumns): EstadoColumns {
   const semilla = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
   generadores.set(estado, prng(semilla));
+  estado.cierre = null;
   return estado;
 }
 

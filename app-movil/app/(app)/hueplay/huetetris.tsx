@@ -17,6 +17,8 @@ import {
   COLOR_PIEZA,
   EstadoTetris,
   FORMAS,
+  PiezaActiva,
+  TipoPieza,
   actualizar,
   caidaDura,
   calcularSombra,
@@ -26,6 +28,7 @@ import {
   rotarPieza,
 } from '../../../src/juego/huetetris/motor';
 import { TableroTetris } from '../../../src/juego/huetetris/TableroTetris';
+import { Cuadro, PasoAnim, SecuenciaAnim } from '../../../src/juego/comun/secuenciaAnim';
 import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -65,13 +68,11 @@ export default function HueTetrisScreen() {
 
   const [fase, setFase] = useState<Fase>('listo');
   const [, setTick] = useState(0);
-  // Filas recién limpiadas, para el flash blanco de festejo (~180ms). El
-  // motor sólo deja `lineasLimpiadasAhora` con contenido durante UN cuadro
-  // de física (se vacía al arrancar el siguiente `actualizar()`), así que
-  // si el flash dependiera directo de eso duraría ~16ms — imperceptible.
-  // Acá se lo estira a mano con `setTimeout`, mismo criterio que
-  // `MesaPool.tsx::hundiendo` en HuePool.
-  const [filasFlash, setFilasFlash] = useState<number[]>([]);
+  // Animación de caída rápida y de limpieza de líneas (ver `secuenciaAnim.ts`):
+  // mientras corre, el juego está congelado y no se aceptan controles.
+  const animRef = useRef(new SecuenciaAnim<TipoPieza, PiezaActiva>());
+  const [cuadro, setCuadro] = useState<Cuadro<TipoPieza, PiezaActiva> | null>(null);
+  const [etiqueta, setEtiqueta] = useState<string | null>(null);
   const [resultado, setResultado] = useState<{
     puntos: number;
     esRecord?: boolean;
@@ -162,6 +163,23 @@ export default function HueTetrisScreen() {
     if (vivoRef.current) setFase('fin');
   }, [desafioId, esDiario, t]);
 
+  /** Arma la animación de limpieza con lo que dejó el motor y lo consume. */
+  const reproducirCierre = useCallback(
+    (estado: EstadoTetris, ahora: number) => {
+      const pasos: PasoAnim<TipoPieza>[] | null | undefined = estado.cierre;
+      estado.cierre = null;
+      if (!pasos || pasos.length === 0) return;
+      hapticLeve();
+      lineasVistasRef.current = estado.lineas;
+      const n = pasos[0]!.limpiar.length / ANCHO;
+      setEtiqueta(
+        n >= 4 ? t('hueplay.tetris.tetris') : n === 3 ? t('hueplay.tetris.triple') : n === 2 ? t('hueplay.tetris.doble') : null
+      );
+      animRef.current.iniciarPasos(pasos, ahora);
+    },
+    [t]
+  );
+
   const loop = useCallback(
     (ts: number) => {
       if (!vivoRef.current || !estadoRef.current) return;
@@ -169,22 +187,27 @@ export default function HueTetrisScreen() {
       const dt = ultimoTsRef.current ? Math.min(0.1, (ts - ultimoTsRef.current) / 1000) : 0;
       ultimoTsRef.current = ts;
 
+      const anim = animRef.current;
+      const ahora = performance.now();
+      if (anim.activa()) {
+        // Congelado mientras se anima: sólo se dibuja el cuadro que toca.
+        setCuadro(anim.cuadro(ahora));
+        setTick((n) => n + 1);
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+      setCuadro((c) => (c ? null : c));
+
       actualizar(estado, dt);
+      if (estado.cierre) {
+        reproducirCierre(estado, ahora);
+      }
       // Reto del día: la partida se corta a los 3 minutos con lo sumado hasta ahí.
       if (esDiario && !estado.terminado && estado.duracionSegundos >= LIMITE_DIARIO_SEGUNDOS) {
         estado.duracionSegundos = LIMITE_DIARIO_SEGUNDOS;
         estado.terminado = true;
       }
 
-      if (estado.lineas > lineasVistasRef.current) {
-        hapticLeve();
-        lineasVistasRef.current = estado.lineas;
-        const filas = estado.lineasLimpiadasAhora.map((f) => f - ALTO_OCULTO).filter((f) => f >= 0);
-        setFilasFlash(filas);
-        setTimeout(() => {
-          if (vivoRef.current) setFilasFlash([]);
-        }, 180);
-      }
       setTick((n) => n + 1);
 
       if (estado.terminado) {
@@ -193,7 +216,7 @@ export default function HueTetrisScreen() {
       }
       rafRef.current = requestAnimationFrame(loop);
     },
-    [terminar, esDiario]
+    [terminar, esDiario, reproducirCierre]
   );
 
   const arrancar = useCallback(() => {
@@ -210,7 +233,8 @@ export default function HueTetrisScreen() {
     ultimoTsRef.current = 0;
     setResultado(null);
     setError(null);
-    setFilasFlash([]);
+    animRef.current.reiniciar();
+    setCuadro(null);
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
   }, [loop, esRetoAjeno, params.semilla]);
@@ -224,7 +248,8 @@ export default function HueTetrisScreen() {
       ultimoTsRef.current = 0;
       setResultado(null);
       setError(null);
-      setFilasFlash([]);
+      animRef.current.reiniciar();
+      setCuadro(null);
       setFase('jugando');
       rafRef.current = requestAnimationFrame(loop);
     },
@@ -280,21 +305,30 @@ export default function HueTetrisScreen() {
   );
 
   const izquierda = useCallback(() => {
-    if (estadoRef.current) moverPieza(estadoRef.current, -1, 0);
+    if (estadoRef.current && !animRef.current.activa()) moverPieza(estadoRef.current, -1, 0);
   }, []);
   const derecha = useCallback(() => {
-    if (estadoRef.current) moverPieza(estadoRef.current, 1, 0);
+    if (estadoRef.current && !animRef.current.activa()) moverPieza(estadoRef.current, 1, 0);
   }, []);
   const rotar = useCallback(() => {
-    if (estadoRef.current) rotarPieza(estadoRef.current);
+    if (estadoRef.current && !animRef.current.activa()) rotarPieza(estadoRef.current);
     hapticLeve();
   }, []);
   const caidaInstantanea = useCallback(() => {
-    if (estadoRef.current) {
-      caidaDura(estadoRef.current);
+    const estado = estadoRef.current;
+    if (!estado || estado.terminado || animRef.current.activa()) return;
+    // La pieza baja rápido hasta apoyarse y recién ahí se fija (y limpia, si
+    // corresponde) — así se ve qué pasó en vez de aparecer todo cambiado.
+    const sombraFinal = calcularSombra(estado);
+    const pieza = { ...estado.actual };
+    animRef.current.iniciarCaida(pieza, pieza.y, sombraFinal.y, performance.now(), () => {
+      const e = estadoRef.current;
+      if (!e) return;
+      caidaDura(e);
       hapticExito();
-    }
-  }, []);
+      reproducirCierre(e, performance.now());
+    });
+  }, [reproducirCierre]);
 
   // Es un hook (usa `useSharedValue` por dentro) -- tiene que llamarse acá,
   // ANTES de cualquier `return` condicional de abajo, no después.
@@ -434,7 +468,8 @@ export default function HueTetrisScreen() {
           sombra={sombra}
           siguiente={estado.siguiente}
           tileSize={tileSize}
-          filasFlash={filasFlash}
+          cuadro={cuadro}
+          etiqueta={etiqueta}
           panHandlers={gesto.panHandlers}
         />
 

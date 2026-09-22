@@ -14,7 +14,9 @@ import {
   ALTO_OCULTO,
   ALTO_VISIBLE,
   ANCHO,
+  ColorGema,
   EstadoColumns,
+  TrioActivo,
   actualizar,
   caidaDura,
   calcularSombra,
@@ -24,6 +26,7 @@ import {
   rotarTrio,
 } from '../../../src/juego/huecolumns/motor';
 import { TableroColumns } from '../../../src/juego/huecolumns/TableroColumns';
+import { Cuadro, PasoAnim, SecuenciaAnim } from '../../../src/juego/comun/secuenciaAnim';
 import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 import { radii } from '../../../src/theme/elevation';
 import { centeredContent } from '../../../src/theme/layout';
@@ -55,7 +58,10 @@ export default function HueColumnsScreen() {
 
   const [fase, setFase] = useState<Fase>('listo');
   const [, setTick] = useState(0);
-  const [celdasFlash, setCeldasFlash] = useState<string[]>([]);
+  // Caída rápida y cascada de combos animadas paso a paso (`secuenciaAnim.ts`).
+  // Mientras corre, el juego está congelado y no se aceptan controles.
+  const animRef = useRef(new SecuenciaAnim<ColorGema, TrioActivo>());
+  const [cuadro, setCuadro] = useState<Cuadro<ColorGema, TrioActivo> | null>(null);
   const [resultado, setResultado] = useState<{
     puntos: number;
     esRecord?: boolean;
@@ -145,6 +151,16 @@ export default function HueColumnsScreen() {
     if (vivoRef.current) setFase('fin');
   }, [desafioId, esDiario, t]);
 
+  /** Arma la animación de la cascada con lo que dejó el motor y lo consume. */
+  const reproducirCierre = useCallback((estado: EstadoColumns, ahora: number) => {
+    const pasos: PasoAnim<ColorGema>[] | null | undefined = estado.cierre;
+    estado.cierre = null;
+    if (!pasos || pasos.length === 0) return;
+    hapticLeve();
+    gemasVistasRef.current = estado.gemasLimpiadas;
+    animRef.current.iniciarPasos(pasos, ahora);
+  }, []);
+
   const loop = useCallback(
     (ts: number) => {
       if (!vivoRef.current || !estadoRef.current) return;
@@ -152,27 +168,25 @@ export default function HueColumnsScreen() {
       const dt = ultimoTsRef.current ? Math.min(0.1, (ts - ultimoTsRef.current) / 1000) : 0;
       ultimoTsRef.current = ts;
 
+      const anim = animRef.current;
+      const ahora = performance.now();
+      if (anim.activa()) {
+        // Congelado mientras se anima: sólo se dibuja el cuadro que toca.
+        setCuadro(anim.cuadro(ahora));
+        setTick((n) => n + 1);
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+      setCuadro((c) => (c ? null : c));
+
       actualizar(estado, dt);
+      if (estado.cierre) reproducirCierre(estado, ahora);
       // Reto del día: la partida se corta a los 3 minutos con lo sumado hasta ahí.
       if (esDiario && !estado.terminado && estado.duracionSegundos >= LIMITE_DIARIO_SEGUNDOS) {
         estado.duracionSegundos = LIMITE_DIARIO_SEGUNDOS;
         estado.terminado = true;
       }
 
-      if (estado.gemasLimpiadas > gemasVistasRef.current) {
-        hapticLeve();
-        gemasVistasRef.current = estado.gemasLimpiadas;
-        const celdas = estado.limpiadasAhora
-          .map((clave) => {
-            const [f, c] = clave.split(',').map(Number);
-            return `${f! - ALTO_OCULTO},${c}`;
-          })
-          .filter((clave) => Number(clave.split(',')[0]) >= 0);
-        setCeldasFlash(celdas);
-        setTimeout(() => {
-          if (vivoRef.current) setCeldasFlash([]);
-        }, 180);
-      }
       setTick((n) => n + 1);
 
       if (estado.terminado) {
@@ -181,7 +195,7 @@ export default function HueColumnsScreen() {
       }
       rafRef.current = requestAnimationFrame(loop);
     },
-    [terminar, esDiario]
+    [terminar, esDiario, reproducirCierre]
   );
 
   const arrancar = useCallback(() => {
@@ -194,7 +208,8 @@ export default function HueColumnsScreen() {
     ultimoTsRef.current = 0;
     setResultado(null);
     setError(null);
-    setCeldasFlash([]);
+    animRef.current.reiniciar();
+    setCuadro(null);
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
   }, [loop, esRetoAjeno, params.semilla]);
@@ -208,7 +223,8 @@ export default function HueColumnsScreen() {
       ultimoTsRef.current = 0;
       setResultado(null);
       setError(null);
-      setCeldasFlash([]);
+      animRef.current.reiniciar();
+      setCuadro(null);
       setFase('jugando');
       rafRef.current = requestAnimationFrame(loop);
     },
@@ -257,21 +273,30 @@ export default function HueColumnsScreen() {
   );
 
   const izquierda = useCallback(() => {
-    if (estadoRef.current) moverTrio(estadoRef.current, -1, 0);
+    if (estadoRef.current && !animRef.current.activa()) moverTrio(estadoRef.current, -1, 0);
   }, []);
   const derecha = useCallback(() => {
-    if (estadoRef.current) moverTrio(estadoRef.current, 1, 0);
+    if (estadoRef.current && !animRef.current.activa()) moverTrio(estadoRef.current, 1, 0);
   }, []);
   const rotar = useCallback(() => {
-    if (estadoRef.current) rotarTrio(estadoRef.current);
+    if (estadoRef.current && !animRef.current.activa()) rotarTrio(estadoRef.current);
     hapticLeve();
   }, []);
   const caidaInstantanea = useCallback(() => {
-    if (estadoRef.current) {
-      caidaDura(estadoRef.current);
+    const estado = estadoRef.current;
+    if (!estado || estado.terminado || animRef.current.activa()) return;
+    // El trío baja rápido hasta apoyarse y recién ahí se fija y resuelve la
+    // cascada, que se reproduce paso a paso.
+    const sombraFinal = calcularSombra(estado);
+    const trio = { ...estado.actual };
+    animRef.current.iniciarCaida(trio, trio.y, sombraFinal.y, performance.now(), () => {
+      const e = estadoRef.current;
+      if (!e) return;
+      caidaDura(e);
       hapticExito();
-    }
-  }, []);
+      reproducirCierre(e, performance.now());
+    });
+  }, [reproducirCierre]);
 
   // Es un hook (usa `useSharedValue` por dentro) -- tiene que llamarse acá,
   // ANTES de cualquier `return` condicional de abajo, no después.
@@ -409,7 +434,8 @@ export default function HueColumnsScreen() {
           actual={estado.actual}
           sombra={sombra}
           tileSize={tileSize}
-          celdasFlash={celdasFlash}
+          cuadro={cuadro}
+          comboTexto={t('hueplay.columns.comboN', { n: cuadro && cuadro.tipo !== 'caida' ? cuadro.nro : 0 })}
           panHandlers={gesto.panHandlers}
         />
 

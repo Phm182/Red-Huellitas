@@ -17,6 +17,7 @@
  * traer otro generador nuevo.
  */
 import { prng } from '../huematch/motor';
+import type { PasoAnim } from '../comun/secuenciaAnim';
 
 export const ANCHO = 10;
 /** Filas visibles. Hay 4 más arriba, ocultas, como colchón para que una
@@ -113,6 +114,12 @@ export type EstadoTetris = {
   tiempoCaidaAcumulado: number;
   /** Última tanda de líneas limpiadas (para flash visual), se vacía al cuadro siguiente. */
   lineasLimpiadasAhora: number[];
+  /**
+   * Cómo se resolvió la última pieza fijada si limpió líneas (la pantalla lo
+   * reproduce animado y lo pone en null). Nunca se serializa: se consume en
+   * el mismo cuadro.
+   */
+  cierre?: PasoAnim<TipoPieza>[] | null;
 };
 
 /** Bolsa de 7 (una de cada pieza, orden random) — evita rachas largas sin una pieza en particular, mismo criterio que el Tetris moderno. */
@@ -186,6 +193,7 @@ export function crearEstadoInicial(semilla: number): EstadoTetris {
     duracionSegundos: 0,
     tiempoCaidaAcumulado: 0,
     lineasLimpiadasAhora: [],
+    cierre: null,
   };
   generadores.set(estado, gen);
   return estado;
@@ -214,8 +222,23 @@ function fijarPieza(estado: EstadoTetris): void {
   for (const { x, y } of celdasPieza(estado.actual)) {
     if (y >= 0) estado.tablero[y]![x] = estado.actual.tipo;
   }
+  const previo = estado.tablero.map((fila) => [...fila]);
   const limpiadas = limpiarLineas(estado.tablero);
   estado.lineasLimpiadasAhora = limpiadas;
+  if (limpiadas.length > 0) {
+    // Para animar: qué filas se borran y cuánto cae cada fila que quedó.
+    const quedan: number[] = [];
+    for (let f = 0; f < ALTO_TOTAL; f++) if (!limpiadas.includes(f)) quedan.push(f);
+    const relleno = ALTO_TOTAL - quedan.length;
+    const caidas = Array.from({ length: ALTO_TOTAL }, (_, f) =>
+      Array<number>(ANCHO).fill(f >= relleno ? f - quedan[f - relleno]! : 0)
+    );
+    const limpiar: string[] = [];
+    for (const f of limpiadas) for (let c = 0; c < ANCHO; c++) limpiar.push(`${f},${c}`);
+    estado.cierre = [
+      { tablero: previo, despues: estado.tablero.map((fila) => [...fila]), limpiar, caidas, combo: 1 },
+    ];
+  }
   if (limpiadas.length > 0) {
     estado.lineas += limpiadas.length;
     estado.puntaje += puntosPorLineas(limpiadas.length, estado.nivel);
@@ -318,6 +341,7 @@ export function calcularSombra(estado: EstadoTetris): PiezaActiva {
 export function restaurarEstado(estado: EstadoTetris): EstadoTetris {
   const semilla = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
   generadores.set(estado, { rnd: prng(semilla), bolsa: [] });
+  estado.cierre = null;
   return estado;
 }
 
