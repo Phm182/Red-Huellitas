@@ -464,7 +464,7 @@ export default function HueColumnsScreen() {
   const sombra = calcularSombra(estado);
 
   return (
-    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 100 }]}>
+    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 60 }]}>
       {/* Toda esta zona responde al arrastre (jugar deslizando el dedo desde
           cualquier lado que no sea un botón); ver la nota igual en huetetris.tsx. */}
       <View

@@ -497,7 +497,7 @@ export default function HueTetrisScreen() {
   const siguienteForma = FORMAS[estado.siguiente][0]!;
 
   return (
-    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 100 }]}>
+    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 60 }]}>
       {/* Toda esta zona responde al arrastre (jugar deslizando el dedo desde
           cualquier lado que no sea un botón); los botones son `Pressable`
           propios y reclaman el toque antes que este `PanResponder`, así que
