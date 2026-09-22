@@ -27,6 +27,12 @@ require_once __DIR__ . '/objetivos.php';
 const RH_JUEGOS = [
     // 'puntaje': cada uno juega su partida y se comparan los números.
     'huematch' => ['modo' => 'puntaje', 'maxPuntos' => 6000, 'minSegundos' => 15],
+    // Modo Supervivencia de HueCrush: arranca con la mitad del tiempo y cada
+    // match suma segundos, así que una partida buena puede estirarse mucho
+    // más que el minuto del modo Tiempo fijo — de ahí el `maxPuntos` más alto.
+    // Código de juego aparte (mismo criterio que las 3 variantes de HueDoku):
+    // así tiene su propio récord y no se mezcla con el de Tiempo fijo.
+    'huematch_superv' => ['modo' => 'puntaje', 'maxPuntos' => 30000, 'minSegundos' => 20],
     // Una partida perfecta de HueMemo da ~1880 (800 por pares + 600 de
     // eficiencia + hasta 480 de tiempo). El techo deja margen y corta lo demás.
     'huememo' => ['modo' => 'puntaje', 'maxPuntos' => 2200, 'minSegundos' => 8],
