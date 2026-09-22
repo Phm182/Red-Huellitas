@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSpring,
+  withSequence,
   withTiming,
+  withSpring,
 } from 'react-native-reanimated';
 import { Ficha } from './Ficha';
 import { FILAS, VACIO } from './motor';
@@ -95,6 +96,23 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
   const despX = useSharedValue(0);
   const despY = useSharedValue(0);
 
+  /**
+   * Qué dibujo mostrar. NO es lo mismo que `tipo`: al explotar, `tipo` pasa a
+   * `VACIO` en el mismo render en que arranca la animación de desvanecido —
+   * si el dibujo se sacara junto con eso, la ficha desaparecía de un salto
+   * (sólo quedaba animando un `View` vacío) y recién al final se notaba el
+   * "pop": eso era el "se borran raro" reportado. Achicando el dibujo hasta
+   * VACIO en vez de sacarlo de un salto, la ficha se va desvaneciendo de
+   * verdad. Se actualiza sólo cuando hay una figura real; se queda con la
+   * última mientras esa celda no tenga ninguna (rota o vacía de fábrica).
+   */
+  const [dibujando, setDibujando] = useState(tipo);
+  useEffect(() => {
+    if (tipo !== VACIO) setDibujando(tipo);
+  }, [tipo]);
+  /** Blanco durante el primer tramo de la rotura, mismo lenguaje visual que HueColumns/HueTetris. */
+  const [blanco, setBlanco] = useState(false);
+
   const dx = desplaza?.dx ?? 0;
   const dy = desplaza?.dy ?? 0;
 
@@ -128,14 +146,20 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
     // "se mueven TODAS las piezas" que se reportó.
     if (antes === tipo) return;
 
-    // Se rompió: se desvanece suave. Antes giraba 180° a la vez que encogía
-    // en sólo 170ms — muy rápido y con el giro superpuesto se leía como un
-    // parpadeo/tirón en vez de una desaparición prolija. Ahora es sólo
-    // escala+opacidad (van de la mano, `estilo` usa `escala.value` para las
-    // dos), con envión al final (`withTiming` con easing suave) y sin giro.
+    // Se rompió: mismo lenguaje visual que HueColumns/HueTetris — flash
+    // blanco creciendo un toque (primer 30% del tiempo) y después se apaga
+    // encogiendo y desvaneciendo junto (`estilo` usa `escala.value` para
+    // las dos). Antes achicaba directo a color propio y sin flash, que
+    // junto con el bug de abajo (`dibujando`, no `tipo`, es lo que se
+    // dibuja) se leía como un "borrado raro" en vez de una explosión.
     if (antes !== VACIO && tipo === VACIO) {
       giro.value = 0;
-      escala.value = withTiming(0, { duration: T_ROMPER, easing: Easing.out(Easing.quad) });
+      setBlanco(true);
+      const faseFlash = Math.round(T_ROMPER * 0.3);
+      escala.value = withSequence(
+        withTiming(1.18, { duration: faseFlash, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: T_ROMPER - faseFlash, easing: Easing.out(Easing.quad) })
+      );
       return;
     }
 
@@ -149,6 +173,7 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
     // confundía — con 20 pega un único envión chico y para.
     if (tipo !== VACIO && (antes === VACIO || cascadaActiva)) {
       giro.value = 0;
+      setBlanco(false);
       caida.value = -1;
       escala.value = 1;
       caida.value = withDelay(fila * 26, withSpring(0, { damping: 20, stiffness: 190 }));
@@ -176,7 +201,9 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
 
   return (
     <Animated.View style={[styles.wrap, estilo]}>
-      {tipo === VACIO ? null : <Ficha tipo={tipo} size={lado * 0.78} />}
+      {dibujando === VACIO ? null : (
+        <Ficha tipo={dibujando} size={lado * 0.78} colorOverride={blanco ? '#FFFFFF' : undefined} />
+      )}
     </Animated.View>
   );
 }

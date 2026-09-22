@@ -106,14 +106,19 @@ function Gotita({ c }: { c: string }) {
 
 const DIBUJOS = [Huella, Hueso, Pelota, Pez, Corazon, Estrella, Casita, Gotita];
 
-type Props = { tipo: number; size: number };
+type Props = {
+  tipo: number;
+  size: number;
+  /** Para el flash blanco al romperse (ver `Celda.tsx`); si no se pasa, usa el color propio. */
+  colorOverride?: string;
+};
 
-export function Ficha({ tipo, size }: Props) {
+export function Ficha({ tipo, size, colorOverride }: Props) {
   const Dibujo = DIBUJOS[tipo];
   if (!Dibujo) return null;
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Dibujo c={COLORES[tipo]!} />
+      <Dibujo c={colorOverride ?? COLORES[tipo]!} />
     </Svg>
   );
 }
