@@ -3,11 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { useGestoDireccion } from '../../../src/juego/comun/useGestoDireccion';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
+import { APP_HEADER_HEIGHT, APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { DPad } from '../../../src/juego/huepacman/DPad';
 import { JoystickPacman } from '../../../src/juego/huepacman/JoystickPacman';
 import { calcularDireccionFantasma } from '../../../src/juego/huepacman/fantasmas';
@@ -146,6 +145,10 @@ export default function HuePacManScreen() {
   // tapado por ella (confirmado en el celular: el botón quedaba imposible
   // de tocar). Mismo criterio que ya usa `huepool.tsx` (`alturaBarraInferior`).
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
+  // Alto explícito, no flex:1 — ver la nota larga en huetetris.tsx sobre por
+  // qué `juego` se quedaba del tamaño de su contenido y el gesto de deslizar
+  // no respondía en la parte "vacía" de la pantalla.
+  const alturaPantallaJugable = Math.max(0, height - insets.top - APP_HEADER_HEIGHT - alturaBarraInferior);
   const ALTURA_HUD = 64;
   const ALTURA_CONTROLES = 150;
   const altoParaMaze = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 16;
@@ -341,19 +344,17 @@ export default function HuePacManScreen() {
     if (estadoRef.current) estadoRef.current.pacman.dirDeseada = dir;
   }, []);
 
-  // Swipe TOLERANTE: se reevalúa en CADA `onUpdate` (no sólo al soltar), así
-  // que un giro a mitad de gesto cambia de intención sin soltar el dedo —
-  // el eje dominante gana apenas supera `UMBRAL_SWIPE`, sin pedir precisión
-  // (queja de esta sesión sobre el carrusel de juegos: "no se siente
-  // natural" por exigir demasiada exactitud al deslizar).
-  const gestoSwipe = Gesture.Pan()
-    .enabled(fase === 'jugando')
-    .onUpdate((e) => {
-      const { translationX: dx, translationY: dy } = e;
-      if (Math.abs(dx) < UMBRAL_SWIPE && Math.abs(dy) < UMBRAL_SWIPE) return;
-      const dir: Direccion = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'derecha' : 'izquierda') : dy > 0 ? 'abajo' : 'arriba';
-      runOnJS(pedirDireccion)(dir);
-    });
+  // Swipe TOLERANTE en cualquier parte de la pantalla que no sea un botón
+  // (`useGestoDireccion.ts`, PanResponder): se reevalúa en CADA movimiento
+  // (no sólo al soltar), así un giro a mitad de gesto cambia de intención
+  // sin soltar el dedo — el eje dominante gana apenas supera `UMBRAL_SWIPE`,
+  // sin pedir precisión (queja de esta sesión sobre el carrusel de juegos:
+  // "no se siente natural" por exigir demasiada exactitud al deslizar).
+  const gestoSwipe = useGestoDireccion({
+    umbral: UMBRAL_SWIPE,
+    onDireccion: pedirDireccion,
+    activo: fase === 'jugando',
+  });
 
   if (fase === 'listo') {
     return (
@@ -505,7 +506,7 @@ export default function HuePacManScreen() {
 
   const estado = estadoRef.current;
   return (
-    <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
+    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 16 }]}>
       <View style={[styles.hud, centeredContent]}>
         <View>
           <Text style={[styles.hudLabel, { color: colors.textMuted }]}>{t('hueplay.match.puntos')}</Text>
@@ -529,7 +530,11 @@ export default function HuePacManScreen() {
         </View>
       ) : null}
 
-      <GestureDetector gesture={gestoSwipe}>
+      {/* Toda esta zona responde al arrastre (jugar deslizando el dedo desde
+          cualquier lado que no sea un botón) — antes sólo el tablero
+          respondía y el dedo lo tapaba; ahora el espacio libre alrededor
+          también sirve para jugar. */}
+      <View style={styles.zonaJuego} {...gestoSwipe.panHandlers}>
         <View style={styles.tableroWrap}>
           {estado && posiciones ? (
             <TableroPacman
@@ -544,13 +549,15 @@ export default function HuePacManScreen() {
             />
           ) : null}
         </View>
-      </GestureDetector>
+      </View>
 
       {/* Joystick a la izquierda (arrastre continuo, sin levantar el dedo) +
           D-pad chico a la derecha (fallback accesible / toques puntuales).
           Los dos alimentan el mismo `pedirDireccion`. Corrido del centro
           para no quedar debajo del "dock" flotante de la app (botón de Map
-          etc.), bug ya visto en el celular. */}
+          etc.), bug ya visto en el celular. Quedan bien abajo de todo, fuera
+          de la zona de arrastre, para no tocarlos sin querer al jugar
+          deslizando. */}
       <View style={styles.controles}>
         <JoystickPacman
           onDireccion={pedirDireccion}
@@ -578,7 +585,8 @@ const styles = StyleSheet.create({
   botonSec: { borderWidth: 1, backgroundColor: 'transparent' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' },
   botonera: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', maxWidth: 420 },
-  juego: { flex: 1, paddingTop: 8, justifyContent: 'space-between', paddingBottom: 16, alignItems: 'center' },
+  juego: { paddingTop: 8, alignItems: 'center' },
+  zonaJuego: { flex: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
   hud: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 18, paddingBottom: 4, width: '100%' },
   hudLabel: { fontSize: 11, textTransform: 'uppercase' },
   hudValor: { fontSize: 24, fontFamily: fonts.displaySemi },

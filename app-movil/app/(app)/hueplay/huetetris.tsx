@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hueplayApi } from '../../../src/api/hueplayApi';
-import { APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
+import { APP_HEADER_HEIGHT, APP_TAB_BAR_HEIGHT } from '../../../src/navigation/chrome';
 import { useGestoCaida } from '../../../src/juego/comun/useGestoCaida';
 import { ControlesCaida } from '../../../src/juego/comun/ControlesCaida';
+import { AppMessageModal } from '../../../src/components/AppMessageModal';
 import { borrarPausa, cargarPausa, guardarPausa } from '../../../src/juego/comun/pausaJuego';
 import { preguntarContinuar, usePausaAlSalir } from '../../../src/juego/comun/usePausaAlSalir';
 import {
@@ -67,10 +68,13 @@ export default function HueTetrisScreen() {
   const esRetoAjeno = desafioId !== null || esDiario;
 
   const [fase, setFase] = useState<Fase>('listo');
+  const [ayudaVisible, setAyudaVisible] = useState(false);
   const [, setTick] = useState(0);
   // Animación de caída rápida y de limpieza de líneas (ver `secuenciaAnim.ts`):
   // mientras corre, el juego está congelado y no se aceptan controles.
   const animRef = useRef(new SecuenciaAnim<TipoPieza, PiezaActiva>());
+  // Caída acelerada mientras se mantiene apretado (gesto u botón) — ver `useGestoCaida.ts`.
+  const accelRef = useRef(false);
   const [cuadro, setCuadro] = useState<Cuadro<TipoPieza, PiezaActiva> | null>(null);
   const [etiqueta, setEtiqueta] = useState<string | null>(null);
   const [resultado, setResultado] = useState<{
@@ -101,6 +105,18 @@ export default function HueTetrisScreen() {
   // sobre el propio tablero (`useGestoCaida.ts`) Y la fila de botones de
   // abajo (`ControlesCaida.tsx`) — pedido explícito de mantener las dos.
   const alturaBarraInferior = APP_TAB_BAR_HEIGHT + Math.max(insets.bottom - 8, 0);
+  /**
+   * Alto real de la zona jugable (entre el header y el menú inferior).
+   *
+   * `juego` NO puede confiar en `flex: 1` acá: medido en el celular, ese
+   * `View` se quedaba del tamaño de su CONTENIDO en vez de estirarse a la
+   * pantalla (el tablero quedaba pegado arriba, sin el espacio de sobra que
+   * debía repartir `zonaJuego`) — y con eso, el gesto de deslizar sólo
+   * respondía sobre el tablero mismo, nunca en el resto de la pantalla que
+   * quedaba "vacía" por debajo. Con un alto EXPLÍCITO (mismas cuentas que usa
+   * `AppChrome` para su padding) el problema desaparece.
+   */
+  const alturaPantallaJugable = Math.max(0, height - insets.top - APP_HEADER_HEIGHT - alturaBarraInferior);
   const ALTURA_HUD = 90;
   const ALTURA_CONTROLES = 130;
   const altoParaTablero = height - alturaBarraInferior - ALTURA_HUD - ALTURA_CONTROLES - 24;
@@ -198,7 +214,7 @@ export default function HueTetrisScreen() {
       }
       setCuadro((c) => (c ? null : c));
 
-      actualizar(estado, dt);
+      actualizar(estado, dt, accelRef.current);
       if (estado.cierre) {
         reproducirCierre(estado, ahora);
       }
@@ -234,6 +250,7 @@ export default function HueTetrisScreen() {
     setResultado(null);
     setError(null);
     animRef.current.reiniciar();
+    accelRef.current = false;
     setCuadro(null);
     setFase('jugando');
     rafRef.current = requestAnimationFrame(loop);
@@ -249,6 +266,7 @@ export default function HueTetrisScreen() {
       setResultado(null);
       setError(null);
       animRef.current.reiniciar();
+      accelRef.current = false;
       setCuadro(null);
       setFase('jugando');
       rafRef.current = requestAnimationFrame(loop);
@@ -277,6 +295,7 @@ export default function HueTetrisScreen() {
     if (!estadoRef.current) return;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     hapticLeve();
+    accelRef.current = false;
     guardarPausa(JUEGO, estadoRef.current);
     setFase('pausado');
   }, []);
@@ -303,6 +322,22 @@ export default function HueTetrisScreen() {
       if (estadoRef.current) guardarPausa(JUEGO, estadoRef.current);
     }, [])
   );
+
+  const acelerarInicio = useCallback(() => {
+    // Sin este reseteo, el tiempo que ya se había acumulado a la velocidad
+    // NORMAL (todavía sin llegar a bajar un casillero) se comparaba de
+    // golpe contra el intervalo acelerado, mucho más chico, y el `while` de
+    // `actualizar()` lo consumía todo en el mismo cuadro — un salto de
+    // varios casilleros apenas arrancaba a acelerar. Empieza limpio, desde
+    // donde está.
+    if (!animRef.current.activa() && estadoRef.current) {
+      estadoRef.current.tiempoCaidaAcumulado = 0;
+      accelRef.current = true;
+    }
+  }, []);
+  const acelerarFin = useCallback(() => {
+    accelRef.current = false;
+  }, []);
 
   const izquierda = useCallback(() => {
     if (estadoRef.current && !animRef.current.activa()) moverPieza(estadoRef.current, -1, 0);
@@ -338,6 +373,8 @@ export default function HueTetrisScreen() {
     onDerecha: derecha,
     onRotar: rotar,
     onCaidaDura: caidaInstantanea,
+    onAcelerarInicio: acelerarInicio,
+    onAcelerarFin: acelerarFin,
     activo: fase === 'jugando',
   });
 
@@ -460,7 +497,15 @@ export default function HueTetrisScreen() {
   const siguienteForma = FORMAS[estado.siguiente][0]!;
 
   return (
-    <View style={[styles.juego, { backgroundColor: colors.background, paddingBottom: alturaBarraInferior }]}>
+    <View style={[styles.juego, { backgroundColor: colors.background, height: alturaPantallaJugable, paddingBottom: 100 }]}>
+      {/* Toda esta zona responde al arrastre (jugar deslizando el dedo desde
+          cualquier lado que no sea un botón); los botones son `Pressable`
+          propios y reclaman el toque antes que este `PanResponder`, así que
+          conviven sin pisarse. */}
+      <View
+        style={styles.zonaJuego}
+        {...gesto.panHandlers}
+      >
       <View style={styles.filaPrincipal}>
         <TableroTetris
           tablero={estado.tablero}
@@ -470,19 +515,27 @@ export default function HueTetrisScreen() {
           tileSize={tileSize}
           cuadro={cuadro}
           etiqueta={etiqueta}
-          panHandlers={gesto.panHandlers}
         />
 
         <View style={styles.panelLateral}>
-          {!esRetoAjeno ? (
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {!esRetoAjeno ? (
+              <Pressable
+                onPress={pausar}
+                style={[styles.botonPausa, { borderColor: colors.border, backgroundColor: colors.surface, flex: 1 }]}
+                accessibilityLabel={t('hueplay.pausa.boton')}
+              >
+                <Ionicons name="pause" size={18} color={colors.text} />
+              </Pressable>
+            ) : null}
             <Pressable
-              onPress={pausar}
-              style={[styles.botonPausa, { borderColor: colors.border, backgroundColor: colors.surface }]}
-              accessibilityLabel={t('hueplay.pausa.boton')}
+              onPress={() => setAyudaVisible(true)}
+              style={[styles.botonPausa, { borderColor: colors.border, backgroundColor: colors.surface, flex: 1 }]}
+              accessibilityLabel={t('hueplay.comoSeJuegaTitulo')}
             >
-              <Ionicons name="pause" size={18} color={colors.text} />
+              <Ionicons name="help-circle-outline" size={18} color={colors.text} />
             </Pressable>
-          ) : null}
+          </View>
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.tetris.next')}</Text>
             <View style={styles.previewGrilla}>
@@ -526,6 +579,7 @@ export default function HueTetrisScreen() {
           </View>
         </View>
       </View>
+      </View>
 
       {error ? <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 4 }}>{error}</Text> : null}
 
@@ -534,10 +588,18 @@ export default function HueTetrisScreen() {
         onDerecha={derecha}
         onRotar={rotar}
         onCaidaDura={caidaInstantanea}
+        onAcelerarInicio={acelerarInicio}
+        onAcelerarFin={acelerarFin}
         color={colors.primary}
         colorFondo={colors.primarySoft}
       />
-      <Text style={[styles.ayudaControles, { color: colors.textMuted }]}>{t('hueplay.tetris.ayudaControles')}</Text>
+
+      <AppMessageModal
+        visible={ayudaVisible}
+        title={t('hueplay.comoSeJuegaTitulo')}
+        message={t('hueplay.tetris.ayudaControles')}
+        onClose={() => setAyudaVisible(false)}
+      />
     </View>
   );
 }
@@ -556,7 +618,8 @@ const styles = StyleSheet.create({
   botonSec: { borderWidth: 1, backgroundColor: 'transparent' },
   botonTexto: { fontFamily: fonts.bodySemi, fontSize: 15, textAlign: 'center' },
   botonera: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', maxWidth: 420 },
-  juego: { flex: 1, paddingTop: 10, justifyContent: 'space-between', alignItems: 'center' },
+  juego: { paddingTop: 10, alignItems: 'center' },
+  zonaJuego: { flex: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
   filaPrincipal: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', justifyContent: 'center' },
   panelLateral: { gap: 8, width: 96 },
   botonPausa: { borderWidth: 1.5, borderRadius: radii.sm, padding: 8, alignItems: 'center', justifyContent: 'center' },

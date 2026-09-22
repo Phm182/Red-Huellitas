@@ -92,11 +92,39 @@ const TIPOS: TipoPieza[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 export const SEGUNDOS_POR_NIVEL = 40;
 export const NIVEL_MAX = 19;
 
-/** Segundos por celda de caída, según nivel — curva decreciente clásica (más rápido = más chico), con piso. */
+/**
+ * Segundos por celda de caída, según nivel.
+ *
+ * Curva EXPONENCIAL, no lineal: cada nivel es un `RATIO_NIVEL` (11,5%) más
+ * rápido que el anterior, así que el cambio se siente parejo desde el
+ * nivel 1 — antes era una resta fija por nivel (`1.0 - n*0.045`), que hace
+ * que el cambio relativo sea chiquito al principio (de 1.00s a 0.955s casi
+ * no se nota) y recién se sienta fuerte cerca del techo (quejado: "recién
+ * en nivel 14 sentí la diferencia"). El piso sigue en `PISO_CAIDA`, y con
+ * este ratio se llega justo ahí en `NIVEL_MAX`.
+ */
+const RATIO_NIVEL = 0.885;
+const PISO_CAIDA = 0.09;
+
 export function intervaloCaida(nivel: number): number {
   const n = Math.min(nivel, NIVEL_MAX);
-  return Math.max(0.09, 1.0 - n * 0.045);
+  return Math.max(PISO_CAIDA, RATIO_NIVEL ** n);
 }
+
+/**
+ * Intervalo mientras se mantiene apretado para acelerar la caída ("soft
+ * drop": distinto de la caída dura, que fija la pieza de una). Nunca más
+ * lento que la caída normal del nivel actual, para que acelerar nunca frene.
+ */
+/**
+ * Antes 0,035s (~29 casilleros/seg): tan rápido que mantener apretado se
+ * sentía como una caída dura disfrazada — apenas se notaba que arrancaba y
+ * ya estaba en el piso, sin margen para soltar en el lugar justo. A este
+ * ritmo cruzar el tablero entero lleva unos 3 segundos: se puede seguir
+ * moviendo a los costados y soltar exactamente donde hace falta.
+ */
+export const INTERVALO_ACELERADO = 0.13;
+
 
 type Celda = TipoPieza | null;
 
@@ -300,7 +328,7 @@ export function caidaDura(estado: EstadoTetris): void {
  * saltaba 2-3 bloques de golpe — bug real reportado) y quedó afuera al
  * rediseñar los controles.
  */
-export function actualizar(estado: EstadoTetris, dt: number): void {
+export function actualizar(estado: EstadoTetris, dt: number, acelerado = false): void {
   if (estado.terminado) return;
   estado.lineasLimpiadasAhora = [];
   estado.duracionSegundos += dt;
@@ -308,7 +336,7 @@ export function actualizar(estado: EstadoTetris, dt: number): void {
   const nivelNuevo = Math.min(NIVEL_MAX, Math.floor(estado.duracionSegundos / SEGUNDOS_POR_NIVEL));
   if (nivelNuevo !== estado.nivel) estado.nivel = nivelNuevo;
 
-  const intervalo = intervaloCaida(estado.nivel);
+  const intervalo = acelerado ? Math.min(intervaloCaida(estado.nivel), INTERVALO_ACELERADO) : intervaloCaida(estado.nivel);
   estado.tiempoCaidaAcumulado += dt;
   while (estado.tiempoCaidaAcumulado >= intervalo && !estado.terminado) {
     estado.tiempoCaidaAcumulado -= intervalo;

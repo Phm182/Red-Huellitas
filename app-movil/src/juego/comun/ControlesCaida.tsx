@@ -11,19 +11,20 @@ const DEMORA_INICIAL_MS = 220;
  * tablero (`useGestoCaida.ts`) -- pedido explícito: dejar las dos formas de
  * jugar disponibles al mismo tiempo, no una en reemplazo de la otra.
  *
- * Sólo 4 botones (izquierda/derecha con auto-repetición, rotar, caída dura)
- * -- a propósito NO incluye el botón de "caída suave" (mantener apretado
- * para acelerar) que tenía la versión vieja: ESE era el que se reportó con
- * bug real (a veces aceleraba suave, a veces saltaba 2-3 bloques de golpe),
- * porque mezclaba su propio `setInterval` de repetición con el acumulador
- * de caída por tiempo del motor y los dos peleaban por el mismo estado. La
- * caída dura (un solo toque, cae al piso de una) nunca tuvo ese problema, y
- * es la misma acción que ya dispara el deslizar hacia abajo del gesto.
+ * 5 botones: izquierda/derecha con auto-repetición, rotar, acelerar
+ * (mantener apretado: baja rápido sin fijarse, se puede seguir moviendo a
+ * los costados) y caída dura (un toque, cae al piso y se fija). El botón de
+ * acelerar es sólo `onPressIn`/`onPressOut` — nada de `setInterval` propio,
+ * el intervalo real lo maneja `motor.ts::actualizar()` con su acumulador de
+ * siempre (mismo mecanismo que `useGestoCaida.ts`; ver su comentario sobre
+ * el bug viejo que esto evita).
  */
 export function ControlesCaida({
   onIzquierda,
   onDerecha,
   onRotar,
+  onAcelerarInicio,
+  onAcelerarFin,
   onCaidaDura,
   color,
   colorFondo,
@@ -31,6 +32,8 @@ export function ControlesCaida({
   onIzquierda: () => void;
   onDerecha: () => void;
   onRotar: () => void;
+  onAcelerarInicio: () => void;
+  onAcelerarFin: () => void;
   onCaidaDura: () => void;
   color: string;
   colorFondo: string;
@@ -57,7 +60,8 @@ export function ControlesCaida({
     icono: keyof typeof Ionicons.glyphMap,
     onPressIn: () => void,
     onPressOut?: () => void,
-    key?: string
+    key?: string,
+    size = 26
   ) => (
     <Pressable
       key={key}
@@ -66,7 +70,7 @@ export function ControlesCaida({
       hitSlop={6}
       style={[styles.boton, { backgroundColor: colorFondo, borderColor: color }]}
     >
-      <Ionicons name={icono} size={26} color={color} />
+      <Ionicons name={icono} size={size} color={color} />
     </Pressable>
   );
 
@@ -74,6 +78,7 @@ export function ControlesCaida({
     <View style={styles.fila}>
       {boton('chevron-back', () => iniciarRepeticion(onIzquierda), limpiarRepeticion, 'izq')}
       {boton('sync', onRotar, undefined, 'rot')}
+      {boton('arrow-down-circle-outline', onAcelerarInicio, onAcelerarFin, 'acel')}
       {boton('chevron-down-circle', onCaidaDura, undefined, 'dura')}
       {boton('chevron-forward', () => iniciarRepeticion(onDerecha), limpiarRepeticion, 'der')}
     </View>
@@ -81,11 +86,11 @@ export function ControlesCaida({
 }
 
 const styles = StyleSheet.create({
-  fila: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  fila: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   boton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
