@@ -22,6 +22,7 @@ import {
   Colas,
   hayJugada,
   mezclar,
+  PasoCascada,
   resolverIntercambio,
   sonVecinas,
   Tablero,
@@ -36,8 +37,12 @@ import { DiarioResultado, HuePlayProgreso } from '../../../src/types/hueplay';
 
 const SEGUNDOS = 60;
 const JUEGO = 'huematch';
+/** Código aparte para Supervivencia: mismo criterio que las 3 variantes de HueDoku — récord propio, sin mezclarse con el de Tiempo fijo. */
+const JUEGO_SUPERV = 'huematch_superv';
 
 type Fase = 'listo' | 'jugando' | 'enviando' | 'fin';
+/** Tiempo fijo: el minuto de siempre. Supervivencia: arranca con la mitad y cada match suma. */
+type Modo = 'fijo' | 'supervivencia';
 
 const esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -65,7 +70,13 @@ export default function HueMatchScreen() {
   );
 
   const [fase, setFase] = useState<Fase>('listo');
-  const record = useRecordJuego(JUEGO);
+  // Sólo elegible jugando suelto: un duelo o el reto del día necesitan que la
+  // partida dure exactamente lo mismo para los dos lados, y Supervivencia por
+  // diseño no tiene una duración fija.
+  const [modo, setModo] = useState<Modo>('fijo');
+  const recordFijo = useRecordJuego(JUEGO);
+  const recordSuperv = useRecordJuego(JUEGO_SUPERV);
+  const record = modo === 'supervivencia' ? recordSuperv : recordFijo;
   const [tablero, setTablero] = useState<Tablero>([]);
   const colasRef = useRef<Colas>([]);
   const [seleccionada, setSeleccionada] = useState<Celda | null>(null);
@@ -76,6 +87,8 @@ export default function HueMatchScreen() {
   const [puntos, setPuntos] = useState(0);
   const [restante, setRestante] = useState(SEGUNDOS);
   const [combo, setCombo] = useState<{ puntos: number; cascada: number } | null>(null);
+  /** "+Ns" que aparece un instante al sumar tiempo en Supervivencia. */
+  const [bonusTiempo, setBonusTiempo] = useState<number | null>(null);
   /**
    * `true` mientras `animar()` está reproduciendo los pasos de una jugada
    * (desde el primer match, no sólo si encadena). Se lo pasa a `Celda.tsx`
@@ -98,6 +111,15 @@ export default function HueMatchScreen() {
   // significaría mandar siempre el puntaje de los primeros segundos.
   const puntosRef = useRef(0);
   const vivoRef = useRef(true);
+  /**
+   * Segundos reales de juego transcurridos (no confundir con `restante`, que
+   * en Supervivencia sube y baja). Sirve para dos cosas: mandarle al backend
+   * la duración real de la partida (en Tiempo fijo siempre es `SEGUNDOS`,
+   * pero en Supervivencia varía según cuánto se aguante) y para que los
+   * matches rindan cada vez menos con el correr de la partida (ver
+   * `bonusSupervivencia`).
+   */
+  const transcurridosRef = useRef(0);
 
   useEffect(() => {
     vivoRef.current = true;
@@ -114,17 +136,22 @@ export default function HueMatchScreen() {
     setTablero(t);
     setPuntos(0);
     puntosRef.current = 0;
-    setRestante(SEGUNDOS);
+    transcurridosRef.current = 0;
+    setBonusTiempo(null);
+    // Supervivencia arranca en desventaja a propósito: la mitad del reloj de
+    // Tiempo fijo, y lo que falta hay que ganarlo jugando.
+    setRestante(modo === 'supervivencia' ? Math.round(SEGUNDOS / 2) : SEGUNDOS);
     setSeleccionada(null);
     setResultado(null);
     setError(null);
     setFase('jugando');
-  }, [semilla]);
+  }, [semilla, modo]);
 
   // Reloj.
   useEffect(() => {
     if (fase !== 'jugando') return;
     const id = setInterval(() => {
+      transcurridosRef.current += 1;
       setRestante((s) => {
         if (s <= 1) {
           clearInterval(id);
@@ -181,7 +208,11 @@ export default function HueMatchScreen() {
           setError(res.message ?? t('common.error'));
         }
       } else {
-        const res = await hueplayApi.guardarPartida(JUEGO, finales, SEGUNDOS);
+        // Fuera de duelo/diario (que siempre juegan Tiempo fijo), el código y
+        // la duración real dependen del modo elegido.
+        const codigo = modo === 'supervivencia' ? JUEGO_SUPERV : JUEGO;
+        const duracion = modo === 'supervivencia' ? transcurridosRef.current : SEGUNDOS;
+        const res = await hueplayApi.guardarPartida(codigo, finales, duracion);
         if (!vivoRef.current) return;
         if (res.success && res.data) {
           setResultado({
@@ -198,7 +229,7 @@ export default function HueMatchScreen() {
     }
 
     if (vivoRef.current) setFase('fin');
-  }, [desafioId, esDiario, t]);
+  }, [desafioId, esDiario, modo, t]);
 
   useEffect(() => {
     if (fase === 'jugando' && restante === 0) {
@@ -206,6 +237,32 @@ export default function HueMatchScreen() {
       terminar();
     }
   }, [fase, restante, terminar]);
+
+  /**
+   * Cuántos segundos suma un match en Supervivencia.
+   *
+   * Dos ingredientes, mismo criterio que el puntaje (`resolverIntercambio`
+   * en motor.ts usa `celdas.length * 10 * cascada`): cuantas más fichas se
+   * rompen y cuanto más larga la cadena, más "complejo" fue el match y más
+   * paga. Pero a diferencia del puntaje, acá el rendimiento DECAE con el
+   * tiempo real jugado (`factor`): al principio un match de 3 sencillo
+   * prácticamente empata lo que tarda en encontrarse (ritmo sostenible),
+   * pero pasados unos 90s ese mismo match de 3 ya no alcanza para cubrir el
+   * tiempo que pasó — recién los matches grandes o encadenados siguen
+   * pagando de verdad. Es lo que hace que la partida se sienta cada vez más
+   * exigente sin cambiar el tablero ni las reglas: alcanza con jugar mejor.
+   *
+   * El piso del 40% evita que en partidas largas quede en prácticamente
+   * cero (dejaría de tener sentido seguir intentando).
+   */
+  const bonusSupervivencia = useCallback((pasos: PasoCascada[]): number => {
+    const factor = Math.max(0.4, 1 - transcurridosRef.current / 150);
+    const total = pasos.reduce((acc, paso) => {
+      const base = paso.celdas.length * 1.0 * (1 + (paso.cascada - 1) * 0.35);
+      return acc + base * factor;
+    }, 0);
+    return Math.round(total);
+  }, []);
 
   /** Anima los pasos de una jugada: explota, cae, y encadena si hay cascada. */
   const animar = useCallback(
@@ -280,6 +337,18 @@ export default function HueMatchScreen() {
       setTablero(r.intercambiado);
       setMovimiento(null);
       hapticLeve();
+
+      if (modo === 'supervivencia') {
+        const bonus = bonusSupervivencia(r.pasos);
+        if (bonus > 0) {
+          setRestante((s) => s + bonus);
+          setBonusTiempo(bonus);
+          setTimeout(() => {
+            if (vivoRef.current) setBonusTiempo(null);
+          }, 900);
+        }
+      }
+
       await animar(r.pasos);
 
       // Tablero trabado: se mezcla en vez de dejar al jugador mirando el reloj.
@@ -290,7 +359,7 @@ export default function HueMatchScreen() {
 
       if (vivoRef.current) setBloqueado(false);
     },
-    [animar, semilla, tablero]
+    [animar, bonusSupervivencia, modo, semilla, tablero]
   );
 
   const onCelda = useCallback(
@@ -374,6 +443,37 @@ export default function HueMatchScreen() {
               {t('hueplay.match.avisoDuelo')}
             </Text>
           </View>
+        ) : null}
+
+        {!desafioId && !esDiario ? (
+          <>
+            <Text style={[styles.label, { color: colors.text }]}>{t('hueplay.match.elegirModo')}</Text>
+            <View style={styles.dificultades}>
+              {(['fijo', 'supervivencia'] as Modo[]).map((m) => {
+                const activo = modo === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      hapticLeve();
+                      setModo(m);
+                    }}
+                    style={[
+                      styles.chip,
+                      { borderColor: colors.primary, backgroundColor: activo ? colors.primarySoft : 'transparent' },
+                    ]}
+                  >
+                    <Text style={{ color: colors.primary, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                      {t(`hueplay.match.modo.${m}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={[styles.bajada, { color: colors.textMuted, marginTop: 12 }]}>
+              {t(modo === 'supervivencia' ? 'hueplay.match.modoSupervivenciaDesc' : 'hueplay.match.modoFijoDesc')}
+            </Text>
+          </>
         ) : null}
 
         <Pressable
@@ -531,6 +631,11 @@ export default function HueMatchScreen() {
           <Text style={[styles.hudValor, { color: urgente ? colors.danger : colors.text }]}>
             {restante}s
           </Text>
+          {bonusTiempo !== null ? (
+            <Text style={{ color: colors.success, fontFamily: fonts.bodyBold, fontSize: 13 }}>
+              +{bonusTiempo}s
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -540,7 +645,7 @@ export default function HueMatchScreen() {
             styles.barraLlena,
             {
               backgroundColor: urgente ? colors.danger : colors.primary,
-              width: `${(restante / SEGUNDOS) * 100}%`,
+              width: `${Math.min(100, (restante / SEGUNDOS) * 100)}%`,
             },
           ]}
         />
@@ -578,6 +683,9 @@ const styles = StyleSheet.create({
   bajada: { fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 19 },
   puntajeFinal: { fontSize: 56, fontFamily: fonts.displaySemi },
   veredicto: { fontSize: 20, fontFamily: fonts.displaySemi, textAlign: 'center', marginBottom: 4 },
+  label: { fontSize: 13, fontFamily: fonts.bodySemi, marginTop: 16, marginBottom: 10 },
+  dificultades: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  chip: { borderWidth: 1.5, borderRadius: radii.pill, paddingVertical: 10, paddingHorizontal: 16 },
   aviso: {
     flexDirection: 'row',
     alignItems: 'center',

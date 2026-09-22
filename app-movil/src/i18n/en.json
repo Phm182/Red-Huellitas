@@ -1416,6 +1416,10 @@
     "jugandoContraIA": "The app",
     "match": {
       "comoSeJuega": "Swipe a tile in any direction to swap it with its neighbour. You can also tap both. Line up 3 or more before the minute runs out: chains multiply your score.",
+      "elegirModo": "Choose the mode",
+      "modo": { "fijo": "Fixed time", "supervivencia": "Survival" },
+      "modoFijoDesc": "One minute on the clock, no tricks.",
+      "modoSupervivenciaDesc": "You start with half a minute. Every match adds time — the bigger or more chained, the more it adds. But it pays off less and less as the round goes on: you'll need better matches to stay alive.",
       "avisoDuelo": "Duel: you play the exact same board as your rival.",
       "empezar": "Start",
       "guardando": "Saving your game...",

@@ -7,7 +7,6 @@ import Animated, {
   withDelay,
   withSequence,
   withTiming,
-  withSpring,
 } from 'react-native-reanimated';
 import { Ficha } from './Ficha';
 import { FILAS, VACIO } from './motor';
@@ -168,15 +167,15 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
     // en esta celda puntual — ver el comentario de `cascadaActiva` arriba):
     // las dos entran "desde arriba" con la misma animación. El retraso por
     // fila hace que la columna caiga de a una en vez de aparecer todo el
-    // bloque junto. `damping` más alto que antes (13→20): con 13 rebotaba
-    // varias veces de ida y vuelta antes de asentarse, que es justo lo que
-    // confundía — con 20 pega un único envión chico y para.
+    // bloque junto. Sin rebote a propósito (pedido explícito): antes era un
+    // resorte que pegaba un envión al asentarse; ahora cae y frena en su
+    // lugar, sin pasarse ni volver.
     if (tipo !== VACIO && (antes === VACIO || cascadaActiva)) {
       giro.value = 0;
       setBlanco(false);
       caida.value = -1;
       escala.value = 1;
-      caida.value = withDelay(fila * 26, withSpring(0, { damping: 20, stiffness: 190 }));
+      caida.value = withDelay(fila * 26, withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) }));
       return;
     }
 

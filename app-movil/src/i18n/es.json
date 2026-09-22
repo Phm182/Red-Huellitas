@@ -1438,6 +1438,10 @@
     "jugandoContraIA": "La app",
     "match": {
       "comoSeJuega": "Deslizá una ficha hacia el lado que quieras para cambiarla con su vecina. También podés tocar las dos. Alineá 3 o más y sumá antes de que se acabe el minuto: encadenar multiplica los puntos.",
+      "elegirModo": "Elegí el modo",
+      "modo": { "fijo": "Tiempo fijo", "supervivencia": "Supervivencia" },
+      "modoFijoDesc": "Un minuto en el reloj, sin vueltas.",
+      "modoSupervivenciaDesc": "Arrancás con medio minuto. Cada match suma tiempo — cuanto más grande o encadenado, más suma. Pero rinde cada vez menos a medida que pasa la partida: hay que ir por matches mejores para seguir vivo.",
       "avisoDuelo": "Duelo: jugás el mismo tablero que tu rival.",
       "empezar": "Empezar",
       "guardando": "Guardando la partida...",
