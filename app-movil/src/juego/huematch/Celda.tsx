@@ -114,8 +114,18 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
 
   const dx = desplaza?.dx ?? 0;
   const dy = desplaza?.dy ?? 0;
+  /**
+   * Para distinguir por qué `desplaza` vuelve a cero — ver el `if` de abajo
+   * ("el intercambio ya se confirmó"). Se actualiza en ESTE efecto, aparte
+   * de `anterior` (que usa el otro efecto), porque necesito compararlo
+   * ANTES de que nada más lo toque.
+   */
+  const tipoAlMoverse = useRef(tipo);
 
   useEffect(() => {
+    const tipoCambioAhora = tipoAlMoverse.current !== tipo;
+    tipoAlMoverse.current = tipo;
+
     // Arrastre en curso: sigue al dedo directo, sin animación — la animación
     // (resorte) es para cuando se suelta, acá se quiere respuesta 1 a 1.
     if (arrastreVivo) {
@@ -123,12 +133,27 @@ export function Celda({ tipo, lado, fila, seleccionada, desplaza, arrastreVivo, 
       despY.value = arrastreVivo.dy;
       return;
     }
+
+    // El intercambio ya se confirmó: `desplaza` volvió a cero Y, en el MISMO
+    // cuadro, esta celda pasó a mostrar la otra ficha del par (la que venía
+    // "viajando" desde el otro lado). Esa ficha ya está donde tiene que
+    // estar — no hay que animar nada más. Sin este corte, el offset volvía a
+    // cero CON `withTiming` (150ms), y como el dibujo ya había cambiado a la
+    // ficha nueva, se veía como si esa ficha "volviera" desde el otro lado y
+    // rehiciera el viaje — el bug reportado ("vuelve a la derecha y rehace
+    // la animación").
+    if (dx === 0 && dy === 0 && tipoCambioAhora) {
+      despX.value = 0;
+      despY.value = 0;
+      return;
+    }
+
     // El mismo camino de ida y de vuelta: cuando el desplazamiento vuelve a
     // cero —porque la jugada no armaba línea— la ficha regresa sola, y eso es
     // exactamente el rebote que uno espera al equivocarse.
     despX.value = withTiming(dx * lado, { duration: T_MOVER });
     despY.value = withTiming(dy * lado, { duration: T_MOVER });
-  }, [dx, dy, lado, despX, despY, arrastreVivo]);
+  }, [dx, dy, lado, despX, despY, arrastreVivo, tipo]);
 
   useEffect(() => {
     const antes = anterior.current;

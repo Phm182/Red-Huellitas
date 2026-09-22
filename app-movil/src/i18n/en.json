@@ -1259,6 +1259,7 @@
     "incompleta": "Fill in the day, month and year."
   },
   "hueplay": {
+    "recordMini": "Record: {{n}}",
     "comoSeJuegaTitulo": "How to play?",
     "obj": {
       "cumplido": "Goal completed!",

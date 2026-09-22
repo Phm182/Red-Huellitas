@@ -1,4 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { RecordMini } from '../../../src/juego/comun/RecordMini';
 import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
 import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -523,6 +524,7 @@ export default function HueColumnsScreen() {
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.tetris.puntos')}</Text>
             <Text style={[styles.cajaValor, { color: colors.text }]}>{Math.round(estado.puntaje)}</Text>
+            <RecordMini record={record} color={colors.textMuted} />
           </View>
           <View style={[styles.caja, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Text style={[styles.cajaLabel, { color: colors.textMuted }]}>{t('hueplay.columns.combo')}</Text>

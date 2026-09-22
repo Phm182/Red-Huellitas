@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RecordMini } from '../../../src/juego/comun/RecordMini';
 import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
 import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -308,6 +309,7 @@ export default function HueTriviaScreen() {
           {restante}s
         </Text>
       </View>
+      <RecordMini record={record} color={colors.textMuted} />
 
       <View style={[styles.barraTiempo, { backgroundColor: colors.border }]}>
         <View

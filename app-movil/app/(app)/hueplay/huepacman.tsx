@@ -1,4 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { RecordMini } from '../../../src/juego/comun/RecordMini';
 import { RecordBadge } from '../../../src/juego/comun/RecordBadge';
 import { useRecordJuego } from '../../../src/juego/comun/useRecordJuego';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -515,6 +516,7 @@ export default function HuePacManScreen() {
         <View>
           <Text style={[styles.hudLabel, { color: colors.textMuted }]}>{t('hueplay.match.puntos')}</Text>
           <Text style={[styles.hudValor, { color: colors.text }]}>{hud.puntaje}</Text>
+          <RecordMini record={record} color={colors.textMuted} />
         </View>
         <View style={styles.vidas}>
           {Array.from({ length: 3 }, (_, i) => (
